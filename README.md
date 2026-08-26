@@ -1,0 +1,186 @@
+<div align="center">
+
+# VerifAI
+### AI Workplace Readiness App
+
+*Build the skills. Earn the trust. Advance your future.*
+
+![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
+![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
+
+</div>
+
+---
+
+## About the Project
+
+VerifAI is a mobile application that measures and builds a graduate's readiness to work with AI in real jobs. Rather than teaching AI tools, VerifAI tests whether users can be trusted to use them — through real, employer-sourced workplace scenarios that assess judgement, verification, prompting, risk governance, and human-AI collaboration.
+
+Users receive AI-generated workplace tasks containing deliberate flaws or decisions. They identify the issue, correct it, and explain their reasoning. Each completed task updates their readiness profile across five competency dimensions.
+
+### The Five Readiness Dimensions
+
+| Dimension | What It Tests |
+|---|---|
+| **Verification** | Can you catch AI's mistakes and fix them? |
+| **AI Judgement** | Do you know when AI should or shouldn't be used? |
+| **Prompt Design** | Can you write prompts that get reliable, safe outputs? |
+| **Risk & Governance** | Can you avoid privacy, bias, and compliance risks? |
+
+### Industry Tracks
+Finance · Legal · IT / Software · Business Consulting
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Mobile Frontend | Flutter (Dart) |
+| Backend API | Node.js + Express |
+| Database | PostgreSQL |
+| Authentication | Firebase Auth |
+| Hosting | Railway |
+
+**Architecture overview:**
+- The Flutter app communicates with the Express REST API over HTTPS
+- Firebase Auth handles user authentication client-side; the Express backend verifies tokens using the Firebase Admin SDK
+- PostgreSQL stores users, industry tracks, pre-seeded tasks, scores per readiness dimension, and progress history
+- The API and database are both deployed on Railway
+
+---
+
+## Project Structure
+
+```
+verifai/
+├── mobile/              # Flutter app
+│   ├── lib/
+│   │   ├── screens/     # UI screens (Dashboard, Task, Feedback, Profile, etc.)
+│   │   ├── widgets/     # Reusable components
+│   │   ├── models/      # Data models
+│   │   ├── services/    # API calls, Firebase Auth
+│   │   └── main.dart
+│   └── pubspec.yaml
+│
+├── backend/             # Node.js + Express API
+│   ├── src/
+│   │   ├── routes/      # API route handlers
+│   │   ├── controllers/ # Business logic
+│   │   ├── models/      # DB query functions
+│   │   └── middleware/  # Auth verification, error handling
+│   ├── db/
+│   │   ├── schema.sql   # Table definitions
+│   │   └── seed.sql     # Pre-seeded tasks and scenarios
+│   ├── index.js
+│   └── package.json
+│
+└── README.md
+```
+
+---
+
+## Git Workflow
+
+We use a **feature branch workflow**. The `main` branch always reflects production-ready code. No one pushes directly to `main`.
+
+### Branch naming
+
+```
+feature/   → new functionality         e.g. feature/task-screen
+fix/       → bug fixes                 e.g. fix/score-calculation
+chore/     → setup, config, tooling    e.g. chore/db-schema
+```
+
+### Step-by-step process
+
+1. **Pull the latest main** before starting any work
+   ```bash
+   git checkout main
+   git pull origin main
+   ```
+
+2. **Create a feature branch** from main
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+3. **Commit regularly** with clear, descriptive messages
+   ```bash
+   git add .
+   git commit -m "feat: add task submission endpoint"
+   ```
+
+4. **Push your branch** and open a Pull Request on GitHub
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+5. **Request a review** — at least one other team member must review and approve before merging
+
+6. **Merge to main** only after approval — use "Squash and merge" to keep the history clean
+
+> ⚠️ Never push directly to `main`. All changes go through a PR and review.
+
+---
+
+## Getting Started
+
+### Prerequisites
+- Flutter SDK (≥ 3.0)
+- Node.js (≥ 18)
+- PostgreSQL (local or Railway instance)
+- Firebase project with Auth enabled
+- Railway account
+
+### Backend setup
+
+```bash
+cd backend
+npm install
+cp .env.example .env   # Fill in DB connection string and Firebase credentials
+npm run dev
+```
+
+### Mobile setup
+
+```bash
+cd mobile
+flutter pub get
+# Add your google-services.json (Android) or GoogleService-Info.plist (iOS) from Firebase
+flutter run
+```
+
+### Database setup
+
+```bash
+psql -U your_user -d your_db -f db/schema.sql
+psql -U your_user -d your_db -f db/seed.sql
+```
+
+---
+
+## Team — Group SE16
+
+| Name | Student Number |
+|---|---|
+| Meshaque Kalonji | Eduv4967541 |
+| Vusani Earl Mulaudzi | Eduv4915768 |
+| Theodore Nangara | Con-1484616-v7z6 |
+| Lwandle Naledi Chloe Mvelase | Con-1186453-hlz6 |
+| Mpho Mokoena | Be.2023.m4g9b8 |
+
+**Module:** ITMDA3-34 — Project: Mobile Application and Web Services  
+**Campus:** Bedfordview, Eduvos  
+**Lecturer:** Mpho Thobejane
+
+---
+
+<div align="center">
+
+*VerifAI — Helping Africa's graduates become the most trusted AI-ready talent in the world.*
+
+</div>
