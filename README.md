@@ -83,6 +83,58 @@ verifai/
 
 ---
 
+## Knowledge Graph (Graphify)
+
+This repo ships an auto-generated **knowledge graph** of the codebase so the team can explore architecture instead of grepping files.
+
+### What it does
+
+`graphify` parses the code locally (tree-sitter AST — no data leaves your machine, no API cost) and builds:
+
+```
+graphify-out/
+├── graph.html        # open in any browser — clickable, searchable graph
+├── GRAPH_REPORT.md   # highlights, god nodes, community hubs
+└── graph.json        # the queryable graph
+```
+
+The generated graph is **committed to the repo** so everyone on the team starts with a map. Only `graphify-out/cost.json` is git-ignored (local-only).
+
+### Install (one-time, per contributor)
+
+```bash
+# 1. Install graphify (uses uv/tool env; the CLI command is `graphify`)
+uv tool install graphifyy
+uv tool update-shell   # if `graphify` isn't on PATH yet
+
+# 2. Register the skill with your AI assistant
+graphify install --platform opencode
+```
+
+> Prefer `uv`/`pipx` over plain `pip` to avoid environment conflicts.
+
+### Querying the graph
+
+```bash
+graphify query "how does auth flow?"      # plain-language scoped question
+graphify explain "SomeController"         # node + its edges
+graphify path "User" "Score"              # shortest cross-file path
+graphify update .                         # refresh after git pull
+```
+
+Or open `graphify-out/graph.html` in a browser and click around.
+
+### Keeping the graph current
+
+- **Git hooks** (`post-commit` / `post-checkout`) rebuild the graph automatically on every commit and branch switch. ⚠️ Hooks live in `.git/hooks/` and are **not** version-controlled, so each contributor must enable them once locally:
+  ```bash
+  graphify hook install
+  ```
+- After `git pull` (or a merge), run `graphify update .` to re-sync the graph with what you just pulled.
+- Committed `graph.json` merges cleanly thanks to the `.gitattributes` merge driver.
+
+---
+
 ## Git Workflow
 
 We use a **feature branch workflow**. The `main` branch always reflects production-ready code. No one pushes directly to `main`.
