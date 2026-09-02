@@ -1,1 +1,9 @@
-{"0": "package.json", "1": "main.dart", "2": "index.js", "3": "dependencies", "4": "scripts", "5": "dotenv", "6": "express", "7": "firebase-admin", "8": "pg"}
+{
+  "0": "package.json",
+  "1": "main.dart",
+  "2": "index.js",
+  "3": "dependencies",
+  "4": "VerifAI",
+  "5": "Getting Started",
+  "6": "Knowledge Graph (Graphify)"
+}

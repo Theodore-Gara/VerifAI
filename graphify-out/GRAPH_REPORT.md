@@ -1,15 +1,16 @@
 # Graph Report - VerifAI  (2026-09-02)
 
 ## Corpus Check
-- cluster-only mode — file stats not available
+- 8 files · ~1,400 words
+- Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 31 nodes · 28 edges · 9 communities (5 shown, 4 thin omitted)
+- 53 nodes · 49 edges · 7 communities
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `baedcf9e`
+- Built from commit: `d5528d79`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -18,23 +19,21 @@
 - main.dart
 - index.js
 - dependencies
-- scripts
-- dotenv
-- express
-- firebase-admin
-- pg
+- VerifAI
+- Getting Started
+- Knowledge Graph (Graphify)
 
 ## God Nodes (most connected - your core abstractions)
-1. `scripts` - 3 edges
-2. `nodemon` - 2 edges
-3. `VerifAIApp` - 2 edges
-4. `cors` - 2 edges
-5. `dotenv` - 2 edges
-6. `express` - 2 edges
-7. `firebase-admin` - 2 edges
-8. `pg` - 2 edges
-9. `main` - 1 edges
-10. `nodemon` - 1 edges
+1. `VerifAI` - 9 edges
+2. `Knowledge Graph (Graphify)` - 5 edges
+3. `Getting Started` - 5 edges
+4. `About the Project` - 3 edges
+5. `Git Workflow` - 3 edges
+6. `scripts` - 3 edges
+7. `nodemon` - 2 edges
+8. `VerifAIApp` - 2 edges
+9. `cors` - 2 edges
+10. `dotenv` - 2 edges
 
 ## Surprising Connections (you probably didn't know these)
 - None detected - all connections are within the same source files.
@@ -42,11 +41,11 @@
 ## Import Cycles
 - None detected.
 
-## Communities (9 total, 4 thin omitted)
+## Communities (7 total, 0 thin omitted)
 
 ### Community 0 - "package.json"
-Cohesion: 0.25
-Nodes (7): description, devDependencies, nodemon, main, name, version, nodemon
+Cohesion: 0.18
+Nodes (10): description, devDependencies, nodemon, main, name, scripts, dev, start (+2 more)
 
 ### Community 1 - "main.dart"
 Cohesion: 0.40
@@ -57,24 +56,33 @@ Cohesion: 0.50
 Nodes (3): app, cors, express
 
 ### Community 3 - "dependencies"
-Cohesion: 0.67
-Nodes (3): dependencies, cors, cors
+Cohesion: 0.18
+Nodes (11): dependencies, cors, dotenv, express, firebase-admin, pg, cors, dotenv (+3 more)
 
-### Community 4 - "scripts"
-Cohesion: 0.67
-Nodes (3): scripts, dev, start
+### Community 4 - "VerifAI"
+Cohesion: 0.17
+Nodes (11): About the Project, AI Workplace Readiness App, Branch naming, Git Workflow, Industry Tracks, Project Structure, Step-by-step process, Team — Group SE16 (+3 more)
+
+### Community 5 - "Getting Started"
+Cohesion: 0.40
+Nodes (5): Backend setup, Database setup, Getting Started, Mobile setup, Prerequisites
+
+### Community 6 - "Knowledge Graph (Graphify)"
+Cohesion: 0.40
+Nodes (5): Install (one-time, per contributor), Keeping the graph current, Knowledge Graph (Graphify), Querying the graph, What it does
 
 ## Knowledge Gaps
-- **17 isolated node(s):** `description`, `main`, `name`, `version`, `nodemon` (+12 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 18 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **4 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **33 isolated node(s):** `AI Workplace Readiness App`, `The Five Readiness Dimensions`, `Industry Tracks`, `Tech Stack`, `Project Structure` (+28 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 35 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `dependencies` connect `dependencies` to `package.json`, `dotenv`, `express`, `firebase-admin`, `pg`?**
-  _High betweenness centrality (0.345) - this node is a cross-community bridge._
-- **Why does `scripts` connect `scripts` to `package.json`?**
-  _High betweenness centrality (0.090) - this node is a cross-community bridge._
-- **What connects `description`, `main`, `name` to the rest of the system?**
-  _17 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `VerifAI` connect `VerifAI` to `Getting Started`, `Knowledge Graph (Graphify)`?**
+  _High betweenness centrality (0.139) - this node is a cross-community bridge._
+- **Why does `dependencies` connect `dependencies` to `package.json`?**
+  _High betweenness centrality (0.113) - this node is a cross-community bridge._
+- **Why does `Knowledge Graph (Graphify)` connect `Knowledge Graph (Graphify)` to `VerifAI`?**
+  _High betweenness centrality (0.056) - this node is a cross-community bridge._
+- **What connects `AI Workplace Readiness App`, `The Five Readiness Dimensions`, `Industry Tracks` to the rest of the system?**
+  _33 weakly-connected nodes found - possible documentation gaps or missing edges._
