@@ -1,0 +1,17 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+
+# Environment & secrets
+.env
+*.pem
+
+# Logs / temp
+*.log
+*.err.log
+
+# Graphify local-only artifacts
+graphify-out/cost.json
