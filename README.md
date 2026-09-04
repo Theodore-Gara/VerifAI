@@ -17,7 +17,7 @@
 
 ## About the Project
 
-VerifAI is a mobile application that measures and builds a graduate's readiness to work with AI in real jobs. Rather than teaching AI tools, VerifAI tests whether users can be trusted to use them — through real, employer-sourced workplace scenarios that assess judgement, verification, prompting, risk governance, and human-AI collaboration.
+VerifAI is a mobile application that measures and builds a graduate's readiness to work with AI in real jobs. Rather than teaching AI tools, VerifAI tests whether users can be trusted to use them — through real, employer-sourced workplace scenarios that assess judgement, verification, prompting, and risk governance.
 
 Users receive AI-generated workplace tasks containing deliberate flaws or decisions. They identify the issue, correct it, and explain their reasoning. Each completed task updates their readiness profile across five competency dimensions.
 
@@ -187,6 +187,7 @@ chore/     → setup, config, tooling    e.g. chore/db-schema
 - PostgreSQL (local or Railway instance)
 - Firebase project with Auth enabled
 - Railway account
+- Supabase
 
 ### Backend setup
 
