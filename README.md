@@ -177,6 +177,52 @@ chore/     → setup, config, tooling    e.g. chore/db-schema
 
 > ⚠️ Never push directly to `main`. All changes go through a PR and review.
 
+### CI (GitHub Actions)
+
+Every push and every PR automatically runs the **Tests** workflow:
+
+| Job | What it does |
+|---|---|
+| **Backend tests** | Installs backend deps and runs `npm test` (skips until a test script exists) |
+| **Mobile tests** | `flutter pub get`, format check, `flutter analyze`, `flutter test` (skips until `mobile/test/` exists) |
+| **Security tests** | `npm audit` for vulnerable dependencies + **gitleaks** secret scanning (fails on leaked keys/tokens) |
+| **Tests summary** | Single gate — fails if any job failed |
+
+PRs to `main` additionally require **owner approval** (`@Theodore-Gara`) via the `owner-approval` workflow. PRs should not be merged while any check is red.
+
+### Avoiding merge conflicts (team playbook)
+
+Conflicts come from branches living apart for too long — not from merges themselves. Follow these rules:
+
+1. **Keep branches small and short-lived.** One feature = one branch = one PR. Aim to merge within **1–3 days**. Big features? Split them into slices (`feature/task-model` → merge → `feature/task-ui`).
+
+2. **Sync your branch with main daily.** While your branch is open:
+   ```bash
+   git fetch origin
+   git merge origin/main
+   ```
+   Small conflicts resolved today beat one giant merge-week disaster.
+
+3. **Split work by files, not by layers.** Coordinate so people own disjoint areas of the codebase. Never have two people editing the same file (especially `main.dart`, `index.js`, or `package.json`/`pubspec.yaml`) at the same time — dependency files conflict constantly.
+
+4. **Merge PRs quickly after approval.** First PR merged wins; the second one resolves the conflicts. Don't let approved PRs pile up.
+
+5. **Never PR a huge branch whole.** If your branch is way ahead, break it into stacked/incremental PRs. A 40-file PR is unreviewable and conflict-prone.
+
+#### Resolving a conflict (quick reference)
+
+```bash
+git checkout feature/your-branch
+git fetch origin
+git merge origin/main
+# Git marks the conflicted files — open them, edit between <<<<<<< ======= >>>>>>>
+git add <resolved-files>
+git commit          # completes the merge
+git push origin feature/your-branch
+```
+
+When in doubt, ask the person who wrote the other side of the conflict — don't guess their intent.
+
 ---
 
 ## Getting Started
