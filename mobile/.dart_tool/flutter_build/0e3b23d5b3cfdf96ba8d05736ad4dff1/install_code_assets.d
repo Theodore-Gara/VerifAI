@@ -1,0 +1,1 @@
+ C:\\Users\\theod\\VerifAI\\mobile\\.dart_tool\\flutter_build\\0e3b23d5b3cfdf96ba8d05736ad4dff1\\native_assets.json: 

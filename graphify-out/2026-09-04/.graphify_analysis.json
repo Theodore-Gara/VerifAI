@@ -1,0 +1,134 @@
+{
+  "communities": {
+    "0": [
+      "backend_package",
+      "backend_package_description",
+      "backend_package_devdependencies",
+      "backend_package_devdependencies_nodemon",
+      "backend_package_main",
+      "backend_package_name",
+      "backend_package_version",
+      "nodemon"
+    ],
+    "1": [
+      "mobile_lib_main",
+      "mobile_lib_main_build",
+      "mobile_lib_main_main",
+      "mobile_lib_main_verifaiapp",
+      "statelesswidget"
+    ],
+    "2": [
+      "backend_index",
+      "backend_index_app",
+      "backend_index_cors",
+      "backend_index_express"
+    ],
+    "3": [
+      "backend_package_dependencies",
+      "backend_package_dependencies_cors",
+      "cors"
+    ],
+    "4": [
+      "backend_package_scripts",
+      "backend_package_scripts_dev",
+      "backend_package_scripts_start"
+    ],
+    "5": [
+      "backend_package_dependencies_dotenv",
+      "dotenv"
+    ],
+    "6": [
+      "backend_package_dependencies_express",
+      "express"
+    ],
+    "7": [
+      "backend_package_dependencies_firebase_admin",
+      "firebase_admin"
+    ],
+    "8": [
+      "backend_package_dependencies_pg",
+      "pg"
+    ]
+  },
+  "cohesion": {
+    "0": 0.25,
+    "1": 0.4,
+    "2": 0.5,
+    "3": 0.6666666666666666,
+    "4": 0.6666666666666666,
+    "5": 1.0,
+    "6": 1.0,
+    "7": 1.0,
+    "8": 1.0
+  },
+  "gods": [
+    {
+      "id": "backend_package_scripts",
+      "label": "scripts",
+      "degree": 3
+    },
+    {
+      "id": "backend_package_devdependencies_nodemon",
+      "label": "nodemon",
+      "degree": 2
+    },
+    {
+      "id": "mobile_lib_main_verifaiapp",
+      "label": "VerifAIApp",
+      "degree": 2
+    },
+    {
+      "id": "backend_package_dependencies_cors",
+      "label": "cors",
+      "degree": 2
+    },
+    {
+      "id": "backend_package_dependencies_dotenv",
+      "label": "dotenv",
+      "degree": 2
+    },
+    {
+      "id": "backend_package_dependencies_express",
+      "label": "express",
+      "degree": 2
+    },
+    {
+      "id": "backend_package_dependencies_firebase_admin",
+      "label": "firebase-admin",
+      "degree": 2
+    },
+    {
+      "id": "backend_package_dependencies_pg",
+      "label": "pg",
+      "degree": 2
+    },
+    {
+      "id": "backend_package_main",
+      "label": "main",
+      "degree": 1
+    },
+    {
+      "id": "nodemon",
+      "label": "nodemon",
+      "degree": 1
+    }
+  ],
+  "surprises": [],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `dependencies` connect `dependencies` to `package.json`, `dotenv`, `express`, `firebase-admin`, `pg`?",
+      "why": "High betweenness centrality (0.345) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `scripts` connect `scripts` to `package.json`?",
+      "why": "High betweenness centrality (0.090) - this node is a cross-community bridge."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `description`, `main`, `name` to the rest of the system?",
+      "why": "17 weakly-connected nodes found - possible documentation gaps or missing edges."
+    }
+  ]
+}

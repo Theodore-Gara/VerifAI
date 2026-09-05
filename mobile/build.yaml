@@ -1,0 +1,32 @@
+targets:
+  $default:
+    builders:
+      freezed:
+        enabled: true
+        generate_for:
+          - lib/shared/models/*.dart
+      json_serializable:
+        enabled: true
+        generate_for:
+          - lib/shared/models/*.dart
+
+builders:
+  freezed:
+    target: ":freezed"
+    import: "package:freezed/builder.dart"
+    builder_factories: ["freezed"]
+    build_extensions:
+      ".dart":
+        - ".freezed.dart"
+    auto_apply: dependents
+    build_to: source
+
+  json_serializable:
+    target: ":json_serializable"
+    import: "package:json_serializable/builder.dart"
+    builder_factories: ["jsonSerializable"]
+    build_extensions:
+      ".dart":
+        - ".g.dart"
+    auto_apply: dependents
+    build_to: source
