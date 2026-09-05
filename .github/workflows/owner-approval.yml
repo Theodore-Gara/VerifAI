@@ -1,0 +1,30 @@
+name: Owner Approval Required
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  check-approval:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.base.ref == 'main'
+    steps:
+      - name: Require the repo owner's approval
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const targetUser = 'Theodore-Gara';
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            const ownerReviews = reviews.filter(r => r.user.login === targetUser);
+            const latest = ownerReviews[ownerReviews.length - 1];
+            if (!latest || latest.state !== 'APPROVED') {
+              core.setFailed(`This PR is NOT approved by @${targetUser}. Ask ${targetUser} to review before merging.`);
+            }
+            core.info(`Latest review from @${targetUser}: ${latest ? latest.state : 'none'}`);
