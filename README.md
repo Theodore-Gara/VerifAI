@@ -41,9 +41,9 @@ Finance · Legal · IT / Software · Business Consulting
 |---|---|
 | Mobile Frontend | Flutter (Dart) |
 | Backend API | Node.js + Express |
-| Database | PostgreSQL |
+| Database | PostgreSQL (hosted on **Supabase**) |
 | Authentication | Firebase Auth |
-| Hosting | Railway |
+| Hosting | Railway (API), Supabase (database) |
 
 **Architecture overview:**
 - The Flutter app communicates with the Express REST API over HTTPS
@@ -230,34 +230,46 @@ When in doubt, ask the person who wrote the other side of the conflict — don't
 ### Prerequisites
 - Flutter SDK (≥ 3.0)
 - Node.js (≥ 18)
-- PostgreSQL (local or Railway instance)
+- PostgreSQL (local, or a **Supabase** project — this is what we use in production)
 - Firebase project with Auth enabled
 - Railway account
-- Supabase
+- Supabase account (hosts the PostgreSQL database)
 
 ### Backend setup
 
 ```bash
 cd backend
 npm install
-cp .env.example .env   # Fill in DB connection string and Firebase credentials
+cp .env.example .env   # Fill in: Supabase DATABASE_URL + Firebase Admin credentials
 npm run dev
 ```
 
+> `DATABASE_URL` comes from **Supabase → Project Settings → Database → Connection string**.
+> Firebase Admin credentials come from **Firebase Console → Project Settings → Service accounts**.
+> See `.env.example` for every variable the backend expects.
 ### Mobile setup
 
 ```bash
 cd mobile
 flutter pub get
-# Add your google-services.json (Android) or GoogleService-Info.plist (iOS) from Firebase
 flutter run
 ```
 
+> **Firebase config files are NOT committed.** Download `google-services.json` (Android) and/or
+> `GoogleService-Info.plist` (iOS) from Firebase Console → Project Settings, and place them at:
+> - `mobile/android/app/google-services.json`
+> - `mobile/ios/Runner/GoogleService-Info.plist`
+>
+> Both paths are git-ignored — never commit them (CI secret scanning will flag them).
+
 ### Database setup
 
+Schema and seed data live in `backend/db/`. Run them against your Supabase Postgres instance
+(via the Supabase SQL Editor, or locally with `psql`):
+
 ```bash
-psql -U your_user -d your_db -f db/schema.sql
-psql -U your_user -d your_db -f db/seed.sql
+psql "$DATABASE_URL" -f backend/db/schema.sql
+psql "$DATABASE_URL" -f backend/db/seed.sql
 ```
 
 ---

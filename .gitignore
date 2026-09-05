@@ -7,7 +7,24 @@ Thumbs.db
 
 # Environment & secrets
 .env
+.env.local
+.env.*.local
 *.pem
+
+# Node / backend
+node_modules/
+npm-debug.log*
+
+# Flutter / Dart / mobile
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+
+# Firebase config (contains API keys — never commit; see README)
+mobile/android/app/google-services.json
+mobile/ios/Runner/GoogleService-Info.plist
 
 # Logs / temp
 *.log
