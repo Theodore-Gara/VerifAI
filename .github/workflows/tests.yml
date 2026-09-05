@@ -1,0 +1,116 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-tests:
+    name: Backend tests (Node.js)
+    runs-on: ubuntu-latest
+    # Skip cleanly until backend code/tests exist
+    if: ${{ hashFiles('backend/package.json') != '' }}
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Run tests
+        run: |
+          if npm run | grep -qE '^\s*(test|test:ci)\s*$'; then
+            npm test
+          else
+            echo "No test script defined in backend/package.json yet — skipping."
+          fi
+
+  mobile-tests:
+    name: Mobile tests (Flutter)
+    runs-on: ubuntu-latest
+    # Skip cleanly until mobile code/tests exist
+    if: ${{ hashFiles('mobile/pubspec.yaml') != '' }}
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed lib test || echo "::warning::Some Dart files are not formatted yet"
+
+      - name: Analyze code
+        run: flutter analyze || echo "::warning::Analyzer reported issues — failing test runs will surface them"
+
+      - name: Run tests
+        run: |
+          if [ -d test ]; then
+            flutter test
+          else
+            echo "No test/ directory in mobile/ yet — skipping."
+          fi
+
+  tests-summary:
+    name: Tests summary
+    runs-on: ubuntu-latest
+    needs: [backend-tests, mobile-tests]
+    if: ${{ always() }}
+    steps:
+      - name: Check job results
+        run: |
+          results=(
+            "backend-tests:${{ needs.backend-tests.result }}"
+            "mobile-tests:${{ needs.mobile-tests.result }}"
+          )
+          failed=0
+          for entry in "${results[@]}"; do
+            job="${entry%%:*}"
+            result="${entry#*:}"
+            echo "$job → $result"
+            case "$result" in
+              failure|cancelled)
+                echo "❌ $job failed"
+                failed=1
+                ;;
+            esac
+          done
+          exit $failed

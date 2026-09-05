@@ -6,11 +6,31 @@ on:
     branches: [main]
   pull_request_review:
     types: [submitted]
+  workflow_run:
+    workflows: [Tests]
+    types: [completed]
 
 jobs:
+  # Gate 1: did the Tests workflow pass on this PR's head commit?
+  tests-result:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion != 'success' &&
+      github.event.workflow_run.head_branch != 'main'
+    steps:
+      - name: Tests failed on a PR branch
+        run: |
+          echo "::error::Tests failed for commit ${{ github.event.workflow_run.head_sha }} on branch '${{ github.event.workflow_run.head_branch }}'."
+          echo "Fix the failing tests before requesting merge to main."
+          exit 1
+
+  # Gate 2: owner approval (existing behaviour, unchanged)
   check-approval:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.base.ref == 'main'
+    if: >-
+      (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main') ||
+      (github.event_name == 'pull_request_review' && github.event.pull_request.base.ref == 'main')
     steps:
       - name: Require the repo owner's approval
         uses: actions/github-script@v6
