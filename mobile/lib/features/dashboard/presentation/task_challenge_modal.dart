@@ -1,0 +1,374 @@
+import 'package:flutter/material.dart';
+import 'package:verifai/core/theme/app_colors.dart';
+import 'package:verifai/core/theme/app_radius.dart';
+import 'package:verifai/core/theme/app_spacing.dart';
+import 'package:verifai/core/theme/app_typography.dart';
+import 'package:verifai/shared/models/daily_task.dart';
+import 'package:verifai/shared/widgets/verifai_button.dart';
+
+class TaskChallengeModal extends StatefulWidget {
+  final DailyTask task;
+  final VoidCallback onTaskCompleted;
+
+  const TaskChallengeModal({
+    super.key,
+    required this.task,
+    required this.onTaskCompleted,
+  });
+
+  static Future<void> show(BuildContext context, DailyTask task, VoidCallback onCompleted) {
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => TaskChallengeModal(
+        task: task,
+        onTaskCompleted: onCompleted,
+      ),
+    );
+  }
+
+  @override
+  State<TaskChallengeModal> createState() => _TaskChallengeModalState();
+}
+
+class _TaskChallengeModalState extends State<TaskChallengeModal> {
+  int? _selectedOptionIndex;
+  bool _isSubmitting = false;
+
+  final List<String> _options = [
+    'Flag critical error & provide corrective prompt',
+    'Approve AI output with minor adjustments',
+    'Reject completely due to high-risk hallucination',
+    'Request secondary source citations before verifying',
+  ];
+
+  void _handleSubmit() async {
+    if (_selectedOptionIndex == null) return;
+    setState(() => _isSubmitting = true);
+
+    await Future.delayed(const Duration(milliseconds: 700));
+
+    if (!mounted) return;
+    Navigator.of(context).pop();
+
+    _showCelebrationDialog(context);
+    widget.onTaskCompleted();
+  }
+
+  void _showCelebrationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xxl)),
+        elevation: 16,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xxl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Celebration Badge
+              Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.accentGreen, AppColors.accentCyan],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.accentGreen.withValues(alpha: 0.35),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.verified_rounded,
+                  size: 48,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                'QUEST COMPLETE!',
+                style: AppTypography.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Spot-on evaluation. You accurately identified the AI prompt discrepancy.',
+                style: AppTypography.textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.xl),
+
+              // Rewards Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.xpPurpleLight,
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(color: AppColors.xpPurple.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.bolt_rounded, color: AppColors.xpPurple, size: 18),
+                        const SizedBox(width: 4),
+                        Text(
+                          '+120 XP',
+                          style: AppTypography.textTheme.labelLarge?.copyWith(
+                            color: AppColors.xpPurple,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.goldLight,
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.local_fire_department_rounded, color: AppColors.goldDark, size: 18),
+                        const SizedBox(width: 4),
+                        Text(
+                          '8 DAYS!',
+                          style: AppTypography.textTheme.labelLarge?.copyWith(
+                            color: AppColors.goldDark,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xxl),
+              VerifAIButton(
+                label: 'Awesome!',
+                variant: VerifAIButtonVariant.verification,
+                onPressed: () => Navigator.of(dialogContext).pop(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.88,
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(AppRadius.xxxl),
+          topRight: Radius.circular(AppRadius.xxxl),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Drag handle
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
+            width: 44,
+            height: 5,
+            decoration: BoxDecoration(
+              color: AppColors.border,
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding, vertical: AppSpacing.sm),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentLight,
+                    borderRadius: BorderRadius.circular(AppRadius.badge),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.sports_esports_rounded, size: 16, color: AppColors.accentGreen),
+                      const SizedBox(width: 4),
+                      Text(
+                        'MISSION PLAY',
+                        style: AppTypography.textTheme.labelSmall?.copyWith(
+                          color: AppColors.accentGreen,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 10,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+          ),
+
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.task.title,
+                    style: AppTypography.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Scenario Card
+                  if (widget.task.scenario != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.psychology_rounded, size: 18, color: AppColors.primaryNavy),
+                              const SizedBox(width: 6),
+                              Text(
+                                'AI SCENARIO OUTPUT',
+                                style: AppTypography.textTheme.labelSmall?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primaryNavy,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
+                            widget.task.scenario!,
+                            style: AppTypography.textTheme.bodyMedium?.copyWith(
+                              color: AppColors.textPrimary,
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                  ],
+
+                  Text(
+                    'What is your verification action?',
+                    style: AppTypography.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Multiple Choice Options
+                  ...List.generate(_options.length, (index) {
+                    final isSelected = _selectedOptionIndex == index;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                      child: InkWell(
+                        onTap: () => setState(() => _selectedOptionIndex = index),
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.accentLight.withValues(alpha: 0.7) : AppColors.surface,
+                            borderRadius: BorderRadius.circular(AppRadius.lg),
+                            border: Border.all(
+                              color: isSelected ? AppColors.accentGreen : AppColors.border,
+                              width: isSelected ? 2 : 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 26,
+                                height: 26,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isSelected ? AppColors.accentGreen : Colors.transparent,
+                                  border: Border.all(
+                                    color: isSelected ? AppColors.accentGreen : AppColors.border,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: isSelected
+                                    ? const Icon(Icons.check, size: 16, color: Colors.white)
+                                    : null,
+                              ),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(
+                                child: Text(
+                                  _options[index],
+                                  style: AppTypography.textTheme.bodyMedium?.copyWith(
+                                    color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: AppSpacing.xxl),
+                ],
+              ),
+            ),
+          ),
+
+          // Bottom Action
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.screenPadding),
+            child: VerifAIButton(
+              label: 'Submit Verification',
+              variant: VerifAIButtonVariant.verification,
+              isLoading: _isSubmitting,
+              onPressed: _selectedOptionIndex != null ? _handleSubmit : null,
+              leadingIcon: Icons.check_circle_rounded,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

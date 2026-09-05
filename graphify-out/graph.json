@@ -450,7 +450,7 @@
       "node_kind": "heading",
       "norm_label": "team \u2014 group se16",
       "source_file": "README.md",
-      "source_location": "L218"
+      "source_location": "L219"
     },
     {
       "id": "readme_tech_stack",
@@ -498,7 +498,7 @@
       "node_kind": "heading",
       "norm_label": "backend setup",
       "source_file": "README.md",
-      "source_location": "L191"
+      "source_location": "L192"
     },
     {
       "id": "readme_database_setup",
@@ -510,7 +510,7 @@
       "node_kind": "heading",
       "norm_label": "database setup",
       "source_file": "README.md",
-      "source_location": "L209"
+      "source_location": "L210"
     },
     {
       "id": "readme_getting_started",
@@ -534,7 +534,7 @@
       "node_kind": "heading",
       "norm_label": "mobile setup",
       "source_file": "README.md",
-      "source_location": "L200"
+      "source_location": "L201"
     },
     {
       "id": "readme_prerequisites",
@@ -932,7 +932,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L191",
+      "source_location": "L192",
       "weight": 1.0
     },
     {
@@ -943,7 +943,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L200",
+      "source_location": "L201",
       "weight": 1.0
     },
     {
@@ -954,7 +954,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L209",
+      "source_location": "L210",
       "weight": 1.0
     },
     {
@@ -1064,7 +1064,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L218",
+      "source_location": "L219",
       "weight": 1.0
     },
     {
@@ -1157,5 +1157,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "d5528d794b9484b11600dc569363bea31c0eb170"
+  "built_at_commit": "cbe997957990ac9379d907f0105d788881c1180d"
 }
