@@ -15,3 +15,31 @@ Thumbs.db
 
 # Graphify local-only artifacts
 graphify-out/cost.json
+
+# Dart / Flutter
+.dart_tool/
+build/
+*.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+
+# Android
+*.apk
+*.aab
+android/app/build/
+android/.gradle/
+android/gradle/
+
+# iOS
+ios/Flutter/flutter_export_environment.sh
+ios/Runner.xcworkspace/xcuserdata/
+ios/Runner.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+
+# Build artifacts
+*.dill
+*.so
+*.dylib
+
+# Generated
+generated/
