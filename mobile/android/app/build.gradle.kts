@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.verifai.verifai"
+    namespace = "com.verifai.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.verifai.verifai"
+        applicationId = "com.verifai.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         // Android 11 (API 30) and up.
