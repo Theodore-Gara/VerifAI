@@ -1,9 +1,17 @@
 {
   "0": "package.json",
-  "1": "main.dart",
+  "1": "daily_task_card.dart",
   "2": "index.js",
-  "3": "dependencies",
+  "3": "app_colors.dart",
   "4": "VerifAI",
-  "5": "Getting Started",
-  "6": "Knowledge Graph (Graphify)"
+  "5": "scoreboard_screen.dart",
+  "6": "dimension_bar.dart",
+  "7": "Screens Implemented — 9 Screens",
+  "8": "score_ring.dart",
+  "9": "main_nav_shell.dart",
+  "10": "app_radius.dart",
+  "11": "profile_screen.dart",
+  "12": "track_roadmap_screen.dart",
+  "13": "Person 1 — Foundation Complete ✅",
+  "14": "@company"
 }
