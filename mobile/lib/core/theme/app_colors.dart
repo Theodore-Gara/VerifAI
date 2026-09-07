@@ -46,4 +46,13 @@ class AppColors {
   static const Color buttonDepthNavy = Color(0xFF070E16);
   static const Color buttonDepthGreen = Color(0xFF059669);
   static const Color buttonDepthWhite = Color(0xFFCBD5E1);
+
+  // Modern Frosted Glass & Ambient Mesh
+  static const Color glassSurface = Color(0xF2FFFFFF);
+  static const Color glassSurfaceDark = Color(0xE60E1B2A);
+  static const Color glassBorder = Color(0x40FFFFFF);
+  static const Color glassBorderDark = Color(0x33334155);
+  static const Color ambientGreen = Color(0x1510B981);
+  static const Color ambientCyan = Color(0x152DD4BF);
+  static const Color ambientGold = Color(0x18F59E0B);
 }

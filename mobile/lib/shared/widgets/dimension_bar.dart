@@ -28,7 +28,7 @@ class DimensionBar extends StatelessWidget {
     final color = progressColor ?? AppColors.accentGreen;
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -36,8 +36,8 @@ class DimensionBar extends StatelessWidget {
         boxShadow: const [
           BoxShadow(
             color: AppColors.shadow,
-            blurRadius: 4,
-            offset: Offset(0, 1),
+            blurRadius: 6,
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -48,10 +48,10 @@ class DimensionBar extends StatelessWidget {
             children: [
               if (icon != null) ...[
                 Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Icon(icon, size: 16, color: color),
                 ),
@@ -62,32 +62,34 @@ class DimensionBar extends StatelessWidget {
                   label,
                   style: AppTypography.textTheme.labelMedium?.copyWith(
                     color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.1,
                   ),
                 ),
               ),
               if (showValue)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppRadius.xs),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
                   ),
                   child: Text(
                     '$value%',
                     style: AppTypography.textTheme.labelSmall?.copyWith(
                       color: color,
                       fontWeight: FontWeight.w800,
+                      fontSize: 10,
                     ),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: 10),
           ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.xs),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
             child: Container(
-              height: 8,
+              height: 6.5,
               color: AppColors.border.withValues(alpha: 0.6),
               child: Stack(
                 children: [
@@ -102,7 +104,7 @@ class DimensionBar extends StatelessWidget {
                             color.withValues(alpha: 0.8),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(AppRadius.xs),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
                       ),
                     ),
                   ),

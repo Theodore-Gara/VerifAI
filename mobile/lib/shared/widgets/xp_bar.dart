@@ -27,10 +27,10 @@ class XPBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
             decoration: BoxDecoration(
               color: AppColors.xpPurple,
-              borderRadius: BorderRadius.circular(AppRadius.xs),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
               boxShadow: [
                 BoxShadow(
                   color: AppColors.xpPurple.withValues(alpha: 0.3),
@@ -44,17 +44,17 @@ class XPBar extends StatelessWidget {
               style: AppTypography.textTheme.labelSmall?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w800,
-                fontSize: 10,
+                fontSize: 9.5,
                 letterSpacing: 0.5,
               ),
             ),
           ),
           const SizedBox(width: AppSpacing.xs),
           SizedBox(
-            width: 64,
+            width: 68,
             height: 6,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(3),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
               child: Stack(
                 children: [
                   Container(color: AppColors.xpPurpleLight),
@@ -77,10 +77,7 @@ class XPBar extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
@@ -88,7 +85,7 @@ class XPBar extends StatelessWidget {
         boxShadow: const [
           BoxShadow(
             color: AppColors.shadow,
-            blurRadius: 6,
+            blurRadius: 8,
             offset: Offset(0, 2),
           ),
         ],
@@ -102,12 +99,12 @@ class XPBar extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [AppColors.xpPurple, Color(0xFF6D28D9)],
                       ),
-                      borderRadius: BorderRadius.circular(AppRadius.badge),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.xpPurple.withValues(alpha: 0.3),
@@ -121,7 +118,8 @@ class XPBar extends StatelessWidget {
                       style: AppTypography.textTheme.labelSmall?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
+                        fontSize: 10,
+                        letterSpacing: 0.6,
                       ),
                     ),
                   ),
@@ -130,7 +128,8 @@ class XPBar extends StatelessWidget {
                     'AI Practitioner',
                     style: AppTypography.textTheme.labelMedium?.copyWith(
                       color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.1,
                     ),
                   ),
                 ],
@@ -139,17 +138,18 @@ class XPBar extends StatelessWidget {
                 '$currentXP / $nextLevelXP XP',
                 style: AppTypography.textTheme.labelSmall?.copyWith(
                   color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
                 ),
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
             child: Container(
-              height: 8,
-              color: AppColors.border,
+              height: 7,
+              color: AppColors.border.withValues(alpha: 0.6),
               child: Stack(
                 children: [
                   FractionallySizedBox(

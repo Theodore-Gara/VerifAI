@@ -24,16 +24,20 @@ class DailyTaskCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.accentGreen.withValues(alpha: 0.35), width: 1.5),
+        border: Border.all(
+          color: AppColors.accentGreen.withValues(alpha: 0.35),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: AppColors.accentGreen.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+            spreadRadius: -2,
           ),
           const BoxShadow(
             color: AppColors.shadow,
-            blurRadius: 6,
+            blurRadius: 8,
             offset: Offset(0, 2),
           ),
         ],
@@ -41,50 +45,48 @@ class DailyTaskCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Mission Header Ribbon
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.sm,
-            ),
-            decoration: const BoxDecoration(
-              color: AppColors.primaryNavy,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(AppRadius.card - 1),
-                topRight: Radius.circular(AppRadius.card - 1),
-              ),
-            ),
+          // Sleek Integrated Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
             child: Row(
               children: [
-                const Icon(
-                  Icons.stars_rounded,
-                  size: 16,
-                  color: AppColors.accentCyan,
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                Text(
-                  'DAILY QUEST',
-                  style: AppTypography.textTheme.labelSmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.0,
-                    fontSize: 11,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryNavy,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.flash_on_rounded, size: 13, color: AppColors.accentCyan),
+                      const SizedBox(width: 4),
+                      Text(
+                        'DAILY QUEST',
+                        style: AppTypography.textTheme.labelSmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 9.5,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const Spacer(),
                 // XP Reward Pill
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [AppColors.xpPurple, Color(0xFF6D28D9)],
                     ),
-                    borderRadius: BorderRadius.circular(AppRadius.badge),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.xpPurple.withValues(alpha: 0.4),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
+                        color: AppColors.xpPurple.withValues(alpha: 0.35),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
@@ -115,24 +117,34 @@ class DailyTaskCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  task.title,
+                  style: AppTypography.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
                 Row(
                   children: [
                     if (task.difficulty != null)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm,
+                          horizontal: 8,
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
                           color: _getDifficultyColor(task.difficulty!).withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(AppRadius.badge),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
                         child: Text(
                           task.difficulty!.toUpperCase(),
                           style: AppTypography.textTheme.labelSmall?.copyWith(
                             color: _getDifficultyColor(task.difficulty!),
                             fontWeight: FontWeight.w800,
-                            fontSize: 10,
+                            fontSize: 9.5,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ),
@@ -143,29 +155,21 @@ class DailyTaskCard extends StatelessWidget {
                       _TrackChip(trackName: task.trackName!),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  task.title,
-                  style: AppTypography.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
                 if (task.scenario != null) ...[
-                  const SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: AppSpacing.md),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
                       color: AppColors.background,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
                       border: Border.all(color: AppColors.border),
                     ),
                     child: Text(
                       task.scenario!,
                       style: AppTypography.textTheme.bodyMedium?.copyWith(
                         color: AppColors.textSecondary,
-                        height: 1.4,
+                        height: 1.45,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -212,19 +216,19 @@ class _DimensionChip extends StatelessWidget {
     final color = _getDimensionColor(dimension);
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
+        horizontal: 8,
         vertical: 3,
       ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppRadius.badge),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Text(
         _formatDimension(dimension),
         style: AppTypography.textTheme.labelSmall?.copyWith(
           color: color,
           fontWeight: FontWeight.w700,
-          fontSize: 10,
+          fontSize: 9.5,
         ),
       ),
     );
@@ -238,7 +242,7 @@ class _DimensionChip extends StatelessWidget {
       case 'ai_judgement':
         return AppColors.accentCyan;
       case 'prompt_design':
-        return AppColors.primaryNavy;
+        return AppColors.xpPurple;
       case 'risk_governance':
       case 'risk':
         return AppColors.warning;
@@ -268,12 +272,12 @@ class _TrackChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
+        horizontal: 8,
         vertical: 3,
       ),
       decoration: BoxDecoration(
         color: AppColors.background,
-        borderRadius: BorderRadius.circular(AppRadius.badge),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
         border: Border.all(color: AppColors.border),
       ),
       child: Text(
@@ -281,7 +285,7 @@ class _TrackChip extends StatelessWidget {
         style: AppTypography.textTheme.labelSmall?.copyWith(
           color: AppColors.textSecondary,
           fontWeight: FontWeight.w600,
-          fontSize: 10,
+          fontSize: 9.5,
         ),
       ),
     );

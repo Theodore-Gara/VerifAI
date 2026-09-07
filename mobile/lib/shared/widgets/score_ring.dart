@@ -30,7 +30,7 @@ class ScoreRing extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress = (score / maxScore).clamp(0.0, 1.0);
     final color = progressColor ?? _getScoreColor(score);
-    final track = trackColor ?? AppColors.accentLight.withValues(alpha: 0.5);
+    final track = trackColor ?? AppColors.border.withValues(alpha: 0.5);
 
     return SizedBox(
       width: size,
@@ -40,9 +40,9 @@ class ScoreRing extends StatelessWidget {
         children: [
           CustomPaint(
             size: Size(size, size),
-            painter: _ScoreRingPainter(
+            painter: _ModernScoreRingPainter(
               progress: progress,
-              progressColor: color,
+              color: color,
               trackColor: track,
               strokeWidth: strokeWidth,
             ),
@@ -57,15 +57,17 @@ class ScoreRing extends StatelessWidget {
                       fontSize: size * 0.28,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
+                      letterSpacing: -1.0,
                       height: 1.0,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(AppRadius.xs),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
                     ),
                     child: Text(
                       tierLabel ?? _getDefaultTier(score),
@@ -73,7 +75,7 @@ class ScoreRing extends StatelessWidget {
                         color: color,
                         fontWeight: FontWeight.w800,
                         fontSize: 9,
-                        letterSpacing: 0.5,
+                        letterSpacing: 0.8,
                       ),
                     ),
                   ),
@@ -99,15 +101,15 @@ class ScoreRing extends StatelessWidget {
   }
 }
 
-class _ScoreRingPainter extends CustomPainter {
+class _ModernScoreRingPainter extends CustomPainter {
   final double progress;
-  final Color progressColor;
+  final Color color;
   final Color trackColor;
   final double strokeWidth;
 
-  _ScoreRingPainter({
+  _ModernScoreRingPainter({
     required this.progress,
-    required this.progressColor,
+    required this.color,
     required this.trackColor,
     required this.strokeWidth,
   });
@@ -117,55 +119,66 @@ class _ScoreRingPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (size.width - strokeWidth) / 2;
 
+    // Track Paint
     final trackPaint = Paint()
       ..color = trackColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
 
+    canvas.drawCircle(center, radius, trackPaint);
+
+    if (progress <= 0) return;
+
+    const startAngle = -math.pi / 2;
+    final sweepAngle = 2 * math.pi * progress;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    // Subtle ambient glow
+    final glowPaint = Paint()
+      ..color = color.withValues(alpha: 0.2)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth + 6
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+
+    canvas.drawArc(rect, startAngle, sweepAngle, false, glowPaint);
+
+    // Modern Sweep Gradient Arc
+    final gradient = SweepGradient(
+      startAngle: startAngle,
+      endAngle: startAngle + sweepAngle,
+      colors: [
+        AppColors.accentCyan,
+        color,
+      ],
+      tileMode: TileMode.clamp,
+    );
+
     final progressPaint = Paint()
-      ..color = progressColor
+      ..shader = gradient.createShader(rect)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
 
-    // Outer subtle shadow/glow ring
-    final glowPaint = Paint()
-      ..color = progressColor.withValues(alpha: 0.15)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth + 4
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+    canvas.drawArc(rect, startAngle, sweepAngle, false, progressPaint);
 
-    // Draw track
-    canvas.drawCircle(center, radius, trackPaint);
+    // Tip Accent Dot
+    final tipAngle = startAngle + sweepAngle;
+    final tipX = center.dx + radius * math.cos(tipAngle);
+    final tipY = center.dy + radius * math.sin(tipAngle);
+    final tipCenter = Offset(tipX, tipY);
 
-    // Draw progress arc with subtle glow
-    const startAngle = -math.pi / 2;
-    final sweepAngle = 2 * math.pi * progress;
+    final dotPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
 
-    if (progress > 0) {
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        sweepAngle,
-        false,
-        glowPaint,
-      );
-
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        sweepAngle,
-        false,
-        progressPaint,
-      );
-    }
+    canvas.drawCircle(tipCenter, strokeWidth * 0.22, dotPaint);
   }
 
   @override
-  bool shouldRepaint(covariant _ScoreRingPainter oldDelegate) {
+  bool shouldRepaint(covariant _ModernScoreRingPainter oldDelegate) {
     return oldDelegate.progress != progress ||
-        oldDelegate.progressColor != progressColor ||
+        oldDelegate.color != color ||
         oldDelegate.trackColor != trackColor;
   }
 }

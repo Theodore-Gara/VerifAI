@@ -53,7 +53,10 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
     ];
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: const Text('Scoreboard'),
         centerTitle: false,
         actions: [
@@ -62,20 +65,20 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: AppColors.goldLight,
-              borderRadius: BorderRadius.circular(AppRadius.xxl),
-              border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              border: Border.all(color: AppColors.gold.withValues(alpha: 0.4), width: 1),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.emoji_events_rounded, size: 16, color: AppColors.goldDark),
+                const Icon(Icons.emoji_events_rounded, size: 14, color: AppColors.goldDark),
                 const SizedBox(width: 4),
                 Text(
                   'TOP 10 ADVANCE',
                   style: AppTypography.textTheme.labelSmall?.copyWith(
                     color: AppColors.goldDark,
                     fontWeight: FontWeight.w800,
-                    fontSize: 10,
+                    fontSize: 9.5,
                   ),
                 ),
               ],
@@ -83,138 +86,165 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Division League Banner
-          Container(
-            margin: const EdgeInsets.all(AppSpacing.screenPadding),
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primaryNavy, Color(0xFF1E293B)],
+          // Ambient Mesh Glows
+          Positioned(
+            top: -40,
+            right: -30,
+            child: Container(
+              width: 220,
+              height: 220,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.ambientGold,
               ),
-              borderRadius: BorderRadius.circular(AppRadius.card),
-              boxShadow: const [
-                BoxShadow(
-                  color: AppColors.shadow,
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
             ),
-            child: Row(
+          ),
+          Positioned(
+            top: 280,
+            left: -60,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.ambientGreen,
+              ),
+            ),
+          ),
+
+          // Entire Scoreboard is smoothly scrollable together (non-sticky)
+          SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenPadding,
+              AppSpacing.xs,
+              AppSpacing.screenPadding,
+              100, // accommodates floating dock
+            ),
+            child: Column(
               children: [
+                // Division League Banner
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
                   decoration: BoxDecoration(
-                    color: AppColors.accentGreen.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.workspace_premium_rounded, color: AppColors.accentCyan, size: 24),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'EMERALD LEAGUE • TIER 1',
-                        style: AppTypography.textTheme.labelSmall?.copyWith(
-                          color: AppColors.accentCyan,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 10,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      Text(
-                        'Weekly reset in 2d 14h',
-                        style: AppTypography.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.8),
-                        ),
+                    gradient: const LinearGradient(
+                      colors: [AppColors.primaryNavy, Color(0xFF1E293B)],
+                    ),
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primaryNavy.withValues(alpha: 0.15),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentGreen.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.workspace_premium_rounded, color: AppColors.accentCyan, size: 22),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'EMERALD LEAGUE • TIER 1',
+                              style: AppTypography.textTheme.labelSmall?.copyWith(
+                                color: AppColors.accentCyan,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 10,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                            Text(
+                              'Weekly reset in 2d 14h',
+                              style: AppTypography.textTheme.bodySmall?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 12),
+                    ],
+                  ),
                 ),
-                const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 14),
-              ],
-            ),
-          ),
+                const SizedBox(height: AppSpacing.sm),
 
-          // Tabs (Global vs Track)
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.xxl),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              indicatorSize: TabBarIndicatorSize.tab,
-              dividerColor: Colors.transparent,
-              indicator: BoxDecoration(
-                color: AppColors.primaryNavy,
-                borderRadius: BorderRadius.circular(AppRadius.xl),
-              ),
-              labelColor: Colors.white,
-              unselectedLabelColor: AppColors.textSecondary,
-              labelStyle: AppTypography.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
-              tabs: const [
-                Tab(text: 'Global League'),
-                Tab(text: 'Industry Track'),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
+                // Tabs (Global vs Track)
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    dividerColor: Colors.transparent,
+                    indicator: BoxDecoration(
+                      color: AppColors.primaryNavy,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                    ),
+                    labelColor: Colors.white,
+                    unselectedLabelColor: AppColors.textSecondary,
+                    labelStyle: AppTypography.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w800),
+                    tabs: const [
+                      Tab(text: 'Global League'),
+                      Tab(text: 'Industry Track'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
 
-          // Top 3 Podium
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // 2nd Place (Silver)
-                _buildPodiumSpot(
-                  entry: leaderboardUsers[1],
-                  place: 2,
-                  color: AppColors.silver,
-                  height: 90,
-                  crownIcon: Icons.military_tech_rounded,
+                // Top 3 Modern Podium
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // 2nd Place (Silver)
+                    _buildPodiumSpot(
+                      entry: leaderboardUsers[1],
+                      place: 2,
+                      color: AppColors.silver,
+                      height: 92,
+                      crownIcon: Icons.military_tech_rounded,
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    // 1st Place (Gold)
+                    _buildPodiumSpot(
+                      entry: leaderboardUsers[0],
+                      place: 1,
+                      color: AppColors.gold,
+                      height: 124,
+                      crownIcon: Icons.emoji_events_rounded,
+                      isFirst: true,
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    // 3rd Place (Bronze)
+                    _buildPodiumSpot(
+                      entry: leaderboardUsers[2],
+                      place: 3,
+                      color: AppColors.bronze,
+                      height: 76,
+                      crownIcon: Icons.workspace_premium_rounded,
+                    ),
+                  ],
                 ),
-                const SizedBox(width: AppSpacing.md),
-                // 1st Place (Gold)
-                _buildPodiumSpot(
-                  entry: leaderboardUsers[0],
-                  place: 1,
-                  color: AppColors.gold,
-                  height: 120,
-                  crownIcon: Icons.emoji_events_rounded,
-                ),
-                const SizedBox(width: AppSpacing.md),
-                // 3rd Place (Bronze)
-                _buildPodiumSpot(
-                  entry: leaderboardUsers[2],
-                  place: 3,
-                  color: AppColors.bronze,
-                  height: 75,
-                  crownIcon: Icons.workspace_premium_rounded,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: AppSpacing.md),
 
-          // Leaderboard List
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-              itemCount: leaderboardUsers.sublist(3).length,
-              itemBuilder: (context, index) {
-                final entry = leaderboardUsers[index + 3];
-                return _buildLeaderboardTile(entry);
-              },
+                // Leaderboard List
+                ...leaderboardUsers.sublist(3).map((entry) => _buildLeaderboardTile(entry)),
+              ],
             ),
           ),
         ],
@@ -228,21 +258,38 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
     required Color color,
     required double height,
     required IconData crownIcon,
+    bool isFirst = false,
   }) {
     return Expanded(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(crownIcon, color: color, size: place == 1 ? 26 : 20),
+          Icon(crownIcon, color: color, size: isFirst ? 26 : 20),
           const SizedBox(height: 2),
-          CircleAvatar(
-            radius: place == 1 ? 24 : 20,
-            backgroundColor: color.withValues(alpha: 0.2),
-            child: Text(
-              entry.name.substring(0, 1),
-              style: AppTypography.textTheme.labelLarge?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w800,
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: color, width: isFirst ? 2 : 1.5),
+              boxShadow: isFirst
+                  ? [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: CircleAvatar(
+              radius: isFirst ? 22 : 18,
+              backgroundColor: color.withValues(alpha: 0.15),
+              child: Text(
+                entry.name.substring(0, 1),
+                style: AppTypography.textTheme.labelLarge?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ),
@@ -250,28 +297,36 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
           Text(
             entry.name.split(' ')[0],
             style: AppTypography.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.2,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          Text(
-            '${entry.xp} XP',
-            style: AppTypography.textTheme.labelSmall?.copyWith(
-              color: AppColors.xpPurple,
-              fontWeight: FontWeight.w800,
-              fontSize: 10,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: AppColors.xpPurpleLight,
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+            ),
+            child: Text(
+              '${entry.xp} XP',
+              style: AppTypography.textTheme.labelSmall?.copyWith(
+                color: AppColors.xpPurple,
+                fontWeight: FontWeight.w800,
+                fontSize: 9.5,
+              ),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Container(
             height: height,
             width: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  color.withValues(alpha: 0.25),
-                  color.withValues(alpha: 0.1),
+                  color.withValues(alpha: 0.22),
+                  color.withValues(alpha: 0.06),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -280,7 +335,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
                 topLeft: Radius.circular(AppRadius.lg),
                 topRight: Radius.circular(AppRadius.lg),
               ),
-              border: Border.all(color: color.withValues(alpha: 0.4)),
+              border: Border.all(color: color.withValues(alpha: 0.35)),
             ),
             child: Center(
               child: Text(
@@ -288,6 +343,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
                 style: AppTypography.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w900,
                   color: color,
+                  letterSpacing: -0.5,
                 ),
               ),
             ),
@@ -311,8 +367,8 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
         boxShadow: const [
           BoxShadow(
             color: AppColors.shadow,
-            blurRadius: 4,
-            offset: Offset(0, 1),
+            blurRadius: 6,
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -335,7 +391,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
               entry.name.substring(0, 1),
               style: AppTypography.textTheme.labelSmall?.copyWith(
                 color: entry.isCurrentUser ? Colors.white : AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
@@ -349,24 +405,24 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
                     Text(
                       entry.name,
                       style: AppTypography.textTheme.bodyMedium?.copyWith(
-                        fontWeight: entry.isCurrentUser ? FontWeight.w800 : FontWeight.w600,
+                        fontWeight: entry.isCurrentUser ? FontWeight.w800 : FontWeight.w700,
                         color: AppColors.textPrimary,
                       ),
                     ),
                     if (entry.isCurrentUser) ...[
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 5),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                         decoration: BoxDecoration(
                           color: AppColors.accentGreen,
-                          borderRadius: BorderRadius.circular(AppRadius.xs),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
                         child: Text(
                           'YOU',
                           style: AppTypography.textTheme.labelSmall?.copyWith(
                             color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                       ),
@@ -401,7 +457,8 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
             '${entry.xp} XP',
             style: AppTypography.textTheme.labelLarge?.copyWith(
               color: AppColors.xpPurple,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.2,
             ),
           ),
         ],

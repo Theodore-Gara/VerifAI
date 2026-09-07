@@ -60,7 +60,10 @@ class TrackRoadmapScreen extends ConsumerWidget {
     ];
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: const Text('Track Roadmap'),
         centerTitle: false,
         actions: [
@@ -69,19 +72,19 @@ class TrackRoadmapScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: AppColors.accentLight,
-              borderRadius: BorderRadius.circular(AppRadius.xxl),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.verified_rounded, size: 16, color: AppColors.accentGreen),
+                const Icon(Icons.verified_rounded, size: 14, color: AppColors.accentGreen),
                 const SizedBox(width: 4),
                 Text(
                   '40% MASTERED',
                   style: AppTypography.textTheme.labelSmall?.copyWith(
                     color: AppColors.accentGreen,
                     fontWeight: FontWeight.w800,
-                    fontSize: 10,
+                    fontSize: 9.5,
                   ),
                 ),
               ],
@@ -90,7 +93,12 @@ class TrackRoadmapScreen extends ConsumerWidget {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.screenPadding),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screenPadding,
+          AppSpacing.sm,
+          AppSpacing.screenPadding,
+          100, // accommodates floating dock
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -105,11 +113,11 @@ class TrackRoadmapScreen extends ConsumerWidget {
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(AppRadius.card),
-                boxShadow: const [
+                boxShadow: [
                   BoxShadow(
-                    color: AppColors.shadowStrong,
-                    blurRadius: 12,
-                    offset: Offset(0, 4),
+                    color: AppColors.primaryNavy.withValues(alpha: 0.15),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
@@ -127,7 +135,7 @@ class TrackRoadmapScreen extends ConsumerWidget {
                         child: const Icon(
                           Icons.alt_route_rounded,
                           color: AppColors.accentGreen,
-                          size: 24,
+                          size: 22,
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
@@ -135,12 +143,12 @@ class TrackRoadmapScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'SPECIALIZATION TRACK',
+                            'SPECIALIZATION PATH',
                             style: AppTypography.textTheme.labelSmall?.copyWith(
                               color: AppColors.accentCyan,
                               fontWeight: FontWeight.w800,
-                              letterSpacing: 1.0,
-                              fontSize: 10,
+                              letterSpacing: 0.8,
+                              fontSize: 9.5,
                             ),
                           ),
                           Text(
@@ -148,6 +156,7 @@ class TrackRoadmapScreen extends ConsumerWidget {
                             style: AppTypography.textTheme.titleLarge?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
                             ),
                           ),
                         ],
@@ -158,14 +167,15 @@ class TrackRoadmapScreen extends ConsumerWidget {
                   Text(
                     'Follow the path, master AI verification milestones, and earn your certified readiness credential.',
                     style: AppTypography.textTheme.bodySmall?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.8),
+                      color: Colors.white.withValues(alpha: 0.85),
+                      height: 1.35,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
 
                   // Progress Track Bar
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
                     child: Container(
                       height: 6,
                       color: Colors.white.withValues(alpha: 0.15),
@@ -194,6 +204,7 @@ class TrackRoadmapScreen extends ConsumerWidget {
               'Milestone Skill Tree',
               style: AppTypography.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.w800,
+                letterSpacing: -0.4,
                 color: AppColors.textPrimary,
               ),
             ),
@@ -216,8 +227,15 @@ class TrackRoadmapScreen extends ConsumerWidget {
                           width: 3,
                           height: 80,
                           decoration: BoxDecoration(
+                            gradient: milestone.status == MilestoneStatus.completed
+                                ? const LinearGradient(
+                                    colors: [AppColors.accentGreen, AppColors.accentCyan],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  )
+                                : null,
                             color: milestone.status == MilestoneStatus.completed
-                                ? AppColors.accentGreen
+                                ? null
                                 : AppColors.border,
                             borderRadius: BorderRadius.circular(1.5),
                           ),
@@ -360,15 +378,16 @@ class TrackRoadmapScreen extends ConsumerWidget {
                   milestone.title,
                   style: AppTypography.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
                     color: isLocked ? AppColors.textSecondary : AppColors.textPrimary,
                   ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                 decoration: BoxDecoration(
                   color: AppColors.xpPurpleLight,
-                  borderRadius: BorderRadius.circular(AppRadius.xs),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
                 child: Text(
                   '+${milestone.xpReward} XP',
@@ -387,6 +406,7 @@ class TrackRoadmapScreen extends ConsumerWidget {
             style: AppTypography.textTheme.bodySmall?.copyWith(
               color: AppColors.textSecondary,
               fontSize: 12,
+              height: 1.35,
             ),
           ),
           if (isActive) ...[

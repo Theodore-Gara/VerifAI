@@ -204,3 +204,112 @@ lib/
 │   └── widgets.dart     # barrel export
 └── main.dart            # ProviderScope + MaterialApp.router
 ```
+
+---
+
+## 🎨 VerifAI Modern Design System & Collaborator Guide
+
+This section serves as the single source of truth for design patterns, visual standards, and development guidelines when extending or adding features to the VerifAI mobile app.
+
+---
+
+### 1. Visual Philosophy & Core Pillars
+
+VerifAI pairs **executive credibility** with **fun, rewarding gamification**:
+1. **Clean & Minimal Utility**: Light, airy canvas (`AppColors.background` `#F8FAFC`, `AppColors.surface` `#FFFFFF`), high readability, structured hierarchy.
+2. **Tactile Gamification**: Rich tactile rewards (+XP bounties, streak flame glows, level progression, league podiums) without feeling childish or cluttered.
+3. **Bento Grid Layouts**: Modular squircle tiles (`AppRadius.card = 20dp`) grouping related metrics, stats, and interactive tasks.
+4. **Frosted Glass & Ambient Mesh**: Soft radial background mesh lighting (`ambientCyan`, `ambientGreen`, `ambientGold`) with floating `BackdropFilter` frosted glass elements.
+
+---
+
+### 2. Design Tokens Reference
+
+#### Color Palette (`lib/core/theme/app_colors.dart`)
+| Token | Hex Value | Usage |
+|-------|-----------|-------|
+| `primaryNavy` | `#0E1B2A` | Core brand authority, headings, primary buttons, active tab icons |
+| `primaryDark` | `#09131F` | Deep contrast, dark surfaces |
+| `accentGreen` | `#10B981` | Verification success, readiness mastery, primary confirmation |
+| `accentCyan` | `#2DD4BF` | AI intelligence, sweep gradients, ambient glow highlights |
+| `accentLight` | `#D1FAE5` | Soft green pill backgrounds, subtle tags |
+| `xpPurple` | `#8B5CF6` | XP bounties, player level HUD, trophy badges |
+| `xpPurpleLight` | `#EDE9FE` | XP pill chip backgrounds |
+| `gold` / `goldDark` | `#F59E0B` / `#D97706` | Streaks, 1st place podium, gold badges |
+| `goldLight` | `#FEF3C7` | Streak container tint, podium accent |
+| `silver` / `bronze` | `#94A3B8` / `#B45309` | 2nd & 3rd place leaderboard podiums |
+| `background` | `#F8FAFC` | Primary light canvas |
+| `surface` | `#FFFFFF` | Card surface, elevated elements |
+| `textPrimary` | `#111827` | High-contrast body & title text |
+| `textSecondary` | `#475569` | Secondary labels, descriptions, subtitles |
+| `border` | `#E2E8F0` | Subtle hairline borders |
+| `glassSurface` | `#F2FFFFFF` | Translucent frosted glass containers |
+| `glassBorder` | `#40FFFFFF` | Semi-transparent highlight borders |
+| `ambientGreen` | `#1510B981` | Soft radial mesh background glow (emerald) |
+| `ambientCyan` | `#152DD4BF` | Soft radial mesh background glow (cyan) |
+| `ambientGold` | `#18F59E0B` | Soft radial mesh background glow (amber) |
+
+#### Typography Scale (`lib/core/theme/app_typography.dart`)
+- **Font Family**: Google Fonts `Manrope`
+- **Headings**: Tight tracking (`letterSpacing: -0.5` to `-0.2`) with weights `w800` or `w900` for punchy, modern character.
+- **Labels & Micro-Chips**: `letterSpacing: 0.2` to `0.5`, uppercase, weight `w800`.
+- **Body Text**: `height: 1.4` to `1.5`, clean readability, weight `w500` to `w600`.
+
+#### Border Radii (`lib/core/theme/app_radius.dart`)
+- `card = 20.0` — Squircle Bento cards
+- `pill = 999.0` — Badge pills, search bars, tag chips, floating dock
+- `button = 16.0` — Interactive CTA buttons
+- `modal = 24.0` — Bottom sheets, dialogue corners
+- `md = 12.0` / `lg = 16.0` — Micro containers and icon frames
+
+---
+
+### 3. Key Component Usage Guidelines
+
+#### `VerifAIButton` (`lib/shared/widgets/verifai_button.dart`)
+- Physics-based tactile button featuring a `3.5px` beveled bottom depth layer.
+- Automatically handles press animation (depresses by 2.5px with haptic feedback).
+- Variants: `primary` (Navy), `verification` (Emerald), `secondary` (Outline with surface depth), `ghost`.
+- Always prefer `VerifAIButton` over raw `ElevatedButton` for primary user actions.
+
+#### `MainNavShell` & Floating Frosted Dock (`lib/features/navigation/main_nav_shell.dart`)
+- Renders a floating frosted glass pill dock (`BackdropFilter`, `sigma: 20`).
+- Configured with `extendBody: true`.
+- **CRITICAL**: Every top-level screen inside `MainNavShell` (`DashboardScreen`, `TrackRoadmapScreen`, `ScoreboardScreen`, `ProfileScreen`) **MUST** include bottom padding of at least `100dp` (e.g. `padding: EdgeInsets.fromLTRB(..., bottom: 100)`) so scrollable content is never obscured by the floating dock.
+
+#### `ScoreRing` (`lib/shared/widgets/score_ring.dart`)
+- Renders a sweep gradient arc (`accentCyan` to `accentGreen`) with a luminous glowing tip indicator dot.
+- Displays the numerical overall score and dynamic tier pill (`EXPERT`, `PROFICIENT`, `INTERMEDIATE`).
+
+#### `DailyTaskCard` (`lib/shared/widgets/daily_task_card.dart`)
+- Bento-card layout with purple XP bounty badge, difficulty tag, scenario teaser, and tactile Play Mission CTA.
+
+---
+
+### 4. Git Collaborator Guide (Rules for Adding Code)
+
+When contributing new features, screens, or components, please strictly adhere to the following rules:
+
+1. **Preserve Color Semantics**: Do NOT introduce arbitrary hex colors. Always import and use `AppColors.*`.
+2. **Maintain Bento Layouts**:
+   - Wrap feature sections in squircle cards (`borderRadius: BorderRadius.circular(AppRadius.card)`).
+   - Use hairline borders (`border: Border.all(color: AppColors.border)` or subtle color tints).
+   - Use soft dual-layer box shadows (`AppColors.shadow`).
+3. **Respect Floating Dock Clearance**:
+   - Any new scrollable screen mapped into the main navigation flow must end with `bottom: 100` padding in its scroll view.
+4. **Unified Scrolling**:
+   - Avoid nesting scroll views or making top screen portions sticky unless explicitly required. Prefer unified full-page scrolling (`SingleChildScrollView`) so small phone screens don't feel cramped.
+5. **State Management with Riverpod**:
+   - Access user data with `ref.watch(currentUserProvider).valueOrNull`.
+   - Never mutate state directly; use Notifiers/AsyncNotifiers.
+6. **Code Quality & Test Gates**:
+   - Run static analysis before committing:
+     ```bash
+     flutter analyze
+     ```
+     Must report **0 issues**.
+   - Run automated test suite:
+     ```bash
+     flutter test
+     ```
+     All tests must pass 100%.
