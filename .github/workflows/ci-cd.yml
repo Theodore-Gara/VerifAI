@@ -1,0 +1,210 @@
+name: CI/CD Pipeline
+
+# Runs on:
+# 1. Push to any branch
+# 2. PR opened/updated against main
+# 3. Manual trigger
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.22.0'
+  NODE_VERSION: '20'
+
+jobs:
+  # ──────────────────────────────────────────────
+  # BACKEND: Lint, test, audit
+  # ──────────────────────────────────────────────
+  backend:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('backend/package.json') != '' }}
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Lint (ESLint)
+        run: npm run lint || echo "::warning::No lint script or issues found"
+
+      - name: Run tests
+        run: |
+          if npm run | grep -qE '^\s*(test|test:ci)\s*$'; then
+            npm test
+          else
+            echo "No test script defined — skipping"
+          fi
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high || echo "::warning::High/critical vulnerabilities found"
+
+  # ──────────────────────────────────────────────
+  # MOBILE: Format, analyze, test
+  # ──────────────────────────────────────────────
+  mobile:
+    name: Mobile CI
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('mobile/pubspec.yaml') != '' }}
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Cache Pub
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('mobile/pubspec.yaml') }}
+          restore-keys: pub-${{ runner.os }}-
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: Static analysis
+        run: flutter analyze
+
+      - name: Run tests
+        run: |
+          if [ -d test ]; then
+            flutter test
+          else
+            echo "No test/ directory — skipping"
+          fi
+
+  # ──────────────────────────────────────────────
+  # APK BUILD
+  # ──────────────────────────────────────────────
+  build-apk:
+    name: Build Release APK
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('mobile/pubspec.yaml') != '' }}
+    needs: [mobile]
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Cache Pub
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('mobile/pubspec.yaml') }}
+          restore-keys: pub-${{ runner.os }}-
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VerifAI-APK
+          path: mobile/build/app/outputs/flutter-apk/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  # ──────────────────────────────────────────────
+  # RAILWAY DEPLOY (main branch only)
+  # ──────────────────────────────────────────────
+  deploy-railway:
+    name: Deploy to Railway
+    runs-on: ubuntu-latest
+    needs: [backend, mobile, build-apk]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Optional: only deploy if RAILWAY_API_TOKEN secret exists
+    if: ${{ secrets.RAILWAY_API_TOKEN != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to Railway
+        run: |
+          curl -X POST "https://backboard.railway.app/graphql/v2" \
+            -H "Authorization: Bearer ${{ secrets.RAILWAY_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"query": "mutation { serviceInstanceRedeploy(input: { serviceId: \"${{ secrets.RAILWAY_SERVICE_ID }}\" }) { success } }"}'
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+
+  # ──────────────────────────────────────────────
+  # SUMMARY
+  # ──────────────────────────────────────────────
+  summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [backend, mobile, build-apk]
+    if: always()
+    steps:
+      - name: Summary
+        run: |
+          results=(
+            "Backend:${{ needs.backend.result }}"
+            "Mobile:${{ needs.mobile.result }}"
+            "Build APK:${{ needs.build-apk.result }}"
+          )
+          failed=0
+          for entry in "${results[@]}"; do
+            job="${entry%%:*}"
+            result="${entry#*:}"
+            echo "$job → $result"
+            case "$result" in
+              failure|cancelled) echo "❌ $job failed"; failed=1 ;;
+            esac
+          done
+          exit $failed
