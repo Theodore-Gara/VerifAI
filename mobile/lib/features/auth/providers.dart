@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:verifai/core/providers/app_providers.dart';
@@ -20,7 +22,13 @@ final authStateProvider = StreamProvider<AuthState>((ref) async* {
   final repository = await ref.watch(authRepositoryProvider.future);
   // Emit the restored session (if any) first, so the router knows on startup,
   // then follow live auth changes (login / register / onboarding / logout).
-  final user = await repository.getCurrentUser();
+  User? user;
+  try {
+    user = await repository.getCurrentUser();
+  } catch (e) {
+    debugPrint('authStateProvider: getCurrentUser failed: $e');
+    user = null;
+  }
   if (user == null) {
     yield const AuthState.unauthenticated();
   } else if (!user.hasCompletedOnboarding) {
@@ -41,14 +49,19 @@ final authNotifierProvider = AsyncNotifierProvider<AuthNotifier, AuthState>(Auth
 class AuthNotifier extends AsyncNotifier<AuthState> {
   @override
   Future<AuthState> build() async {
-    final repository = await ref.read(authRepositoryProvider.future);
-    return await repository.getCurrentUser().then((user) {
+    try {
+      final repository = await ref.read(authRepositoryProvider.future);
+      final user = await repository.getCurrentUser();
       if (user == null) return const AuthState.unauthenticated();
       if (!user.hasCompletedOnboarding) {
         return AuthState.needsOnboarding(user: user, token: '');
       }
       return AuthState.authenticated(user: user, token: '');
-    });
+    } catch (e) {
+      // Handle corrupted secure storage or other errors gracefully
+      debugPrint('AuthNotifier.build() error: $e');
+      return const AuthState.unauthenticated();
+    }
   }
 
   Future<void> login(String email, String password) async {
