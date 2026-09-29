@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:verifai/core/services/api_client.dart';
 import 'package:verifai/core/services/secure_storage_service.dart';
 import 'package:verifai/shared/models.dart';
@@ -9,6 +10,7 @@ import 'package:verifai/shared/models.dart';
 abstract class AuthRepository {
   Future<AuthResult> login(String email, String password);
   Future<AuthResult> register(String email, String password, String name);
+  Future<AuthResult> signInWithGoogle();
   Future<void> completeOnboarding();
   Future<void> logout();
   Future<User?> getCurrentUser();
@@ -200,6 +202,89 @@ class MockAuthRepository implements AuthRepository {
     );
 
     _authStateController.add(AuthState.needsOnboarding(user: user, token: token));
+
+    return AuthResult(user: user, token: token);
+  }
+
+  @override
+  Future<AuthResult> signInWithGoogle() async {
+    final GoogleSignIn googleSignIn = GoogleSignIn(
+      scopes: ['email', 'profile'],
+    );
+
+    final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+    if (googleUser == null) {
+      throw Exception('Google Sign-In cancelled');
+    }
+
+    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+    final firebase_auth.OAuthCredential credential = firebase_auth.GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    final firebase_auth.UserCredential userCredential = await firebase_auth.FirebaseAuth.instance.signInWithCredential(credential);
+    final firebase_auth.User? firebaseUser = userCredential.user;
+
+    if (firebaseUser == null) {
+      throw Exception('Google Sign-In failed');
+    }
+
+    // Create or get user from our mock storage
+    final users = _getUsers();
+    final normalizedEmail = firebaseUser.email?.toLowerCase() ?? '';
+    
+    Map<String, dynamic>? userData;
+    if (users.containsKey(normalizedEmail)) {
+      userData = users[normalizedEmail];
+    } else {
+      // Create new user
+      final userId = DateTime.now().millisecondsSinceEpoch.toString();
+      final newUser = {
+        'id': userId,
+        'email': normalizedEmail,
+        'password': '', // Google users don't have passwords
+        'name': firebaseUser.displayName ?? 'Google User',
+        'trackId': null,
+        'trackName': null,
+        'hasCompletedOnboarding': false,
+        'createdAt': DateTime.now().toIso8601String(),
+      };
+      users[normalizedEmail] = newUser;
+      await _saveUsers(users);
+      userData = newUser;
+    }
+
+    // userData is guaranteed to be non-null at this point
+    final data = userData!;
+    final user = User(
+      id: data['id'] as String,
+      email: normalizedEmail,
+      name: data['name'] as String?,
+      trackId: data['trackId'] as String?,
+      trackName: data['trackName'] as String?,
+      hasCompletedOnboarding: data['hasCompletedOnboarding'] as bool? ?? false,
+      createdAt: data['createdAt'] as String? ?? DateTime.now().toIso8601String(),
+    );
+
+    final syncResult = await _apiClient.syncUser(user);
+    final token = syncResult.token;
+
+    await _secureStorage.saveAuthToken(token);
+    await _secureStorage.saveUserData(
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      trackId: user.trackId,
+      trackName: user.trackName,
+      hasCompletedOnboarding: user.hasCompletedOnboarding,
+    );
+
+    _authStateController.add(
+      user.hasCompletedOnboarding
+          ? AuthState.authenticated(user: user, token: token)
+          : AuthState.needsOnboarding(user: user, token: token),
+    );
 
     return AuthResult(user: user, token: token);
   }

@@ -104,4 +104,22 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       state = AsyncData(previous ?? const AuthState.unauthenticated());
     }
   }
+
+  Future<void> signInWithGoogle() async {
+    final previous = state.valueOrNull;
+    state = const AsyncLoading();
+    try {
+      final repository = await ref.read(authRepositoryProvider.future);
+      final result = await repository.signInWithGoogle();
+      state = AsyncData(
+        result.user.hasCompletedOnboarding
+            ? AuthState.authenticated(user: result.user, token: result.token)
+            : AuthState.needsOnboarding(user: result.user, token: result.token),
+      );
+    } catch (e) {
+      state = AsyncError(e, StackTrace.current);
+      state = AsyncData(previous ?? const AuthState.unauthenticated());
+      rethrow;
+    }
+  }
 }

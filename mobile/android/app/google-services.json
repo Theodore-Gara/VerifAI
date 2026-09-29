@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "813373583048",
+    "project_id": "verif-ai-5a435",
+    "storage_bucket": "verif-ai-5a435.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:813373583048:android:9fbe42802065e8148dfffd",
+        "android_client_info": {
+          "package_name": "com.verifai.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDsxiPqgUdrA9WTtbSvCG91BEKulw0QiBc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

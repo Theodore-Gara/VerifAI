@@ -173,14 +173,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   label: 'Continue with Google',
                   variant: VerifAIButtonVariant.secondary,
                   leadingIcon: Icons.g_mobiledata,
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Google Sign-In coming soon'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  },
+                  isLoading: authState is AsyncLoading,
+                  onPressed: _handleGoogleSignIn,
                 ),
               ],
             ),
@@ -196,6 +190,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             _emailController.text.trim(),
             _passwordController.text,
           );
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    try {
+      await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 }
