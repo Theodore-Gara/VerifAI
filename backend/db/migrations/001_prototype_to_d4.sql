@@ -17,8 +17,10 @@
 --   It PRESERVES all 16 curated tasks, 5 achievements and 4 industry tracks.
 --
 -- DATA SAFETY
---   Run against a backup. This file is wrapped in a single transaction, so a
---   failure rolls the whole thing back. A verified data backup lives at
+--   Run against a backup. Do NOT put BEGIN/COMMIT in a migration file: the
+--   runner (scripts/db-setup.js) wraps each file in its own transaction and
+--   records it in schema_migrations, so a failure rolls back and an
+--   already-applied file is skipped. A verified data backup lives at
 --   db/prototype-backup-*.sql (gitignored).
 --
 -- COLUMN MAPPING (prototype -> D4)
@@ -44,8 +46,6 @@
 --   `users`, `task_attempts`, `user_progress` and `skill_scores` were all empty,
 --   so those tables need no data transformation.
 -- =============================================================================
-
-BEGIN;
 
 -- Refuse to run twice, with a clear message rather than a confusing rename error.
 DO $$
@@ -231,5 +231,3 @@ CREATE INDEX IF NOT EXISTS idx_task_attempts_user ON task_attempts(user_id, subm
 CREATE INDEX IF NOT EXISTS idx_task_attempts_user_task ON task_attempts(user_id, task_id);
 CREATE INDEX IF NOT EXISTS idx_skill_scores_user ON skill_scores(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_achievements_user ON user_achievements(user_id, earned_at DESC);
-
-COMMIT;
