@@ -1,4 +1,82 @@
-node_modules/
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+
+# Environment & secrets
 .env
+*.pem
+.firebase-secret
 firebase-service-account.json
-npm-debug.log
+
+# Logs / temp
+*.log
+*.err.log
+npm-debug.log*
+
+# Dart / Flutter
+.dart_tool/
+build/
+*.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+
+# Android
+*.apk
+*.aab
+android/app/build/
+android/.gradle/
+android/gradle/
+
+# iOS
+ios/Flutter/flutter_export_environment.sh
+ios/Runner.xcworkspace/xcuserdata/
+ios/Runner.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+
+# Build artifacts
+*.dill
+*.so
+*.dylib
+
+# Generated
+generated/
+
+# Graphify
+graphify-out/
+
+# Node.js / npm
+node_modules/
+package-lock.json
+package.json
+
+# Mobile specific generated files
+mobile/.agents/
+mobile/.claude/
+mobile/skills-lock.json
+mobile/generate-icons.js
+mobile/generate-ios-icons.js
+mobile/play_store/
+mobile/assets/images/google_signin_logo.png
+mobile/.agents/
+mobile/.claude/
+mobile/.firebaserc
+mobile/firebase.json
+mobile/package-lock.json
+mobile/package.json
+mobile/generate-icons.js
+mobile/generate-ios-icons.js
+mobile/play_store/
+mobile/assets/images/google_signin_logo.png
+
+# Gradle
+.gradle/
+
+# IDE
+*.swp
+*.swo
+
+# VS Code
+.vscode/
