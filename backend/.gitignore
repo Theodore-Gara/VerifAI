@@ -1,4 +1,8 @@
-﻿node_modules/
+node_modules/
 .env
-*.log
+.env.*
+!.env.example
+firebase-service-account.json
+coverage/
 .DS_Store
+npm-debug.log*

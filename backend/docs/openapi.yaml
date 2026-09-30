@@ -1,0 +1,109 @@
+openapi: 3.0.3
+info:
+  title: VerifAI API
+  version: 2.0.0
+  description: Backend API for the VerifAI AI Workplace Readiness App.
+servers:
+  - url: http://localhost:3000
+    description: Local development
+  - url: https://YOUR-RAILWAY-DOMAIN
+    description: Replace with the team's Railway URL
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: FirebaseIDToken
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+        request_id: { type: string }
+    AttemptRequest:
+      type: object
+      required: [answer]
+      properties:
+        answer: { type: string, minLength: 1, maxLength: 10000 }
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      responses:
+        '200': { description: API and database are healthy }
+        '503': { description: Database unavailable }
+  /api/auth/sync:
+    post:
+      summary: Synchronize Firebase user with PostgreSQL
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: User synchronized }
+        '401': { description: Invalid Firebase token }
+  /api/users/me:
+    get:
+      summary: Get current user
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: User profile }
+        '401': { description: Unauthorized }
+        '404': { description: User not synchronized }
+  /api/users/profile:
+    put:
+      summary: Update current user profile
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                display_name: { type: string, maxLength: 255 }
+                industry_track_id: { type: integer, minimum: 1 }
+      responses:
+        '200': { description: Profile updated }
+        '400': { description: Validation error }
+  /api/tracks:
+    get:
+      summary: List industry tracks
+      responses:
+        '200': { description: Track list }
+  /api/tasks/next:
+    get:
+      summary: Get next unseen task
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Task or null when the track has no unseen tasks }
+        '400': { description: Track selection required }
+        '401': { description: Unauthorized }
+  /api/tasks/{id}/attempt:
+    post:
+      summary: Submit and score a task answer
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AttemptRequest' }
+      responses:
+        '201': { description: Attempt scored and progress updated }
+        '400': { description: Validation error }
+        '403': { description: Task does not belong to selected track }
+        '404': { description: Task or user not found }
+  /api/progress/me:
+    get:
+      summary: Get current progress
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Progress summary }
+  /api/achievements/me:
+    get:
+      summary: Get earned achievements
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Earned achievements }
