@@ -18,8 +18,6 @@ jobs:
   backend-tests:
     name: Backend tests (Node.js)
     runs-on: ubuntu-latest
-    # Skip cleanly until backend code/tests exist
-    if: ${{ hashFiles('backend/package.json') != '' }}
     defaults:
       run:
         working-directory: backend
@@ -54,8 +52,6 @@ jobs:
   mobile-tests:
     name: Mobile tests (Flutter)
     runs-on: ubuntu-latest
-    # Skip cleanly until mobile code/tests exist
-    if: ${{ hashFiles('mobile/pubspec.yaml') != '' }}
     defaults:
       run:
         working-directory: mobile

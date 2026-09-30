@@ -31,9 +31,11 @@ jobs:
     if: >-
       (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main') ||
       (github.event_name == 'pull_request_review' && github.event.pull_request.base.ref == 'main')
+    permissions:
+      pull-requests: read
     steps:
       - name: Require the repo owner's approval
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             const targetUser = 'Theodore-Gara';
