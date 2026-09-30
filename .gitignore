@@ -18,8 +18,8 @@ npm-debug.log*
 
 # Dart / Flutter
 .dart_tool/
-build/
 *.dart_tool/
+build/
 .flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
@@ -44,32 +44,28 @@ ios/Runner.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
 # Generated
 generated/
 
-# Graphify
-graphify-out/
+# Graphify: the curated graph is committed (see README). Only local-only
+# build artifacts are ignored.
+graphify-out/cache/
+graphify-out/cost.json
+graphify-out/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
 
 # Node.js / npm
 node_modules/
-package-lock.json
-package.json
+mobile/package-lock.json
 
 # Mobile specific generated files
 mobile/.agents/
 mobile/.claude/
+mobile/.firebaserc
+mobile/firebase.json
 mobile/skills-lock.json
 mobile/generate-icons.js
 mobile/generate-ios-icons.js
 mobile/play_store/
 mobile/assets/images/google_signin_logo.png
-mobile/.agents/
-mobile/.claude/
-mobile/.firebaserc
-mobile/firebase.json
 mobile/package-lock.json
 mobile/package.json
-mobile/generate-icons.js
-mobile/generate-ios-icons.js
-mobile/play_store/
-mobile/assets/images/google_signin_logo.png
 
 # Gradle
 .gradle/
@@ -77,6 +73,3 @@ mobile/assets/images/google_signin_logo.png
 # IDE
 *.swp
 *.swo
-
-# VS Code
-.vscode/
