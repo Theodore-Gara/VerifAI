@@ -1,11 +1,70 @@
--- VerifAI Deliverable 4 migration for the team's original prototype database.
--- IMPORTANT: Back up the database before running this script.
--- Run once against the existing prototype database, then run seed.sql.
+-- =============================================================================
+-- VerifAI: prototype database -> Deliverable 4 backend schema
+-- =============================================================================
+-- Target: the live Railway Postgres prototype (PostgreSQL 18.6), verified
+--         against the running server, not assumed.
+--
+-- WHY THIS FILE WAS REWRITTEN
+--   The previous migrate_d4.sql was written against a *different* prototype.
+--   On the actual database it fails immediately: it renames a `scores` table
+--   to `legacy_scores` and reads it, but no `scores` table exists, nor does
+--   `task_submissions`, nor a `tasks.track_id` column. Every one of those was
+--   MISSING when checked against the live server.
+--
+-- WHAT THIS MIGRATION DOES
+--   Renames prototype columns to the names the D4 backend queries, adds the
+--   columns the backend requires, and backfills them from existing data.
+--   It PRESERVES all 16 curated tasks, 5 achievements and 4 industry tracks.
+--
+-- DATA SAFETY
+--   Run against a backup. This file is wrapped in a single transaction, so a
+--   failure rolls the whole thing back. A verified data backup lives at
+--   db/prototype-backup-*.sql (gitignored).
+--
+-- COLUMN MAPPING (prototype -> D4)
+--   users.full_name            -> users.display_name      (widened to 255)
+--   users.                     +  industry_track_id       (new, nullable, FK)
+--   tasks.industry_track_id    -> tasks.track_id
+--   tasks.skill_dimension      -> tasks.dimension
+--   tasks.                     +  title                   (backfilled from scenario)
+--   tasks.difficulty           'Easy'/'Medium'/'Hard' -> 'easy'/'medium'/'hard'
+--   tasks.embedded_flaw         KEPT (D4 does not read it; it is curated content)
+--   skill_scores.skill_dimension -> skill_scores.dimension
+--   skill_scores.              +  attempts_count          (new, default 0)
+--   task_attempts.attempted_at -> task_attempts.submitted_at
+--   task_attempts.             +  xp_earned               (new, default 0)
+--   user_progress              REBUILT (prototype shape is incompatible)
+--   achievements.              +  code                    (backfilled from icon)
+--   industry_tracks            UNCHANGED (already matches)
+--   user_achievements          UNCHANGED (already matches)
+--
+-- NOTHING TO CARRY OVER
+--   The prototype has no `scores` and no `task_submissions` tables, so the
+--   previous migration's legacy_* preservation logic is not applicable here.
+--   `users`, `task_attempts`, `user_progress` and `skill_scores` were all empty,
+--   so those tables need no data transformation.
+-- =============================================================================
 
 BEGIN;
 
-ALTER TABLE users ADD COLUMN IF NOT EXISTS industry_track_id INTEGER;
+-- Refuse to run twice, with a clear message rather than a confusing rename error.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'tasks' AND column_name = 'track_id'
+  ) THEN
+    RAISE EXCEPTION 'Already migrated: tasks.track_id exists. Nothing to do.';
+  END IF;
+END $$;
 
+-- -----------------------------------------------------------------------------
+-- users
+-- -----------------------------------------------------------------------------
+ALTER TABLE users RENAME COLUMN full_name TO display_name;
+ALTER TABLE users ALTER COLUMN display_name TYPE VARCHAR(255);
+
+ALTER TABLE users ADD COLUMN industry_track_id INTEGER;
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -17,84 +76,98 @@ BEGIN
   END IF;
 END $$;
 
--- Preserve prototype score data rather than deleting it.
-DO $$
-BEGIN
-  IF to_regclass('public.scores') IS NOT NULL AND to_regclass('public.legacy_scores') IS NULL THEN
-    ALTER TABLE scores RENAME TO legacy_scores;
-  END IF;
-END $$;
+-- -----------------------------------------------------------------------------
+-- tasks
+-- -----------------------------------------------------------------------------
+-- Renaming a column leaves its CHECK and FOREIGN KEY constraints pointing at
+-- the right column, but keeps the old constraint NAMES, so rename those too.
+ALTER TABLE tasks RENAME COLUMN industry_track_id TO track_id;
+ALTER TABLE tasks RENAME CONSTRAINT tasks_industry_track_id_fkey TO tasks_track_id_fkey;
 
-CREATE TABLE IF NOT EXISTS skill_scores (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  dimension VARCHAR(50) NOT NULL,
-  score INTEGER NOT NULL DEFAULT 0 CHECK (score BETWEEN 0 AND 100),
-  attempts_count INTEGER NOT NULL DEFAULT 0 CHECK (attempts_count >= 0),
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE (user_id, dimension)
-);
+-- The prototype's four skill_dimension values are already exactly the four
+-- dimensions the D4 CHECK constraint allows, so the constraint travels across
+-- the rename untouched.
+ALTER TABLE tasks RENAME COLUMN skill_dimension TO dimension;
+ALTER TABLE tasks RENAME CONSTRAINT tasks_skill_dimension_check TO tasks_dimension_check;
 
-INSERT INTO skill_scores (user_id, dimension, score, attempts_count, updated_at)
-SELECT user_id, dimension, GREATEST(0, LEAST(100, score)), 0, CURRENT_TIMESTAMP
-FROM legacy_scores
-ON CONFLICT (user_id, dimension) DO UPDATE
-SET score = EXCLUDED.score,
-    updated_at = CURRENT_TIMESTAMP;
-
--- Preserve prototype submissions rather than deleting them.
-DO $$
-BEGIN
-  IF to_regclass('public.task_submissions') IS NOT NULL AND to_regclass('public.legacy_task_submissions') IS NULL THEN
-    ALTER TABLE task_submissions RENAME TO legacy_task_submissions;
-  END IF;
-END $$;
-
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS feedback TEXT;
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS difficulty VARCHAR(20) DEFAULT 'medium';
+-- title is required by the D4 backend (it SELECTs t.title) and by NOT NULL,
+-- but the prototype has no such column. Derive it from the first line of the
+-- scenario so every existing task gets a meaningful, non-empty title.
+ALTER TABLE tasks ADD COLUMN title VARCHAR(255);
 UPDATE tasks
-SET feedback = COALESCE(feedback, 'Review the source evidence, reasoning and relevant risk controls before relying on an AI output.')
-WHERE feedback IS NULL;
+SET title = LEFT(
+      COALESCE(NULLIF(BTRIM(SPLIT_PART(BTRIM(scenario), E'\n', 1)), ''), 'Assessment task'),
+      255
+    );
+ALTER TABLE tasks ALTER COLUMN title SET NOT NULL;
 
--- Existing prototype tasks must have reference answers before they can be scored.
+-- The prototype CHECK allows capitalised 'Easy'/'Medium'/'Hard'; the D4 backend
+-- compares against lowercase 'easy'/'medium'/'hard'. Swap the data and the
+-- constraint together, otherwise ordering by difficulty silently matches nothing.
+ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_difficulty_check;
+UPDATE tasks SET difficulty = LOWER(difficulty);
+ALTER TABLE tasks
+  ADD CONSTRAINT tasks_difficulty_check
+  CHECK (difficulty IN ('easy', 'medium', 'hard'));
+
+-- -----------------------------------------------------------------------------
+-- skill_scores
+-- -----------------------------------------------------------------------------
+ALTER TABLE skill_scores RENAME COLUMN skill_dimension TO dimension;
+ALTER TABLE skill_scores RENAME CONSTRAINT skill_scores_user_id_skill_dimension_key
+  TO skill_scores_user_id_dimension_key;
+
+ALTER TABLE skill_scores ADD COLUMN attempts_count INTEGER NOT NULL DEFAULT 0;
+
+-- Prototype score is a nullable numeric; D4 treats it as a required integer.
+UPDATE skill_scores SET score = 0 WHERE score IS NULL;
+ALTER TABLE skill_scores DROP CONSTRAINT IF EXISTS skill_scores_score_check;
+ALTER TABLE skill_scores ALTER COLUMN score TYPE integer USING score::integer;
+ALTER TABLE skill_scores ALTER COLUMN score SET NOT NULL;
+ALTER TABLE skill_scores
+  ADD CONSTRAINT skill_scores_score_check CHECK (score BETWEEN 0 AND 100);
+
+-- -----------------------------------------------------------------------------
+-- task_attempts
+-- -----------------------------------------------------------------------------
+ALTER TABLE task_attempts RENAME COLUMN attempted_at TO submitted_at;
+
+ALTER TABLE task_attempts ADD COLUMN xp_earned INTEGER NOT NULL DEFAULT 0
+  CHECK (xp_earned >= 0);
+
+UPDATE task_attempts SET feedback = 'Assessment completed.' WHERE feedback IS NULL;
+UPDATE task_attempts SET submitted_at = CURRENT_TIMESTAMP WHERE submitted_at IS NULL;
+ALTER TABLE task_attempts ALTER COLUMN feedback SET NOT NULL;
+ALTER TABLE task_attempts ALTER COLUMN submitted_at SET NOT NULL;
+
+-- industry_tracks already matches D4, apart from looser NOT NULL on created_at.
+UPDATE industry_tracks SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL;
+ALTER TABLE industry_tracks ALTER COLUMN created_at SET NOT NULL;
+
+-- -----------------------------------------------------------------------------
+-- user_progress
+-- -----------------------------------------------------------------------------
+-- The prototype tracks progress per (user, track) with readiness scores. D4
+-- tracks a single xp/level/streak row per user and relies on
+-- ON CONFLICT (user_id), which needs user_id to be UNIQUE on its own. The two
+-- shapes are incompatible, so the table is rebuilt. Guarded so a populated
+-- progress table is never destroyed silently.
 DO $$
+DECLARE
+  n integer;
 BEGIN
-  IF EXISTS (SELECT 1 FROM tasks WHERE correct_answer IS NULL) THEN
-    RAISE EXCEPTION 'Migration stopped: one or more existing tasks have NULL correct_answer. Add reference answers before rerunning db/migrate_d4.sql.';
-  END IF;
-  IF EXISTS (SELECT 1 FROM tasks WHERE feedback IS NULL) THEN
-    RAISE EXCEPTION 'Migration stopped: one or more existing tasks have NULL feedback.';
+  SELECT COUNT(*) INTO n FROM user_progress;
+  IF n > 0 THEN
+    RAISE EXCEPTION
+      'Migration stopped: user_progress has % row(s) of prototype data. '
+      'This migration rebuilds that table for the D4 xp/level/streak model. '
+      'Back the rows up and migrate them by hand, then rerun.', n;
   END IF;
 END $$;
 
-ALTER TABLE tasks ALTER COLUMN track_id SET NOT NULL;
-ALTER TABLE tasks ALTER COLUMN correct_answer SET NOT NULL;
-ALTER TABLE tasks ALTER COLUMN feedback SET NOT NULL;
-ALTER TABLE tasks ALTER COLUMN difficulty SET NOT NULL;
+DROP TABLE user_progress;
 
-CREATE TABLE IF NOT EXISTS task_attempts (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-  answer TEXT NOT NULL,
-  score INTEGER NOT NULL CHECK (score BETWEEN 0 AND 100),
-  feedback TEXT NOT NULL,
-  xp_earned INTEGER NOT NULL DEFAULT 0 CHECK (xp_earned >= 0),
-  submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-INSERT INTO task_attempts (user_id, task_id, answer, score, feedback, xp_earned, submitted_at)
-SELECT l.user_id,
-       l.task_id,
-       l.answer,
-       GREATEST(0, LEAST(100, COALESCE(l.score, 0))),
-       COALESCE(t.feedback, l.explanation, 'Assessment completed.'),
-       GREATEST(10, LEAST(70, 20 + ROUND(COALESCE(l.score, 0) * 0.5))),
-       COALESCE(l.submitted_at, CURRENT_TIMESTAMP)
-FROM legacy_task_submissions l
-JOIN tasks t ON t.id = l.task_id;
-
-CREATE TABLE IF NOT EXISTS user_progress (
+CREATE TABLE user_progress (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
   xp INTEGER NOT NULL DEFAULT 0 CHECK (xp >= 0),
@@ -104,31 +177,54 @@ CREATE TABLE IF NOT EXISTS user_progress (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO user_progress (user_id, xp, level, streak, last_activity_date)
-SELECT u.id,
-       COALESCE(SUM(ta.xp_earned), 0)::int,
-       GREATEST(1, FLOOR(COALESCE(SUM(ta.xp_earned), 0) / 250) + 1)::int,
-       0,
-       MAX(ta.submitted_at::date)
-FROM users u
-LEFT JOIN task_attempts ta ON ta.user_id = u.id
-GROUP BY u.id
-ON CONFLICT (user_id) DO NOTHING;
+-- -----------------------------------------------------------------------------
+-- achievements
+-- -----------------------------------------------------------------------------
+-- D4 identifies achievements by a stable `code` (the backend queries
+-- code = 'first-task'). The prototype only has `icon`, whose values are already
+-- exactly the codes the D4 backend expects, so backfill from it and fall back to
+-- a slug of the name for any row added later without an icon.
+ALTER TABLE achievements ADD COLUMN code VARCHAR(100);
 
-CREATE TABLE IF NOT EXISTS achievements (
-  id SERIAL PRIMARY KEY,
-  code VARCHAR(100) NOT NULL UNIQUE,
-  name VARCHAR(150) NOT NULL,
-  description TEXT NOT NULL
-);
+UPDATE achievements
+SET code = COALESCE(
+      NULLIF(BTRIM(icon), ''),
+      LOWER(REGEXP_REPLACE(BTRIM(name), '[^a-zA-Z0-9]+', '-', 'g'))
+    );
 
-CREATE TABLE IF NOT EXISTS user_achievements (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  achievement_id INTEGER NOT NULL REFERENCES achievements(id) ON DELETE CASCADE,
-  earned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE (user_id, achievement_id)
-);
+ALTER TABLE achievements ALTER COLUMN code SET NOT NULL;
+ALTER TABLE achievements ALTER COLUMN name TYPE VARCHAR(150);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'achievements_code_key'
+  ) THEN
+    ALTER TABLE achievements ADD CONSTRAINT achievements_code_key UNIQUE (code);
+  END IF;
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- Triggers and indexes (matching db/schema.sql so a migrated database and a
+-- freshly created one are equivalent)
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = CURRENT_TIMESTAMP;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_skill_scores_updated_at ON skill_scores;
+CREATE TRIGGER trg_skill_scores_updated_at
+  BEFORE UPDATE ON skill_scores
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_user_progress_updated_at ON user_progress;
+CREATE TRIGGER trg_user_progress_updated_at
+  BEFORE UPDATE ON user_progress
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 CREATE INDEX IF NOT EXISTS idx_tasks_track_difficulty ON tasks(track_id, difficulty, id);
 CREATE INDEX IF NOT EXISTS idx_task_attempts_user ON task_attempts(user_id, submitted_at DESC);
