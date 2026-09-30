@@ -1,12 +1,11 @@
 name: CI/CD Pipeline
 
-# Runs on:
+# One workflow per push/PR. Runs on:
 # 1. Push to any branch
 # 2. PR opened/updated against main
 # 3. Manual trigger
 on:
   push:
-    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -16,7 +15,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FLUTTER_VERSION: '3.22.0'
   NODE_VERSION: '20'
 
 jobs:
@@ -24,7 +22,7 @@ jobs:
   # BACKEND: Lint, test, audit
   # ──────────────────────────────────────────────
   backend:
-    name: Backend CI
+    name: Backend
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -61,7 +59,7 @@ jobs:
   # MOBILE: Format, analyze, test
   # ──────────────────────────────────────────────
   mobile:
-    name: Mobile CI
+    name: Mobile
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -93,8 +91,8 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      # Non-fatal, matching tests.yml: reformatting the mobile code is a
-      # separate task on the mobile branch, not part of the backend work.
+      # Non-fatal: the Dart files still need reformatting, but that is mobile
+      # work tracked on the mobile branch, not a merge blocker here.
       - name: Verify formatting
         run: dart format --output=none --set-exit-if-changed lib test || echo "::warning::Some Dart files are not formatted yet"
 
@@ -110,10 +108,34 @@ jobs:
           fi
 
   # ──────────────────────────────────────────────
+  # SECRET SCANNING
+  # ──────────────────────────────────────────────
+  security:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    # gitleaks uploads a SARIF report and, on pull_request events, reads the PR
+    # commit list. Without these it 403s with "Resource not accessible by
+    # integration".
+    permissions:
+      contents: read
+      pull-requests: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan for secrets (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ──────────────────────────────────────────────
   # APK BUILD
   # ──────────────────────────────────────────────
   build-apk:
-    name: Build Release APK
+    name: Build APK
     runs-on: ubuntu-latest
     needs: [mobile]
     defaults:
@@ -129,6 +151,9 @@ jobs:
           distribution: temurin
           java-version: 17
           cache: gradle
+          cache-dependency-path: |
+            mobile/android/**/*.gradle*
+            mobile/android/gradle/wrapper/gradle-wrapper.properties
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -153,6 +178,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: VerifAI-APK
+          # upload-artifact resolves paths relative to the repo root
+          # (defaults.run working-directory only applies to `run:` steps), so this
+          # must include mobile/.
           path: mobile/build/app/outputs/flutter-apk/*.apk
           if-no-files-found: error
           retention-days: 14
@@ -163,7 +191,7 @@ jobs:
   deploy-railway:
     name: Deploy to Railway
     runs-on: ubuntu-latest
-    needs: [backend, mobile, build-apk]
+    needs: [backend, mobile, security, build-apk]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - name: Checkout
@@ -188,9 +216,9 @@ jobs:
   # SUMMARY
   # ──────────────────────────────────────────────
   summary:
-    name: CI Summary
+    name: Summary
     runs-on: ubuntu-latest
-    needs: [backend, mobile, build-apk]
+    needs: [backend, mobile, security, build-apk]
     if: always()
     steps:
       - name: Summary
@@ -198,6 +226,7 @@ jobs:
           results=(
             "Backend:${{ needs.backend.result }}"
             "Mobile:${{ needs.mobile.result }}"
+            "Secret scan:${{ needs.security.result }}"
             "Build APK:${{ needs.build-apk.result }}"
           )
           failed=0
