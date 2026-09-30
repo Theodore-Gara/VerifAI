@@ -8,7 +8,9 @@
     "dev": "nodemon server.js",
     "test": "jest --runInBand --detectOpenHandles",
     "test:watch": "jest --watch",
-    "check": "node scripts/check.js"
+    "check": "node scripts/check.js",
+    "db:setup": "node scripts/db-setup.js",
+    "db:migrate": "node scripts/db-setup.js migrate"
   },
   "dependencies": {
     "cors": "^2.8.5",
