@@ -13973,6 +13973,30 @@
       "type": "external"
     },
     {
+      "id": "ref_fs",
+      "label": "ref_fs",
+      "_origin": "semantic",
+      "community": 61,
+      "community_name": "firebase.js",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "ref_fs",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "ref_path",
+      "label": "ref_path",
+      "_origin": "semantic",
+      "community": 61,
+      "community_name": "firebase.js",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "ref_path",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "c_users_theod_verifai_mobile_ios_runner_generatedpluginregistrant_h",
       "label": "c_users_theod_verifai_mobile_ios_runner_generatedpluginregistrant_h",
       "_origin": "semantic",
@@ -13981,6 +14005,18 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "c_users_theod_verifai_mobile_ios_runner_generatedpluginregistrant_h",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "ref_child_process",
+      "label": "ref_child_process",
+      "_origin": "semantic",
+      "community": 88,
+      "community_name": "check.js",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "ref_child_process",
       "source_file": "",
       "type": "external"
     },
@@ -14065,39 +14101,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "flutter_secure_storage_linux_plugin",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "ref_fs",
-      "label": "ref_fs",
-      "community": 61,
-      "community_name": "firebase.js",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "ref_fs",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "ref_child_process",
-      "label": "ref_child_process",
-      "community": 88,
-      "community_name": "check.js",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "ref_child_process",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "ref_path",
-      "label": "ref_path",
-      "community": 88,
-      "community_name": "check.js",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "ref_path",
       "source_file": "",
       "type": "external"
     }
@@ -14233,6 +14236,18 @@
       "context": "call",
       "source_file": "backend/middleware/auth.js",
       "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "backend_scripts_check_walk",
+      "target": "backend_scripts_check_walk",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "backend/scripts/check.js",
+      "source_location": "L12",
       "weight": 1.0
     },
     {
@@ -14473,18 +14488,6 @@
       "context": "call",
       "source_file": "backend/tests/api.test.js",
       "source_location": "L20",
-      "weight": 1.0
-    },
-    {
-      "source": "backend_services_scoringservice_extractkeywords",
-      "target": "backend_services_scoringservice_stop_words",
-      "relation": "references",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "backend/services/scoringService.js",
-      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -20064,7 +20067,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "backend/db/pool.js",
-      "source_location": "L1",
+      "source_location": "L7",
       "weight": 1.0
     },
     {
@@ -33216,5 +33219,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "925189fc72f24c5d65886a9a84f0860896eaa8bf"
+  "built_at_commit": "7f7a2c0ce3ffe9759f92c57f6e925d46e83fd226"
 }

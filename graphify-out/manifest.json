@@ -319,8 +319,8 @@
   },
   "mobile/lib/shared/models/daily_task.g.dart": {
     "mtime": 1788655699.5731573,
-    "seen": 1788803578.34897,
-    "ast_hash": "",
+    "seen": 1790785006.8274071,
+    "ast_hash": "754052d55a60942c1f4c8b9ed2c2a5fc",
     "semantic_hash": ""
   },
   "mobile/lib/shared/models/dashboard_data.dart": {
@@ -337,8 +337,8 @@
   },
   "mobile/lib/shared/models/dashboard_data.g.dart": {
     "mtime": 1788655699.5781672,
-    "seen": 1788803578.3489757,
-    "ast_hash": "",
+    "seen": 1790785006.827422,
+    "ast_hash": "d6570ff5cf4f5619131248a0ee51eafe",
     "semantic_hash": ""
   },
   "mobile/lib/shared/models/industry_track.dart": {
@@ -355,8 +355,8 @@
   },
   "mobile/lib/shared/models/industry_track.g.dart": {
     "mtime": 1788655699.5832229,
-    "seen": 1788803578.3489819,
-    "ast_hash": "",
+    "seen": 1790785006.827434,
+    "ast_hash": "06307b1c36101c87b67cc4600c790bc8",
     "semantic_hash": ""
   },
   "mobile/lib/shared/models/user.dart": {
@@ -373,8 +373,8 @@
   },
   "mobile/lib/shared/models/user.g.dart": {
     "mtime": 1788655699.5872257,
-    "seen": 1788803578.3489876,
-    "ast_hash": "",
+    "seen": 1790785006.8274453,
+    "ast_hash": "c440bab5c6c578da98c3e93fe0f101e6",
     "semantic_hash": ""
   },
   "mobile/lib/shared/widgets.dart": {

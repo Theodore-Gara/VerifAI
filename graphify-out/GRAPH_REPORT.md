@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `925189fc`
+- Built from commit: `7f7a2c0c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -124,11 +124,11 @@
 3. `authNotifierProvider` - 12 edges
 4. `MessageHandler` - 12 edges
 5. `Screens Implemented — 9 Screens` - 11 edges
-6. `users` - 10 edges
-7. `AuthState` - 10 edges
-8. `main()` - 10 edges
+6. `Endpoints` - 10 edges
+7. `VerifAI Deliverable 4 Backend Handoff` - 10 edges
+8. `users` - 10 edges
 9. `FlutterWindow` - 10 edges
-10. `Create` - 10 edges
+10. `main()` - 10 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `GitHub status` --references--> `main()`  [INFERRED]
@@ -137,10 +137,10 @@
   backend/README.md → mobile/linux/runner/main.cc
 - `Checklist` --references--> `main()`  [INFERRED]
   .github/pull_request_template.md → mobile/linux/runner/main.cc
-- `Mock Backend (Swap-Ready) — `ApiClient` Interface` --references--> `getTracks()`  [INFERRED]
-  mobile/README.md → backend/controllers/tracksController.js
 - `Contributing to the VerifAI Backend` --references--> `main()`  [INFERRED]
   backend/CONTRIBUTING.md → mobile/linux/runner/main.cc
+- `2. Important project rule` --references--> `main()`  [INFERRED]
+  backend/USER_MANUAL.md → mobile/linux/runner/main.cc
 
 ## Import Cycles
 - None detected.
@@ -388,8 +388,8 @@ Cohesion: 0.33
 Nodes (6): FlutterViewController, FlutterWindow, flutter_controller_, project_, DartProject, unique_ptr
 
 ### Community 61 - "firebase.js"
-Cohesion: 0.24
-Nodes (9): admin, fs, getFirebaseAdmin(), loadServiceAccount(), path, { getFirebaseAdmin }, verifyFirebaseToken(), firebase-admin (+1 more)
+Cohesion: 0.21
+Nodes (10): admin, fs, getFirebaseAdmin(), loadServiceAccount(), path, { getFirebaseAdmin }, verifyFirebaseToken(), firebase-admin (+2 more)
 
 ### Community 62 - "models.dart"
 Cohesion: 0.33
@@ -428,8 +428,8 @@ Cohesion: 0.22
 Nodes (9): dependencies, cors, dotenv, express, express-rate-limit, firebase-admin, helmet, pg (+1 more)
 
 ### Community 88 - "check.js"
-Cohesion: 0.22
-Nodes (7): files, fs, path, roots, { spawnSync }, ref_child_process, ref_path
+Cohesion: 0.25
+Nodes (7): files, fs, path, roots, { spawnSync }, walk(), ref_child_process
 
 ### Community 89 - "achievements.js"
 Cohesion: 0.29
@@ -480,7 +480,7 @@ Cohesion: 0.40
 Nodes (4): Checklist, How was it tested?, Type of change, What does this PR do?
 
 ## Knowledge Gaps
-- **661 isolated node(s):** `express`, `cors`, `helmet`, `rateLimit`, `{ v4: uuidv4 }` (+656 more)
+- **662 isolated node(s):** `Authentication`, `GET /api/health`, `GET /api/tracks`, `POST /api/auth/sync`, `GET /api/users/me` (+657 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 818 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **23 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -488,13 +488,13 @@ Nodes (4): Checklist, How was it tested?, Type of change, What does this PR do?
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `main()` connect `main` to `VerifAI Deliverable 4 Backend Handoff`, `pull_request_template.md`, `my_application.h`, `VerifAI Backend — Deliverable 4`, `_MyApplication`?**
-  _High betweenness centrality (0.074) - this node is a cross-community bridge._
+  _High betweenness centrality (0.076) - this node is a cross-community bridge._
 - **Why does `my_application_new()` connect `_MyApplication` to `main`, `my_application.cc`?**
-  _High betweenness centrality (0.072) - this node is a cross-community bridge._
-- **Why does `Git Workflow` connect `main` to `VerifAI`?**
-  _High betweenness centrality (0.026) - this node is a cross-community bridge._
-- **What connects `express`, `cors`, `helmet` to the rest of the system?**
-  _661 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _High betweenness centrality (0.074) - this node is a cross-community bridge._
+- **Why does `Win32Window` connect `Win32Window` to `Point`, `MessageHandler`, `flutter_window.h`, `MessageHandler`, `win32_window.cpp`, `FlutterWindow`?**
+  _High betweenness centrality (0.047) - this node is a cross-community bridge._
+- **What connects `Authentication`, `GET /api/health`, `GET /api/tracks` to the rest of the system?**
+  _662 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `package.json` be split into smaller, more focused modules?**
   _Cohesion score 0.1 - nodes in this community are weakly interconnected._
 - **Should `daily_task_card.dart` be split into smaller, more focused modules?**
