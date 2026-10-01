@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
@@ -209,25 +210,49 @@ class MockAuthRepository implements AuthRepository {
   @override
   Future<AuthResult> signInWithGoogle() async {
     final GoogleSignIn googleSignIn = GoogleSignIn(
-      scopes: ['email', 'profile'],
+      scopes: const ['email', 'profile'],
     );
 
-    final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+    GoogleSignInAccount? googleUser;
+    try {
+      googleUser = await googleSignIn.signIn();
+    } on PlatformException catch (e) {
+      throw Exception(_googleSignInErrorMessage(e));
+    }
+
     if (googleUser == null) {
       throw Exception('Google Sign-In cancelled');
     }
 
     final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+    // Firebase needs the Google ID token. It is null when the Google provider
+    // is not enabled in Firebase Auth, or when this build's SHA-1 fingerprint
+    // is not registered (oauth_client is empty in google-services.json).
+    if (googleAuth.idToken == null) {
+      throw Exception(
+        'Google Sign-In returned no ID token. Enable the Google provider under '
+        'Firebase Authentication for project verif-ai-5a435, register this '
+        'build\'s SHA-1, then re-download google-services.json.',
+      );
+    }
+
     final firebase_auth.OAuthCredential credential = firebase_auth.GoogleAuthProvider.credential(
       accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
     );
 
-    final firebase_auth.UserCredential userCredential = await firebase_auth.FirebaseAuth.instance.signInWithCredential(credential);
+    final firebase_auth.UserCredential userCredential;
+    try {
+      userCredential = await firebase_auth.FirebaseAuth.instance.signInWithCredential(credential);
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      throw Exception('Firebase rejected the Google credential (${e.code}). ${e.message ?? ''}'.trim());
+    }
+
     final firebase_auth.User? firebaseUser = userCredential.user;
 
     if (firebaseUser == null) {
-      throw Exception('Google Sign-In failed');
+      throw Exception('Google Sign-In failed: Firebase returned no user.');
     }
 
     // Create or get user from our mock storage
@@ -287,6 +312,27 @@ class MockAuthRepository implements AuthRepository {
     );
 
     return AuthResult(user: user, token: token);
+  }
+
+  /// Maps google_sign_in platform failures to actionable messages.
+  /// Android codes: 10 = DEVELOPER_ERROR, 12501 = user cancelled,
+  /// 12500 = sign-in failed (usually missing/invalid OAuth client).
+  String _googleSignInErrorMessage(PlatformException e) {
+    switch (e.code) {
+      case 'sign_in_failed':
+      case '10':
+        return 'Google Sign-In is not configured for this build (DEVELOPER_ERROR). '
+            'Register this build\'s SHA-1 in Firebase for package com.verifai.app '
+            'and re-download google-services.json.';
+      case '12501':
+      case '12502':
+        return 'Google Sign-In cancelled';
+      case '12500':
+        return 'Google Sign-In failed: no matching OAuth client. Enable the Google '
+            'provider in Firebase Authentication and re-download google-services.json.';
+      default:
+        return 'Google Sign-In failed (${e.code}): ${e.message ?? 'unknown error'}';
+    }
   }
 
   @override
