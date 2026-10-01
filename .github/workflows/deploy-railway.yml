@@ -53,7 +53,10 @@ jobs:
             exit 1
           fi
 
-          curl -fsSL https://railway.app/install.sh | sh
+          # npm rather than https://railway.app/install.sh: that host rate-limits
+          # GitHub's runners and returns 429, which fails the whole deploy.
+          npm install -g @railway/cli
+          railway --version
 
           # Uploading backend/ makes it the build context root, so Railpack sees
           # package.json and railway.json without the service needing a Root
