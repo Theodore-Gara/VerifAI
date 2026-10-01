@@ -1,0 +1,87 @@
+name: Deploy to Railway
+
+# Deploys to Railway on a push to main, after ci-cd.yml has passed for the same
+# commit.
+#
+# This is a separate workflow rather than a job inside ci-cd.yml on purpose: a
+# gated job still appears in the checks list of every PR as "skipped", which
+# reads as though deploys run on branches. A workflow that is not triggered at
+# all leaves no such entry behind.
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types: [completed]
+  # Allows a deploy to be re-run from the Actions tab.
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-railway
+  cancel-in-progress: false
+
+env:
+  # Identifiers rather than credentials, so they live in the workflow instead of
+  # secrets. The backend service, not Postgres: this job uploads backend/.
+  RAILWAY_PROJECT_ID: 5ca1f96f-2ac9-4716-bf21-f7d28323af47
+  RAILWAY_ENVIRONMENT_ID: 81ed5ee5-a8ed-4ed0-990b-19a1e11d6ef5
+  RAILWAY_SERVICE_ID: b6a62fd7-6fd4-4d22-9317-61f60c11c83d
+
+jobs:
+  deploy:
+    name: Deploy to Railway
+    runs-on: ubuntu-latest
+    # Wait for ci-cd.yml on the same commit, so a broken main never reaches
+    # production. A skipped or cancelled CI run fails this rather than deploying.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    steps:
+      # Deploy the exact commit CI approved, not whatever main has become since.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Deploy backend to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${RAILWAY_TOKEN:-}" ]; then
+            echo "::error::RAILWAY_API_TOKEN is not set"
+            echo "::error::Settings -> Secrets and variables -> Actions"
+            exit 1
+          fi
+
+          curl -fsSL https://railway.app/install.sh | sh
+
+          # Uploading backend/ makes it the build context root, so Railpack sees
+          # package.json and railway.json without the service needing a Root
+          # Directory setting. The earlier serviceInstanceRedeploy mutation only
+          # restarted the snapshot already uploaded, so merges to main shipped
+          # nothing.
+          railway up \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --service "$RAILWAY_SERVICE_ID" \
+            --yes \
+            --detach \
+            --ci \
+            backend/
+
+      - name: Verify the service responds
+        env:
+          SERVICE_URL: https://verifai-production-29ae.up.railway.app
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 30); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' "$SERVICE_URL" || echo 000)
+            if [ "$code" = "200" ]; then
+              echo "Service healthy after $attempt attempt(s)"
+              exit 0
+            fi
+            echo "attempt $attempt: HTTP $code — waiting"
+            sleep 10
+          done
+          echo "::error::Service did not return 200 within 5 minutes"
+          exit 1
