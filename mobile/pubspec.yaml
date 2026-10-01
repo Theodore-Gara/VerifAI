@@ -42,8 +42,34 @@ dev_dependencies:
   riverpod_generator: ^2.3.9
   freezed: ^2.4.5
   json_serializable: ^6.7.1
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
   assets:
     - assets/images/
+
+# Regenerate with: dart run flutter_launcher_icons
+# The two source images are built by tool/generate_icon_sources.ps1 from the
+# logo artwork, which ships as transparent art on a non-square canvas.
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  adaptive_icon_background: "#0E1B2A"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+  # The foreground is already fitted to the safe circle by
+  # tool/generate_icon_sources.ps1, so the tool must not pad it a second time.
+  # Its default of 16% would shrink the logo to roughly half the safe zone,
+  # and it is not enough on its own anyway: the logo is wider than it is tall,
+  # so its corners fall outside a circular mask at that scale.
+  adaptive_icon_foreground_inset: 0
+  # The project targets Android 11 (API 30), so every device uses the adaptive
+  # icon in mipmap-anydpi-v26 and the legacy PNGs are only a fallback.
+  min_sdk_android: 26
+  remove_alpha_ios: true
+  web:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+    background_color: "#0E1B2A"
+    theme_color: "#0E1B2A"
