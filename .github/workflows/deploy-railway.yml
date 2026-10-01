@@ -1,0 +1,80 @@
+name: Deploy to Railway
+
+# Railway deploys only from main, and only after ci-cd.yml has passed for that
+# commit.
+#
+# This lives in its own workflow rather than as a gated job inside ci-cd.yml
+# because a skipped job still appears in the PR checks list, which reads as
+# "deploy runs on this branch" when it does not. A workflow that simply is not
+# triggered leaves no such entry behind.
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types: [completed]
+  # Allows a deploy to be re-run from the Actions tab.
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-railway
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Railway
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    steps:
+      # Deploy the exact commit CI approved, not whatever main has since become.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      # `railway up` builds and uploads the committed source. The Railway
+      # GraphQL serviceInstanceRedeploy mutation was used before, but that only
+      # restarts the snapshot already on the service, so a merge to main never
+      # actually shipped new code.
+      - name: Deploy backend to Railway
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${RAILWAY_API_TOKEN:-}" ] || [ -z "${RAILWAY_SERVICE_ID:-}" ]; then
+            echo "::error::RAILWAY_API_TOKEN and RAILWAY_SERVICE_ID must both be set"
+            echo "::error::Settings -> Secrets and variables -> Actions -> New repository secret"
+            exit 1
+          fi
+
+          curl -fsSL https://railway.app/install.sh | sh
+
+          railway up \
+            --service "$RAILWAY_SERVICE_ID" \
+            --environment production \
+            --detach \
+            --ci \
+            backend/
+
+      - name: Verify the service responds
+        env:
+          SERVICE_URL: ${{ vars.RAILWAY_SERVICE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SERVICE_URL:-}" ]; then
+            echo "RAILWAY_SERVICE_URL variable not set — skipping health check"
+            exit 0
+          fi
+          for attempt in $(seq 1 30); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' "$SERVICE_URL" || echo 000)
+            if [ "$code" = "200" ]; then
+              echo "Service healthy after $attempt attempt(s)"
+              exit 0
+            fi
+            echo "attempt $attempt: HTTP $code — waiting"
+            sleep 10
+          done
+          echo "::error::Service did not return 200 within 5 minutes"
+          exit 1
