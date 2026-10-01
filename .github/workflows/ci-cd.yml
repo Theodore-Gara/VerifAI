@@ -5,9 +5,9 @@ name: CI/CD Pipeline
 # 2. PR opened/updated against main
 # 3. Manual trigger
 #
-# Tests and build only. The Railway deploy lives in deploy-railway.yml and is
-# triggered by this workflow finishing on main, so no deploy job appears on
-# feature branches or PRs.
+# Tests and APK build only. Production deploys are handled by Railway's GitHub
+# integration, which deploys on a push to main independently of this workflow,
+# so no deploy job appears on feature branches or PRs.
 on:
   push:
   pull_request:
