@@ -27,6 +27,13 @@ class MockAuthRepository implements AuthRepository {
   static const _keyUsers = 'mock_users';
   static const _keyUsersSeeded = 'mock_users_seeded_v1';
 
+  /// Firebase project verif-ai-5a435 -> Web OAuth client (client_type 3 in
+  /// google-services.json). Passed as serverClientId so google_sign_in always
+  /// requests a Google ID token for Firebase, instead of relying on the
+  /// auto-generated `default_web_client_id` resource lookup.
+  static const _googleServerClientId =
+      '813373583048-alfif0t7ptkoru684ghp23dfra4t4sct.apps.googleusercontent.com';
+
   /// Prototype seed accounts (no backend yet). Default password: password123
   static const Map<String, Map<String, dynamic>> _seedUsers = {
     'theo@verif.com': {
@@ -211,6 +218,7 @@ class MockAuthRepository implements AuthRepository {
   Future<AuthResult> signInWithGoogle() async {
     final GoogleSignIn googleSignIn = GoogleSignIn(
       scopes: const ['email', 'profile'],
+      serverClientId: _googleServerClientId,
     );
 
     GoogleSignInAccount? googleUser;
