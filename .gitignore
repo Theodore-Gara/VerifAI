@@ -1,0 +1,75 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+
+# Environment & secrets
+.env
+*.pem
+.firebase-secret
+firebase-service-account.json
+
+# Logs / temp
+*.log
+*.err.log
+npm-debug.log*
+
+# Dart / Flutter
+.dart_tool/
+*.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+
+# Android
+*.apk
+*.aab
+android/app/build/
+android/.gradle/
+android/gradle/
+
+# iOS
+ios/Flutter/flutter_export_environment.sh
+ios/Runner.xcworkspace/xcuserdata/
+ios/Runner.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+
+# Build artifacts
+*.dill
+*.so
+*.dylib
+
+# Generated
+generated/
+
+# Graphify: the curated graph is committed (see README). Only local-only
+# build artifacts are ignored.
+graphify-out/cache/
+graphify-out/cost.json
+graphify-out/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
+
+# Node.js / npm
+node_modules/
+mobile/package-lock.json
+
+# Mobile specific generated files
+mobile/.agents/
+mobile/.claude/
+mobile/.firebaserc
+mobile/firebase.json
+mobile/skills-lock.json
+mobile/generate-icons.js
+mobile/generate-ios-icons.js
+mobile/play_store/
+mobile/assets/images/google_signin_logo.png
+mobile/package-lock.json
+mobile/package.json
+
+# Gradle
+.gradle/
+
+# IDE
+*.swp
+*.swo

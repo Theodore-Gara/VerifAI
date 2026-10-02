@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "813373583048",
+    "project_id": "verif-ai-5a435",
+    "storage_bucket": "verif-ai-5a435.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:813373583048:android:9fbe42802065e8148dfffd",
+        "android_client_info": {
+          "package_name": "com.verifai.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "813373583048-h0p2r7snbggd37gqnv6kub8dp5fgkssm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.verifai.app",
+            "certificate_hash": "4eb818ae797a5b0b9580c3cdfdddceeb7d31b3e0"
+          }
+        },
+        {
+          "client_id": "813373583048-alfif0t7ptkoru684ghp23dfra4t4sct.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDsxiPqgUdrA9WTtbSvCG91BEKulw0QiBc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "813373583048-alfif0t7ptkoru684ghp23dfra4t4sct.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "813373583048-u92cuooduu187ocf4rjjeg29m155gin7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.verifai.verifai"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
