@@ -3,7 +3,7 @@ description: AI Workplace Readiness App - Flutter Mobile App
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.3.0 <4.0.0"
+  sdk: ">=3.6.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -18,8 +18,13 @@ dependencies:
   google_fonts: ^6.1.0
 
   # Firebase
-  firebase_core: ^2.32.0
-  firebase_auth: ^4.20.0
+  # firebase_core 4.x / firebase_auth 6.x support Swift Package Manager and use
+  # modular headers, which fixes the iOS "Include of non-modular header inside
+  # framework module" build error with Xcode 26+.
+  firebase_core: ^4.15.0
+  firebase_auth: ^6.7.0
+  # Keep google_sign_in on 6.x: 7.x switched to the singleton/authenticate() API
+  # and would break the existing GoogleSignIn(...).signIn() code.
   google_sign_in: ^6.1.6
 
   # Storage

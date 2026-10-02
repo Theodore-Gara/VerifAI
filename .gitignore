@@ -57,6 +57,7 @@ mobile/package-lock.json
 # Mobile specific generated files
 mobile/.agents/
 mobile/.claude/
+mobile/.firebase/
 mobile/.firebaserc
 mobile/firebase.json
 mobile/skills-lock.json
