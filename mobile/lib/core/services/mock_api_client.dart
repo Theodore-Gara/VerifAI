@@ -14,17 +14,30 @@ class MockApiClient implements ApiClient {
 
   // In-memory data
   static const List<IndustryTrack> _tracks = [
-    IndustryTrack(id: 1, name: 'Finance', description: 'Financial services and banking scenarios'),
-    IndustryTrack(id: 2, name: 'Legal', description: 'Legal research and compliance scenarios'),
-    IndustryTrack(id: 3, name: 'IT / Software', description: 'Software development and IT operations scenarios'),
-    IndustryTrack(id: 4, name: 'Business Consulting', description: 'Management consulting and strategy scenarios'),
+    IndustryTrack(
+        id: 1,
+        name: 'Finance',
+        description: 'Financial services and banking scenarios'),
+    IndustryTrack(
+        id: 2,
+        name: 'Legal',
+        description: 'Legal research and compliance scenarios'),
+    IndustryTrack(
+        id: 3,
+        name: 'IT / Software',
+        description: 'Software development and IT operations scenarios'),
+    IndustryTrack(
+        id: 4,
+        name: 'Business Consulting',
+        description: 'Management consulting and strategy scenarios'),
   ];
 
   static const List<DailyTask> _dailyTasks = [
     DailyTask(
       id: 1,
       title: 'Review AI-generated financial forecast',
-      scenario: 'An AI model has predicted Q3 revenue with 15% growth. The model used last year\'s data but didn\'t account for the new market entrant.',
+      scenario:
+          'An AI model has predicted Q3 revenue with 15% growth. The model used last year\'s data but didn\'t account for the new market entrant.',
       dimension: 'verification',
       trackName: 'Finance',
       difficulty: 'medium',
@@ -33,7 +46,8 @@ class MockApiClient implements ApiClient {
     DailyTask(
       id: 2,
       title: 'Assess legal contract clause suggested by AI',
-      scenario: 'AI suggested a force majeure clause that excludes pandemics. The jurisdiction recently ruled pandemics are covered.',
+      scenario:
+          'AI suggested a force majeure clause that excludes pandemics. The jurisdiction recently ruled pandemics are covered.',
       dimension: 'judgement',
       trackName: 'Legal',
       difficulty: 'hard',
@@ -42,7 +56,8 @@ class MockApiClient implements ApiClient {
     DailyTask(
       id: 3,
       title: 'Debug AI-generated code snippet',
-      scenario: 'AI wrote a recursive function without a base case. The function causes stack overflow on large inputs.',
+      scenario:
+          'AI wrote a recursive function without a base case. The function causes stack overflow on large inputs.',
       dimension: 'prompt_design',
       trackName: 'IT / Software',
       difficulty: 'easy',
@@ -51,7 +66,8 @@ class MockApiClient implements ApiClient {
     DailyTask(
       id: 4,
       title: 'Evaluate AI hiring recommendation',
-      scenario: 'AI recommended a candidate based on keywords but missed a 2-year employment gap that explains the skill mismatch.',
+      scenario:
+          'AI recommended a candidate based on keywords but missed a 2-year employment gap that explains the skill mismatch.',
       dimension: 'risk_governance',
       trackName: 'Business Consulting',
       difficulty: 'medium',
@@ -82,6 +98,11 @@ class MockApiClient implements ApiClient {
   }
 
   @override
+  Future<void> updateProfile(int trackId) async {
+    // The mock repository already simulates the track fetch delay.
+  }
+
+  @override
   Future<DashboardData> getDashboard() async {
     await _delay();
     final dailyTask = _dailyTasks[_random.nextInt(_dailyTasks.length)];
@@ -94,7 +115,8 @@ class MockApiClient implements ApiClient {
   }
 
   @override
-  Future<TaskSubmissionResponse> submitTask(TaskSubmissionRequest request) async {
+  Future<TaskSubmissionResponse> submitTask(
+      TaskSubmissionRequest request) async {
     await _delay();
     return TaskSubmissionResponse(
       score: 85,

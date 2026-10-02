@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:verifai/features/auth/presentation/login_screen.dart';
+import 'package:verifai/core/providers/app_providers.dart';
+import 'package:verifai/core/services/mock_api_client.dart';
 
 void main() {
   testWidgets('failed login shows error snackbar and Dismiss removes it',
@@ -15,11 +17,15 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
 
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: LoginScreen())),
+      ProviderScope(
+        overrides: [apiClientProvider.overrideWithValue(MockApiClient())],
+        child: const MaterialApp(home: LoginScreen()),
+      ),
     );
     await tester.pump();
 
-    await tester.enterText(find.byType(TextFormField).at(0), 'nobody@verif.com');
+    await tester.enterText(
+        find.byType(TextFormField).at(0), 'nobody@verif.com');
     await tester.enterText(find.byType(TextFormField).at(1), 'wrongpass');
     await tester.tap(find.widgetWithText(ElevatedButton, 'Sign In'));
     await tester.pump();
@@ -40,11 +46,15 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
 
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: LoginScreen())),
+      ProviderScope(
+        overrides: [apiClientProvider.overrideWithValue(MockApiClient())],
+        child: const MaterialApp(home: LoginScreen()),
+      ),
     );
     await tester.pump();
 
-    await tester.enterText(find.byType(TextFormField).at(0), 'nobody@verif.com');
+    await tester.enterText(
+        find.byType(TextFormField).at(0), 'nobody@verif.com');
     await tester.enterText(find.byType(TextFormField).at(1), 'wrongpass');
     await tester.tap(find.widgetWithText(ElevatedButton, 'Sign In'));
     await tester.pump();

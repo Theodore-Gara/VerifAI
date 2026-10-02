@@ -135,12 +135,15 @@ class MockAuthRepository implements AuthRepository {
       name: userData['name'] as String?,
       trackId: userData['trackId'] as String?,
       trackName: userData['trackName'] as String?,
-      hasCompletedOnboarding: userData['hasCompletedOnboarding'] as bool? ?? false,
-      createdAt: userData['createdAt'] as String? ?? DateTime.now().toIso8601String(),
+      hasCompletedOnboarding:
+          userData['hasCompletedOnboarding'] as bool? ?? false,
+      createdAt:
+          userData['createdAt'] as String? ?? DateTime.now().toIso8601String(),
     );
 
-    final syncResult = await _apiClient.syncUser(user);
-    final token = syncResult.token;
+    // Email/password accounts remain local prototype accounts for now. The
+    // backend integration is intentionally limited to Firebase/Google users.
+    final token = 'mock_local_token_${DateTime.now().millisecondsSinceEpoch}';
 
     await _secureStorage.saveAuthToken(token);
     await _secureStorage.saveUserData(
@@ -162,7 +165,8 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<AuthResult> register(String email, String password, String name) async {
+  Future<AuthResult> register(
+      String email, String password, String name) async {
     await _ensureSeedUsers();
     final users = _getUsers();
     final normalizedEmail = email.toLowerCase();
@@ -196,8 +200,9 @@ class MockAuthRepository implements AuthRepository {
       createdAt: newUser['createdAt'] as String,
     );
 
-    final syncResult = await _apiClient.syncUser(user);
-    final token = syncResult.token;
+    // Email/password accounts remain local prototype accounts for now. The
+    // backend integration is intentionally limited to Firebase/Google users.
+    final token = 'mock_local_token_${DateTime.now().millisecondsSinceEpoch}';
 
     await _secureStorage.saveAuthToken(token);
     await _secureStorage.saveUserData(
@@ -209,7 +214,8 @@ class MockAuthRepository implements AuthRepository {
       hasCompletedOnboarding: false,
     );
 
-    _authStateController.add(AuthState.needsOnboarding(user: user, token: token));
+    _authStateController
+        .add(AuthState.needsOnboarding(user: user, token: token));
 
     return AuthResult(user: user, token: token);
   }
@@ -232,7 +238,8 @@ class MockAuthRepository implements AuthRepository {
       throw Exception('Google Sign-In cancelled');
     }
 
-    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+    final GoogleSignInAuthentication googleAuth =
+        await googleUser.authentication;
 
     // Firebase needs the Google ID token. It is null when the Google provider
     // is not enabled in Firebase Auth, or when this build's SHA-1 fingerprint
@@ -245,16 +252,20 @@ class MockAuthRepository implements AuthRepository {
       );
     }
 
-    final firebase_auth.OAuthCredential credential = firebase_auth.GoogleAuthProvider.credential(
+    final firebase_auth.OAuthCredential credential =
+        firebase_auth.GoogleAuthProvider.credential(
       accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
     );
 
     final firebase_auth.UserCredential userCredential;
     try {
-      userCredential = await firebase_auth.FirebaseAuth.instance.signInWithCredential(credential);
+      userCredential = await firebase_auth.FirebaseAuth.instance
+          .signInWithCredential(credential);
     } on firebase_auth.FirebaseAuthException catch (e) {
-      throw Exception('Firebase rejected the Google credential (${e.code}). ${e.message ?? ''}'.trim());
+      throw Exception(
+          'Firebase rejected the Google credential (${e.code}). ${e.message ?? ''}'
+              .trim());
     }
 
     final firebase_auth.User? firebaseUser = userCredential.user;
@@ -266,7 +277,7 @@ class MockAuthRepository implements AuthRepository {
     // Create or get user from our mock storage
     final users = _getUsers();
     final normalizedEmail = firebaseUser.email?.toLowerCase() ?? '';
-    
+
     Map<String, dynamic>? userData;
     if (users.containsKey(normalizedEmail)) {
       userData = users[normalizedEmail];
@@ -297,29 +308,31 @@ class MockAuthRepository implements AuthRepository {
       trackId: data['trackId'] as String?,
       trackName: data['trackName'] as String?,
       hasCompletedOnboarding: data['hasCompletedOnboarding'] as bool? ?? false,
-      createdAt: data['createdAt'] as String? ?? DateTime.now().toIso8601String(),
+      createdAt:
+          data['createdAt'] as String? ?? DateTime.now().toIso8601String(),
     );
 
     final syncResult = await _apiClient.syncUser(user);
+    final syncedUser = syncResult.user;
     final token = syncResult.token;
 
     await _secureStorage.saveAuthToken(token);
     await _secureStorage.saveUserData(
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      trackId: user.trackId,
-      trackName: user.trackName,
-      hasCompletedOnboarding: user.hasCompletedOnboarding,
+      userId: syncedUser.id,
+      email: syncedUser.email,
+      name: syncedUser.name,
+      trackId: syncedUser.trackId,
+      trackName: syncedUser.trackName,
+      hasCompletedOnboarding: syncedUser.hasCompletedOnboarding,
     );
 
     _authStateController.add(
-      user.hasCompletedOnboarding
-          ? AuthState.authenticated(user: user, token: token)
-          : AuthState.needsOnboarding(user: user, token: token),
+      syncedUser.hasCompletedOnboarding
+          ? AuthState.authenticated(user: syncedUser, token: token)
+          : AuthState.needsOnboarding(user: syncedUser, token: token),
     );
 
-    return AuthResult(user: user, token: token);
+    return AuthResult(user: syncedUser, token: token);
   }
 
   /// Maps google_sign_in platform failures to actionable messages.
@@ -395,7 +408,8 @@ class MockAuthRepository implements AuthRepository {
     if (jsonString == null) return {};
     try {
       final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
-      return decoded.map((key, value) => MapEntry(key, Map<String, dynamic>.from(value as Map)));
+      return decoded.map((key, value) =>
+          MapEntry(key, Map<String, dynamic>.from(value as Map)));
     } catch (_) {
       return {};
     }

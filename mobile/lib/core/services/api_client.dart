@@ -3,6 +3,7 @@ import 'package:verifai/shared/models.dart';
 abstract class ApiClient {
   Future<List<IndustryTrack>> getTracks();
   Future<AuthSyncResponse> syncUser(User user);
+  Future<void> updateProfile(int trackId);
   Future<DashboardData> getDashboard();
   Future<TaskSubmissionResponse> submitTask(TaskSubmissionRequest request);
 }
