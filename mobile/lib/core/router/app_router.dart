@@ -4,8 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import 'package:verifai/features/auth/presentation.dart';
 import 'package:verifai/features/auth/providers.dart';
+import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
 import 'package:verifai/features/navigation/main_nav_shell.dart';
 import 'package:verifai/features/onboarding/presentation.dart';
+import 'package:verifai/features/progress/presentation/progress_screen.dart';
+import 'package:verifai/features/task/presentation/task_screen.dart';
 import 'package:verifai/shared/models.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -120,6 +123,31 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/profile',
         name: 'profile',
         builder: (context, state) => const MainNavShell(initialIndex: 3),
+      ),
+      GoRoute(
+        path: '/tasks',
+        name: 'tasks',
+        builder: (context, state) => const TaskScreen(),
+      ),
+      GoRoute(
+        path: '/progress',
+        name: 'progress',
+        builder: (context, state) => const ProgressScreen(),
+      ),
+      GoRoute(
+        path: '/feedback',
+        name: 'feedback',
+        builder: (context, state) {
+          final result = state.extra is FeedbackResult
+              ? state.extra! as FeedbackResult
+              : const FeedbackResult(score: 0, feedback: '', xpEarned: 0);
+          return FeedbackScreen(
+            score: result.score,
+            feedback: result.feedback,
+            xpEarned: result.xpEarned,
+            onContinue: () => context.pop(),
+          );
+        },
       ),
     ],
   );

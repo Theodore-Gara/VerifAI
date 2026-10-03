@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
@@ -34,7 +35,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               radius: 18,
               backgroundColor: AppColors.primaryNavy,
               child: Text(
-                (user?.name?.isNotEmpty == true) ? user!.name![0].toUpperCase() : 'U',
+                (user?.name?.isNotEmpty == true)
+                    ? user!.name![0].toUpperCase()
+                    : 'U',
                 style: AppTypography.textTheme.labelMedium?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
@@ -67,7 +70,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: AppColors.textPrimary),
+            icon:
+                const Icon(Icons.refresh_rounded, color: AppColors.textPrimary),
             onPressed: () => ref.invalidate(dashboardProvider),
           ),
         ],
@@ -173,14 +177,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
                               color: AppColors.accentLight,
-                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.pill),
                             ),
                             child: Text(
                               'READINESS',
-                              style: AppTypography.textTheme.labelSmall?.copyWith(
+                              style:
+                                  AppTypography.textTheme.labelSmall?.copyWith(
                                 color: AppColors.accentGreen,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.5,
@@ -190,15 +197,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ),
                           const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 3),
                             decoration: BoxDecoration(
                               color: AppColors.background,
-                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.pill),
                               border: Border.all(color: AppColors.border),
                             ),
                             child: Text(
                               'TOP 15%',
-                              style: AppTypography.textTheme.labelSmall?.copyWith(
+                              style:
+                                  AppTypography.textTheme.labelSmall?.copyWith(
                                 color: AppColors.textSecondary,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 9,
@@ -235,60 +245,67 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           // Duo Metric Bento Row
           Row(
             children: [
-              // Bento 1: Day Streak
+              // Bento 1: Day Streak (tap to open Progress)
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.gold.withValues(alpha: 0.08),
-                        blurRadius: 12,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: AppColors.goldLight,
-                          shape: BoxShape.circle,
+                child: GestureDetector(
+                  onTap: () => context.push('/progress'),
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(
+                          color: AppColors.gold.withValues(alpha: 0.3)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.gold.withValues(alpha: 0.08),
+                          blurRadius: 12,
+                          offset: const Offset(0, 3),
                         ),
-                        child: const Icon(
-                          Icons.local_fire_department_rounded,
-                          color: AppColors.goldDark,
-                          size: 22,
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            color: AppColors.goldLight,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.local_fire_department_rounded,
+                            color: AppColors.goldDark,
+                            size: 22,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${data.streakDays} Days',
-                              style: AppTypography.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.4,
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${data.streakDays} Days',
+                                style: AppTypography.textTheme.titleMedium
+                                    ?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.4,
+                                ),
                               ),
-                            ),
-                            Text(
-                              'Streak Active',
-                              style: AppTypography.textTheme.labelSmall?.copyWith(
-                                color: AppColors.goldDark,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 10,
+                              Text(
+                                'Streak Active',
+                                style: AppTypography.textTheme.labelSmall
+                                    ?.copyWith(
+                                  color: AppColors.goldDark,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 10,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -301,7 +318,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(color: AppColors.accentCyan.withValues(alpha: 0.3)),
+                    border: Border.all(
+                        color: AppColors.accentCyan.withValues(alpha: 0.3)),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.accentCyan.withValues(alpha: 0.08),
@@ -331,14 +349,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           children: [
                             Text(
                               'Rank #8',
-                              style: AppTypography.textTheme.titleMedium?.copyWith(
+                              style:
+                                  AppTypography.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: -0.4,
                               ),
                             ),
                             Text(
                               'Emerald League',
-                              style: AppTypography.textTheme.labelSmall?.copyWith(
+                              style:
+                                  AppTypography.textTheme.labelSmall?.copyWith(
                                 color: AppColors.accentGreen,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 10,
@@ -357,13 +377,40 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           // Daily Mission Hero Bento Card
           if (data.dailyTask != null) ...[
-            Text(
-              'Active Mission',
-              style: AppTypography.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.4,
-                color: AppColors.textPrimary,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Active Mission',
+                  style: AppTypography.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => context.push('/tasks'),
+                  behavior: HitTestBehavior.opaque,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'See all missions',
+                        style: AppTypography.textTheme.labelMedium?.copyWith(
+                          color: AppColors.accentGreen,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        size: 18,
+                        color: AppColors.accentGreen,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.sm),
             DailyTaskCard(
@@ -374,7 +421,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             EmptyState(
               icon: Icons.task_alt_rounded,
               title: 'All caught up today!',
-              message: 'Great work! Check back tomorrow for your next AI challenge.',
+              message:
+                  'Great work! Check back tomorrow for your next AI challenge.',
               actionLabel: 'Refresh',
               onAction: () => ref.invalidate(dashboardProvider),
             ),
@@ -388,15 +436,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
-        ShimmerLoader(height: 54, borderRadius: BorderRadius.circular(AppRadius.card)),
+        ShimmerLoader(
+            height: 54, borderRadius: BorderRadius.circular(AppRadius.card)),
         const SizedBox(height: AppSpacing.md),
         const ShimmerLoader.card(height: 120),
         const SizedBox(height: AppSpacing.md),
         Row(
           children: [
-            Expanded(child: ShimmerLoader(height: 70, borderRadius: BorderRadius.circular(AppRadius.card))),
+            Expanded(
+                child: ShimmerLoader(
+                    height: 70,
+                    borderRadius: BorderRadius.circular(AppRadius.card))),
             const SizedBox(width: AppSpacing.md),
-            Expanded(child: ShimmerLoader(height: 70, borderRadius: BorderRadius.circular(AppRadius.card))),
+            Expanded(
+                child: ShimmerLoader(
+                    height: 70,
+                    borderRadius: BorderRadius.circular(AppRadius.card))),
           ],
         ),
         const SizedBox(height: AppSpacing.xl),
