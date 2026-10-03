@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
@@ -69,8 +70,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         actions: [
           IconButton(
-            icon:
-                const Icon(Icons.refresh_rounded, color: AppColors.textPrimary),
+            icon: const Icon(
+              Icons.refresh_rounded,
+              color: AppColors.textPrimary,
+            ),
             onPressed: () => ref.invalidate(dashboardProvider),
           ),
         ],
@@ -163,11 +166,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
             child: Row(
               children: [
-                ScoreRing(
-                  score: data.overallScore,
-                  size: 116,
-                  strokeWidth: 11,
-                ),
+                ScoreRing(score: data.overallScore, size: 116, strokeWidth: 11),
                 const SizedBox(width: AppSpacing.lg),
                 Expanded(
                   child: Column(
@@ -177,41 +176,47 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.accentLight,
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.pill),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.pill,
+                              ),
                             ),
                             child: Text(
                               'READINESS',
-                              style:
-                                  AppTypography.textTheme.labelSmall?.copyWith(
-                                color: AppColors.accentGreen,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
-                                fontSize: 9.5,
-                              ),
+                              style: AppTypography.textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: AppColors.accentGreen,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
+                                    fontSize: 9.5,
+                                  ),
                             ),
                           ),
                           const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 3),
+                              horizontal: 7,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.background,
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.pill),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.pill,
+                              ),
                               border: Border.all(color: AppColors.border),
                             ),
                             child: Text(
                               'TOP 15%',
-                              style:
-                                  AppTypography.textTheme.labelSmall?.copyWith(
-                                color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 9,
-                              ),
+                              style: AppTypography.textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 9,
+                                  ),
                             ),
                           ),
                         ],
@@ -244,63 +249,68 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           // Duo Metric Bento Row
           Row(
             children: [
-              // Bento 1: Day Streak
+              // Bento 1: Day Streak (tap to open Progress)
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(
-                        color: AppColors.gold.withValues(alpha: 0.3)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.gold.withValues(alpha: 0.08),
-                        blurRadius: 12,
-                        offset: const Offset(0, 3),
+                child: GestureDetector(
+                  onTap: () => context.push('/progress'),
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(
+                        color: AppColors.gold.withValues(alpha: 0.3),
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: AppColors.goldLight,
-                          shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.gold.withValues(alpha: 0.08),
+                          blurRadius: 12,
+                          offset: const Offset(0, 3),
                         ),
-                        child: const Icon(
-                          Icons.local_fire_department_rounded,
-                          color: AppColors.goldDark,
-                          size: 22,
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            color: AppColors.goldLight,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.local_fire_department_rounded,
+                            color: AppColors.goldDark,
+                            size: 22,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${data.streakDays} Days',
-                              style:
-                                  AppTypography.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.4,
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${data.streakDays} Days',
+                                style: AppTypography.textTheme.titleMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.4,
+                                    ),
                               ),
-                            ),
-                            Text(
-                              'Streak Active',
-                              style:
-                                  AppTypography.textTheme.labelSmall?.copyWith(
-                                color: AppColors.goldDark,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 10,
+                              Text(
+                                'Streak Active',
+                                style: AppTypography.textTheme.labelSmall
+                                    ?.copyWith(
+                                      color: AppColors.goldDark,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 10,
+                                    ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -314,12 +324,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(AppRadius.card),
                     border: Border.all(
-                        color: AppColors.accentCyan.withValues(alpha: 0.3)),
+                      color: AppColors.accentCyan.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.task_alt_rounded,
-                          color: AppColors.accentGreen, size: 26),
+                      const Icon(
+                        Icons.task_alt_rounded,
+                        color: AppColors.accentGreen,
+                        size: 26,
+                      ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Column(
@@ -327,20 +341,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           children: [
                             Text(
                               '${data.completedTasks} Tasks',
-                              style:
-                                  AppTypography.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.4,
-                              ),
+                              style: AppTypography.textTheme.titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: -0.4,
+                                  ),
                             ),
                             Text(
                               'Completed',
-                              style:
-                                  AppTypography.textTheme.labelSmall?.copyWith(
-                                color: AppColors.accentGreen,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 10,
-                              ),
+                              style: AppTypography.textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: AppColors.accentGreen,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 10,
+                                  ),
                             ),
                           ],
                         ),
@@ -355,13 +369,40 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           // Daily Mission Hero Bento Card
           if (data.dailyTask != null) ...[
-            Text(
-              'Active Mission',
-              style: AppTypography.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.4,
-                color: AppColors.textPrimary,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Active Mission',
+                  style: AppTypography.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => context.push('/tasks'),
+                  behavior: HitTestBehavior.opaque,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'See all missions',
+                        style: AppTypography.textTheme.labelMedium?.copyWith(
+                          color: AppColors.accentGreen,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        size: 18,
+                        color: AppColors.accentGreen,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.sm),
             DailyTaskCard(
@@ -388,21 +429,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
         ShimmerLoader(
-            height: 54, borderRadius: BorderRadius.circular(AppRadius.card)),
+          height: 54,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+        ),
         const SizedBox(height: AppSpacing.md),
         const ShimmerLoader.card(height: 120),
         const SizedBox(height: AppSpacing.md),
         Row(
           children: [
             Expanded(
-                child: ShimmerLoader(
-                    height: 70,
-                    borderRadius: BorderRadius.circular(AppRadius.card))),
+              child: ShimmerLoader(
+                height: 70,
+                borderRadius: BorderRadius.circular(AppRadius.card),
+              ),
+            ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
-                child: ShimmerLoader(
-                    height: 70,
-                    borderRadius: BorderRadius.circular(AppRadius.card))),
+              child: ShimmerLoader(
+                height: 70,
+                borderRadius: BorderRadius.circular(AppRadius.card),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: AppSpacing.xl),
