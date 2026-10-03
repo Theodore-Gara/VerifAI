@@ -24,35 +24,40 @@ class TrackRoadmapScreen extends ConsumerWidget {
     final milestones = [
       _Milestone(
         title: 'AI Verification Fundamentals',
-        description: 'Understand hallucination patterns and basic factuality checks',
+        description:
+            'Understand hallucination patterns and basic factuality checks',
         status: MilestoneStatus.completed,
         icon: Icons.shield_rounded,
         xpReward: 100,
       ),
       _Milestone(
         title: 'Hallucination Spotting',
-        description: 'Detect subtle numerical errors and fabricated citations in outputs',
+        description:
+            'Detect subtle numerical errors and fabricated citations in outputs',
         status: MilestoneStatus.completed,
         icon: Icons.search_rounded,
         xpReward: 150,
       ),
       _Milestone(
         title: 'Prompt Quality & Robustness',
-        description: 'Design deterministic constraints and few-shot calibration guides',
+        description:
+            'Design deterministic constraints and few-shot calibration guides',
         status: MilestoneStatus.active,
         icon: Icons.terminal_rounded,
         xpReward: 200,
       ),
       _Milestone(
         title: 'Risk & Compliance Guardrails',
-        description: 'Corporate policy adherence, privacy leaks, and bias filters',
+        description:
+            'Corporate policy adherence, privacy leaks, and bias filters',
         status: MilestoneStatus.locked,
         icon: Icons.gavel_rounded,
         xpReward: 250,
       ),
       _Milestone(
         title: 'Capstone: Autonomous Agent Oversight',
-        description: 'Master enterprise-grade verification for multi-agent workflows',
+        description:
+            'Master enterprise-grade verification for multi-agent workflows',
         status: MilestoneStatus.locked,
         icon: Icons.military_tech_rounded,
         xpReward: 400,
@@ -77,10 +82,11 @@ class TrackRoadmapScreen extends ConsumerWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.verified_rounded, size: 14, color: AppColors.accentGreen),
+                const Icon(Icons.verified_rounded,
+                    size: 14, color: AppColors.accentGreen),
                 const SizedBox(width: 4),
                 Text(
-                  '40% MASTERED',
+                  'YOUR JOURNEY',
                   style: AppTypography.textTheme.labelSmall?.copyWith(
                     color: AppColors.accentGreen,
                     fontWeight: FontWeight.w800,
@@ -186,7 +192,10 @@ class TrackRoadmapScreen extends ConsumerWidget {
                             child: Container(
                               decoration: const BoxDecoration(
                                 gradient: LinearGradient(
-                                  colors: [AppColors.accentGreen, AppColors.accentCyan],
+                                  colors: [
+                                    AppColors.accentGreen,
+                                    AppColors.accentCyan
+                                  ],
                                 ),
                               ),
                             ),
@@ -201,7 +210,7 @@ class TrackRoadmapScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.xxl),
 
             Text(
-              'Milestone Skill Tree',
+              'Your learning journey',
               style: AppTypography.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.4,
@@ -227,13 +236,17 @@ class TrackRoadmapScreen extends ConsumerWidget {
                           width: 3,
                           height: 80,
                           decoration: BoxDecoration(
-                            gradient: milestone.status == MilestoneStatus.completed
-                                ? const LinearGradient(
-                                    colors: [AppColors.accentGreen, AppColors.accentCyan],
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                  )
-                                : null,
+                            gradient:
+                                milestone.status == MilestoneStatus.completed
+                                    ? const LinearGradient(
+                                        colors: [
+                                          AppColors.accentGreen,
+                                          AppColors.accentCyan
+                                        ],
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                      )
+                                    : null,
                             color: milestone.status == MilestoneStatus.completed
                                 ? null
                                 : AppColors.border,
@@ -315,7 +328,8 @@ class TrackRoadmapScreen extends ConsumerWidget {
             shape: BoxShape.circle,
             border: Border.all(color: AppColors.border, width: 2),
           ),
-          child: const Icon(Icons.lock_rounded, size: 16, color: AppColors.textSecondary),
+          child: const Icon(Icons.lock_rounded,
+              size: 16, color: AppColors.textSecondary),
         );
     }
   }
@@ -327,12 +341,16 @@ class TrackRoadmapScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: isActive ? Colors.white : (isLocked ? AppColors.background : AppColors.surface),
+        color: isActive
+            ? Colors.white
+            : (isLocked ? AppColors.background : AppColors.surface),
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
           color: isActive
               ? AppColors.accentCyan
-              : (isLocked ? AppColors.border : AppColors.accentGreen.withValues(alpha: 0.3)),
+              : (isLocked
+                  ? AppColors.border
+                  : AppColors.accentGreen.withValues(alpha: 0.3)),
           width: isActive ? 2 : 1,
         ),
         boxShadow: isActive
@@ -361,7 +379,9 @@ class TrackRoadmapScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: isLocked
                       ? AppColors.border.withValues(alpha: 0.5)
-                      : (isActive ? AppColors.accentLight : AppColors.accentLight.withValues(alpha: 0.5)),
+                      : (isActive
+                          ? AppColors.accentLight
+                          : AppColors.accentLight.withValues(alpha: 0.5)),
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Icon(
@@ -369,7 +389,9 @@ class TrackRoadmapScreen extends ConsumerWidget {
                   size: 16,
                   color: isLocked
                       ? AppColors.textSecondary
-                      : (isActive ? AppColors.primaryNavy : AppColors.accentGreen),
+                      : (isActive
+                          ? AppColors.primaryNavy
+                          : AppColors.accentGreen),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -379,12 +401,15 @@ class TrackRoadmapScreen extends ConsumerWidget {
                   style: AppTypography.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.2,
-                    color: isLocked ? AppColors.textSecondary : AppColors.textPrimary,
+                    color: isLocked
+                        ? AppColors.textSecondary
+                        : AppColors.textPrimary,
                   ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                 decoration: BoxDecoration(
                   color: AppColors.xpPurpleLight,
                   borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -412,7 +437,7 @@ class TrackRoadmapScreen extends ConsumerWidget {
           if (isActive) ...[
             const SizedBox(height: AppSpacing.md),
             VerifAIButton(
-              label: 'Current Quest • Start',
+              label: 'Continue learning',
               variant: VerifAIButtonVariant.verification,
               height: 40,
               leadingIcon: Icons.play_arrow_rounded,

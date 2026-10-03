@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:verifai/features/auth/presentation/login_screen.dart';
+import 'package:verifai/core/providers/app_providers.dart';
+import 'package:verifai/core/services/mock_api_client.dart';
 
 void main() {
   testWidgets('failed login shows error snackbar and Dismiss removes it',
@@ -15,23 +17,28 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
 
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: LoginScreen())),
+      ProviderScope(
+        overrides: [apiClientProvider.overrideWithValue(MockApiClient())],
+        child: const MaterialApp(home: LoginScreen()),
+      ),
     );
     await tester.pump();
 
-    await tester.enterText(find.byType(TextFormField).at(0), 'nobody@verif.com');
+    await tester.enterText(
+        find.byType(TextFormField).at(0), 'nobody@verif.com');
     await tester.enterText(find.byType(TextFormField).at(1), 'wrongpass');
     await tester.tap(find.widgetWithText(ElevatedButton, 'Sign In'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1)); // mock delay + error
 
-    expect(find.textContaining('User not found'), findsOneWidget);
+    expect(
+        find.textContaining('email or password is incorrect'), findsOneWidget);
 
     await tester.tap(find.text('Dismiss'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1)); // snackbar exit animation
 
-    expect(find.textContaining('User not found'), findsNothing);
+    expect(find.textContaining('email or password is incorrect'), findsNothing);
   });
 
   testWidgets('second failed attempt shows the error again (not stuck)',
@@ -40,23 +47,29 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
 
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: LoginScreen())),
+      ProviderScope(
+        overrides: [apiClientProvider.overrideWithValue(MockApiClient())],
+        child: const MaterialApp(home: LoginScreen()),
+      ),
     );
     await tester.pump();
 
-    await tester.enterText(find.byType(TextFormField).at(0), 'nobody@verif.com');
+    await tester.enterText(
+        find.byType(TextFormField).at(0), 'nobody@verif.com');
     await tester.enterText(find.byType(TextFormField).at(1), 'wrongpass');
     await tester.tap(find.widgetWithText(ElevatedButton, 'Sign In'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
-    expect(find.textContaining('User not found'), findsOneWidget);
+    expect(
+        find.textContaining('email or password is incorrect'), findsOneWidget);
 
     // Try again — the button must be enabled and the error re-shown once.
     await tester.tap(find.widgetWithText(ElevatedButton, 'Sign In'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
-    expect(find.textContaining('User not found'), findsOneWidget);
+    expect(
+        find.textContaining('email or password is incorrect'), findsOneWidget);
   });
 }

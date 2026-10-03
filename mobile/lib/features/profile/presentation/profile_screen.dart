@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
-import 'package:verifai/shared/widgets/verifai_button.dart';
+import 'package:verifai/features/dashboard/providers.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -14,14 +13,47 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider).valueOrNull;
+    final progress = ref.watch(dashboardProvider).valueOrNull;
+    final xp = progress?.currentXp ?? 0;
+    final streak = progress?.streakDays ?? 0;
 
     final badges = [
-      _Badge(title: 'Prompt Ninja', description: 'Crafted 10 optimal prompts', isUnlocked: true, icon: Icons.bolt_rounded, color: AppColors.xpPurple),
-      _Badge(title: 'Streak Titan', description: 'Maintained a 7-day streak', isUnlocked: true, icon: Icons.local_fire_department_rounded, color: AppColors.gold),
-      _Badge(title: 'Bug Hunter', description: 'Found 15 subtle hallucinations', isUnlocked: true, icon: Icons.bug_report_rounded, color: AppColors.accentGreen),
-      _Badge(title: 'Risk Guardian', description: 'Solved 5 high-risk scenarios', isUnlocked: false, icon: Icons.security_rounded, color: AppColors.info),
-      _Badge(title: 'AI Maestro', description: 'Reach 85+ Overall Score', isUnlocked: false, icon: Icons.military_tech_rounded, color: AppColors.accentCyan),
-      _Badge(title: 'Class Master', description: 'Complete your Industry Track', isUnlocked: false, icon: Icons.school_rounded, color: AppColors.warning),
+      _Badge(
+          title: 'Prompt Ninja',
+          description: 'Crafted 10 optimal prompts',
+          isUnlocked: true,
+          icon: Icons.bolt_rounded,
+          color: AppColors.xpPurple),
+      _Badge(
+          title: 'Streak Titan',
+          description: 'Maintained a 7-day streak',
+          isUnlocked: true,
+          icon: Icons.local_fire_department_rounded,
+          color: AppColors.gold),
+      _Badge(
+          title: 'Bug Hunter',
+          description: 'Found 15 subtle hallucinations',
+          isUnlocked: true,
+          icon: Icons.bug_report_rounded,
+          color: AppColors.accentGreen),
+      _Badge(
+          title: 'Risk Guardian',
+          description: 'Solved 5 high-risk scenarios',
+          isUnlocked: false,
+          icon: Icons.security_rounded,
+          color: AppColors.info),
+      _Badge(
+          title: 'AI Maestro',
+          description: 'Reach 85+ Overall Score',
+          isUnlocked: false,
+          icon: Icons.military_tech_rounded,
+          color: AppColors.accentCyan),
+      _Badge(
+          title: 'Class Master',
+          description: 'Complete your Industry Track',
+          isUnlocked: false,
+          icon: Icons.school_rounded,
+          color: AppColors.warning),
     ];
 
     return Scaffold(
@@ -30,7 +62,7 @@ class ProfileScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          'Player Profile',
+          'Profile',
           style: AppTypography.textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.w800,
             letterSpacing: -0.5,
@@ -38,19 +70,13 @@ class ProfileScreen extends ConsumerWidget {
         ),
         centerTitle: false,
         actions: [
-          Container(
-            margin: const EdgeInsets.only(right: AppSpacing.screenPadding),
-            decoration: BoxDecoration(
-              color: AppColors.error.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-              border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.logout_rounded, color: AppColors.error, size: 20),
-              tooltip: 'Sign Out',
-              onPressed: () => _showLogoutDialog(context, ref),
-            ),
+          IconButton(
+            icon: const Icon(Icons.logout_rounded,
+                color: AppColors.error, size: 22),
+            tooltip: 'Sign Out',
+            onPressed: () => _showLogoutDialog(context, ref),
           ),
+          const SizedBox(width: AppSpacing.sm),
         ],
       ),
       body: Stack(
@@ -95,7 +121,7 @@ class ProfileScreen extends ConsumerWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(AppSpacing.xl),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: AppColors.primaryNavy,
                     borderRadius: BorderRadius.circular(AppRadius.card),
                     border: Border.all(color: AppColors.border),
                     boxShadow: [
@@ -122,13 +148,17 @@ class ProfileScreen extends ConsumerWidget {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               gradient: const LinearGradient(
-                                colors: [AppColors.accentCyan, AppColors.xpPurple],
+                                colors: [
+                                  AppColors.primaryNavy,
+                                  AppColors.accentGreen
+                                ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.accentCyan.withValues(alpha: 0.35),
+                                  color: AppColors.accentCyan
+                                      .withValues(alpha: 0.35),
                                   blurRadius: 14,
                                   offset: const Offset(0, 4),
                                 ),
@@ -138,8 +168,11 @@ class ProfileScreen extends ConsumerWidget {
                               radius: 42,
                               backgroundColor: AppColors.primaryNavy,
                               child: Text(
-                                (user?.name?.isNotEmpty == true) ? user!.name![0].toUpperCase() : 'U',
-                                style: AppTypography.textTheme.displaySmall?.copyWith(
+                                (user?.name?.isNotEmpty == true)
+                                    ? user!.name![0].toUpperCase()
+                                    : 'U',
+                                style: AppTypography.textTheme.displaySmall
+                                    ?.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -151,16 +184,19 @@ class ProfileScreen extends ConsumerWidget {
                             decoration: BoxDecoration(
                               color: AppColors.accentGreen,
                               shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.surface, width: 2),
+                              border: Border.all(
+                                  color: AppColors.surface, width: 2),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.accentGreen.withValues(alpha: 0.4),
+                                  color: AppColors.accentGreen
+                                      .withValues(alpha: 0.4),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
                               ],
                             ),
-                            child: const Icon(Icons.verified_rounded, size: 14, color: Colors.white),
+                            child: const Icon(Icons.verified_rounded,
+                                size: 14, color: Colors.white),
                           ),
                         ],
                       ),
@@ -170,33 +206,38 @@ class ProfileScreen extends ConsumerWidget {
                         style: AppTypography.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.4,
-                          color: AppColors.textPrimary,
+                          color: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         user?.email ?? 'alex.mercer@company.com',
                         style: AppTypography.textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
+                          color: Colors.white.withValues(alpha: 0.75),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.md),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppColors.accentLight.withValues(alpha: 0.7),
+                          color: AppColors.accentGreen.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(AppRadius.pill),
-                          border: Border.all(color: AppColors.accentGreen.withValues(alpha: 0.3)),
+                          border: Border.all(
+                              color: AppColors.accentGreen
+                                  .withValues(alpha: 0.45)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.workspace_premium_rounded, size: 14, color: AppColors.accentGreen),
+                            const Icon(Icons.workspace_premium_rounded,
+                                size: 14, color: AppColors.accentGreen),
                             const SizedBox(width: 6),
                             Text(
                               user?.trackName ?? 'Finance Track Specialist',
-                              style: AppTypography.textTheme.labelSmall?.copyWith(
+                              style:
+                                  AppTypography.textTheme.labelSmall?.copyWith(
                                 color: AppColors.accentGreen,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.2,
@@ -215,7 +256,7 @@ class ProfileScreen extends ConsumerWidget {
                   children: [
                     _buildBentoStat(
                       label: 'TOTAL XP',
-                      value: '2,450',
+                      value: _formatNumber(xp),
                       icon: Icons.bolt_rounded,
                       iconColor: AppColors.xpPurple,
                       bgColor: AppColors.xpPurpleLight.withValues(alpha: 0.5),
@@ -223,15 +264,15 @@ class ProfileScreen extends ConsumerWidget {
                     const SizedBox(width: AppSpacing.md),
                     _buildBentoStat(
                       label: 'STREAK',
-                      value: '7 Days',
+                      value: '$streak Days',
                       icon: Icons.local_fire_department_rounded,
-                      iconColor: AppColors.goldDark,
-                      bgColor: AppColors.goldLight,
+                      iconColor: AppColors.primaryNavy,
+                      bgColor: AppColors.background,
                     ),
                     const SizedBox(width: AppSpacing.md),
                     _buildBentoStat(
                       label: 'LEAGUE RANK',
-                      value: '#8',
+                      value: '—',
                       icon: Icons.emoji_events_rounded,
                       iconColor: AppColors.accentGreen,
                       bgColor: AppColors.accentLight,
@@ -248,7 +289,8 @@ class ProfileScreen extends ConsumerWidget {
                       children: [
                         Text(
                           'Achievements',
-                          style: AppTypography.textTheme.headlineSmall?.copyWith(
+                          style:
+                              AppTypography.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.w800,
                             letterSpacing: -0.4,
                             color: AppColors.textPrimary,
@@ -256,7 +298,8 @@ class ProfileScreen extends ConsumerWidget {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
                             color: AppColors.xpPurpleLight,
                             borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -273,7 +316,8 @@ class ProfileScreen extends ConsumerWidget {
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: AppColors.surface,
                         borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -309,7 +353,7 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.xl),
 
-                // Switch Track Action Card
+                // Account status
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.lg),
                   decoration: BoxDecoration(
@@ -332,10 +376,12 @@ class ProfileScreen extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: AppColors.primaryNavy.withValues(alpha: 0.06),
+                              color:
+                                  AppColors.primaryNavy.withValues(alpha: 0.06),
                               borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
-                            child: const Icon(Icons.alt_route_rounded, size: 20, color: AppColors.primaryNavy),
+                            child: const Icon(Icons.alt_route_rounded,
+                                size: 20, color: AppColors.primaryNavy),
                           ),
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(
@@ -343,14 +389,16 @@ class ProfileScreen extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Industry Career Path',
-                                  style: AppTypography.textTheme.titleSmall?.copyWith(
+                                  'Account status',
+                                  style: AppTypography.textTheme.titleSmall
+                                      ?.copyWith(
                                     fontWeight: FontWeight.w800,
                                   ),
                                 ),
                                 Text(
-                                  'Switch or explore different role pathways',
-                                  style: AppTypography.textTheme.bodySmall?.copyWith(
+                                  'Your profile and readiness data are synced.',
+                                  style: AppTypography.textTheme.bodySmall
+                                      ?.copyWith(
                                     color: AppColors.textSecondary,
                                     fontSize: 11,
                                   ),
@@ -361,11 +409,30 @@ class ProfileScreen extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      VerifAIButton(
-                        label: 'Change Industry Track',
-                        variant: VerifAIButtonVariant.secondary,
-                        leadingIcon: Icons.swap_horiz_rounded,
-                        onPressed: () => context.go('/industry-select'),
+                      Container(
+                        width: double.infinity,
+                        padding:
+                            const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentLight,
+                          borderRadius: BorderRadius.circular(AppRadius.button),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.verified_rounded,
+                                size: 18, color: AppColors.accentGreen),
+                            const SizedBox(width: AppSpacing.sm),
+                            Text(
+                              'Verified profile',
+                              style:
+                                  AppTypography.textTheme.labelLarge?.copyWith(
+                                color: AppColors.accentGreen,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -387,7 +454,8 @@ class ProfileScreen extends ConsumerWidget {
   }) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.md, horizontal: AppSpacing.sm),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.card),
@@ -439,10 +507,14 @@ class ProfileScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: badge.isUnlocked ? AppColors.surface : const Color(0xFFF1F5F9).withValues(alpha: 0.6),
+        color: badge.isUnlocked
+            ? AppColors.surface
+            : const Color(0xFFF1F5F9).withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
-          color: badge.isUnlocked ? badge.color.withValues(alpha: 0.35) : AppColors.border.withValues(alpha: 0.8),
+          color: badge.isUnlocked
+              ? badge.color.withValues(alpha: 0.35)
+              : AppColors.border.withValues(alpha: 0.8),
           width: badge.isUnlocked ? 1.5 : 1,
         ),
         boxShadow: badge.isUnlocked
@@ -464,13 +536,17 @@ class ProfileScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
-                  color: badge.isUnlocked ? badge.color.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.05),
+                  color: badge.isUnlocked
+                      ? badge.color.withValues(alpha: 0.12)
+                      : Colors.black.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Icon(
                   badge.isUnlocked ? badge.icon : Icons.lock_outline_rounded,
                   size: 18,
-                  color: badge.isUnlocked ? badge.color : AppColors.textSecondary.withValues(alpha: 0.6),
+                  color: badge.isUnlocked
+                      ? badge.color
+                      : AppColors.textSecondary.withValues(alpha: 0.6),
                 ),
               ),
               const Spacer(),
@@ -481,7 +557,8 @@ class ProfileScreen extends ConsumerWidget {
                     color: AppColors.accentLight,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.check_rounded, size: 12, color: AppColors.accentGreen),
+                  child: const Icon(Icons.check_rounded,
+                      size: 12, color: AppColors.accentGreen),
                 ),
             ],
           ),
@@ -490,7 +567,9 @@ class ProfileScreen extends ConsumerWidget {
             badge.title,
             style: AppTypography.textTheme.labelMedium?.copyWith(
               fontWeight: FontWeight.w800,
-              color: badge.isUnlocked ? AppColors.textPrimary : AppColors.textSecondary.withValues(alpha: 0.7),
+              color: badge.isUnlocked
+                  ? AppColors.textPrimary
+                  : AppColors.textSecondary.withValues(alpha: 0.7),
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -511,14 +590,21 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
+  String _formatNumber(int value) => value.toString().replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+$)'),
+        (m) => '${m[1]},',
+      );
+
   void _showLogoutDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.modal)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.modal)),
         title: Text(
           'Sign Out',
-          style: AppTypography.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+          style: AppTypography.textTheme.titleLarge
+              ?.copyWith(fontWeight: FontWeight.w800),
         ),
         content: const Text('Are you sure you want to log out of VerifAI?'),
         actions: [
@@ -531,7 +617,9 @@ class ProfileScreen extends ConsumerWidget {
               Navigator.pop(dialogContext);
               ref.read(authNotifierProvider.notifier).logout();
             },
-            child: const Text('Log Out', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w700)),
+            child: const Text('Log Out',
+                style: TextStyle(
+                    color: AppColors.error, fontWeight: FontWeight.w700)),
           ),
         ],
       ),

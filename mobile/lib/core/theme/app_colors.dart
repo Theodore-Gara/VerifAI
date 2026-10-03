@@ -17,6 +17,8 @@ class AppColors {
   static const Color surface = Color(0xFFFFFFFF);
   static const Color textPrimary = Color(0xFF111827);
   static const Color textSecondary = Color(0xFF475569);
+  static const Color graphite = Color(0xFF111827);
+  static const Color electricMint = Color(0xFF2DD48F);
 
   // Semantic
   static const Color error = Color(0xFFEF4444);

@@ -34,8 +34,8 @@ class FeedbackScreen extends StatelessWidget {
   bool get _passed => score >= 60;
 
   String get _headline => _passed
-      ? 'Nice catch — that\'s exactly the instinct employers look for.'
-      : 'Close one. Here\'s where it slipped, and how to nail it next time.';
+      ? 'You found the issue. Here\'s why it matters.'
+      : 'Review the missed signal before trying again.';
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +128,7 @@ class FeedbackScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(AppRadius.pill),
                           ),
                           child: Text(
-                            _passed ? 'PASSED' : 'ALMOST THERE',
+                            _passed ? 'VERIFICATION PASSED' : 'REVIEW REQUIRED',
                             style: AppTypography.textTheme.labelSmall?.copyWith(
                               color: _passed
                                   ? AppColors.accentGreen

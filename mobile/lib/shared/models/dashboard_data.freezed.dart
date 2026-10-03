@@ -23,6 +23,9 @@ mixin _$DashboardData {
   int get overallScore => throw _privateConstructorUsedError;
   Map<String, int> get dimensionScores => throw _privateConstructorUsedError;
   int get streakDays => throw _privateConstructorUsedError;
+  int get currentXp => throw _privateConstructorUsedError;
+  int get level => throw _privateConstructorUsedError;
+  int get completedTasks => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _dailyTaskFromJson, toJson: _dailyTaskToJson)
   DailyTask? get dailyTask => throw _privateConstructorUsedError;
 
@@ -46,6 +49,9 @@ abstract class $DashboardDataCopyWith<$Res> {
       {int overallScore,
       Map<String, int> dimensionScores,
       int streakDays,
+      int currentXp,
+      int level,
+      int completedTasks,
       @JsonKey(fromJson: _dailyTaskFromJson, toJson: _dailyTaskToJson)
       DailyTask? dailyTask});
 
@@ -70,6 +76,9 @@ class _$DashboardDataCopyWithImpl<$Res, $Val extends DashboardData>
     Object? overallScore = null,
     Object? dimensionScores = null,
     Object? streakDays = null,
+    Object? currentXp = null,
+    Object? level = null,
+    Object? completedTasks = null,
     Object? dailyTask = freezed,
   }) {
     return _then(_value.copyWith(
@@ -84,6 +93,18 @@ class _$DashboardDataCopyWithImpl<$Res, $Val extends DashboardData>
       streakDays: null == streakDays
           ? _value.streakDays
           : streakDays // ignore: cast_nullable_to_non_nullable
+              as int,
+      currentXp: null == currentXp
+          ? _value.currentXp
+          : currentXp // ignore: cast_nullable_to_non_nullable
+              as int,
+      level: null == level
+          ? _value.level
+          : level // ignore: cast_nullable_to_non_nullable
+              as int,
+      completedTasks: null == completedTasks
+          ? _value.completedTasks
+          : completedTasks // ignore: cast_nullable_to_non_nullable
               as int,
       dailyTask: freezed == dailyTask
           ? _value.dailyTask
@@ -119,6 +140,9 @@ abstract class _$$DashboardDataImplCopyWith<$Res>
       {int overallScore,
       Map<String, int> dimensionScores,
       int streakDays,
+      int currentXp,
+      int level,
+      int completedTasks,
       @JsonKey(fromJson: _dailyTaskFromJson, toJson: _dailyTaskToJson)
       DailyTask? dailyTask});
 
@@ -142,6 +166,9 @@ class __$$DashboardDataImplCopyWithImpl<$Res>
     Object? overallScore = null,
     Object? dimensionScores = null,
     Object? streakDays = null,
+    Object? currentXp = null,
+    Object? level = null,
+    Object? completedTasks = null,
     Object? dailyTask = freezed,
   }) {
     return _then(_$DashboardDataImpl(
@@ -156,6 +183,18 @@ class __$$DashboardDataImplCopyWithImpl<$Res>
       streakDays: null == streakDays
           ? _value.streakDays
           : streakDays // ignore: cast_nullable_to_non_nullable
+              as int,
+      currentXp: null == currentXp
+          ? _value.currentXp
+          : currentXp // ignore: cast_nullable_to_non_nullable
+              as int,
+      level: null == level
+          ? _value.level
+          : level // ignore: cast_nullable_to_non_nullable
+              as int,
+      completedTasks: null == completedTasks
+          ? _value.completedTasks
+          : completedTasks // ignore: cast_nullable_to_non_nullable
               as int,
       dailyTask: freezed == dailyTask
           ? _value.dailyTask
@@ -172,6 +211,9 @@ class _$DashboardDataImpl implements _DashboardData {
       {required this.overallScore,
       required final Map<String, int> dimensionScores,
       required this.streakDays,
+      this.currentXp = 0,
+      this.level = 1,
+      this.completedTasks = 0,
       @JsonKey(fromJson: _dailyTaskFromJson, toJson: _dailyTaskToJson)
       this.dailyTask})
       : _dimensionScores = dimensionScores;
@@ -192,12 +234,21 @@ class _$DashboardDataImpl implements _DashboardData {
   @override
   final int streakDays;
   @override
+  @JsonKey()
+  final int currentXp;
+  @override
+  @JsonKey()
+  final int level;
+  @override
+  @JsonKey()
+  final int completedTasks;
+  @override
   @JsonKey(fromJson: _dailyTaskFromJson, toJson: _dailyTaskToJson)
   final DailyTask? dailyTask;
 
   @override
   String toString() {
-    return 'DashboardData(overallScore: $overallScore, dimensionScores: $dimensionScores, streakDays: $streakDays, dailyTask: $dailyTask)';
+    return 'DashboardData(overallScore: $overallScore, dimensionScores: $dimensionScores, streakDays: $streakDays, currentXp: $currentXp, level: $level, completedTasks: $completedTasks, dailyTask: $dailyTask)';
   }
 
   @override
@@ -211,6 +262,11 @@ class _$DashboardDataImpl implements _DashboardData {
                 .equals(other._dimensionScores, _dimensionScores) &&
             (identical(other.streakDays, streakDays) ||
                 other.streakDays == streakDays) &&
+            (identical(other.currentXp, currentXp) ||
+                other.currentXp == currentXp) &&
+            (identical(other.level, level) || other.level == level) &&
+            (identical(other.completedTasks, completedTasks) ||
+                other.completedTasks == completedTasks) &&
             (identical(other.dailyTask, dailyTask) ||
                 other.dailyTask == dailyTask));
   }
@@ -222,6 +278,9 @@ class _$DashboardDataImpl implements _DashboardData {
       overallScore,
       const DeepCollectionEquality().hash(_dimensionScores),
       streakDays,
+      currentXp,
+      level,
+      completedTasks,
       dailyTask);
 
   /// Create a copy of DashboardData
@@ -245,6 +304,9 @@ abstract class _DashboardData implements DashboardData {
       {required final int overallScore,
       required final Map<String, int> dimensionScores,
       required final int streakDays,
+      final int currentXp,
+      final int level,
+      final int completedTasks,
       @JsonKey(fromJson: _dailyTaskFromJson, toJson: _dailyTaskToJson)
       final DailyTask? dailyTask}) = _$DashboardDataImpl;
 
@@ -257,6 +319,12 @@ abstract class _DashboardData implements DashboardData {
   Map<String, int> get dimensionScores;
   @override
   int get streakDays;
+  @override
+  int get currentXp;
+  @override
+  int get level;
+  @override
+  int get completedTasks;
   @override
   @JsonKey(fromJson: _dailyTaskFromJson, toJson: _dailyTaskToJson)
   DailyTask? get dailyTask;

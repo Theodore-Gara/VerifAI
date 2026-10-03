@@ -10,6 +10,9 @@ class DashboardData with _$DashboardData {
     required int overallScore,
     required Map<String, int> dimensionScores,
     required int streakDays,
+    @Default(0) int currentXp,
+    @Default(1) int level,
+    @Default(0) int completedTasks,
     @JsonKey(
       fromJson: _dailyTaskFromJson,
       toJson: _dailyTaskToJson,
@@ -17,7 +20,8 @@ class DashboardData with _$DashboardData {
     DailyTask? dailyTask,
   }) = _DashboardData;
 
-  factory DashboardData.fromJson(Map<String, dynamic> json) => _$DashboardDataFromJson(json);
+  factory DashboardData.fromJson(Map<String, dynamic> json) =>
+      _$DashboardDataFromJson(json);
 }
 
 DailyTask? _dailyTaskFromJson(Map<String, dynamic>? json) {

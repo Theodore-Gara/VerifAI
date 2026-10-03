@@ -42,7 +42,7 @@ class StreakBadge extends StatelessWidget {
             const Icon(
               Icons.local_fire_department_rounded,
               size: 18,
-              color: AppColors.goldDark,
+              color: AppColors.primaryNavy,
             ),
             const SizedBox(width: 4),
           ],

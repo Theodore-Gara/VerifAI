@@ -7,8 +7,9 @@ import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
 import 'package:verifai/features/navigation/main_nav_shell.dart';
 import 'package:verifai/features/onboarding/presentation.dart';
-import 'package:verifai/features/progress/presentation/progress_screen.dart';
+import 'package:verifai/features/scoreboard/presentation/scoreboard_screen.dart';
 import 'package:verifai/features/task/presentation/task_screen.dart';
+import 'package:verifai/features/progress/presentation/progress_screen.dart';
 import 'package:verifai/shared/models.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -117,12 +118,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/scoreboard',
         name: 'scoreboard',
-        builder: (context, state) => const MainNavShell(initialIndex: 2),
+        builder: (context, state) => const ScoreboardScreen(),
       ),
       GoRoute(
         path: '/profile',
         name: 'profile',
-        builder: (context, state) => const MainNavShell(initialIndex: 3),
+        builder: (context, state) => const MainNavShell(initialIndex: 4),
       ),
       GoRoute(
         path: '/tasks',

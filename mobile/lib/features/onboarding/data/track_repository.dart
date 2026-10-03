@@ -24,9 +24,9 @@ class MockTrackRepository implements TrackRepository {
 
   @override
   Future<void> selectTrack(int trackId) async {
-    // In mock, we just save to secure storage
     final tracks = await _apiClient.getTracks();
     final track = tracks.firstWhere((t) => t.id == trackId);
+    await _apiClient.updateProfile(trackId);
     await _secureStorage.updateTrack(trackId.toString(), track.name);
   }
 }

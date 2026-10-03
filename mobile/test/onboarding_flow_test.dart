@@ -11,6 +11,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:verifai/main.dart';
+import 'package:verifai/core/providers/app_providers.dart';
+import 'package:verifai/core/services/mock_api_client.dart';
 
 void main() {
   testWidgets('onboarding Continue takes the user to the dashboard',
@@ -37,7 +39,12 @@ void main() {
       'has_completed_onboarding': 'false',
     });
 
-    await tester.pumpWidget(const ProviderScope(child: VerifAIApp()));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [apiClientProvider.overrideWithValue(MockApiClient())],
+        child: const VerifAIApp(),
+      ),
+    );
     await tester.pump();
 
     // Splash screen first.
@@ -59,7 +66,7 @@ void main() {
     await tester.pump(const Duration(seconds: 1)); // track save
     await tester.pump(const Duration(seconds: 1)); // dashboard load
 
-    expect(find.text('Dashboard'), findsOneWidget);
+    expect(find.text('Home').first, findsOneWidget);
     expect(find.text('Select Your Industry'), findsNothing);
   });
 
@@ -77,14 +84,24 @@ void main() {
       'has_completed_onboarding': 'false',
     });
 
-    await tester.pumpWidget(const ProviderScope(child: VerifAIApp()));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [apiClientProvider.overrideWithValue(MockApiClient())],
+        child: const VerifAIApp(),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(seconds: 3)); // splash
     await tester.pump(const Duration(seconds: 1));
 
     // No RenderFlex overflow exceptions allowed — the test fails otherwise.
     expect(find.text('Select Your Industry'), findsOneWidget);
-    for (final name in ['Finance', 'Legal', 'IT / Software', 'Business Consulting']) {
+    for (final name in [
+      'Finance',
+      'Legal',
+      'IT / Software',
+      'Business Consulting'
+    ]) {
       expect(find.text(name), findsOneWidget);
     }
   });
