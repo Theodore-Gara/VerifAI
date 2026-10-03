@@ -47,11 +47,13 @@ class DailyTaskCard extends StatelessWidget {
         children: [
           // Sleek Integrated Header
           Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.primaryNavy,
                     borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -59,10 +61,11 @@ class DailyTaskCard extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.flash_on_rounded, size: 13, color: AppColors.accentCyan),
+                      const Icon(Icons.flash_on_rounded,
+                          size: 13, color: AppColors.accentCyan),
                       const SizedBox(width: 4),
                       Text(
-                        'DAILY QUEST',
+                        'VERIFICATION TASK',
                         style: AppTypography.textTheme.labelSmall?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
@@ -74,39 +77,6 @@ class DailyTaskCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                // XP Reward Pill
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.xpPurple, Color(0xFF6D28D9)],
-                    ),
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.xpPurple.withValues(alpha: 0.35),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.bolt_rounded, size: 14, color: AppColors.gold),
-                      const SizedBox(width: 2),
-                      Text(
-                        '+120 XP',
-                        style: AppTypography.textTheme.labelSmall?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 10,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
@@ -135,7 +105,8 @@ class DailyTaskCard extends StatelessWidget {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: _getDifficultyColor(task.difficulty!).withValues(alpha: 0.12),
+                          color: _getDifficultyColor(task.difficulty!)
+                              .withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
                         child: Text(
@@ -178,7 +149,7 @@ class DailyTaskCard extends StatelessWidget {
                 ],
                 const SizedBox(height: AppSpacing.lg),
                 VerifAIButton(
-                  label: 'Play Mission',
+                  label: 'Start verification',
                   variant: VerifAIButtonVariant.verification,
                   isLoading: isLoading,
                   onPressed: onStart,

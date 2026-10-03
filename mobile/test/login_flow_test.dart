@@ -31,13 +31,14 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 1)); // mock delay + error
 
-    expect(find.textContaining('User not found'), findsOneWidget);
+    expect(
+        find.textContaining('email or password is incorrect'), findsOneWidget);
 
     await tester.tap(find.text('Dismiss'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1)); // snackbar exit animation
 
-    expect(find.textContaining('User not found'), findsNothing);
+    expect(find.textContaining('email or password is incorrect'), findsNothing);
   });
 
   testWidgets('second failed attempt shows the error again (not stuck)',
@@ -60,13 +61,15 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
-    expect(find.textContaining('User not found'), findsOneWidget);
+    expect(
+        find.textContaining('email or password is incorrect'), findsOneWidget);
 
     // Try again — the button must be enabled and the error re-shown once.
     await tester.tap(find.widgetWithText(ElevatedButton, 'Sign In'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
-    expect(find.textContaining('User not found'), findsOneWidget);
+    expect(
+        find.textContaining('email or password is incorrect'), findsOneWidget);
   });
 }

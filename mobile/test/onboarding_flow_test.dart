@@ -66,7 +66,7 @@ void main() {
     await tester.pump(const Duration(seconds: 1)); // track save
     await tester.pump(const Duration(seconds: 1)); // dashboard load
 
-    expect(find.text('Dashboard'), findsOneWidget);
+    expect(find.text('Home').first, findsOneWidget);
     expect(find.text('Select Your Industry'), findsNothing);
   });
 

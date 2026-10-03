@@ -1,114 +1,62 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'app_colors.dart';
 
 class AppTypography {
   AppTypography._();
 
-  static TextTheme get textTheme => GoogleFonts.manropeTextTheme().copyWith(
-        displayLarge: GoogleFonts.manrope(
-          fontSize: 32,
-          fontWeight: FontWeight.w800,
-          color: const Color(0xFF0E1B2A),
-          letterSpacing: -1.0,
-          height: 1.15,
-        ),
-        displayMedium: GoogleFonts.manrope(
-          fontSize: 28,
-          fontWeight: FontWeight.w800,
-          color: const Color(0xFF0E1B2A),
-          letterSpacing: -0.8,
-          height: 1.2,
-        ),
-        displaySmall: GoogleFonts.manrope(
-          fontSize: 24,
-          fontWeight: FontWeight.w800,
-          color: const Color(0xFF0E1B2A),
-          letterSpacing: -0.6,
-          height: 1.25,
-        ),
-        headlineLarge: GoogleFonts.manrope(
-          fontSize: 22,
-          fontWeight: FontWeight.w800,
-          color: const Color(0xFF0E1B2A),
-          letterSpacing: -0.5,
-          height: 1.3,
-        ),
-        headlineMedium: GoogleFonts.manrope(
-          fontSize: 18,
-          fontWeight: FontWeight.w800,
-          color: const Color(0xFF0E1B2A),
-          letterSpacing: -0.4,
-          height: 1.35,
-        ),
-        headlineSmall: GoogleFonts.manrope(
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
-          color: const Color(0xFF0E1B2A),
-          letterSpacing: -0.3,
-          height: 1.4,
-        ),
-        titleLarge: GoogleFonts.manrope(
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
-          color: const Color(0xFF111827),
-          letterSpacing: -0.2,
-          height: 1.4,
-        ),
-        titleMedium: GoogleFonts.manrope(
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-          color: const Color(0xFF111827),
-          letterSpacing: -0.1,
-          height: 1.4,
-        ),
-        titleSmall: GoogleFonts.manrope(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: const Color(0xFF475569),
-          letterSpacing: 0.0,
-          height: 1.4,
-        ),
-        bodyLarge: GoogleFonts.manrope(
-          fontSize: 16,
-          fontWeight: FontWeight.w400,
-          color: const Color(0xFF111827),
-          letterSpacing: -0.1,
-          height: 1.5,
-        ),
-        bodyMedium: GoogleFonts.manrope(
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-          color: const Color(0xFF111827),
-          letterSpacing: 0.0,
-          height: 1.5,
-        ),
-        bodySmall: GoogleFonts.manrope(
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          color: const Color(0xFF475569),
-          letterSpacing: 0.0,
-          height: 1.5,
-        ),
-        labelLarge: GoogleFonts.manrope(
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-          color: const Color(0xFF111827),
-          letterSpacing: 0.1,
-          height: 1.4,
-        ),
-        labelMedium: GoogleFonts.manrope(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: const Color(0xFF475569),
-          letterSpacing: 0.3,
-          height: 1.4,
-        ),
-        labelSmall: GoogleFonts.manrope(
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          color: const Color(0xFF64748B),
-          letterSpacing: 0.6,
-          height: 1.3,
-        ),
+  static TextTheme get textTheme => GoogleFonts.interTextTheme().copyWith(
+        displayLarge: _heading(32, FontWeight.w800, -1.0, 1.15),
+        displayMedium: _heading(28, FontWeight.w800, -0.8, 1.2),
+        displaySmall: _heading(24, FontWeight.w800, -0.6, 1.25),
+        headlineLarge: _heading(22, FontWeight.w800, -0.5, 1.3),
+        headlineMedium: _heading(18, FontWeight.w800, -0.4, 1.35),
+        headlineSmall: _heading(16, FontWeight.w700, -0.3, 1.4),
+        titleLarge:
+            _heading(16, FontWeight.w700, -0.2, 1.4, AppColors.graphite),
+        titleMedium:
+            _heading(14, FontWeight.w700, -0.1, 1.4, AppColors.graphite),
+        titleSmall:
+            _inter(13, FontWeight.w600, 0, 1.4, AppColors.textSecondary),
+        bodyLarge: _inter(16, FontWeight.w400, -0.1, 1.5, AppColors.graphite),
+        bodyMedium: _inter(14, FontWeight.w400, 0, 1.5, AppColors.graphite),
+        bodySmall: _inter(12, FontWeight.w400, 0, 1.5, AppColors.textSecondary),
+        labelLarge: _inter(14, FontWeight.w600, 0.1, 1.4, AppColors.graphite),
+        labelMedium:
+            _inter(12, FontWeight.w600, 0.3, 1.4, AppColors.textSecondary),
+        labelSmall:
+            _inter(11, FontWeight.w600, 0.5, 1.3, AppColors.textSecondary),
       );
+
+  static TextStyle _heading(
+    double size,
+    FontWeight weight,
+    double spacing,
+    double height, [
+    Color color = AppColors.primaryNavy,
+  ]) {
+    return GoogleFonts.manrope(
+      fontSize: size,
+      fontWeight: weight,
+      color: color,
+      letterSpacing: spacing,
+      height: height,
+    );
+  }
+
+  static TextStyle _inter(
+    double size,
+    FontWeight weight,
+    double spacing,
+    double height,
+    Color color,
+  ) {
+    return GoogleFonts.inter(
+      fontSize: size,
+      fontWeight: weight,
+      color: color,
+      letterSpacing: spacing,
+      height: height,
+    );
+  }
 }

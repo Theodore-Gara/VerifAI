@@ -27,11 +27,15 @@ class DioApiClient implements ApiClient {
   @override
   Future<AuthSyncResponse> syncUser(User user) async {
     final token = await _idToken();
-    final response = await _dio.post<Map<String, dynamic>>(
+    await _dio.post<Map<String, dynamic>>(
       'auth/sync',
       options: Options(headers: _authHeaders(token)),
     );
-    final syncedUser = _parseUser(response.data?['user']);
+    final profileResponse = await _dio.get<Map<String, dynamic>>(
+      'users/me',
+      options: Options(headers: _authHeaders(token)),
+    );
+    final syncedUser = _parseUser(profileResponse.data?['user']);
     return AuthSyncResponse(user: syncedUser, token: token);
   }
 
@@ -128,6 +132,8 @@ class DioApiClient implements ApiClient {
       email: json['email'] as String? ?? '',
       name: json['display_name'] as String?,
       trackId: json['industry_track_id']?.toString(),
+      trackName: json['industry_track_name'] as String?,
+      hasCompletedOnboarding: json['industry_track_id'] != null,
       createdAt:
           json['created_at'] as String? ?? DateTime.now().toIso8601String(),
     );

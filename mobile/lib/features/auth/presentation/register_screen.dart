@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:verifai/core/theme/app_colors.dart';
-import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
-import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
+import 'auth_brand_header.dart';
+import 'auth_error_messages.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets.dart';
 
@@ -44,7 +43,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ..clearSnackBars()
           ..showSnackBar(
             SnackBar(
-              content: Text(next.error.toString()),
+              content: Text(humanizeAuthError(next.error!)),
               backgroundColor: Theme.of(context).colorScheme.error,
               behavior: SnackBarBehavior.floating,
               action: SnackBarAction(
@@ -59,8 +58,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Account'),
-        leading: const BackButton(),
+        title: const Text('Create account'),
+        automaticallyImplyLeading: false,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -71,47 +70,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: AppSpacing.lg),
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.xpPurpleLight,
-                      borderRadius: BorderRadius.circular(AppRadius.xxl),
-                      border: Border.all(color: AppColors.xpPurple.withValues(alpha: 0.3)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.stars_rounded, size: 16, color: AppColors.xpPurple),
-                        const SizedBox(width: 4),
-                        Text(
-                          'CLAIM YOUR READINESS BADGE',
-                          style: AppTypography.textTheme.labelSmall?.copyWith(
-                            color: AppColors.xpPurple,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  'Join VerifAI',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  'Start building your AI readiness rank and skills',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                  textAlign: TextAlign.center,
+                const AuthBrandHeader(
+                  title: 'Create your account',
+                  subtitle: 'Build the skills employers trust.',
                 ),
                 const SizedBox(height: AppSpacing.xxl),
                 VerifAIInput(
@@ -184,11 +145,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 VerifAIButton(
-                  label: 'Create Profile & Start',
+                  label: 'Create account',
                   variant: VerifAIButtonVariant.primary,
                   isLoading: authState is AsyncLoading,
                   onPressed: _handleRegister,
                   leadingIcon: Icons.bolt_rounded,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                VerifAIButton(
+                  label: 'Continue with Google',
+                  variant: VerifAIButtonVariant.secondary,
+                  isLoading: authState is AsyncLoading,
+                  onPressed: _handleGoogleSignIn,
+                  leadingIcon: Icons.g_mobiledata,
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 Row(
@@ -197,12 +166,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     Text(
                       'Already have an account? ',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                     TextButton(
                       onPressed: () => context.go('/login'),
-                      child: const Text('Sign In', style: TextStyle(fontWeight: FontWeight.w700)),
+                      child: const Text('Sign In',
+                          style: TextStyle(fontWeight: FontWeight.w700)),
                     ),
                   ],
                 ),
@@ -229,6 +200,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             _passwordController.text,
             _nameController.text.trim(),
           );
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    try {
+      await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(humanizeAuthError(e)),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 }

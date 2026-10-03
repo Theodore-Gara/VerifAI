@@ -376,6 +376,12 @@ class MockAuthRepository implements AuthRepository {
   @override
   Future<void> logout() async {
     await _secureStorage.clearAll();
+    try {
+      await firebase_auth.FirebaseAuth.instance.signOut();
+      await GoogleSignIn().signOut();
+    } catch (_) {
+      // Local prototype logout should still work in tests without Firebase.
+    }
     _authStateController.add(const AuthState.unauthenticated());
   }
 

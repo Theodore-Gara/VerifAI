@@ -112,7 +112,7 @@ class _TaskChallengeModalState extends State<TaskChallengeModal> {
                           size: 16, color: AppColors.accentGreen),
                       const SizedBox(width: 4),
                       Text(
-                        'MISSION PLAY',
+                        'VERIFICATION',
                         style: AppTypography.textTheme.labelSmall?.copyWith(
                           color: AppColors.accentGreen,
                           fontWeight: FontWeight.w800,
@@ -192,7 +192,7 @@ class _TaskChallengeModalState extends State<TaskChallengeModal> {
                   ],
 
                   Text(
-                    'What is your verification action?',
+                    'What would you do with this output?',
                     style: AppTypography.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,

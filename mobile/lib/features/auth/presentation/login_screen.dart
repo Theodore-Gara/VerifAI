@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:verifai/core/theme/app_colors.dart';
-import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
-import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
+import 'auth_brand_header.dart';
+import 'auth_error_messages.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets.dart';
 
@@ -40,7 +39,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ..clearSnackBars()
           ..showSnackBar(
             SnackBar(
-              content: Text(next.error.toString()),
+              content: Text(humanizeAuthError(next.error!)),
               backgroundColor: Theme.of(context).colorScheme.error,
               behavior: SnackBarBehavior.floating,
               action: SnackBarAction(
@@ -55,8 +54,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Welcome Back'),
-        leading: const BackButton(),
+        title: const Text('Sign in'),
+        automaticallyImplyLeading: false,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -67,47 +66,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: AppSpacing.lg),
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.accentLight,
-                      borderRadius: BorderRadius.circular(AppRadius.xxl),
-                      border: Border.all(color: AppColors.accentGreen.withValues(alpha: 0.3)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.flash_on_rounded, size: 16, color: AppColors.accentGreen),
-                        const SizedBox(width: 4),
-                        Text(
-                          'READY TO LEVEL UP?',
-                          style: AppTypography.textTheme.labelSmall?.copyWith(
-                            color: AppColors.accentGreen,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  'Sign in to VerifAI',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  'Resume your streak, daily challenges & rankings',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                  textAlign: TextAlign.center,
+                const AuthBrandHeader(
+                  title: 'Sign in',
+                  subtitle: 'Review AI work with confidence.',
                 ),
                 const SizedBox(height: AppSpacing.xxl),
                 VerifAIInput(
@@ -159,12 +120,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Text(
                       'Don\'t have an account? ',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                     TextButton(
                       onPressed: () => context.go('/register'),
-                      child: const Text('Sign Up', style: TextStyle(fontWeight: FontWeight.w700)),
+                      child: const Text('Sign Up',
+                          style: TextStyle(fontWeight: FontWeight.w700)),
                     ),
                   ],
                 ),
@@ -200,7 +163,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
+            content: Text(humanizeAuthError(e)),
             backgroundColor: Theme.of(context).colorScheme.error,
             behavior: SnackBarBehavior.floating,
           ),

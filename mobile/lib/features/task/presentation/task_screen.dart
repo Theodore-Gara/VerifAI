@@ -90,7 +90,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     size: 14, color: AppColors.accentGreen),
                 const SizedBox(width: 4),
                 Text(
-                  '${_availableTasks.length} ACTIVE',
+                  'VERIFICATION QUEUE',
                   style: AppTypography.textTheme.labelSmall?.copyWith(
                     color: AppColors.accentGreen,
                     fontWeight: FontWeight.w800,
@@ -150,7 +150,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Available Missions',
+                          'Verification tasks',
                           style:
                               AppTypography.textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.w800,

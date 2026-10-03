@@ -5,8 +5,9 @@ import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:verifai/features/progress/presentation/progress_screen.dart';
+import 'package:verifai/features/task/presentation/task_screen.dart';
 import 'package:verifai/features/track/presentation/track_roadmap_screen.dart';
-import 'package:verifai/features/scoreboard/presentation/scoreboard_screen.dart';
 import 'package:verifai/features/profile/presentation/profile_screen.dart';
 
 class MainNavShell extends StatefulWidget {
@@ -27,7 +28,8 @@ class _MainNavShellState extends State<MainNavShell> {
   final List<Widget> _screens = const [
     DashboardScreen(),
     TrackRoadmapScreen(),
-    ScoreboardScreen(),
+    TaskScreen(),
+    ProgressScreen(),
     ProfileScreen(),
   ];
 
@@ -93,7 +95,7 @@ class _MainNavShellState extends State<MainNavShell> {
                     _buildNavItem(
                       index: 0,
                       icon: Icons.flash_on_rounded,
-                      label: 'HQ',
+                      label: 'Home',
                     ),
                     _buildNavItem(
                       index: 1,
@@ -102,11 +104,16 @@ class _MainNavShellState extends State<MainNavShell> {
                     ),
                     _buildNavItem(
                       index: 2,
-                      icon: Icons.emoji_events_rounded,
-                      label: 'Scores',
+                      icon: Icons.task_alt_rounded,
+                      label: 'Tasks',
                     ),
                     _buildNavItem(
                       index: 3,
+                      icon: Icons.insights_rounded,
+                      label: 'Progress',
+                    ),
+                    _buildNavItem(
+                      index: 4,
                       icon: Icons.person_rounded,
                       label: 'Profile',
                     ),

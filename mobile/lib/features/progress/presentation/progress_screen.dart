@@ -196,7 +196,7 @@ class ProgressScreen extends StatelessWidget {
 
                   // Weekly XP Activity
                   Text(
-                    'Weekly XP Activity',
+                    'Practice activity',
                     style: AppTypography.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.4,
@@ -287,7 +287,6 @@ class ProgressScreen extends StatelessWidget {
                       child: DimensionBar(
                         label: entry.key,
                         value: entry.value,
-                        icon: Icons.insights_rounded,
                       ),
                     );
                   }),
