@@ -94,7 +94,7 @@ class _MainNavShellState extends State<MainNavShell> {
                   children: [
                     _buildNavItem(
                       index: 0,
-                      icon: Icons.flash_on_rounded,
+                      icon: Icons.home_rounded,
                       label: 'Home',
                     ),
                     _buildNavItem(
@@ -104,7 +104,7 @@ class _MainNavShellState extends State<MainNavShell> {
                     ),
                     _buildNavItem(
                       index: 2,
-                      icon: Icons.task_alt_rounded,
+                      icon: Icons.assignment_rounded,
                       label: 'Tasks',
                     ),
                     _buildNavItem(

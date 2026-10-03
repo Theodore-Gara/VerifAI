@@ -66,20 +66,13 @@ class ProfileScreen extends ConsumerWidget {
         ),
         centerTitle: false,
         actions: [
-          Container(
-            margin: const EdgeInsets.only(right: AppSpacing.screenPadding),
-            decoration: BoxDecoration(
-              color: AppColors.error.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-              border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.logout_rounded,
-                  color: AppColors.error, size: 20),
-              tooltip: 'Sign Out',
-              onPressed: () => _showLogoutDialog(context, ref),
-            ),
+          IconButton(
+            icon: const Icon(Icons.logout_rounded,
+                color: AppColors.error, size: 22),
+            tooltip: 'Sign Out',
+            onPressed: () => _showLogoutDialog(context, ref),
           ),
+          const SizedBox(width: AppSpacing.sm),
         ],
       ),
       body: Stack(
@@ -269,8 +262,8 @@ class ProfileScreen extends ConsumerWidget {
                       label: 'STREAK',
                       value: '7 Days',
                       icon: Icons.local_fire_department_rounded,
-                      iconColor: AppColors.goldDark,
-                      bgColor: AppColors.goldLight,
+                      iconColor: AppColors.primaryNavy,
+                      bgColor: AppColors.background,
                     ),
                     const SizedBox(width: AppSpacing.md),
                     _buildBentoStat(
