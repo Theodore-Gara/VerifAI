@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
+import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
 import 'package:verifai/shared/models/daily_task.dart';
 import 'package:verifai/shared/widgets/verifai_button.dart';
 
@@ -16,7 +18,8 @@ class TaskChallengeModal extends StatefulWidget {
     required this.onTaskCompleted,
   });
 
-  static Future<void> show(BuildContext context, DailyTask task, VoidCallback onCompleted) {
+  static Future<void> show(
+      BuildContext context, DailyTask task, VoidCallback onCompleted) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -52,125 +55,17 @@ class _TaskChallengeModalState extends State<TaskChallengeModal> {
     if (!mounted) return;
     Navigator.of(context).pop();
 
-    _showCelebrationDialog(context);
+    // TODO: wire to real TaskSubmissionResponse from the API once data
+    // plumbing lands. For now, score the mock attempt locally.
+    const score = 85;
+    const feedback =
+        'You flagged the error before acting on it and explained your reasoning clearly — '
+        'that\'s the verification habit this scenario rewards.';
+    const result =
+        FeedbackResult(score: score, feedback: feedback, xpEarned: 40);
+    if (!context.mounted) return;
+    context.push('/feedback', extra: result);
     widget.onTaskCompleted();
-  }
-
-  void _showCelebrationDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xxl)),
-        elevation: 16,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xxl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Celebration Badge
-              Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.accentGreen, AppColors.accentCyan],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.accentGreen.withValues(alpha: 0.35),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.verified_rounded,
-                  size: 48,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Text(
-                'QUEST COMPLETE!',
-                style: AppTypography.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                'Spot-on evaluation. You accurately identified the AI prompt discrepancy.',
-                style: AppTypography.textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.xl),
-
-              // Rewards Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.xpPurpleLight,
-                      borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(color: AppColors.xpPurple.withValues(alpha: 0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.bolt_rounded, color: AppColors.xpPurple, size: 18),
-                        const SizedBox(width: 4),
-                        Text(
-                          '+120 XP',
-                          style: AppTypography.textTheme.labelLarge?.copyWith(
-                            color: AppColors.xpPurple,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.goldLight,
-                      borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.local_fire_department_rounded, color: AppColors.goldDark, size: 18),
-                        const SizedBox(width: 4),
-                        Text(
-                          '8 DAYS!',
-                          style: AppTypography.textTheme.labelLarge?.copyWith(
-                            color: AppColors.goldDark,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xxl),
-              VerifAIButton(
-                label: 'Awesome!',
-                variant: VerifAIButtonVariant.verification,
-                onPressed: () => Navigator.of(dialogContext).pop(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   @override
@@ -199,11 +94,13 @@ class _TaskChallengeModalState extends State<TaskChallengeModal> {
 
           // Header
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding, vertical: AppSpacing.sm),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenPadding, vertical: AppSpacing.sm),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.accentLight,
                     borderRadius: BorderRadius.circular(AppRadius.badge),
@@ -211,7 +108,8 @@ class _TaskChallengeModalState extends State<TaskChallengeModal> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.sports_esports_rounded, size: 16, color: AppColors.accentGreen),
+                      const Icon(Icons.sports_esports_rounded,
+                          size: 16, color: AppColors.accentGreen),
                       const SizedBox(width: 4),
                       Text(
                         'MISSION PLAY',
@@ -227,7 +125,8 @@ class _TaskChallengeModalState extends State<TaskChallengeModal> {
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary),
+                  icon: const Icon(Icons.close_rounded,
+                      color: AppColors.textSecondary),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -236,7 +135,8 @@ class _TaskChallengeModalState extends State<TaskChallengeModal> {
 
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenPadding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -263,11 +163,13 @@ class _TaskChallengeModalState extends State<TaskChallengeModal> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.psychology_rounded, size: 18, color: AppColors.primaryNavy),
+                              const Icon(Icons.psychology_rounded,
+                                  size: 18, color: AppColors.primaryNavy),
                               const SizedBox(width: 6),
                               Text(
                                 'AI SCENARIO OUTPUT',
-                                style: AppTypography.textTheme.labelSmall?.copyWith(
+                                style: AppTypography.textTheme.labelSmall
+                                    ?.copyWith(
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.primaryNavy,
                                   letterSpacing: 0.5,
@@ -304,16 +206,21 @@ class _TaskChallengeModalState extends State<TaskChallengeModal> {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                       child: InkWell(
-                        onTap: () => setState(() => _selectedOptionIndex = index),
+                        onTap: () =>
+                            setState(() => _selectedOptionIndex = index),
                         borderRadius: BorderRadius.circular(AppRadius.lg),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
                           padding: const EdgeInsets.all(AppSpacing.md),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.accentLight.withValues(alpha: 0.7) : AppColors.surface,
+                            color: isSelected
+                                ? AppColors.accentLight.withValues(alpha: 0.7)
+                                : AppColors.surface,
                             borderRadius: BorderRadius.circular(AppRadius.lg),
                             border: Border.all(
-                              color: isSelected ? AppColors.accentGreen : AppColors.border,
+                              color: isSelected
+                                  ? AppColors.accentGreen
+                                  : AppColors.border,
                               width: isSelected ? 2 : 1,
                             ),
                           ),
@@ -324,23 +231,33 @@ class _TaskChallengeModalState extends State<TaskChallengeModal> {
                                 height: 26,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: isSelected ? AppColors.accentGreen : Colors.transparent,
+                                  color: isSelected
+                                      ? AppColors.accentGreen
+                                      : Colors.transparent,
                                   border: Border.all(
-                                    color: isSelected ? AppColors.accentGreen : AppColors.border,
+                                    color: isSelected
+                                        ? AppColors.accentGreen
+                                        : AppColors.border,
                                     width: 1.5,
                                   ),
                                 ),
                                 child: isSelected
-                                    ? const Icon(Icons.check, size: 16, color: Colors.white)
+                                    ? const Icon(Icons.check,
+                                        size: 16, color: Colors.white)
                                     : null,
                               ),
                               const SizedBox(width: AppSpacing.md),
                               Expanded(
                                 child: Text(
                                   _options[index],
-                                  style: AppTypography.textTheme.bodyMedium?.copyWith(
-                                    color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
-                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                  style: AppTypography.textTheme.bodyMedium
+                                      ?.copyWith(
+                                    color: isSelected
+                                        ? AppColors.textPrimary
+                                        : AppColors.textSecondary,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
                                   ),
                                 ),
                               ),
