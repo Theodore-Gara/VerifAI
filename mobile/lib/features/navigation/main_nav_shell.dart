@@ -104,7 +104,7 @@ class _MainNavShellState extends State<MainNavShell> {
                     ),
                     _buildNavItem(
                       index: 2,
-                      icon: Icons.assignment_rounded,
+                      icon: Icons.task_alt_rounded,
                       label: 'Tasks',
                     ),
                     _buildNavItem(

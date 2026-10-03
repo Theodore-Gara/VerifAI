@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:verifai/core/providers/app_providers.dart';
+import 'package:verifai/core/services/api_client.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
@@ -8,7 +11,7 @@ import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
 import 'package:verifai/shared/models/daily_task.dart';
 import 'package:verifai/shared/widgets/verifai_button.dart';
 
-class TaskChallengeModal extends StatefulWidget {
+class TaskChallengeModal extends ConsumerStatefulWidget {
   final DailyTask task;
   final VoidCallback onTaskCompleted;
 
@@ -32,10 +35,11 @@ class TaskChallengeModal extends StatefulWidget {
   }
 
   @override
-  State<TaskChallengeModal> createState() => _TaskChallengeModalState();
+  ConsumerState<TaskChallengeModal> createState() =>
+      _TaskChallengeModalState();
 }
 
-class _TaskChallengeModalState extends State<TaskChallengeModal> {
+class _TaskChallengeModalState extends ConsumerState<TaskChallengeModal> {
   int? _selectedOptionIndex;
   bool _isSubmitting = false;
 
@@ -46,26 +50,42 @@ class _TaskChallengeModalState extends State<TaskChallengeModal> {
     'Request secondary source citations before verifying',
   ];
 
-  void _handleSubmit() async {
+  Future<void> _handleSubmit() async {
     if (_selectedOptionIndex == null) return;
     setState(() => _isSubmitting = true);
 
-    await Future.delayed(const Duration(milliseconds: 700));
+    try {
+      final response = await ref.read(apiClientProvider).submitTask(
+            TaskSubmissionRequest(
+              taskId: widget.task.id,
+              answer: _options[_selectedOptionIndex!],
+            ),
+          );
 
-    if (!mounted) return;
-    Navigator.of(context).pop();
+      if (!mounted) return;
+      Navigator.of(context).pop();
 
-    // TODO: wire to real TaskSubmissionResponse from the API once data
-    // plumbing lands. For now, score the mock attempt locally.
-    const score = 85;
-    const feedback =
-        'You flagged the error before acting on it and explained your reasoning clearly — '
-        'that\'s the verification habit this scenario rewards.';
-    const result =
-        FeedbackResult(score: score, feedback: feedback, xpEarned: 40);
-    if (!context.mounted) return;
-    context.push('/feedback', extra: result);
-    widget.onTaskCompleted();
+      if (!context.mounted) return;
+      context.push(
+        '/feedback',
+        extra: FeedbackResult(
+          score: response.score,
+          feedback: response.feedback,
+          xpEarned: response.xpEarned,
+        ),
+      );
+      widget.onTaskCompleted();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not submit your answer: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override

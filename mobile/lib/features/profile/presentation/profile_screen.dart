@@ -5,6 +5,7 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
+import 'package:verifai/features/dashboard/providers.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -12,6 +13,9 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider).valueOrNull;
+    final progress = ref.watch(dashboardProvider).valueOrNull;
+    final xp = progress?.currentXp ?? 0;
+    final streak = progress?.streakDays ?? 0;
 
     final badges = [
       _Badge(
@@ -252,7 +256,7 @@ class ProfileScreen extends ConsumerWidget {
                   children: [
                     _buildBentoStat(
                       label: 'TOTAL XP',
-                      value: '2,450',
+                      value: _formatNumber(xp),
                       icon: Icons.bolt_rounded,
                       iconColor: AppColors.xpPurple,
                       bgColor: AppColors.xpPurpleLight.withValues(alpha: 0.5),
@@ -260,7 +264,7 @@ class ProfileScreen extends ConsumerWidget {
                     const SizedBox(width: AppSpacing.md),
                     _buildBentoStat(
                       label: 'STREAK',
-                      value: '7 Days',
+                      value: '$streak Days',
                       icon: Icons.local_fire_department_rounded,
                       iconColor: AppColors.primaryNavy,
                       bgColor: AppColors.background,
@@ -268,7 +272,7 @@ class ProfileScreen extends ConsumerWidget {
                     const SizedBox(width: AppSpacing.md),
                     _buildBentoStat(
                       label: 'LEAGUE RANK',
-                      value: '#8',
+                      value: '—',
                       icon: Icons.emoji_events_rounded,
                       iconColor: AppColors.accentGreen,
                       bgColor: AppColors.accentLight,
@@ -585,6 +589,11 @@ class ProfileScreen extends ConsumerWidget {
       ),
     );
   }
+
+  String _formatNumber(int value) => value.toString().replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+$)'),
+        (m) => '${m[1]},',
+      );
 
   void _showLogoutDialog(BuildContext context, WidgetRef ref) {
     showDialog(

@@ -6,9 +6,11 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/dashboard/presentation/task_challenge_modal.dart';
+import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/shared/models/daily_task.dart';
 import 'package:verifai/shared/widgets/daily_task_card.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
+import 'package:verifai/shared/widgets/shimmer_loader.dart';
 
 class TaskScreen extends ConsumerStatefulWidget {
   const TaskScreen({super.key});
@@ -18,48 +20,18 @@ class TaskScreen extends ConsumerStatefulWidget {
 }
 
 class _TaskScreenState extends ConsumerState<TaskScreen> {
-  static const List<DailyTask> _availableTasks = [
-    DailyTask(
-      id: 101,
-      title: 'Audit the Loan Approval Summary',
-      scenario:
-          'The AI drafted a loan approval summary citing "a strong credit history and stable income." '
-          'The applicant\'s file shows two recent defaults and no verified income documents.',
-      dimension: 'Verification',
-      trackName: 'Finance',
-      difficulty: 'Medium',
-    ),
-    DailyTask(
-      id: 102,
-      title: 'Draft a Safe Client Follow-up Email',
-      scenario:
-          'You asked the AI to write a follow-up to a client about their contract renewal. '
-          'It included specific pricing numbers it was never given.',
-      dimension: 'Risk & Governance',
-      trackName: 'Business Consulting',
-      difficulty: 'Hard',
-    ),
-    DailyTask(
-      id: 103,
-      title: 'Improve a Vague Data-Analysis Prompt',
-      scenario:
-          'A colleague prompted: "Look at this data and tell me what is important." '
-          'The output was generic and partly invented. Rewrite the prompt for reliable results.',
-      dimension: 'Prompt Design',
-      trackName: 'IT / Software',
-      difficulty: 'Easy',
-    ),
-  ];
-
   void _startTask(DailyTask task) {
     HapticFeedback.mediumImpact();
     TaskChallengeModal.show(context, task, () {
-      if (mounted) setState(() {});
+      // A completed attempt changes XP / streak / the next task.
+      ref.invalidate(dashboardProvider);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final dashboardAsync = ref.watch(dashboardProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -132,50 +104,77 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
           ),
           SafeArea(
             top: false,
-            child: _availableTasks.isEmpty
-                ? const EmptyState(
-                    icon: Icons.task_alt_rounded,
-                    title: 'All caught up!',
-                    message:
-                        'No active missions right now. Check back tomorrow for your next challenge.',
-                  )
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.screenPadding,
-                      AppSpacing.sm,
-                      AppSpacing.screenPadding,
-                      100, // accommodate floating dock
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Verification tasks',
-                          style:
-                              AppTypography.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.4,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        ...List.generate(_availableTasks.length, (index) {
-                          final task = _availableTasks[index];
-                          return Padding(
-                            padding:
-                                const EdgeInsets.only(bottom: AppSpacing.md),
-                            child: DailyTaskCard(
-                              task: task,
-                              onStart: () => _startTask(task),
-                            ),
-                          );
-                        }),
-                      ],
-                    ),
-                  ),
+            child: RefreshIndicator(
+              onRefresh: () async => ref.invalidate(dashboardProvider),
+              child: dashboardAsync.when(
+                data: (data) => _buildTasks(data.dailyTask),
+                loading: () => _buildShimmer(),
+                error: (error, stackTrace) => ErrorState(
+                  message: 'Failed to load your next task.',
+                  onRetry: () => ref.invalidate(dashboardProvider),
+                ),
+              ),
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTasks(DailyTask? task) {
+    if (task == null) {
+      return ListView(
+        // keep pull-to-refresh working on an empty screen
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: 120),
+          EmptyState(
+            icon: Icons.task_alt_rounded,
+            title: 'All caught up!',
+            message:
+                'No active missions right now. Check back tomorrow for your next challenge.',
+          ),
+        ],
+      );
+    }
+
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPadding,
+        AppSpacing.sm,
+        AppSpacing.screenPadding,
+        100, // accommodate floating dock
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Verification tasks',
+            style: AppTypography.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.4,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          DailyTaskCard(
+            task: task,
+            onStart: () => _startTask(task),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShimmer() {
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.screenPadding),
+      children: const [
+        ShimmerLoader(height: 28, width: 180),
+        SizedBox(height: AppSpacing.md),
+        ShimmerLoader.card(height: 200),
+      ],
     );
   }
 }
