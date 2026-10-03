@@ -35,8 +35,7 @@ class TaskChallengeModal extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<TaskChallengeModal> createState() =>
-      _TaskChallengeModalState();
+  ConsumerState<TaskChallengeModal> createState() => _TaskChallengeModalState();
 }
 
 class _TaskChallengeModalState extends ConsumerState<TaskChallengeModal> {

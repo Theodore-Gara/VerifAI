@@ -184,16 +184,16 @@ class ProgressScreen extends ConsumerWidget {
                           children: [
                             Text(
                               '${data.completedTasks}',
-                              style: AppTypography.textTheme.titleMedium
-                                  ?.copyWith(
+                              style:
+                                  AppTypography.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: -0.4,
                               ),
                             ),
                             Text(
                               'Completed',
-                              style: AppTypography.textTheme.labelSmall
-                                  ?.copyWith(
+                              style:
+                                  AppTypography.textTheme.labelSmall?.copyWith(
                                 color: AppColors.accentGreen,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 10,
@@ -362,7 +362,8 @@ class ProgressScreen extends ConsumerWidget {
         key
             .replaceAll('_', ' ')
             .split(' ')
-            .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+            .map(
+                (w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
             .join(' ');
   }
 }
