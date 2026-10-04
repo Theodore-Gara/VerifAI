@@ -7,7 +7,9 @@ import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
+import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
+import 'package:verifai/features/profile/providers.dart';
 import 'package:verifai/shared/models/daily_task.dart';
 import 'package:verifai/shared/widgets/verifai_button.dart';
 
@@ -64,13 +66,21 @@ class _TaskChallengeModalState extends ConsumerState<TaskChallengeModal> {
       if (!mounted) return;
       Navigator.of(context).pop();
 
+      // A scored attempt changes XP/streak/next task and may unlock a badge.
+      ref.invalidate(dashboardProvider);
+      ref.invalidate(achievementsProvider);
+
       if (!context.mounted) return;
       context.push(
         '/feedback',
         extra: FeedbackResult(
           score: response.score,
+          passed: response.passed,
           feedback: response.feedback,
           xpEarned: response.xpEarned,
+          matchedKeywords: response.matchedKeywords,
+          missedKeywords: response.missedKeywords,
+          newlyEarnedAchievements: response.newlyEarnedAchievements,
         ),
       );
       widget.onTaskCompleted();

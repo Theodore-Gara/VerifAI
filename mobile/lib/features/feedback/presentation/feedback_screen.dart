@@ -1,46 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
+import 'package:verifai/features/dashboard/providers.dart';
+import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/dimension_bar.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/score_ring.dart';
 import 'package:verifai/shared/widgets/verifai_button.dart';
 
-class FeedbackScreen extends StatelessWidget {
+class FeedbackScreen extends ConsumerWidget {
   final int score;
+  final bool passed;
   final String feedback;
   final int xpEarned;
+  final List<String> matchedKeywords;
+  final List<String> missedKeywords;
+  final List<Achievement> newlyEarnedAchievements;
   final Map<String, int> dimensionScores;
   final VoidCallback? onContinue;
 
   const FeedbackScreen({
     super.key,
     required this.score,
+    this.passed = false,
     required this.feedback,
     required this.xpEarned,
+    this.matchedKeywords = const [],
+    this.missedKeywords = const [],
+    this.newlyEarnedAchievements = const [],
     this.dimensionScores = const {},
     this.onContinue,
   });
 
-  static const Map<String, int> _defaultDimensionScores = {
-    'Verification': 78,
-    'AI Judgement': 64,
-    'Prompt Design': 71,
-    'Risk & Governance': 55,
-  };
+  bool get _didPass => passed || score >= 60;
 
-  bool get _passed => score >= 60;
-
-  String get _headline => _passed
+  String get _headline => _didPass
       ? 'You found the issue. Here\'s why it matters.'
       : 'Review the missed signal before trying again.';
 
   @override
-  Widget build(BuildContext context) {
-    final dimensions =
-        dimensionScores.isEmpty ? _defaultDimensionScores : dimensionScores;
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Prefer the live readiness breakdown; fall back to any passed-in scores.
+    final dimensions = dimensionScores.isNotEmpty
+        ? dimensionScores
+        : (ref.watch(dashboardProvider).valueOrNull?.dimensionScores ??
+            const <String, int>{});
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -122,15 +129,15 @@ class FeedbackScreen extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: _passed
+                            color: _didPass
                                 ? AppColors.accentLight
                                 : AppColors.goldLight,
                             borderRadius: BorderRadius.circular(AppRadius.pill),
                           ),
                           child: Text(
-                            _passed ? 'VERIFICATION PASSED' : 'REVIEW REQUIRED',
+                            _didPass ? 'VERIFICATION PASSED' : 'REVIEW REQUIRED',
                             style: AppTypography.textTheme.labelSmall?.copyWith(
-                              color: _passed
+                              color: _didPass
                                   ? AppColors.accentGreen
                                   : AppColors.goldDark,
                               fontWeight: FontWeight.w800,
@@ -191,10 +198,66 @@ class FeedbackScreen extends StatelessWidget {
                             ],
                           ),
                         ),
+                        // Newly earned achievements
+                        if (newlyEarnedAchievements.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.md),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            decoration: BoxDecoration(
+                              color: AppColors.accentLight,
+                              borderRadius: BorderRadius.circular(AppRadius.card),
+                              border: Border.all(
+                                  color: AppColors.accentGreen
+                                      .withValues(alpha: 0.4)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.workspace_premium_rounded,
+                                    color: AppColors.accentGreen, size: 20),
+                                const SizedBox(width: AppSpacing.sm),
+                                Expanded(
+                                  child: Text(
+                                    'New achievement: ${newlyEarnedAchievements.map((a) => a.name).join(', ')}',
+                                    style: AppTypography.textTheme.labelMedium
+                                        ?.copyWith(
+                                      color: AppColors.accentGreen,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
+
+                  // Matched / missed concepts
+                  if (matchedKeywords.isNotEmpty || missedKeywords.isNotEmpty) ...[
+                    Text(
+                      'Concepts',
+                      style: AppTypography.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.sm,
+                      children: [
+                        ...matchedKeywords
+                            .map((k) => _ConceptChip(label: k, matched: true)),
+                        ...missedKeywords
+                            .map((k) => _ConceptChip(label: k, matched: false)),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                  ],
 
                   // Dimension Breakdown
                   Text(
@@ -206,16 +269,24 @@ class FeedbackScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  ...dimensions.entries.map((entry) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: DimensionBar(
-                        label: entry.key,
-                        value: entry.value,
-                        icon: Icons.insights_rounded,
+                  if (dimensions.isEmpty)
+                    Text(
+                      'Your readiness dimensions will appear once a task has been scored.',
+                      style: AppTypography.textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
                       ),
-                    );
-                  }),
+                    )
+                  else
+                    ...dimensions.entries.map((entry) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: DimensionBar(
+                          label: _dimensionLabel(entry.key),
+                          value: entry.value,
+                          icon: Icons.insights_rounded,
+                        ),
+                      );
+                    }),
                 ],
               ),
             ),
@@ -243,18 +314,82 @@ class FeedbackScreen extends StatelessWidget {
           : null,
     );
   }
+
+  String _dimensionLabel(String key) {
+    const labels = {
+      'verification': 'Verification',
+      'judgement': 'AI Judgement',
+      'ai_judgement': 'AI Judgement',
+      'prompt_design': 'Prompt Design',
+      'risk_governance': 'Risk & Governance',
+      'human_ai_collab': 'Human-AI Collaboration',
+    };
+    return labels[key] ??
+        key
+            .replaceAll('_', ' ')
+            .split(' ')
+            .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+            .join(' ');
+  }
 }
 
-/// Carries a completed attempt\'s outcome to the /feedback route via `extra`.
+class _ConceptChip extends StatelessWidget {
+  final String label;
+  final bool matched;
+
+  const _ConceptChip({required this.label, required this.matched});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = matched ? AppColors.accentGreen : AppColors.goldDark;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: 6),
+      decoration: BoxDecoration(
+        color: matched ? AppColors.accentLight : AppColors.goldLight,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            matched ? Icons.check_circle_rounded : Icons.remove_circle_outline,
+            size: 14,
+            color: color,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: AppTypography.textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Carries a completed attempt's outcome to the /feedback route via `extra`.
 class FeedbackResult {
   final int score;
+  final bool passed;
   final String feedback;
   final int xpEarned;
+  final List<String> matchedKeywords;
+  final List<String> missedKeywords;
+  final List<Achievement> newlyEarnedAchievements;
 
   const FeedbackResult({
     required this.score,
+    this.passed = false,
     required this.feedback,
     required this.xpEarned,
+    this.matchedKeywords = const [],
+    this.missedKeywords = const [],
+    this.newlyEarnedAchievements = const [],
   });
 }
 

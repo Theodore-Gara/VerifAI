@@ -5,6 +5,7 @@ abstract class ApiClient {
   Future<AuthSyncResponse> syncUser(User user);
   Future<void> updateProfile(int trackId);
   Future<DashboardData> getDashboard();
+  Future<List<Achievement>> getAchievements();
   Future<TaskSubmissionResponse> submitTask(TaskSubmissionRequest request);
 }
 
@@ -29,12 +30,20 @@ class TaskSubmissionRequest {
 
 class TaskSubmissionResponse {
   final int score;
+  final bool passed;
   final String feedback;
   final int xpEarned;
+  final List<String> matchedKeywords;
+  final List<String> missedKeywords;
+  final List<Achievement> newlyEarnedAchievements;
 
   TaskSubmissionResponse({
     required this.score,
+    this.passed = false,
     required this.feedback,
     required this.xpEarned,
+    this.matchedKeywords = const [],
+    this.missedKeywords = const [],
+    this.newlyEarnedAchievements = const [],
   });
 }

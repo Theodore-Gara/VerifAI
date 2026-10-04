@@ -6,6 +6,8 @@ import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/dashboard/providers.dart';
+import 'package:verifai/features/profile/providers.dart';
+import 'package:verifai/shared/models.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -17,44 +19,22 @@ class ProfileScreen extends ConsumerWidget {
     final xp = progress?.currentXp ?? 0;
     final streak = progress?.streakDays ?? 0;
 
-    final badges = [
-      _Badge(
-          title: 'Prompt Ninja',
-          description: 'Crafted 10 optimal prompts',
-          isUnlocked: true,
-          icon: Icons.bolt_rounded,
-          color: AppColors.xpPurple),
-      _Badge(
-          title: 'Streak Titan',
-          description: 'Maintained a 7-day streak',
-          isUnlocked: true,
-          icon: Icons.local_fire_department_rounded,
-          color: AppColors.gold),
-      _Badge(
-          title: 'Bug Hunter',
-          description: 'Found 15 subtle hallucinations',
-          isUnlocked: true,
-          icon: Icons.bug_report_rounded,
-          color: AppColors.accentGreen),
-      _Badge(
-          title: 'Risk Guardian',
-          description: 'Solved 5 high-risk scenarios',
-          isUnlocked: false,
-          icon: Icons.security_rounded,
-          color: AppColors.info),
-      _Badge(
-          title: 'AI Maestro',
-          description: 'Reach 85+ Overall Score',
-          isUnlocked: false,
-          icon: Icons.military_tech_rounded,
-          color: AppColors.accentCyan),
-      _Badge(
-          title: 'Class Master',
-          description: 'Complete your Industry Track',
-          isUnlocked: false,
-          icon: Icons.school_rounded,
-          color: AppColors.warning),
-    ];
+    // Achievements earned by this user (GET /api/achievements/me). The full
+    // catalog is known to the app, so locked ones can be shown too.
+    final earned = ref.watch(achievementsProvider).valueOrNull ??
+        const <Achievement>[];
+    final earnedCodes = earned.map((a) => a.code).toSet();
+
+    final badges = _badgeCatalog
+        .map((spec) => _Badge(
+              title: spec.name,
+              description: spec.description,
+              isUnlocked: earnedCodes.contains(spec.code),
+              icon: spec.icon,
+              color: spec.color,
+            ))
+        .toList();
+    final unlockedCount = badges.where((b) => b.isUnlocked).length;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -324,7 +304,7 @@ class ProfileScreen extends ConsumerWidget {
                         border: Border.all(color: AppColors.border),
                       ),
                       child: Text(
-                        '3 / 6 Unlocked',
+                        '$unlockedCount / ${_badgeCatalog.length} Unlocked',
                         style: AppTypography.textTheme.labelSmall?.copyWith(
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w700,
@@ -642,3 +622,34 @@ class _Badge {
     required this.color,
   });
 }
+
+/// Known achievement catalog, mirroring the backend `achievements` seed.
+/// `GET /api/achievements/me` returns only earned rows, so the catalog lives
+/// here to render the locked state as well.
+class _BadgeSpec {
+  final String code;
+  final String name;
+  final String description;
+  final IconData icon;
+  final Color color;
+
+  const _BadgeSpec(
+      this.code, this.name, this.description, this.icon, this.color);
+}
+
+const List<_BadgeSpec> _badgeCatalog = [
+  _BadgeSpec('first-task', 'First Assessment',
+      'Complete your first workplace readiness task.', Icons.flag_rounded,
+      AppColors.accentGreen),
+  _BadgeSpec('five-tasks', 'Five in the Bag',
+      'Complete five workplace readiness tasks.', Icons.checklist_rounded,
+      AppColors.accentCyan),
+  _BadgeSpec('ten-tasks', 'Consistent Practitioner',
+      'Complete ten workplace readiness tasks.', Icons.military_tech_rounded,
+      AppColors.xpPurple),
+  _BadgeSpec('xp-500', '500 XP', 'Earn at least 500 XP.', Icons.bolt_rounded,
+      AppColors.gold),
+  _BadgeSpec('dimension-80', 'Strong Dimension',
+      'Reach a score of at least 80 in one readiness dimension.',
+      Icons.workspace_premium_rounded, AppColors.info),
+];
