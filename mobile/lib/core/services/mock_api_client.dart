@@ -115,13 +115,25 @@ class MockApiClient implements ApiClient {
   }
 
   @override
+  Future<List<Achievement>> getAchievements() async {
+    await _delay();
+    return const [];
+  }
+
+  @override
   Future<TaskSubmissionResponse> submitTask(
       TaskSubmissionRequest request) async {
     await _delay();
     return TaskSubmissionResponse(
       score: 85,
+      passed: true,
       feedback: 'Great job! You correctly identified the missing base case.',
       xpEarned: 120,
+      matchedKeywords: const [
+        'verify source records',
+        'correct the missed payment',
+      ],
+      missedKeywords: const [],
     );
   }
 }

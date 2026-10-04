@@ -90,6 +90,19 @@ class DioApiClient implements ApiClient {
   }
 
   @override
+  Future<List<Achievement>> getAchievements() async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>(
+      'achievements/me',
+      options: Options(headers: _authHeaders(token)),
+    );
+    final list = response.data?['achievements'] as List<dynamic>? ?? const [];
+    return list
+        .map((item) => Achievement.fromJson(Map<String, dynamic>.from(item as Map)))
+        .toList();
+  }
+
+  @override
   Future<TaskSubmissionResponse> submitTask(
       TaskSubmissionRequest request) async {
     final token = await _idToken();
@@ -103,10 +116,20 @@ class DioApiClient implements ApiClient {
     );
     final result =
         response.data?['result'] as Map<String, dynamic>? ?? const {};
+    final newlyEarned =
+        response.data?['newly_earned_achievements'] as List<dynamic>? ??
+            const [];
     return TaskSubmissionResponse(
       score: _int(result['score']),
+      passed: result['passed'] as bool? ?? false,
       feedback: result['feedback'] as String? ?? '',
       xpEarned: _int(result['xp_earned']),
+      matchedKeywords: _stringList(result['matched_keywords']),
+      missedKeywords: _stringList(result['missed_keywords']),
+      newlyEarnedAchievements: newlyEarned
+          .map((item) =>
+              Achievement.fromJson(Map<String, dynamic>.from(item as Map)))
+          .toList(),
     );
   }
 
@@ -141,4 +164,7 @@ class DioApiClient implements ApiClient {
 
   int _int(dynamic value, {int fallback = 0}) =>
       int.tryParse('$value') ?? fallback;
+
+  List<String> _stringList(dynamic value) =>
+      (value as List<dynamic>? ?? const []).map((e) => '$e').toList();
 }

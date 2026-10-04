@@ -144,8 +144,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               : const FeedbackResult(score: 0, feedback: '', xpEarned: 0);
           return FeedbackScreen(
             score: result.score,
+            passed: result.passed,
             feedback: result.feedback,
             xpEarned: result.xpEarned,
+            matchedKeywords: result.matchedKeywords,
+            missedKeywords: result.missedKeywords,
+            newlyEarnedAchievements: result.newlyEarnedAchievements,
             onContinue: () => context.pop(),
           );
         },
