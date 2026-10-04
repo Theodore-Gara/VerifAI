@@ -9,6 +9,8 @@ import 'auth_error_messages.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets.dart';
 
+enum _PendingAction { email, google }
+
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
@@ -23,6 +25,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  /// Which button is currently submitting, so only it shows a spinner.
+  _PendingAction? _pending;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -34,8 +39,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
-
     ref.listen<AsyncValue<AuthState>>(authNotifierProvider, (previous, next) {
       if (next.hasError && previous?.error != next.error) {
         final messenger = ScaffoldMessenger.of(context);
@@ -147,16 +150,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 VerifAIButton(
                   label: 'Create account',
                   variant: VerifAIButtonVariant.primary,
-                  isLoading: authState is AsyncLoading,
-                  onPressed: _handleRegister,
+                  isLoading: _pending == _PendingAction.email,
+                  onPressed: _pending == null ? _handleRegister : null,
                   leadingIcon: Icons.bolt_rounded,
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 VerifAIButton(
                   label: 'Continue with Google',
                   variant: VerifAIButtonVariant.secondary,
-                  isLoading: authState is AsyncLoading,
-                  onPressed: _handleGoogleSignIn,
+                  isLoading: _pending == _PendingAction.google,
+                  onPressed:
+                      _pending == null ? _handleGoogleSignIn : null,
                   leadingIcon: Icons.g_mobiledata,
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -193,17 +197,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  void _handleRegister() {
-    if (_formKey.currentState!.validate()) {
-      ref.read(authNotifierProvider.notifier).register(
+  Future<void> _handleRegister() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _pending = _PendingAction.email);
+    try {
+      await ref.read(authNotifierProvider.notifier).register(
             _emailController.text.trim(),
             _passwordController.text,
             _nameController.text.trim(),
           );
+    } finally {
+      if (mounted) setState(() => _pending = null);
     }
   }
 
   Future<void> _handleGoogleSignIn() async {
+    setState(() => _pending = _PendingAction.google);
     try {
       await ref.read(authNotifierProvider.notifier).signInWithGoogle();
     } catch (e) {
@@ -215,6 +224,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
+    } finally {
+      if (mounted) setState(() => _pending = null);
     }
   }
 }

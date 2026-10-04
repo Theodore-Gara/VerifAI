@@ -37,9 +37,17 @@ final authStateProvider = StreamProvider<AuthState>((ref) async* {
   yield* repository.authStateChanges();
 });
 
+/// The signed-in user, derived from [authStateProvider] so it always tracks
+/// the current session. Reading it from storage directly would cache the
+/// previous user across login/logout (a cross-user data leak on shared devices).
 final currentUserProvider = FutureProvider<User?>((ref) async {
-  final repository = await ref.watch(authRepositoryProvider.future);
-  return await repository.getCurrentUser();
+  final auth = ref.watch(authStateProvider);
+  return auth.valueOrNull?.when(
+    unauthenticated: () => null,
+    authenticated: (user, _) => user,
+    needsOnboarding: (user, _) => user,
+    loading: () => null,
+  );
 });
 
 final authNotifierProvider = AsyncNotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);

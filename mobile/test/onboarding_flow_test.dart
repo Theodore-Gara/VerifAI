@@ -63,8 +63,8 @@ void main() {
     // Continue → dashboard (not bounced back to industry select).
     await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
     await tester.pump();
-    await tester.pump(const Duration(seconds: 1)); // track save
-    await tester.pump(const Duration(seconds: 1)); // dashboard load
+    await tester.pump(const Duration(seconds: 2)); // track save + backend sync
+    await tester.pump(const Duration(seconds: 2)); // dashboard load
 
     expect(find.text('Home').first, findsOneWidget);
     expect(find.text('Select Your Industry'), findsNothing);
