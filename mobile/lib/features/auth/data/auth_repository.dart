@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/services.dart' show PlatformException;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:verifai/core/services/api_client.dart';
@@ -18,14 +16,13 @@ abstract class AuthRepository {
   Stream<AuthState> authStateChanges();
 }
 
-class MockAuthRepository implements AuthRepository {
+/// Real authentication: Firebase Auth (email/password + Google) with the
+/// backend as the source of truth for the user profile. There is no local
+/// user store any more.
+class FirebaseAuthRepository implements AuthRepository {
   final SecureStorageService _secureStorage;
   final ApiClient _apiClient;
-  final SharedPreferences _prefs;
   final _authStateController = StreamController<AuthState>.broadcast();
-
-  static const _keyUsers = 'mock_users';
-  static const _keyUsersSeeded = 'mock_users_seeded_v1';
 
   /// Firebase project verif-ai-5a435 -> Web OAuth client (client_type 3 in
   /// google-services.json). Passed as serverClientId so google_sign_in always
@@ -34,190 +31,50 @@ class MockAuthRepository implements AuthRepository {
   static const _googleServerClientId =
       '813373583048-alfif0t7ptkoru684ghp23dfra4t4sct.apps.googleusercontent.com';
 
-  /// Prototype seed accounts (no backend yet). Default password: password123
-  static const Map<String, Map<String, dynamic>> _seedUsers = {
-    'theo@verif.com': {
-      'id': 'seed-theo',
-      'email': 'theo@verif.com',
-      'password': 'password123',
-      'name': 'Theodore Nangara',
-      'trackId': null,
-      'trackName': null,
-      'hasCompletedOnboarding': false,
-      'createdAt': '2026-09-01T00:00:00.000Z',
-    },
-    'vusani@verif.com': {
-      'id': 'seed-vusani',
-      'email': 'vusani@verif.com',
-      'password': 'password123',
-      'name': 'Vusani Earl Mulaudzi',
-      'trackId': null,
-      'trackName': null,
-      'hasCompletedOnboarding': false,
-      'createdAt': '2026-09-01T00:00:00.000Z',
-    },
-    'naledi@verif.com': {
-      'id': 'seed-naledi',
-      'email': 'naledi@verif.com',
-      'password': 'password123',
-      'name': 'Lwandle Naledi Chloe Mvelase',
-      'trackId': null,
-      'trackName': null,
-      'hasCompletedOnboarding': false,
-      'createdAt': '2026-09-01T00:00:00.000Z',
-    },
-    'mpho@verif.com': {
-      'id': 'seed-mpho',
-      'email': 'mpho@verif.com',
-      'password': 'password123',
-      'name': 'Mpho Mokoena',
-      'trackId': null,
-      'trackName': null,
-      'hasCompletedOnboarding': false,
-      'createdAt': '2026-09-01T00:00:00.000Z',
-    },
-    'meshaque@verif.com': {
-      'id': 'seed-meshaque',
-      'email': 'meshaque@verif.com',
-      'password': 'password123',
-      'name': 'Meshaque Kalonji',
-      'trackId': null,
-      'trackName': null,
-      'hasCompletedOnboarding': false,
-      'createdAt': '2026-09-01T00:00:00.000Z',
-    },
-  };
-
-  MockAuthRepository({
+  FirebaseAuthRepository({
     required SecureStorageService secureStorage,
     required ApiClient apiClient,
-    required SharedPreferences prefs,
   })  : _secureStorage = secureStorage,
-        _apiClient = apiClient,
-        _prefs = prefs;
-
-  /// Seeds the prototype accounts on first run (once per install).
-  Future<void> _ensureSeedUsers() async {
-    final alreadySeeded = _prefs.getBool(_keyUsersSeeded) ?? false;
-    if (alreadySeeded) return;
-
-    final users = _getUsers();
-    var changed = false;
-    _seedUsers.forEach((email, data) {
-      if (!users.containsKey(email)) {
-        users[email] = Map<String, dynamic>.from(data);
-        changed = true;
-      }
-    });
-    if (changed) {
-      await _saveUsers(users);
-    }
-    await _prefs.setBool(_keyUsersSeeded, true);
-  }
-
-  @override
-  Future<AuthResult> login(String email, String password) async {
-    await _ensureSeedUsers();
-    final users = _getUsers();
-    final userData = users[email.toLowerCase()];
-
-    if (userData == null) {
-      throw Exception('User not found');
-    }
-
-    if (userData['password'] != password) {
-      throw Exception('Invalid password');
-    }
-
-    final user = User(
-      id: userData['id'] as String,
-      email: email,
-      name: userData['name'] as String?,
-      trackId: userData['trackId'] as String?,
-      trackName: userData['trackName'] as String?,
-      hasCompletedOnboarding:
-          userData['hasCompletedOnboarding'] as bool? ?? false,
-      createdAt:
-          userData['createdAt'] as String? ?? DateTime.now().toIso8601String(),
-    );
-
-    // Email/password accounts remain local prototype accounts for now. The
-    // backend integration is intentionally limited to Firebase/Google users.
-    final token = 'mock_local_token_${DateTime.now().millisecondsSinceEpoch}';
-
-    await _secureStorage.saveAuthToken(token);
-    await _secureStorage.saveUserData(
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      trackId: user.trackId,
-      trackName: user.trackName,
-      hasCompletedOnboarding: user.hasCompletedOnboarding,
-    );
-
-    _authStateController.add(
-      user.hasCompletedOnboarding
-          ? AuthState.authenticated(user: user, token: token)
-          : AuthState.needsOnboarding(user: user, token: token),
-    );
-
-    return AuthResult(user: user, token: token);
-  }
+        _apiClient = apiClient;
 
   @override
   Future<AuthResult> register(
       String email, String password, String name) async {
-    await _ensureSeedUsers();
-    final users = _getUsers();
-    final normalizedEmail = email.toLowerCase();
+    final trimmedName = name.trim();
 
-    if (users.containsKey(normalizedEmail)) {
-      throw Exception('Email already registered');
+    // createUserWithEmailAndPassword throws FirebaseAuthException
+    // (e.g. email-already-in-use, weak-password) which the UI humanizes.
+    final credential = await firebase_auth.FirebaseAuth.instance
+        .createUserWithEmailAndPassword(email: email, password: password);
+
+    final fbUser = credential.user;
+    if (fbUser == null) {
+      throw Exception('Account could not be created. Please try again.');
     }
 
-    final userId = DateTime.now().millisecondsSinceEpoch.toString();
-    final newUser = {
-      'id': userId,
-      'email': normalizedEmail,
-      'password': password, // In real app, hash this!
-      'name': name,
-      'trackId': null,
-      'trackName': null,
-      'hasCompletedOnboarding': false,
-      'createdAt': DateTime.now().toIso8601String(),
-    };
+    if (trimmedName.isNotEmpty) {
+      await fbUser.updateDisplayName(trimmedName);
+      // Force a token refresh so the `name` claim is present when the backend
+      // decodes the ID token during /auth/sync.
+      await fbUser.getIdToken(true);
+    }
 
-    users[normalizedEmail] = newUser;
-    await _saveUsers(users);
+    return _syncAndStore(_userFromFirebase(fbUser, name: trimmedName));
+  }
 
-    final user = User(
-      id: userId,
-      email: email,
-      name: name,
-      trackId: null,
-      trackName: null,
-      hasCompletedOnboarding: false,
-      createdAt: newUser['createdAt'] as String,
-    );
+  @override
+  Future<AuthResult> login(String email, String password) async {
+    // Throws FirebaseAuthException (wrong-password, user-not-found,
+    // invalid-credential, too-many-requests, ...) which the UI humanizes.
+    final credential = await firebase_auth.FirebaseAuth.instance
+        .signInWithEmailAndPassword(email: email, password: password);
 
-    // Email/password accounts remain local prototype accounts for now. The
-    // backend integration is intentionally limited to Firebase/Google users.
-    final token = 'mock_local_token_${DateTime.now().millisecondsSinceEpoch}';
+    final fbUser = credential.user;
+    if (fbUser == null) {
+      throw Exception('Sign-in failed. Please try again.');
+    }
 
-    await _secureStorage.saveAuthToken(token);
-    await _secureStorage.saveUserData(
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      trackId: null,
-      trackName: null,
-      hasCompletedOnboarding: false,
-    );
-
-    _authStateController
-        .add(AuthState.needsOnboarding(user: user, token: token));
-
-    return AuthResult(user: user, token: token);
+    return _syncAndStore(_userFromFirebase(fbUser));
   }
 
   @override
@@ -274,65 +131,45 @@ class MockAuthRepository implements AuthRepository {
       throw Exception('Google Sign-In failed: Firebase returned no user.');
     }
 
-    // Create or get user from our mock storage
-    final users = _getUsers();
-    final normalizedEmail = firebaseUser.email?.toLowerCase() ?? '';
+    return _syncAndStore(_userFromFirebase(firebaseUser));
+  }
 
-    Map<String, dynamic>? userData;
-    if (users.containsKey(normalizedEmail)) {
-      userData = users[normalizedEmail];
-    } else {
-      // Create new user
-      final userId = DateTime.now().millisecondsSinceEpoch.toString();
-      final newUser = {
-        'id': userId,
-        'email': normalizedEmail,
-        'password': '', // Google users don't have passwords
-        'name': firebaseUser.displayName ?? 'Google User',
-        'trackId': null,
-        'trackName': null,
-        'hasCompletedOnboarding': false,
-        'createdAt': DateTime.now().toIso8601String(),
-      };
-      users[normalizedEmail] = newUser;
-      await _saveUsers(users);
-      userData = newUser;
-    }
-
-    // userData is guaranteed to be non-null at this point
-    final data = userData!;
-    final user = User(
-      id: data['id'] as String,
-      email: normalizedEmail,
-      name: data['name'] as String?,
-      trackId: data['trackId'] as String?,
-      trackName: data['trackName'] as String?,
-      hasCompletedOnboarding: data['hasCompletedOnboarding'] as bool? ?? false,
-      createdAt:
-          data['createdAt'] as String? ?? DateTime.now().toIso8601String(),
-    );
-
+  /// Syncs the Firebase identity to the backend (POST /auth/sync + GET
+  /// /users/me), persists the session and emits the resulting auth state.
+  Future<AuthResult> _syncAndStore(User user) async {
     final syncResult = await _apiClient.syncUser(user);
-    final syncedUser = syncResult.user;
+    final synced = syncResult.user;
     final token = syncResult.token;
 
     await _secureStorage.saveAuthToken(token);
     await _secureStorage.saveUserData(
-      userId: syncedUser.id,
-      email: syncedUser.email,
-      name: syncedUser.name,
-      trackId: syncedUser.trackId,
-      trackName: syncedUser.trackName,
-      hasCompletedOnboarding: syncedUser.hasCompletedOnboarding,
+      userId: synced.id,
+      email: synced.email,
+      name: synced.name,
+      trackId: synced.trackId,
+      trackName: synced.trackName,
+      hasCompletedOnboarding: synced.hasCompletedOnboarding,
     );
 
     _authStateController.add(
-      syncedUser.hasCompletedOnboarding
-          ? AuthState.authenticated(user: syncedUser, token: token)
-          : AuthState.needsOnboarding(user: syncedUser, token: token),
+      synced.hasCompletedOnboarding
+          ? AuthState.authenticated(user: synced, token: token)
+          : AuthState.needsOnboarding(user: synced, token: token),
     );
 
-    return AuthResult(user: syncedUser, token: token);
+    return AuthResult(user: synced, token: token);
+  }
+
+  User _userFromFirebase(firebase_auth.User fbUser, {String? name}) {
+    return User(
+      id: fbUser.uid,
+      email: fbUser.email ?? '',
+      name: (name != null && name.isNotEmpty) ? name : fbUser.displayName,
+      trackId: null,
+      trackName: null,
+      hasCompletedOnboarding: false,
+      createdAt: DateTime.now().toIso8601String(),
+    );
   }
 
   /// Maps google_sign_in platform failures to actionable messages.
@@ -356,21 +193,40 @@ class MockAuthRepository implements AuthRepository {
     }
   }
 
+  /// Onboarding is derived from the backend: after the track has been saved
+  /// (PUT /users/profile), re-fetch the profile and read `industry_track_id`.
   @override
   Future<void> completeOnboarding() async {
-    final userData = await _secureStorage.getUserData();
-    if (userData == null) return;
-    final token = await _secureStorage.getAuthToken() ?? '';
-    final user = User(
-      id: userData.userId,
-      email: userData.email,
-      name: userData.name,
-      trackId: userData.trackId,
-      trackName: userData.trackName,
-      hasCompletedOnboarding: true,
-      createdAt: DateTime.now().toIso8601String(),
-    );
-    _authStateController.add(AuthState.authenticated(user: user, token: token));
+    final current = await getCurrentUser();
+    if (current == null) return;
+
+    try {
+      final syncResult = await _apiClient.syncUser(current);
+      final synced = syncResult.user;
+      final token = syncResult.token;
+
+      await _secureStorage.saveUserData(
+        userId: synced.id,
+        email: synced.email,
+        name: synced.name,
+        trackId: synced.trackId,
+        trackName: synced.trackName,
+        hasCompletedOnboarding: synced.hasCompletedOnboarding,
+      );
+
+      _authStateController.add(
+        synced.hasCompletedOnboarding
+            ? AuthState.authenticated(user: synced, token: token)
+            : AuthState.needsOnboarding(user: synced, token: token),
+      );
+    } catch (_) {
+      // Offline / backend hiccup: fall back to the locally stored selection so
+      // onboarding is never a dead end.
+      final token = await _secureStorage.getAuthToken() ?? '';
+      _authStateController.add(
+        AuthState.authenticated(user: current.copyWith(hasCompletedOnboarding: true), token: token),
+      );
+    }
   }
 
   @override
@@ -380,7 +236,7 @@ class MockAuthRepository implements AuthRepository {
       await firebase_auth.FirebaseAuth.instance.signOut();
       await GoogleSignIn().signOut();
     } catch (_) {
-      // Local prototype logout should still work in tests without Firebase.
+      // Firebase may be unavailable in tests; clearing local state is enough.
     }
     _authStateController.add(const AuthState.unauthenticated());
   }
@@ -407,22 +263,6 @@ class MockAuthRepository implements AuthRepository {
   @override
   Stream<AuthState> authStateChanges() {
     return _authStateController.stream;
-  }
-
-  Map<String, Map<String, dynamic>> _getUsers() {
-    final jsonString = _prefs.getString(_keyUsers);
-    if (jsonString == null) return {};
-    try {
-      final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
-      return decoded.map((key, value) =>
-          MapEntry(key, Map<String, dynamic>.from(value as Map)));
-    } catch (_) {
-      return {};
-    }
-  }
-
-  Future<void> _saveUsers(Map<String, Map<String, dynamic>> users) async {
-    await _prefs.setString(_keyUsers, jsonEncode(users));
   }
 
   void dispose() {

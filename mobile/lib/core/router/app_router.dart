@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:verifai/features/auth/presentation.dart';
 import 'package:verifai/features/auth/providers.dart';
+import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
 import 'package:verifai/features/navigation/main_nav_shell.dart';
 import 'package:verifai/features/onboarding/presentation.dart';
@@ -19,6 +20,9 @@ final routerProvider = Provider<GoRouter>((ref) {
   // router (rebuilding it would reset navigation back to the splash screen).
   ref.listen<AsyncValue<AuthState>>(authStateProvider, (previous, next) {
     refreshNotifier.notify();
+    // Drop user-scoped caches so a newly signed-in user never sees the previous
+    // user's dashboard data (shared-device data leak).
+    ref.invalidate(dashboardProvider);
   });
 
   final router = GoRouter(

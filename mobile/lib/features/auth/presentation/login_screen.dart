@@ -9,6 +9,8 @@ import 'auth_error_messages.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets.dart';
 
+enum _PendingAction { email, google }
+
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -21,6 +23,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  /// Which button is currently submitting, so only it shows a spinner.
+  _PendingAction? _pending;
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -30,8 +35,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
-
     ref.listen<AsyncValue<AuthState>>(authNotifierProvider, (previous, next) {
       if (next.hasError && previous?.error != next.error) {
         final messenger = ScaffoldMessenger.of(context);
@@ -109,8 +112,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 VerifAIButton(
                   label: 'Sign In',
                   variant: VerifAIButtonVariant.primary,
-                  isLoading: authState is AsyncLoading,
-                  onPressed: _handleLogin,
+                  isLoading: _pending == _PendingAction.email,
+                  onPressed:
+                      _pending == null ? _handleLogin : null,
                   leadingIcon: Icons.login_rounded,
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -136,8 +140,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   label: 'Continue with Google',
                   variant: VerifAIButtonVariant.secondary,
                   leadingIcon: Icons.g_mobiledata,
-                  isLoading: authState is AsyncLoading,
-                  onPressed: _handleGoogleSignIn,
+                  isLoading: _pending == _PendingAction.google,
+                  onPressed:
+                      _pending == null ? _handleGoogleSignIn : null,
                 ),
               ],
             ),
@@ -147,16 +152,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  void _handleLogin() {
-    if (_formKey.currentState!.validate()) {
-      ref.read(authNotifierProvider.notifier).login(
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _pending = _PendingAction.email);
+    try {
+      await ref.read(authNotifierProvider.notifier).login(
             _emailController.text.trim(),
             _passwordController.text,
           );
+    } finally {
+      if (mounted) setState(() => _pending = null);
     }
   }
 
   Future<void> _handleGoogleSignIn() async {
+    setState(() => _pending = _PendingAction.google);
     try {
       await ref.read(authNotifierProvider.notifier).signInWithGoogle();
     } catch (e) {
@@ -169,6 +179,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _pending = null);
     }
   }
 }
