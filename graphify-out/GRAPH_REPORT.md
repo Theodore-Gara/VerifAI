@@ -1,17 +1,17 @@
-# Graph Report - VerifAI  (2026-09-30)
+# Graph Report - VerifAI  (2026-10-04)
 
 ## Corpus Check
-- 136 files · ~73,421 words
+- 149 files · ~85,146 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 61 file(s) not represented in the graph (top: (none) 14, .xml 9, .plist 8)
+- Unclassified: 62 file(s) not represented in the graph (top: (none) 15, .xml 9, .plist 8)
 
 ## Summary
-- 1251 nodes · 1693 edges · 106 communities (83 shown, 23 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 46 edges (avg confidence: 0.87)
+- 1380 nodes · 1883 edges · 105 communities (79 shown, 26 thin omitted)
+- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 45 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `7f7a2c0c`
+- Built from commit: `6595b608`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -22,13 +22,13 @@
 - app_colors.dart
 - VerifAI
 - scoreboard_screen.dart
-- dashboard_screen.dart
+- package:verifai/core/theme/app_colors.dart
 - Screens Implemented — 9 Screens
 - score_ring.dart
-- main_nav_shell.dart
+- Medium value
 - app_spacing.dart
 - tasksController.js
-- track_roadmap_screen.dart
+- currentUserProvider
 - secure_storage_service.dart
 - @company
 - my_application.cc
@@ -49,41 +49,41 @@
 - mock_api_client.dart
 - verifai_button.dart
 - shimmer_loader.dart
-- app_providers.dart
-- verifai_card.dart
 - task_challenge_modal.dart
+- verifai_card.dart
+- feedback_screen.dart
 - empty_state.dart
 - app.js
 - app_router.dart
 - industry_track.dart
-- dashboard/providers.dart
-- currentUserProvider
-- Win32Window
 - package:flutter/material.dart
+- dashboard_screen.dart
+- Win32Window
+- app_typography.dart
 - MessageHandler
-- ConsumerState
+- check.js
 - Endpoints
-- widgets.dart
+- progress_screen.dart
 - manifest.json
 - MessageHandler
 - profile_screen.dart
 - pool.js
 - package:verifai/shared/models.dart
-- State
-- track_repository.dart
 - onboarding/providers.dart
+- track_repository.dart
+- db-setup.js
 - @freezed
 - windows/flutter/generated_plugin_registrant.cc
 - generate_app_icons.py
 - schema.sql
-- FlutterWindow
-- firebase.js
+- dashboard/providers.dart
+- tasks.js
 - models.dart
 - @JsonSerializable
 - VerifAI Deliverable 4 Backend Handoff
 - auth/presentation.dart
 - Point
-- main
+- CONTRIBUTING.md
 - FlutterActivity
 - c_users_theod_verifai_mobile_ios_runner_generatedpluginregistrant_h
 - LaunchImage.imageset/README.md
@@ -100,80 +100,78 @@
 - String?
 - routes/auth.js
 - dependencies
-- check.js
+- track_roadmap_screen.dart
 - achievements.js
 - progress.js
 - deploy
 - flutter_window.h
-- _MyApplication
-- Person 1 — Foundation Complete ✅
-- Railway Deployment Checklist
+- Migrating off `railway.json` to Infrastructure as Code
 - scripts
-- linux/flutter/generated_plugin_registrant.cc
+- auth_error_messages.dart
 - VerifAI Backend Audit — Deliverable 4
 - server.js
 - pull_request_template.md
-- my_application.h
 - TEST_MATRIX.md
 - firebase_auth_plugin_c_api
 - firebase_core_plugin_c_api
+- package_unsigned_ipa.sh
 
 ## God Nodes (most connected - your core abstractions)
 1. `Win32Window` - 24 edges
 2. `VerifAI Backend — Beginner User Manual` - 16 edges
-3. `authNotifierProvider` - 12 edges
+3. `authNotifierProvider` - 13 edges
 4. `MessageHandler` - 12 edges
 5. `Screens Implemented — 9 Screens` - 11 edges
-6. `Endpoints` - 10 edges
-7. `VerifAI Deliverable 4 Backend Handoff` - 10 edges
-8. `users` - 10 edges
-9. `FlutterWindow` - 10 edges
-10. `main()` - 10 edges
+6. `VerifAI — Backend Tasks` - 10 edges
+7. `FlutterWindow` - 10 edges
+8. `submitAttempt()` - 10 edges
+9. `AuthState` - 10 edges
+10. `Create` - 10 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `GitHub status` --references--> `main()`  [INFERRED]
-  backend/PROJECT_HANDOFF.md → mobile/linux/runner/main.cc
-- `Git workflow` --references--> `main()`  [INFERRED]
-  backend/README.md → mobile/linux/runner/main.cc
-- `Checklist` --references--> `main()`  [INFERRED]
-  .github/pull_request_template.md → mobile/linux/runner/main.cc
-- `Contributing to the VerifAI Backend` --references--> `main()`  [INFERRED]
-  backend/CONTRIBUTING.md → mobile/linux/runner/main.cc
-- `2. Important project rule` --references--> `main()`  [INFERRED]
-  backend/USER_MANUAL.md → mobile/linux/runner/main.cc
+- ``embedded_flaw` is never returned to the app` --references--> `getNextTask()`  [INFERRED]
+  BACKEND_TASKS.md → backend/controllers/tasksController.js
+- `P0 — Task volume and "run out" behaviour` --references--> `getNextTask()`  [INFERRED]
+  BACKEND_TASKS.md → backend/controllers/tasksController.js
+- `P2 — Streak timezone correctness` --references--> `submitAttempt()`  [INFERRED]
+  BACKEND_TASKS.md → backend/controllers/tasksController.js
+- `Mock Backend (Swap-Ready) — `ApiClient` Interface` --references--> `getTracks()`  [INFERRED]
+  mobile/README.md → backend/controllers/tracksController.js
+- `Mock Backend (Swap-Ready) — `ApiClient` Interface` --references--> `syncUser()`  [INFERRED]
+  mobile/README.md → backend/controllers/authController.js
 
 ## Import Cycles
 - None detected.
 
-## Communities (106 total, 23 thin omitted)
+## Communities (105 total, 26 thin omitted)
 
 ### Community 0 - "package.json"
 Cohesion: 0.10
 Nodes (18): description, devDependencies, jest, nodemon, supertest, main, name, version (+10 more)
 
 ### Community 1 - "daily_task_card.dart"
-Cohesion: 0.10
-Nodes (21): _TrackCard, build, DailyTaskCard, dimension, _DimensionChip, _formatDimension, _getDifficultyColor, _getDimensionColor (+13 more)
+Cohesion: 0.17
+Nodes (11): build, DailyTaskCard, dimension, _formatDimension, _getDifficultyColor, _getDimensionColor, isLoading, onStart (+3 more)
 
 ### Community 2 - "AppDelegate"
 Cohesion: 0.06
 Nodes (27): Any, Cocoa, Flutter, flutter_secure_storage_macos, FlutterAppDelegate, FlutterImplicitEngineBridge, FlutterImplicitEngineDelegate, FlutterMacOS (+19 more)
 
 ### Community 3 - "app_colors.dart"
-Cohesion: 0.04
-Nodes (42): app_colors.dart, app_radius.dart, app_spacing.dart, app_typography.dart, accentCyan, accentGreen, accentLight, ambientCyan (+34 more)
+Cohesion: 0.05
+Nodes (39): accentCyan, accentGreen, accentLight, ambientCyan, ambientGold, ambientGreen, AppColors, background (+31 more)
 
 ### Community 4 - "VerifAI"
-Cohesion: 0.11
-Nodes (18): About the Project, AI Workplace Readiness App, Backend setup, Database setup, Getting Started, Industry Tracks, Install (one-time, per contributor), Keeping the graph current (+10 more)
+Cohesion: 0.08
+Nodes (24): About the Project, AI Workplace Readiness App, Avoiding merge conflicts (team playbook), Backend setup, Branch naming, CI (GitHub Actions), Database setup, Getting Started (+16 more)
 
 ### Community 5 - "scoreboard_screen.dart"
 Cohesion: 0.13
 Nodes (14): _buildLeaderboardTile, _buildPodiumSpot, createState, dispose, initState, isCurrentUser, _LeaderboardEntry, name (+6 more)
 
-### Community 6 - "dashboard_screen.dart"
-Cohesion: 0.09
-Nodes (22): _buildDashboard, _buildShimmer, createState, _playTask, build, days, label, showIcon (+14 more)
+### Community 6 - "package:verifai/core/theme/app_colors.dart"
+Cohesion: 0.10
+Nodes (20): AuthBrandHeader, build, subtitle, title, build, days, label, showIcon (+12 more)
 
 ### Community 7 - "Screens Implemented — 9 Screens"
 Cohesion: 0.08
@@ -183,37 +181,37 @@ Nodes (24): 1. Visual Philosophy & Core Pillars, 2. Design Tokens Reference, 3. 
 Cohesion: 0.11
 Nodes (17): CustomPainter, build, child, color, _getDefaultTier, _getScoreColor, maxScore, _ModernScoreRingPainter (+9 more)
 
-### Community 9 - "main_nav_shell.dart"
-Cohesion: 0.12
-Nodes (15): dart:ui, List, build, _buildNavItem, createState, _currentIndex, initialIndex, initState (+7 more)
+### Community 9 - "Medium value"
+Cohesion: 0.13
+Nodes (14): 1. Stop shipping fake data on real-looking screens, 2. Task UI must consume the backend options (and the flaw), 3. 401 / token-expiry handling, 4. Task-exhaustion UX, 5. Test coverage, 6. Keep the web build deployed, 7. Git hygiene, 8. Accessibility pass (+6 more)
 
 ### Community 10 - "app_spacing.dart"
 Cohesion: 0.06
 Nodes (32): AppRadius, badge, button, card, fab, input, lg, md (+24 more)
 
 ### Community 11 - "tasksController.js"
-Cohesion: 0.10
-Nodes (31): awardAchievements(), getCurrentUser(), getNextTask(), pool, { positiveIntegerParam, requiredString }, preferredDifficulties(), { scoreAnswer, calculateXp, calculateLevel }, submitAttempt() (+23 more)
+Cohesion: 0.07
+Nodes (41): awardAchievements(), getCurrentUser(), getNextTask(), pool, { positiveIntegerParam, requiredString }, preferredDifficulties(), { scoreAnswer, calculateXp, calculateLevel }, submitAttempt() (+33 more)
 
-### Community 12 - "track_roadmap_screen.dart"
-Cohesion: 0.18
-Nodes (10): _buildMilestoneCard, _buildNodeIndicator, description, icon, _Milestone, MilestoneStatus, status, title (+2 more)
+### Community 12 - "currentUserProvider"
+Cohesion: 0.14
+Nodes (21): ConsumerState, ConsumerStatefulWidget, ConsumerWidget, currentUserProvider, build, DashboardScreen, _DashboardScreenState, dashboardProvider (+13 more)
 
 ### Community 13 - "secure_storage_service.dart"
 Cohesion: 0.05
-Nodes (41): core/router/app_router.dart, core/theme/app_theme.dart, firebase_options.dart, routerProvider, clearAll, deleteAuthToken, email, getAuthToken (+33 more)
+Nodes (42): core/router/app_router.dart, core/theme/app_theme.dart, firebase_options.dart, routerProvider, clearAll, deleteAuthToken, email, getAuthToken (+34 more)
 
 ### Community 15 - "my_application.cc"
-Cohesion: 0.19
-Nodes (12): GApplication, gboolean, gchar, gdkx, GObject, my_application_activate(), my_application_class_init(), my_application_dispose() (+4 more)
+Cohesion: 0.08
+Nodes (26): FlPluginRegistry, flutter_linux, flutter_secure_storage_linux_plugin, FlView, GApplication, gboolean, gchar, gdkx (+18 more)
 
 ### Community 16 - "verifai_input.dart"
-Cohesion: 0.08
-Nodes (24): FocusNode?, FormFieldValidator, build, controller, createState, dispose, enabled, focusNode (+16 more)
+Cohesion: 0.05
+Nodes (45): dart:ui, FocusNode?, FormFieldValidator, List, build, _buildNavItem, createState, _currentIndex (+37 more)
 
 ### Community 17 - "auth_repository.dart"
 Cohesion: 0.09
-Nodes (22): _apiClient, AuthRepository, authStateChanges, _authStateController, completeOnboarding, dispose, _ensureSeedUsers, getCurrentUser (+14 more)
+Nodes (23): dart:convert, _apiClient, AuthRepository, authStateChanges, _authStateController, completeOnboarding, dispose, _ensureSeedUsers (+15 more)
 
 ### Community 18 - "utils.cpp"
 Cohesion: 0.18
@@ -224,8 +222,8 @@ Cohesion: 0.13
 Nodes (21): AsyncNotifier, apiClient, AuthNotifier, authRepositoryProvider, build, completeOnboarding, getCurrentUser, login (+13 more)
 
 ### Community 20 - "user.dart"
-Cohesion: 0.11
-Nodes (18): bool get, createdAt, email, hasCompletedOnboarding, hashCode, id, name, operator (+10 more)
+Cohesion: 0.12
+Nodes (17): createdAt, email, hasCompletedOnboarding, hashCode, id, name, operator, _privateConstructorUsedError (+9 more)
 
 ### Community 21 - "win32_window.cpp"
 Cohesion: 0.16
@@ -236,28 +234,28 @@ Cohesion: 0.12
 Nodes (18): build, _buildShimmerList, _buildTracksList, createState, _getTrackIcon, _getTrackPerk, _handleContinue, IndustrySelectScreen (+10 more)
 
 ### Community 23 - "register_screen.dart"
-Cohesion: 0.10
-Nodes (24): FormState, build, createState, dispose, _emailController, _formKey, _handleGoogleSignIn, _handleLogin (+16 more)
+Cohesion: 0.09
+Nodes (29): auth_brand_header.dart, auth_error_messages.dart, FormState, build, createState, dispose, _emailController, _formKey (+21 more)
 
 ### Community 24 - "VerifAI Backend — Beginner User Manual"
 Cohesion: 0.08
-Nodes (23): 10. How the attempt flow works, 11. GitHub — safest beginner workflow, 12. Railway deployment, 13. Common problems, 14. What must never be committed, 15. Final pre-submission checklist, 1. What this backend does, 3. Prerequisites (+15 more)
+Nodes (24): 10. How the attempt flow works, 11. GitHub — safest beginner workflow, 12. Railway deployment, 13. Common problems, 14. What must never be committed, 15. Final pre-submission checklist, 1. What this backend does, 2. Important project rule (+16 more)
 
 ### Community 25 - "dashboard_data.dart"
-Cohesion: 0.12
-Nodes (15): dailyTask, dimensionScores, hashCode, operator, overallScore, _privateConstructorUsedError, streakDays, toJson (+7 more)
+Cohesion: 0.11
+Nodes (17): completedTasks, currentXp, dailyTask, dimensionScores, hashCode, level, operator, overallScore (+9 more)
 
 ### Community 26 - "api_client.dart"
 Cohesion: 0.12
-Nodes (15): answer, AuthSyncResponse, explanation, feedback, getDashboard, getTracks, score, submitTask (+7 more)
+Nodes (16): answer, AuthSyncResponse, explanation, feedback, getDashboard, getTracks, score, submitTask (+8 more)
 
 ### Community 27 - "splash_screen.dart"
-Cohesion: 0.13
-Nodes (16): Animation, AnimationController, build, _controller, createState, dispose, _fadeAnimation, initState (+8 more)
+Cohesion: 0.14
+Nodes (15): Animation, AnimationController, build, _controller, createState, dispose, _fadeAnimation, initState (+7 more)
 
 ### Community 28 - "auth_state.dart"
 Cohesion: 0.13
-Nodes (14): _, hashCode, operator, _privateConstructorUsedError, token, toString, user, authenticated (+6 more)
+Nodes (14): _, hashCode, operator, _privateConstructorUsedError, token, toString, user, int get (+6 more)
 
 ### Community 29 - "daily_task.dart"
 Cohesion: 0.13
@@ -272,68 +270,68 @@ Cohesion: 0.13
 Nodes (14): build, createState, height, isFullWidth, isLoading, _isPressed, label, leadingIcon (+6 more)
 
 ### Community 32 - "shimmer_loader.dart"
-Cohesion: 0.14
-Nodes (13): BorderRadius?, EdgeInsetsGeometry?, borderRadius, build, card, height, itemCount, itemHeight (+5 more)
+Cohesion: 0.13
+Nodes (14): BorderRadius?, EdgeInsetsGeometry?, borderRadius, build, card, height, itemCount, itemHeight (+6 more)
 
-### Community 33 - "app_providers.dart"
-Cohesion: 0.10
-Nodes (23): dart:convert, Dio, apiClientProvider, dio, dioProvider, getInstance, secureStorageProvider, sharedPreferencesProvider (+15 more)
+### Community 33 - "task_challenge_modal.dart"
+Cohesion: 0.05
+Nodes (40): api_client.dart, Dio, FirebaseAuth, apiClientProvider, dio, dioProvider, getInstance, secureStorageProvider (+32 more)
 
 ### Community 34 - "verifai_card.dart"
 Cohesion: 0.14
 Nodes (13): backgroundColor, borderRadius, build, child, _getBackgroundColor, _getBorder, _getShadow, margin (+5 more)
 
-### Community 35 - "task_challenge_modal.dart"
-Cohesion: 0.17
-Nodes (11): build, createState, _handleSubmit, _isSubmitting, onTaskCompleted, _options, _selectedOptionIndex, show (+3 more)
+### Community 35 - "feedback_screen.dart"
+Cohesion: 0.15
+Nodes (12): bool get, build, _defaultDimensionScores, dimensionScores, feedback, FeedbackResult, _headline, onContinue (+4 more)
 
 ### Community 36 - "empty_state.dart"
-Cohesion: 0.17
-Nodes (11): actionLabel, actionVariant, build, EmptyState, icon, message, onAction, onRetry (+3 more)
+Cohesion: 0.09
+Nodes (22): FeedbackEmptyScreen, FeedbackScreen, _TrackCard, _DimensionChip, _TrackChip, actionLabel, actionVariant, build (+14 more)
 
 ### Community 37 - "app.js"
 Cohesion: 0.11
 Nodes (15): achievementRoutes, allowedOrigins, app, authRoutes, cors, errorHandler, express, healthRoutes (+7 more)
 
 ### Community 38 - "app_router.dart"
-Cohesion: 0.17
-Nodes (11): AsyncValue, ChangeNotifier, GoRouter, GoRouterRefreshNotifier, notify, refreshNotifier, router, package:go_router/go_router.dart (+3 more)
+Cohesion: 0.13
+Nodes (14): AsyncValue, ChangeNotifier, GoRouter, GoRouterRefreshNotifier, notify, refreshNotifier, router, package:verifai/features/auth/presentation.dart (+6 more)
 
 ### Community 39 - "industry_track.dart"
 Cohesion: 0.14
 Nodes (12): description, hashCode, id, name, operator, _privateConstructorUsedError, toJson, toString (+4 more)
 
-### Community 40 - "dashboard/providers.dart"
-Cohesion: 0.17
-Nodes (11): DashboardData, apiClient, dashboardRepositoryProvider, getDashboard, refreshDashboard, refreshDashboardProvider, repository, DashboardData (+3 more)
+### Community 40 - "package:flutter/material.dart"
+Cohesion: 0.25
+Nodes (12): main, main, main, package:flutter/material.dart, package:flutter_riverpod/flutter_riverpod.dart, package:flutter_secure_storage/flutter_secure_storage.dart, package:flutter_test/flutter_test.dart, package:shared_preferences/shared_preferences.dart (+4 more)
 
-### Community 41 - "currentUserProvider"
-Cohesion: 0.24
-Nodes (10): ConsumerWidget, currentUserProvider, build, DashboardScreen, _DashboardScreenState, dashboardProvider, ProfileScreen, build (+2 more)
+### Community 41 - "dashboard_screen.dart"
+Cohesion: 0.20
+Nodes (9): _buildDashboard, _buildShimmer, createState, _playTask, package:go_router/go_router.dart, package:verifai/features/auth/providers.dart, package:verifai/shared/widgets.dart, Route /progress (+1 more)
 
 ### Community 42 - "Win32Window"
-Cohesion: 0.24
-Nodes (12): OnCreate, OnDestroy, HWND, Win32Window, child_content_, GetClientArea, OnCreate, OnDestroy (+4 more)
+Cohesion: 0.16
+Nodes (18): FlutterViewController, FlutterWindow, flutter_controller_, OnCreate, OnDestroy, project_, DartProject, HWND (+10 more)
 
-### Community 43 - "package:flutter/material.dart"
-Cohesion: 0.33
-Nodes (5): AppTypography, textTheme, package:flutter/material.dart, package:google_fonts/google_fonts.dart, static TextTheme get
+### Community 43 - "app_typography.dart"
+Cohesion: 0.15
+Nodes (11): app_colors.dart, app_radius.dart, app_spacing.dart, app_typography.dart, AppTheme, AppTypography, _heading, _inter (+3 more)
 
 ### Community 44 - "MessageHandler"
 Cohesion: 0.18
 Nodes (10): generated_plugin_registrant, DartProject, HWND, LPARAM, LRESULT, UINT, WPARAM, FlutterWindow::FlutterWindow() (+2 more)
 
-### Community 45 - "ConsumerState"
-Cohesion: 0.28
-Nodes (9): ConsumerState, ConsumerStatefulWidget, LoginScreen, _LoginScreenState, RegisterScreen, _RegisterScreenState, ScoreboardScreen, _ScoreboardScreenState (+1 more)
+### Community 45 - "check.js"
+Cohesion: 0.22
+Nodes (7): files, fs, path, roots, { spawnSync }, ref_child_process, ref_fs
 
 ### Community 46 - "Endpoints"
 Cohesion: 0.12
 Nodes (15): Authentication, Database setup, Endpoints, Error format, GET /api/achievements/me, GET /api/health, GET /api/progress/me, GET /api/tasks/next (+7 more)
 
-### Community 47 - "widgets.dart"
-Cohesion: 0.18
-Nodes (10): package:verifai/shared/widgets/daily_task_card.dart, package:verifai/shared/widgets/dimension_bar.dart, package:verifai/shared/widgets/empty_state.dart, package:verifai/shared/widgets/score_ring.dart, package:verifai/shared/widgets/shimmer_loader.dart, package:verifai/shared/widgets/streak_badge.dart, package:verifai/shared/widgets/verifai_button.dart, package:verifai/shared/widgets/verifai_card.dart (+2 more)
+### Community 47 - "progress_screen.dart"
+Cohesion: 0.10
+Nodes (23): _buildContent, _buildShimmer, _dimensionLabel, _weeklyActivity, _buildShimmer, _buildTasks, createState, _startTask (+15 more)
 
 ### Community 48 - "manifest.json"
 Cohesion: 0.18
@@ -344,8 +342,8 @@ Cohesion: 0.36
 Nodes (10): HWND, LPARAM, LRESULT, UINT, WPARAM, EnableFullDpiSupportIfAvailable(), GetHandle, GetThisFromHandle (+2 more)
 
 ### Community 50 - "profile_screen.dart"
-Cohesion: 0.11
-Nodes (18): Color?, IconData?, _Badge, _buildBentoStat, _buildModernBadgeTile, color, description, icon (+10 more)
+Cohesion: 0.10
+Nodes (19): Color?, IconData?, _Badge, _buildBentoStat, _buildModernBadgeTile, color, description, _formatNumber (+11 more)
 
 ### Community 51 - "pool.js"
 Cohesion: 0.15
@@ -355,21 +353,21 @@ Nodes (11): getTracks(), pool, { Pool }, express, pool, router, express, { getTr
 Cohesion: 0.29
 Nodes (7): _apiClient, DashboardRepository, getDashboard, MockDashboardRepository, refreshDashboard, package:verifai/core/services/api_client.dart, package:verifai/shared/models.dart
 
-### Community 53 - "State"
-Cohesion: 0.27
-Nodes (10): TaskChallengeModal, _TaskChallengeModalState, MainNavShell, _MainNavShellState, VerifAIButton, _VerifAIButtonState, VerifAIInput, _VerifAIInputState (+2 more)
-
-### Community 54 - "track_repository.dart"
-Cohesion: 0.20
-Nodes (10): ApiClient, MockApiClient, SecureStorageService, _apiClient, getTracks, MockTrackRepository, _secureStorage, selectTrack (+2 more)
-
-### Community 55 - "onboarding/providers.dart"
+### Community 53 - "onboarding/providers.dart"
 Cohesion: 0.22
 Nodes (8): apiClient, getTracks, repository, secureStorage, selectedTrackProvider, selectTrack, trackRepositoryProvider, package:verifai/features/onboarding/data/track_repository.dart
 
+### Community 54 - "track_repository.dart"
+Cohesion: 0.18
+Nodes (11): ApiClient, DioApiClient, MockApiClient, SecureStorageService, _apiClient, getTracks, MockTrackRepository, _secureStorage (+3 more)
+
+### Community 55 - "db-setup.js"
+Cohesion: 0.22
+Nodes (12): baseline(), crypto, DB_DIR, ensureLedger(), fs, listMigrations(), main(), MIGRATIONS_DIR (+4 more)
+
 ### Community 56 - "@freezed"
-Cohesion: 0.20
-Nodes (10): @freezed, AuthResult, DailyTask, IndustryTrack, DailyTask, _DailyTask, IndustryTrack, _IndustryTrack (+2 more)
+Cohesion: 0.15
+Nodes (13): @freezed, AuthResult, DailyTask, DashboardData, IndustryTrack, DailyTask, _DailyTask, DashboardData (+5 more)
 
 ### Community 57 - "windows/flutter/generated_plugin_registrant.cc"
 Cohesion: 0.33
@@ -380,16 +378,16 @@ Cohesion: 0.29
 Nodes (7): generate(), _logo_on_canvas(), Generate VerifAI launcher icons from the master icon (transparent PNG).…, Center the logo on a square canvas, scaled to `fill` of its largest side., os, pil, sys
 
 ### Community 59 - "schema.sql"
-Cohesion: 0.14
-Nodes (26): achievements, idx_skill_scores_user, idx_task_attempts_user, idx_task_attempts_user_task, idx_tasks_track_difficulty, idx_user_achievements_user, skill_scores, task_attempts (+18 more)
+Cohesion: 0.12
+Nodes (24): idx_skill_scores_user, idx_task_attempts_user, idx_task_attempts_user_task, idx_tasks_track_difficulty, idx_user_achievements_user, set_updated_at, trg_skill_scores_updated_at, trg_user_progress_updated_at (+16 more)
 
-### Community 60 - "FlutterWindow"
-Cohesion: 0.33
-Nodes (6): FlutterViewController, FlutterWindow, flutter_controller_, project_, DartProject, unique_ptr
+### Community 60 - "dashboard/providers.dart"
+Cohesion: 0.25
+Nodes (7): apiClient, dashboardRepositoryProvider, getDashboard, refreshDashboard, refreshDashboardProvider, repository, package:verifai/features/dashboard/data/dashboard_repository.dart
 
-### Community 61 - "firebase.js"
-Cohesion: 0.21
-Nodes (10): admin, fs, getFirebaseAdmin(), loadServiceAccount(), path, { getFirebaseAdmin }, verifyFirebaseToken(), firebase-admin (+2 more)
+### Community 61 - "tasks.js"
+Cohesion: 0.16
+Nodes (13): admin, fs, getFirebaseAdmin(), loadServiceAccount(), path, { getFirebaseAdmin }, verifyFirebaseToken(), express (+5 more)
 
 ### Community 62 - "models.dart"
 Cohesion: 0.33
@@ -411,25 +409,21 @@ Nodes (3): presentation/login_screen.dart, presentation/register_screen.dart, pr
 Cohesion: 0.21
 Nodes (6): Point, x, y, Size, height, width
 
-### Community 67 - "main"
-Cohesion: 0.24
-Nodes (9): Contributing to the VerifAI Backend, 2. Important project rule, main(), Avoiding merge conflicts (team playbook), Branch naming, CI (GitHub Actions), Git Workflow, Resolving a conflict (quick reference) (+1 more)
-
 ### Community 75 - "VerifAI Backend — Deliverable 4"
 Cohesion: 0.22
 Nodes (8): Core Deliverable 4 flow, Database, Documentation, Git workflow, Quick start, Security, Stack, VerifAI Backend — Deliverable 4
 
 ### Community 86 - "routes/auth.js"
-Cohesion: 0.25
-Nodes (7): pool, syncUser(), express, router, { syncUser }, { verifyFirebaseToken }, Mock Backend (Swap-Ready) — `ApiClient` Interface
+Cohesion: 0.13
+Nodes (14): pool, syncUser(), express, router, { syncUser }, { verifyFirebaseToken }, Architecture, Core Packages (+6 more)
 
 ### Community 87 - "dependencies"
 Cohesion: 0.22
 Nodes (9): dependencies, cors, dotenv, express, express-rate-limit, firebase-admin, helmet, pg (+1 more)
 
-### Community 88 - "check.js"
-Cohesion: 0.25
-Nodes (7): files, fs, path, roots, { spawnSync }, walk(), ref_child_process
+### Community 88 - "track_roadmap_screen.dart"
+Cohesion: 0.18
+Nodes (10): _buildMilestoneCard, _buildNodeIndicator, description, icon, _Milestone, MilestoneStatus, status, title (+2 more)
 
 ### Community 89 - "achievements.js"
 Cohesion: 0.29
@@ -447,25 +441,13 @@ Nodes (7): deploy, healthcheckPath, healthcheckTimeout, restartPolicyMaxRetries,
 Cohesion: 0.39
 Nodes (5): dart_project, flutter_view_controller, functional, memory, windows
 
-### Community 93 - "_MyApplication"
-Cohesion: 0.25
-Nodes (8): FlView, GtkApplication, first_frame_cb(), my_application_init(), my_application_new(), _MyApplication, dart_entrypoint_arguments, parent_instance
-
-### Community 94 - "Person 1 — Foundation Complete ✅"
-Cohesion: 0.29
-Nodes (7): Architecture, Core Packages, Design System (`lib/core/theme/`), Models (Freezed + JSON Serializable) — 5 Models, Person 1 — Foundation Complete ✅, Secure Storage, Shared Widgets (`lib/shared/widgets/`) — 10 Components
-
-### Community 95 - "Railway Deployment Checklist"
-Cohesion: 0.33
-Nodes (5): Before deployment, Deploy, Production verification, Railway Deployment Checklist, Railway variables
+### Community 95 - "Migrating off `railway.json` to Infrastructure as Code"
+Cohesion: 0.15
+Nodes (12): Before deployment, Current state, Deploy, Footguns, Migrating off `railway.json` to Infrastructure as Code, Optional: a real `DATABASE_URL` reference, Production verification, Railway Deployment Checklist (+4 more)
 
 ### Community 96 - "scripts"
-Cohesion: 0.33
-Nodes (6): scripts, check, dev, start, test, test:watch
-
-### Community 97 - "linux/flutter/generated_plugin_registrant.cc"
-Cohesion: 0.33
-Nodes (4): FlPluginRegistry, flutter_linux, flutter_secure_storage_linux_plugin, fl_register_plugins()
+Cohesion: 0.25
+Nodes (8): scripts, check, db:migrate, db:setup, dev, start, test, test:watch
 
 ### Community 98 - "VerifAI Backend Audit — Deliverable 4"
 Cohesion: 0.40
@@ -480,24 +462,24 @@ Cohesion: 0.40
 Nodes (4): Checklist, How was it tested?, Type of change, What does this PR do?
 
 ## Knowledge Gaps
-- **662 isolated node(s):** `Authentication`, `GET /api/health`, `GET /api/tracks`, `POST /api/auth/sync`, `GET /api/users/me` (+657 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 818 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **23 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **743 isolated node(s):** `The live data does not match the repo`, `Scoring is mismatched with the data`, `Move to the multiple-choice model (pending restructure)`, `P1 — Leaderboard / scoreboard endpoint`, `P1 — Activity / streak history endpoint` (+738 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 900 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **26 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `main()` connect `main` to `VerifAI Deliverable 4 Backend Handoff`, `pull_request_template.md`, `my_application.h`, `VerifAI Backend — Deliverable 4`, `_MyApplication`?**
-  _High betweenness centrality (0.076) - this node is a cross-community bridge._
-- **Why does `my_application_new()` connect `_MyApplication` to `main`, `my_application.cc`?**
-  _High betweenness centrality (0.074) - this node is a cross-community bridge._
-- **Why does `Win32Window` connect `Win32Window` to `Point`, `MessageHandler`, `flutter_window.h`, `MessageHandler`, `win32_window.cpp`, `FlutterWindow`?**
-  _High betweenness centrality (0.047) - this node is a cross-community bridge._
-- **What connects `Authentication`, `GET /api/health`, `GET /api/tracks` to the rest of the system?**
-  _662 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `Win32Window` connect `Win32Window` to `Point`, `MessageHandler`, `MessageHandler`, `win32_window.cpp`, `flutter_window.h`?**
+  _High betweenness centrality (0.026) - this node is a cross-community bridge._
+- **Why does `FlutterWindow` connect `Win32Window` to `MessageHandler`, `flutter_window.h`?**
+  _High betweenness centrality (0.015) - this node is a cross-community bridge._
+- **Why does `ApiClient` connect `track_repository.dart` to `task_challenge_modal.dart`, `api_client.dart`, `package:verifai/shared/models.dart`, `auth_repository.dart`?**
+  _High betweenness centrality (0.015) - this node is a cross-community bridge._
+- **What connects `The live data does not match the repo`, `Scoring is mismatched with the data`, `Move to the multiple-choice model (pending restructure)` to the rest of the system?**
+  _743 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `package.json` be split into smaller, more focused modules?**
   _Cohesion score 0.1 - nodes in this community are weakly interconnected._
-- **Should `daily_task_card.dart` be split into smaller, more focused modules?**
-  _Cohesion score 0.09956709956709957 - nodes in this community are weakly interconnected._
 - **Should `AppDelegate` be split into smaller, more focused modules?**
   _Cohesion score 0.05975609756097561 - nodes in this community are weakly interconnected._
+- **Should `app_colors.dart` be split into smaller, more focused modules?**
+  _Cohesion score 0.05 - nodes in this community are weakly interconnected._
