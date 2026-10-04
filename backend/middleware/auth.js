@@ -1,4 +1,4 @@
-const { getFirebaseAdmin } = require('../db/firebase');
+const { getFirebaseAuth } = require('../db/firebase');
 
 async function verifyFirebaseToken(req, res, next) {
   const authHeader = req.headers.authorization || '';
@@ -12,8 +12,7 @@ async function verifyFirebaseToken(req, res, next) {
   }
 
   try {
-    const admin = getFirebaseAdmin();
-    req.firebaseUser = await admin.auth().verifyIdToken(token);
+    req.firebaseUser = await getFirebaseAuth().verifyIdToken(token);
     return next();
   } catch (err) {
     console.error('Firebase token verification failed:', err.message);

@@ -1,3 +1,5 @@
+const assert = require('node:assert/strict');
+const { test } = require('node:test');
 const {
   normalize,
   extractKeywords,
@@ -6,48 +8,48 @@ const {
   calculateLevel,
 } = require('../services/scoringService');
 
-describe('scoringService', () => {
-  test('normalizes punctuation and whitespace', () => {
-    expect(normalize('  Verify, the SOURCE!  ')).toBe('verify the source');
-  });
+test('normalizes punctuation and whitespace', () => {
+  assert.equal(normalize('  Verify, the SOURCE!  '), 'verify the source');
+});
 
-  test('extracts unique meaningful keywords', () => {
-    expect(extractKeywords('Keywords: verify source records, correct the payment, review evidence.'))
-      .toEqual(expect.arrayContaining(['verify', 'source', 'records', 'correct', 'payment', 'review', 'evidence']));
-  });
+test('extracts unique meaningful keywords', () => {
+  const keywords = extractKeywords('Keywords: verify source records, correct the payment, review evidence.');
+  for (const keyword of ['verify', 'source', 'records', 'correct', 'payment', 'review', 'evidence']) {
+    assert.ok(keywords.includes(keyword));
+  }
+});
 
-  test('scores a strongly matching answer highly', () => {
-    const result = scoreAnswer(
-      'I would verify the source records, correct the payment and review the evidence before relying on the result.',
-      'Keywords: verify source records, correct the payment, review evidence.'
-    );
-    expect(result.score).toBeGreaterThanOrEqual(80);
-    expect(result.passed).toBe(true);
-  });
+test('scores a strongly matching answer highly', () => {
+  const result = scoreAnswer(
+    'I would verify the source records, correct the payment and review the evidence before relying on the result.',
+    'Keywords: verify source records, correct the payment, review evidence.'
+  );
+  assert.ok(result.score >= 80);
+  assert.equal(result.passed, true);
+});
 
-  test('gives partial credit when only some concepts are present', () => {
-    const result = scoreAnswer(
-      'I would verify the source records.',
-      'Keywords: verify source records, correct the payment, review evidence.'
-    );
-    expect(result.score).toBeGreaterThan(0);
-    expect(result.score).toBeLessThan(100);
-    expect(result.missedKeywords.length).toBeGreaterThan(0);
-  });
+test('gives partial credit when only some concepts are present', () => {
+  const result = scoreAnswer(
+    'I would verify the source records.',
+    'Keywords: verify source records, correct the payment, review evidence.'
+  );
+  assert.ok(result.score > 0);
+  assert.ok(result.score < 100);
+  assert.ok(result.missedKeywords.length > 0);
+});
 
-  test('returns zero for an empty answer', () => {
-    expect(scoreAnswer('', 'Keywords: verify source records.').score).toBe(0);
-  });
+test('returns zero for an empty answer', () => {
+  assert.equal(scoreAnswer('', 'Keywords: verify source records.').score, 0);
+});
 
-  test('calculates bounded XP', () => {
-    expect(calculateXp(0)).toBe(20);
-    expect(calculateXp(100)).toBe(70);
-  });
+test('calculates bounded XP', () => {
+  assert.equal(calculateXp(0), 20);
+  assert.equal(calculateXp(100), 70);
+});
 
-  test('levels increase every 250 XP', () => {
-    expect(calculateLevel(0)).toBe(1);
-    expect(calculateLevel(249)).toBe(1);
-    expect(calculateLevel(250)).toBe(2);
-    expect(calculateLevel(500)).toBe(3);
-  });
+test('levels increase every 250 XP', () => {
+  assert.equal(calculateLevel(0), 1);
+  assert.equal(calculateLevel(249), 1);
+  assert.equal(calculateLevel(250), 2);
+  assert.equal(calculateLevel(500), 3);
 });

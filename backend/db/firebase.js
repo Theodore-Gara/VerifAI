@@ -1,4 +1,5 @@
-const admin = require('firebase-admin');
+const { cert, getApps, initializeApp } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
 const fs = require('fs');
 const path = require('path');
 
@@ -25,11 +26,15 @@ function loadServiceAccount() {
 }
 
 function getFirebaseAdmin() {
-  if (!admin.apps.length) {
+  if (!getApps().length) {
     const serviceAccount = loadServiceAccount();
-    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+    initializeApp({ credential: cert(serviceAccount) });
   }
-  return admin;
+  return getApps()[0];
 }
 
-module.exports = { getFirebaseAdmin };
+function getFirebaseAuth() {
+  return getAuth(getFirebaseAdmin());
+}
+
+module.exports = { getFirebaseAuth };

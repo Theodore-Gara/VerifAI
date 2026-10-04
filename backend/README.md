@@ -4,11 +4,11 @@ Node.js/Express REST API for the VerifAI workplace-readiness mobile application.
 
 ## Stack
 
-- Node.js
+- Node.js 22+
 - Express
 - PostgreSQL
 - Firebase Admin Authentication
-- Jest + Supertest
+- Node.js test runner + Supertest
 - Railway deployment
 
 ## Core Deliverable 4 flow
