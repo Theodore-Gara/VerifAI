@@ -10,11 +10,9 @@ import 'package:verifai/shared/models.dart';
 final authRepositoryProvider = FutureProvider<AuthRepository>((ref) async {
   final secureStorage = ref.watch(secureStorageProvider);
   final apiClient = ref.watch(apiClientProvider);
-  final prefs = await ref.watch(sharedPreferencesProvider.future);
-  return auth_data.MockAuthRepository(
+  return auth_data.FirebaseAuthRepository(
     secureStorage: secureStorage,
     apiClient: apiClient,
-    prefs: prefs,
   );
 });
 
