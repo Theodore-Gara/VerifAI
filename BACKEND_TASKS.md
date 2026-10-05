@@ -89,6 +89,29 @@ tasks per user, which kills demos and real usage.
 
 ---
 
+## P1 — Difficulty-scaled XP reward (verification scoring)
+
+`calculateXp(score)` (`services/scoringService.js`) depends only on correctness,
+so an easy task and a hard task answered equally award the same XP. Complexity
+should be worth more.
+
+**Do:**
+- Pass `task.difficulty` into `calculateXp` (it is already selected in
+  `submitAttempt` but currently unused) and scale the reward per tier — e.g.
+  factors `{ easy: 0.7, medium: 1.0, hard: 1.4 }` on the existing curve, with
+  `medium` left unchanged.
+- **Keep the clamped scoring** so rewards stay bounded, but scope the clamp to
+  each difficulty instead of one global 10–70 range — a hard task's floor and
+  ceiling should both sit above an easy task's.
+- Do **not** scale the dimension/readiness score (`skill_scores`) by difficulty;
+  that is a 0–100 competency measure and stays difficulty-independent.
+
+**Why:** the product intends "more complexity, more points"; today it is flat.
+
+**Effort:** Small (one function signature, one call site, tests).
+
+---
+
 ## P1 — Leaderboard / scoreboard endpoint
 
 **Do:** `GET /api/leaderboard?scope=global|track&limit=…` returning
