@@ -71,6 +71,69 @@ the attempt sends the selected option's text as a free-text answer.
 
 ---
 
+## P0 — Restructure the task schema (per-feature tables)
+
+The live `tasks` table forces four different features into one shape — a generic
+`dimension` + `embedded_flaw` (NOT NULL for *every* row) + a single-sentence
+`correct_answer`. It has nowhere to store Judgement/R&G options or Prompt Design
+criteria, and the columns don't fit the new per-feature designs.
+
+**Do:** split the task content into per-feature tables behind a thin anchor.
+
+**Anchor (no seed content — exists only so `task_attempts`/`skill_scores` have one FK):**
+```sql
+CREATE TABLE tasks (
+  id SERIAL PRIMARY KEY,
+  feature VARCHAR NOT NULL CHECK (feature IN ('verification','judgement','risk_governance','prompt_design')),
+  track_id INTEGER NOT NULL REFERENCES industry_tracks(id) ON DELETE CASCADE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Per-feature content tables:**
+```sql
+verification_tasks     (task_id PK->tasks, title, scenario, embedded_flaw,
+                        expected_answer, feedback, difficulty CHECK easy|medium|hard)
+judgement_tasks        (task_id PK->tasks, title, scenario, feedback)     -- no difficulty
+risk_governance_tasks  (task_id PK->tasks, title, scenario, feedback)     -- no difficulty
+interview_questions    (id PK, track_id->industry_tracks, question,
+                        sample_answer, what_employers_test, sort_order)  -- ungraded, standalone
+```
+`prompt_design_tasks` + `prompt_design_criteria` are **deferred** (the anchor CHECK
+already allows `prompt_design`).
+
+**Controlled-choice options (shared by Judgement + R&G — identical shape):**
+```sql
+task_options (id PK, task_id->tasks, kind CHECK decision|reason, label, score 0..100, sort_order)
+```
+
+**Attempts:** make `task_attempts.answer` NULLABLE; add `rationale TEXT`,
+`decision_option_id -> task_options(id)`, `reason_option_id -> task_options(id)`.
+
+**Migration `002_restructure_tasks.sql`:**
+1. Wipe `task_attempts`; reset the derived tables (`skill_scores`, `user_progress`,
+   `user_achievements`) — **keep `users`**.
+2. Drop/recreate `tasks` as the anchor; create the feature tables + `task_options`;
+   recreate `task_attempts`.
+3. Reseed per feature: Verification 6/track, Judgement 5/track, R&G 6/track,
+   Interview (Legal).
+4. Rewrite `db/schema.sql` + `db/seed.sql` to this shape (source of truth) and
+   record `002` in `schema_migrations`.
+
+**Feature key naming:** snake_case internally (`risk_governance`), mapped to the
+display dimension (`Risk & Governance`).
+
+**Downstream:** `getNextTask` filters by `feature` (default `verification`) and
+joins the anchor to the feature table; `submitAttempt` routes scoring by
+`tasks.feature` (Verification = rule/keyword + difficulty XP; Judgement/R&G =
+option weights).
+
+**Effort:** Medium–large (schema + seed + controller routing + migration).
+
+> Supersedes the single-table approach in "Reconcile the task data model" above.
+
+---
+
 ## P0 — Task volume and "run out" behaviour
 
 `getNextTask` excludes already-attempted tasks, and the seed has only **4 tasks
@@ -182,13 +245,14 @@ day, so streaks can break incorrectly.
 - Health check, rate limiting, and the error format are good.
 
 ## Suggested order
-1. P0 task model + scoring + `embedded_flaw`
-2. P0 content volume / run-out policy
-3. P1 leaderboard
-4. P1 activity / streak history
-5. P2 achievements catalog
-6. P2 milestones
-7. P2 streak timezone
+1. P0 schema restructure (per-feature tables) + reseed
+2. P0 reconcile/`embedded_flaw` + scoring (now per-feature)
+3. P0 content volume / run-out policy
+4. P1 leaderboard
+5. P1 activity / streak history
+6. P2 achievements catalog
+7. P2 milestones
+8. P2 streak timezone
 
 ---
 

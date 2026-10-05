@@ -168,7 +168,10 @@ returns `options` (`id`, `kind`, `label`); `POST /api/tasks/:id/attempt` accepts
 ### AJ-F1 — Models
 `TaskOption { id, kind, label }`; add `List<TaskOption> options` to `DailyTask`
 (`shared/models/daily_task.dart`) with a `const []` default (regen freezed).
-Split by `kind` in the UI (`decision` vs `reason`).
+Split by `kind` in the UI (`decision` vs `reason`). `DailyTask` also gains
+`feature` (`verification` / `judgement` / `risk_governance`) — the backend is
+being restructured into per-feature tables, so `feature` replaces reliance on
+`dimension`.
 
 ### AJ-F2 — API client
 Add `getJudgementTask()` and
