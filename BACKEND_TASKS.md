@@ -192,12 +192,14 @@ day, so streaks can break incorrectly.
 
 ---
 
-# Feature Build — AI Judgement (next sprint)
+# Feature Build — AI Judgement, Risk & Governance & Interview Practice (next sprint)
 
 > This section is a **build plan**, not a fix for the current state — the P0–P2
 > items above address what exists today; this is net-new work. It pairs with the
-> matching "Feature Build — AI Judgement" section in `FRONTEND_TASKS.md`. Freeze
-> the **API contract** below first so both teams can build in parallel.
+> matching "Feature Build" section in `FRONTEND_TASKS.md`. Freeze the **API
+> contract** below first so both teams can build in parallel. Three features:
+> **AI Judgement**, **Risk & Governance** (shares the judgement engine) and
+> **Interview Practice** (read-only).
 
 ## What AI Judgement is
 A dedicated task mode for the **AI Judgement** dimension. Each task is a
@@ -208,7 +210,7 @@ Judgement is verified by "controlled-choice or predefined classification match";
 per FR4, scoring is deterministic and must never be done by the AI that authored
 the task. Structure follows `VerifAI_Finance_AI_Judgement_Tasks.pdf`.
 
-## Decisions locked
+## AI Judgement — decisions locked
 - Interaction: scenario → Decision (3 fixed choices) + Reason (3 choices) +
   optional rationale.
 - Scoring (0–100, no keyword matching): **Decision 50** correct / **25**
@@ -250,7 +252,7 @@ the task. Structure follows `VerifAI_Finance_AI_Judgement_Tasks.pdf`.
 `result.score` = decision option's score + reason option's score (0–100). Response
 shape otherwise unchanged.
 
-## Work items
+## AI Judgement — work items
 
 ### AJ-B1 — Schema: options table
 `task_options (id, task_id FK → tasks, kind VARCHAR CHECK (kind IN ('decision','reason')), label TEXT, score INT CHECK (score BETWEEN 0 AND 100), sort_order INT)`.
@@ -286,7 +288,56 @@ Extend `tests/api.test.js` (dimension filter; options returned without `score`;
 option submission scores correctly) and `tests/scoring.test.js` (option weight →
 score).
 
+## Risk & Governance (shares the AI Judgement engine)
+
+Same controlled-choice engine as AI Judgement (AJ-B1–B4); only the content and
+the decision option count differ. No new schema/controller work.
+
+### Decisions locked
+- Interaction: scenario → **Decision** (2 options: *Proceed* / *Don't proceed*) +
+  **Reason** (best of 3) + optional rationale.
+- Scoring: decision **50/0** + reason **50/0**. Right instinct + wrong reason = 50
+  (the partial credit the rubric calls for).
+- Difficulty: **not used** (scenario-based).
+- Volume: **6 tasks per track** (reuse the existing scenarios).
+- Uses the same `dimension` filter; the general loop stays Verification-only.
+
+### API
+Same as AI Judgement, only the dimension and the 2-option decision differ:
+`GET /api/tasks/next?dimension=Risk & Governance`,
+`POST /api/tasks/:id/attempt` → `{ decision_option_id, reason_option_id, rationale? }`.
+
+### Work items
+- **RG-B1 — Content:** convert the existing Risk & Governance scenarios per track
+  (Legal task bank + Business Consulting/IT/Finance docx) into the decision+reason
+  layout — scenario, 2 decisions (50/0), 3 reasons (50/0/0), feedback. 6 per track.
+- **RG-B2 — Tests:** extend `api.test.js` for a 2-option decision + reason scoring.
+
+## Interview Practice (Legal only for now)
+
+Read-only and ungraded (FR12): a bank of interview questions with sample answers,
+outside the scored loop. No scoring, no XP, no attempt endpoint.
+
+### API
+`GET /api/interview/questions` → questions for the user's track.
+```json
+{ "questions": [
+  { "id": 1, "track_id": 2, "question": "...", "sample_answer": "...",
+    "what_employers_test": "...", "sort_order": 1 }
+] }
+```
+
+### Work items
+- **IP-B1 — Schema:** `interview_questions (id, track_id FK, question TEXT,
+  sample_answer TEXT, what_employers_test TEXT, sort_order INT)`.
+- **IP-B2 — Migration:** `backend/db/migrations/003_interview_questions.sql`.
+- **IP-B3 — Route:** `GET /api/interview/questions` scoped to the user's track.
+- **IP-B4 — Content:** seed the Legal Interview Practice panels from the Legal
+  task bank docx.
+- **IP-B5 — Tests:** returns only the user's track; empty when none.
+
 ### Noted for later (do not build now)
 - Adopt Deliverable 3's full `ScoringCriterion` / `VerificationResult` model with
   per-criterion configurable weights.
-- **Interview Practice** (FR12) as a further category (Legal first).
+- Interview Practice for the other three tracks.
+- Human-AI Collaboration / Human vs AI Comparison categories.
