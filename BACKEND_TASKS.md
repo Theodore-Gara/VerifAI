@@ -177,20 +177,24 @@ day, so streaks can break incorrectly.
 > the **API contract** below first so both teams can build in parallel.
 
 ## What AI Judgement is
-A dedicated task mode for the **AI Judgement** dimension: the user is shown a
-workplace scenario and picks the correct **category of AI use** from
-controlled-choice options. Per Deliverable 3 §8.2, Judgement is verified by
-"controlled-choice or predefined classification match"; per FR4, scoring is
-deterministic and must never be done by the AI that authored the task.
+A dedicated task mode for the **AI Judgement** dimension. Each task is a
+workplace scenario with **two answered parts**: a **Decision** (one of three
+fixed choices — *Use AI* / *Use AI with human review* / *Don't use AI*) and a
+**Reason** (best of three task-specific reasons). Per Deliverable 3 §8.2,
+Judgement is verified by "controlled-choice or predefined classification match";
+per FR4, scoring is deterministic and must never be done by the AI that authored
+the task. Structure follows `VerifAI_Finance_AI_Judgement_Tasks.pdf`.
 
 ## Decisions locked
-- Interaction: scenario → controlled-choice decision + optional rationale.
-- Scoring: deterministic, option-only, fixed weights **0 / 50 / 100** (partial
-  credit). No LLM.
+- Interaction: scenario → Decision (3 fixed choices) + Reason (3 choices) +
+  optional rationale.
+- Scoring (0–100, no keyword matching): **Decision 50** correct / **25**
+  neighbouring choice / **0** opposite end; **Reason 50** correct / **0** wrong.
 - Rationale: optional, stored, **unscored** (future rubric/LLM pass).
 - Difficulty: **not used** for AI Judgement (scenario-based only).
 - Data model: **minimal extension** of the current D4 schema.
-- Volume: **5 AI Judgement tasks per track** (20 total).
+- Volume: **5 AI Judgement tasks per track** (20 total). Per-track mix: one
+  clear *Use AI*, two *Use AI with human review*, two *Don't use AI*.
 - The general task loop becomes **Verification-only** once this ships.
 
 ## API contract (freeze first)
@@ -198,29 +202,39 @@ deterministic and must never be done by the AI that authored the task.
 **`GET /api/tasks/next?dimension=AI Judgement`** — optional param; absent = today's behaviour.
 ```json
 { "task": {
-    "id": 2, "track_id": 1, "title": "...", "scenario": "...",
+    "id": 2, "track_id": 1, "title": "The Month-End Agenda", "scenario": "...",
     "dimension": "AI Judgement",
-    "options": [ { "id": 11, "label": "..." }, { "id": 12, "label": "..." } ]
+    "options": [
+      { "id": 11, "kind": "decision", "label": "Use AI" },
+      { "id": 12, "kind": "decision", "label": "Use AI with human review" },
+      { "id": 13, "kind": "decision", "label": "Don't use AI" },
+      { "id": 14, "kind": "reason",   "label": "A. It is a routine, low-risk..." },
+      { "id": 15, "kind": "reason",   "label": "B. ..." },
+      { "id": 16, "kind": "reason",   "label": "C. ..." }
+    ]
 }, "request_id": "..." }
 ```
-- `options` ordered by `sort_order`; **`score` is never returned**.
+- `options` grouped by `kind` then `sort_order`; **`score` is never returned**.
 - `task: null` when exhausted (unchanged).
 
 **`POST /api/tasks/:id/attempt`** — extended, backward-compatible.
 ```json
 // AI Judgement
-{ "option_id": 12, "rationale": "optional text" }
+{ "decision_option_id": 11, "reason_option_id": 14, "rationale": "optional text" }
 // Verification (unchanged)
 { "answer": "free text" }
 ```
-Response shape unchanged; may add `result.correct_option_id` after the attempt.
+`result.score` = decision option's score + reason option's score (0–100). Response
+shape otherwise unchanged.
 
 ## Work items
 
 ### AJ-B1 — Schema: options table
-`task_options (id, task_id FK → tasks, label TEXT, score INT CHECK (score BETWEEN 0 AND 100), sort_order INT)`.
-Add `task_attempts.selected_option_id INTEGER REFERENCES task_options(id)` and
-`task_attempts.rationale TEXT`. Keep `tasks.correct_answer` for the Verification path.
+`task_options (id, task_id FK → tasks, kind VARCHAR CHECK (kind IN ('decision','reason')), label TEXT, score INT CHECK (score BETWEEN 0 AND 100), sort_order INT)`.
+For each AI Judgement task: **3 decision rows** (scores 50 / 25 / 0) and **3
+reason rows** (50 / 0 / 0). Add `task_attempts.decision_option_id`,
+`task_attempts.reason_option_id` (both FK → task_options) and
+`task_attempts.rationale TEXT`. Keep `tasks.correct_answer` for Verification.
 
 ### AJ-B2 — Migration
 `backend/db/migrations/002_task_options.sql` (repo must stay the reproducible source of truth — see the live-drift note in P0).
@@ -230,17 +244,19 @@ Accept optional `dimension`; when present add `AND t.dimension = $n`, **drop the
 difficulty ordering** (order by `t.id`), and join/return `options` (label + id
 only). Leave the default path unchanged.
 
-### AJ-B4 — `submitAttempt`: option scoring path
-When `option_id` is present: validate it belongs to the task, set `score` = the
-option's `score`, store `selected_option_id` + `rationale`, and skip
-`scoreAnswer`. Otherwise keep the existing keyword path. The XP/streak/
-skill-score/achievement flow is unchanged, so the `AI Judgement` dimension
-updates automatically.
+### AJ-B4 — `submitAttempt`: two-part scoring path
+When `decision_option_id` + `reason_option_id` are present: validate both belong
+to the task with the right `kind`, set `score` = decision option's `score` +
+reason option's `score`, store both ids + `rationale`, and skip `scoreAnswer`.
+Otherwise keep the existing keyword path. The XP/streak/skill-score/achievement
+flow is unchanged, so the `AI Judgement` dimension updates automatically.
 
 ### AJ-B5 — Content: 5 tasks per track
-Author **5 AI Judgement scenarios per track** (20 total), each with 3–5
-controlled-choice options and fixed weights (0/50/100, exactly one 100). This
-also relieves the P0 "run-out after 4 tasks" dead-end for the Judgement mode.
+Author **5 AI Judgement scenarios per track** (20 total) using the exact layout
+in `VerifAI_Finance_AI_Judgement_Tasks.pdf`: scenario, 3 fixed decision choices,
+3 reasons (one best), and post-answer feedback. Per-track mix: one *Use AI*, two
+*Use AI with human review*, two *Don't use AI*. This also relieves the P0
+"run-out after 4 tasks" dead-end for the Judgement mode.
 
 ### AJ-B6 — Tests
 Extend `tests/api.test.js` (dimension filter; options returned without `score`;

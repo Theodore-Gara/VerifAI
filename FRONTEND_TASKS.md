@@ -90,32 +90,36 @@ Profile/Dashboard show `Rank: —`. Wire it once the leaderboard endpoint exists
 
 ## What we're building
 A dedicated **AI Judgement** mode plus a **Tasks category hub**. The user picks a
-category, then gets a scenario with controlled-choice decision options (optional
-rationale), scored on the selected option.
+category, then gets a scenario with a **Decision** (3 choices) and a **Reason**
+(3 choices), plus an optional rationale. Structure per
+`VerifAI_Finance_AI_Judgement_Tasks.pdf`.
 
 ## Decisions locked
 - Tasks tab becomes a **category hub**: Verification (live), AI Judgement (new),
   Prompt Design & Risk & Governance (coming soon).
-- AI Judgement interaction: scenario → decision options → optional rationale → submit.
-- Scoring is backend-side and deterministic; the app renders options and shows
-  the returned score/feedback.
+- AI Judgement interaction: scenario → Decision (3) + Reason (3) → optional
+  rationale → submit.
+- Scoring is backend-side and deterministic (decision 50/25/0 + reason 50/0);
+  the app renders options and shows the returned score/feedback.
 - The task modal + feedback screen become **category-driven** (this also fixes
   the hardcoded Verification framing).
 - The general loop shows **Verification only** once this ships.
 
 ## API contract
 See `BACKEND_TASKS.md` → "API contract". `GET /api/tasks/next?dimension=AI Judgement`
-returns `options` (id + label only); `POST /api/tasks/:id/attempt` accepts
-`{ option_id, rationale? }`.
+returns `options` (`id`, `kind`, `label`); `POST /api/tasks/:id/attempt` accepts
+`{ decision_option_id, reason_option_id, rationale? }`.
 
 ## Work items
 
 ### AJ-F1 — Models
-`TaskOption { id, label }`; add `List<TaskOption> options` to `DailyTask`
+`TaskOption { id, kind, label }`; add `List<TaskOption> options` to `DailyTask`
 (`shared/models/daily_task.dart`) with a `const []` default (regen freezed).
+Split by `kind` in the UI (`decision` vs `reason`).
 
 ### AJ-F2 — API client
-Add `getJudgementTask()` and `submitJudgement(taskId, optionId, rationale?)` to
+Add `getJudgementTask()` and
+`submitJudgement(taskId, decisionOptionId, reasonOptionId, rationale?)` to
 `ApiClient` (`core/services/api_client.dart`) and implement in **both**
 `DioApiClient` and `MockApiClient` (mock fixture = one judgement task).
 
@@ -125,8 +129,11 @@ invalidate `dashboardProvider` + `achievementsProvider`.
 
 ### AJ-F4 — Judgement screen
 `features/judgement/presentation/judgement_screen.dart`, route `/judgement`
-(`core/router/app_router.dart`). Scenario card → radio options from
-`task.options` → optional rationale field → Submit. On success push `/feedback`.
+(`core/router/app_router.dart`). Scenario card → **two required sections**:
+*What should you do?* (3 decision choices) and *Pick the best reason* (3 reason
+choices), from `task.options` by `kind` → optional rationale field → Submit. On
+success push `/feedback`. Match the layout in
+`VerifAI_Finance_AI_Judgement_Tasks.pdf`.
 
 ### AJ-F5 — Tasks category hub
 Turn `features/task/presentation/task_screen.dart` into a category list:
@@ -141,8 +148,8 @@ hardcoded "VERIFICATION" badge/labels/question and "VERIFICATION PASSED" /
 Verification framing for AI Judgement tasks currently served in the general loop.
 
 ### AJ-F7 — Tests
-Widget test: renders backend options → select → submit → feedback. Update any
-existing tests that construct `DailyTask`.
+Widget test: renders decision + reason options → select both → submit →
+feedback. Update any existing tests that construct `DailyTask`.
 
 ### AJ-F8 — Mock-first
 Ship AJ-F1–F6 against the `MockApiClient` fixture; switch to live endpoints when
