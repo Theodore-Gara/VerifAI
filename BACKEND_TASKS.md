@@ -166,3 +166,88 @@ day, so streaks can break incorrectly.
 5. P2 achievements catalog
 6. P2 milestones
 7. P2 streak timezone
+
+---
+
+# Feature Build — AI Judgement (next sprint)
+
+> This section is a **build plan**, not a fix for the current state — the P0–P2
+> items above address what exists today; this is net-new work. It pairs with the
+> matching "Feature Build — AI Judgement" section in `FRONTEND_TASKS.md`. Freeze
+> the **API contract** below first so both teams can build in parallel.
+
+## What AI Judgement is
+A dedicated task mode for the **AI Judgement** dimension: the user is shown a
+workplace scenario and picks the correct **category of AI use** from
+controlled-choice options. Per Deliverable 3 §8.2, Judgement is verified by
+"controlled-choice or predefined classification match"; per FR4, scoring is
+deterministic and must never be done by the AI that authored the task.
+
+## Decisions locked
+- Interaction: scenario → controlled-choice decision + optional rationale.
+- Scoring: deterministic, option-only, fixed weights **0 / 50 / 100** (partial
+  credit). No LLM.
+- Rationale: optional, stored, **unscored** (future rubric/LLM pass).
+- Difficulty: **not used** for AI Judgement (scenario-based only).
+- Data model: **minimal extension** of the current D4 schema.
+- Volume: **5 AI Judgement tasks per track** (20 total).
+- The general task loop becomes **Verification-only** once this ships.
+
+## API contract (freeze first)
+
+**`GET /api/tasks/next?dimension=AI Judgement`** — optional param; absent = today's behaviour.
+```json
+{ "task": {
+    "id": 2, "track_id": 1, "title": "...", "scenario": "...",
+    "dimension": "AI Judgement",
+    "options": [ { "id": 11, "label": "..." }, { "id": 12, "label": "..." } ]
+}, "request_id": "..." }
+```
+- `options` ordered by `sort_order`; **`score` is never returned**.
+- `task: null` when exhausted (unchanged).
+
+**`POST /api/tasks/:id/attempt`** — extended, backward-compatible.
+```json
+// AI Judgement
+{ "option_id": 12, "rationale": "optional text" }
+// Verification (unchanged)
+{ "answer": "free text" }
+```
+Response shape unchanged; may add `result.correct_option_id` after the attempt.
+
+## Work items
+
+### AJ-B1 — Schema: options table
+`task_options (id, task_id FK → tasks, label TEXT, score INT CHECK (score BETWEEN 0 AND 100), sort_order INT)`.
+Add `task_attempts.selected_option_id INTEGER REFERENCES task_options(id)` and
+`task_attempts.rationale TEXT`. Keep `tasks.correct_answer` for the Verification path.
+
+### AJ-B2 — Migration
+`backend/db/migrations/002_task_options.sql` (repo must stay the reproducible source of truth — see the live-drift note in P0).
+
+### AJ-B3 — `getNextTask`: dimension filter + options
+Accept optional `dimension`; when present add `AND t.dimension = $n`, **drop the
+difficulty ordering** (order by `t.id`), and join/return `options` (label + id
+only). Leave the default path unchanged.
+
+### AJ-B4 — `submitAttempt`: option scoring path
+When `option_id` is present: validate it belongs to the task, set `score` = the
+option's `score`, store `selected_option_id` + `rationale`, and skip
+`scoreAnswer`. Otherwise keep the existing keyword path. The XP/streak/
+skill-score/achievement flow is unchanged, so the `AI Judgement` dimension
+updates automatically.
+
+### AJ-B5 — Content: 5 tasks per track
+Author **5 AI Judgement scenarios per track** (20 total), each with 3–5
+controlled-choice options and fixed weights (0/50/100, exactly one 100). This
+also relieves the P0 "run-out after 4 tasks" dead-end for the Judgement mode.
+
+### AJ-B6 — Tests
+Extend `tests/api.test.js` (dimension filter; options returned without `score`;
+option submission scores correctly) and `tests/scoring.test.js` (option weight →
+score).
+
+### Noted for later (do not build now)
+- Adopt Deliverable 3's full `ScoringCriterion` / `VerificationResult` model with
+  per-criterion configurable weights.
+- **Interview Practice** (FR12) as a further category (Legal first).
