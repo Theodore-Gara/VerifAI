@@ -117,7 +117,9 @@ task_options (id PK, task_id->tasks,
 **Attempts:** make `task_attempts.answer` NULLABLE; add `rationale TEXT`,
 `answer_option_id -> task_options(id) ON DELETE CASCADE` (Verification),
 `decision_option_id -> task_options(id) ON DELETE CASCADE`,
-`reason_option_id -> task_options(id) ON DELETE CASCADE`.
+`reason_option_id -> task_options(id) ON DELETE CASCADE`, `passed BOOLEAN`,
+`task_title TEXT` (snapshot, so history survives a retired task), and
+`practice BOOLEAN NOT NULL DEFAULT FALSE`.
 
 **Migration `002_restructure_tasks.sql`:**
 1. Wipe `task_attempts`; reset the derived tables (`skill_scores`, `user_progress`,
@@ -166,17 +168,50 @@ Difficulty affects **XP only**, never the score.
 
 ### Readiness score (weighted — skills + interview coverage)
 `readiness_score` = **weighted mean of the skill scores**, recomputed on every
-scored attempt **and** whenever interview practice is recorded (never gated on
-level-up). Weights: **Verification 0.30, AI Judgement 0.30, Risk & Governance
-0.20, Prompt Design 0.10, Interview 0.10** — Interview counts the **least** (it is
-optional). Prompt Design joins when built; until then renormalise over the four
-available skills. XP/level is a **separate** progression signal and does **not**
-feed readiness.
+scored attempt **and** whenever interview practice is recorded. Weights:
+**Verification 0.30, AI Judgement 0.30, Risk & Governance 0.20, Prompt Design
+0.10, Interview 0.10** — Interview counts the **least** (it is optional). Prompt
+Design joins when built; until then renormalise over the four available skills.
+XP/level is a **separate** progression signal and does **not** feed readiness.
 
 `interview_readiness = round(100 × practised_questions / total_questions_for_track)`
 — coverage, not grading (Option A). See Interview Practice below.
 
+**Sticky (UX):** the stored readiness is **monotonic** —
+`readiness_score = GREATEST(previous, current)`. It never falls. Skill scores may
+still move; only the readiness value is sticky.
+
 > Replaces the current flat `AVG(skill_scores.score)` in `progressController.js:11`.
+
+### Promotion tiers (status — separate from readiness)
+Volume-based and sticky.
+
+| Tier | Passed tasks required | Progress |
+|---|---|---|
+| Novice | 5 | `passed_in_tier / 5 × 100` |
+| Developing | 10 | `/ 10 × 100` |
+| Proficient | 15 | `/ 15 × 100` |
+| Advanced | 20 | `/ 20 × 100` |
+
+- **Only passed attempts count** (Verification ≥ 60; AI Judgement / R&G ≥ 50;
+  Prompt Design ≥ 60). Failed attempts do **not** advance the tier.
+- Option A: every passed task = 1 point, feature-agnostic. Interview Practice does
+  **not** count toward tiers.
+- Reach 100 → promote; the current-tier count resets to 0; completed tiers stay at
+  100. Sticky — never demote, and nothing else resets it.
+- Store on `user_progress`: `tier` and `tier_tasks_completed` (reset on promotion).
+
+### XP level curve (cosmetic)
+`calculateLevel` changes from `floor(xp/250)+1` to a rising curve — each level
+costs **+60 more XP** than the last: L1→L2 **250**, L2→L3 **310**, L3→L4 **370**, …
+- XP to advance from level *n*: `250 + 60 × (n − 1)`.
+- Cumulative XP for level *n*: **250, 560, 930, 1360, …**
+- Display-only (badges/leaderboard); does **not** feed readiness.
+
+### AI Readiness Passport unlock (FR8)
+The passport is a shareable credential. It unlocks when **both** are true:
+- the user is at the **Proficient** tier or higher, **and**
+- their sticky `readiness_score ≥ 60`.
 
 ---
 
@@ -260,6 +295,38 @@ straightforward.
 `task_attempts.submitted_at` / `xp_earned`; it just is not exposed.
 
 **Effort:** Small.
+
+---
+
+## P1 — Attempt / task history endpoint
+
+Users cannot review what they have done. The data is in `task_attempts`, but
+nothing exposes it.
+
+**Do:** `GET /api/tasks/history?limit=20&offset=0` (optional `feature` / `passed`
+filters) → the user's **scored** attempts, newest first, each with the task
+`title`, `feature`, `score`, `passed`, `xp_earned`, `submitted_at`, `feedback`,
+the user's answer, and the correct answer.
+```json
+{ "attempts": [
+  { "id": 12, "task_id": 5, "feature": "verification", "title": "...",
+    "score": 100, "passed": true, "xp_earned": 70, "submitted_at": "...",
+    "feedback": "...", "your_answer": "...", "correct_answer": "..." }
+], "total": 42 }
+```
+- Join `task_attempts` → `tasks` (anchor) → the feature table for the answers.
+- **Store on `task_attempts`** (during the restructure): `passed BOOLEAN`,
+  `task_title` **snapshot** (history survives a retired task), and `practice
+  BOOLEAN`.
+- **Interview Practice does not appear** in history — it is ungraded; only its
+  completion (coverage) is tracked.
+- **Practice retakes:** a re-attempt from history is stored with `practice = true`
+  and is **excluded from XP, tier counts and readiness**.
+
+**Why:** team feedback — users need to see what they completed and what they got
+right/wrong.
+
+**Effort:** Small–medium (one query + columns).
 
 ---
 

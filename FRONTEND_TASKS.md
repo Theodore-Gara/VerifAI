@@ -73,6 +73,33 @@ Profile/Dashboard show `Rank: —`. Wire it once the leaderboard endpoint exists
 
 ---
 
+## Task history (linked from Progress)
+
+Team feedback: users need to see what they completed and which they got
+right/wrong. Reached from the **Progress screen** (not a top-level tab), with a
+**dedicated** detail widget.
+
+- **TH-F1 — API:** `getTaskHistory()` on `ApiClient` (both `DioApiClient` and
+  `MockApiClient`), returning scored attempts with title, skill, score, passed,
+  date, answers.
+- **TH-F2 — Provider:** `taskHistoryProvider`.
+- **TH-F3 — List:** reached from Progress — attempts (task title, skill badge,
+  score, pass/fail, date), newest first, with **filters** (skill, passed/failed)
+  and **pagination** ("Load more"). Loading / empty ("No attempts yet") / error
+  states.
+- **TH-F4 — Detail widget:** a **dedicated** `TaskHistoryDetail` widget (not the
+  feedback screen) — scenario, your answer, correct answer, feedback, score, XP,
+  date. Includes a **"Try again"** action.
+- **TH-F5 — Practice retake:** "Try again" re-attempts for practice — **no XP, no
+  tier credit, no readiness change**.
+- **TH-F6 — Interview excluded:** Interview Practice does not appear in history;
+  its progress shows only as "practised / completed".
+- **TH-F7 — Tests:** renders attempts, filters, opens detail, practice retake.
+
+Relates to Medium #4 (practice / review past tasks).
+
+---
+
 ## Missing screen states (audit)
 
 Data screens handle loading/empty/error well, but several states are missing.
@@ -246,3 +273,17 @@ Ship AJ-F1–F6 against the `MockApiClient` fixture; switch to live endpoints wh
 ### Noted for later (do not build now)
 - Interview Practice for the other three tracks.
 - Human-AI Collaboration / Human vs AI Comparison categories.
+
+---
+
+# Feature Build — Promotion & status (readiness tiers)
+
+- **PS-F1 — Tier display:** show the user's tier (Novice → Developing →
+  Proficient → Advanced) and progress within it (`passed / required × 100`) on the
+  Dashboard / Progress screens.
+- **PS-F2 — Sticky readiness:** display the sticky readiness score; it never shows
+  a fall.
+- **PS-F3 — XP curve:** the level/XP bar reflects the +60-per-level curve
+  (L1→L2 250, L2→L3 310, L3→L4 370, …).
+- **PS-F4 — Passport unlock:** show a locked/unlocked passport state — unlocked
+  when the user is at **Proficient** tier or higher **and** readiness ≥ 60.
