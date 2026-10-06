@@ -157,6 +157,9 @@ category, then gets a scenario with a **Decision** (3 choices) and a **Reason**
 - The task modal + feedback screen become **category-driven** (this also fixes
   the hardcoded Verification framing).
 - The general loop shows **Verification only** once this ships.
+- User-facing wording uses **skill** ("Verification skill", "AI Judgement skill",
+  "Risk & Governance skill", …) rather than "dimension"; the backend keeps its
+  `dimension` / `skill_scores` naming.
 
 ## API contract
 See `BACKEND_TASKS.md` → "API contract". `GET /api/tasks/next?dimension=AI Judgement`
@@ -193,15 +196,18 @@ success push `/feedback`. Match the layout in
 
 ### AJ-F5 — Tasks category hub
 Turn `features/task/presentation/task_screen.dart` into a category list:
-Verification (live → current task flow), AI Judgement (→ `/judgement`), and
-Prompt Design / Risk & Governance as "coming soon". Keep the category list in
-one place so more categories are a one-line addition.
+Verification (live → current task flow), AI Judgement (→ `/judgement`),
+Risk & Governance (→ reused judgement screen), Interview Practice (Legal only),
+and Prompt Design as "coming soon". Keep the category list in one place so more
+categories are a one-line addition.
 
 ### AJ-F6 — Category-driven task modal + feedback
 Parameterise `TaskChallengeModal` and `FeedbackScreen` by category: replace the
 hardcoded "VERIFICATION" badge/labels/question and "VERIFICATION PASSED" /
 "You found the issue" copy with per-category values. The same change fixes the
 Verification framing for AI Judgement tasks currently served in the general loop.
+After an attempt, the feedback reveals the **correct option** (from the backend's
+`correct_option_id`).
 
 ### AJ-F7 — Tests
 Widget test: renders decision + reason options → select both → submit →
@@ -223,15 +229,19 @@ Ship AJ-F1–F6 against the `MockApiClient` fixture; switch to live endpoints wh
 ## Interview Practice (Legal only for now)
 
 - **IP-F1 — Models:** `InterviewQuestion { id, question, sampleAnswer,
-  whatEmployersTest, trackId, sortOrder }`.
-- **IP-F2 — API client:** `getInterviewQuestions()` on `ApiClient`; implement in
-  `DioApiClient` + `MockApiClient`.
+  whatEmployersTest, trackId, sortOrder, practiced }`.
+- **IP-F2 — API client:** `getInterviewQuestions()` + `markInterviewPracticed(id)`
+  on `ApiClient`; implement in `DioApiClient` + `MockApiClient`.
 - **IP-F3 — Provider:** `interviewQuestionsProvider`.
 - **IP-F4 — Screen:** `features/interview/presentation/interview_practice_screen.dart`
   — list of questions, tap to reveal the sample answer + "what employers are
-  testing". Route `/interview`. No scoring/XP.
-- **IP-F5 — Hub entry:** add Interview Practice to the Tasks category hub.
-- **IP-F6 — Tests:** renders questions, expands to show the answer.
+  testing". **Revealing marks the question practised** (calls the practice route)
+  and shows a covered count (e.g. "3 / 12 practised"). Route `/interview`. No
+  scoring/XP, but it feeds readiness via coverage.
+- **IP-F5 — Hub entry:** add Interview Practice to the Tasks category hub, shown
+  **only for Legal-track users** (hidden for the other three tracks).
+- **IP-F6 — Tests:** renders questions, expands to show the answer, records
+  practice, updates the covered count.
 
 ### Noted for later (do not build now)
 - Interview Practice for the other three tracks.

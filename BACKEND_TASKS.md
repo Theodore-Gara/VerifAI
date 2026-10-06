@@ -93,7 +93,8 @@ CREATE TABLE tasks (
 **Per-feature content tables:**
 ```sql
 verification_tasks     (task_id PK->tasks, title, scenario, embedded_flaw,
-                        expected_answer, feedback, difficulty CHECK easy|medium|hard)
+                        expected_answer, feedback, difficulty CHECK easy|medium|hard,
+                        keywords TEXT[] NULL)   -- fallback only, for free-text scenarios
 judgement_tasks        (task_id PK->tasks, title, scenario, feedback)     -- no difficulty
 risk_governance_tasks  (task_id PK->tasks, title, scenario, feedback)     -- no difficulty
 interview_questions    (id PK, track_id->industry_tracks, question,
@@ -102,35 +103,80 @@ interview_questions    (id PK, track_id->industry_tracks, question,
 `prompt_design_tasks` + `prompt_design_criteria` are **deferred** (the anchor CHECK
 already allows `prompt_design`).
 
-**Controlled-choice options (shared by Judgement + R&G — identical shape):**
+**Controlled-choice options (shared by Verification + Judgement + R&G):**
 ```sql
-task_options (id PK, task_id->tasks, kind CHECK decision|reason, label, score 0..100, sort_order)
+task_options (id PK, task_id->tasks,
+              kind CHECK (kind IN ('answer','decision','reason')),
+              label, score 0..100, sort_order)
 ```
+- Verification: `kind='answer'` — one option scores 100, the rest 0 (all-or-nothing; no partial).
+- Judgement / R&G: `kind='decision'` + `kind='reason'`.
+- `keywords TEXT[]` is the fallback for any Verification scenario that genuinely
+  needs free text instead of options.
 
 **Attempts:** make `task_attempts.answer` NULLABLE; add `rationale TEXT`,
-`decision_option_id -> task_options(id)`, `reason_option_id -> task_options(id)`.
+`answer_option_id -> task_options(id) ON DELETE CASCADE` (Verification),
+`decision_option_id -> task_options(id) ON DELETE CASCADE`,
+`reason_option_id -> task_options(id) ON DELETE CASCADE`.
 
 **Migration `002_restructure_tasks.sql`:**
 1. Wipe `task_attempts`; reset the derived tables (`skill_scores`, `user_progress`,
-   `user_achievements`) — **keep `users`**.
+   `user_achievements`) — **keep `users`**. No backup needed (no valuable data yet).
 2. Drop/recreate `tasks` as the anchor; create the feature tables + `task_options`;
    recreate `task_attempts`.
 3. Reseed per feature: Verification 6/track, Judgement 5/track, R&G 6/track,
-   Interview (Legal).
+   Interview (Legal). **Seed idempotency is keyed on the anchor `tasks.id`** (upsert
+   the anchor, then upsert content by `task_id`).
 4. Rewrite `db/schema.sql` + `db/seed.sql` to this shape (source of truth) and
-   record `002` in `schema_migrations`.
+   record `002` in `schema_migrations`. `db-setup.js` runs each migration file as a
+   single query inside its own transaction — no `BEGIN/COMMIT` inside the file.
+5. **Controller rewrite:** `tasksController.js` still queries `tasks` by `dimension`;
+   rewrite `getNextTask` to filter by `feature` (default `verification`) and join the
+   anchor to the feature table, and `submitAttempt` to route scoring by
+   `tasks.feature`.
 
-**Feature key naming:** snake_case internally (`risk_governance`), mapped to the
-display dimension (`Risk & Governance`).
+**Feature key → dimension mapping** (used when writing `skill_scores.dimension`,
+which keeps the display names): `verification → Verification`,
+`judgement → AI Judgement`, `risk_governance → Risk & Governance`,
+`prompt_design → Prompt Design`.
 
 **Downstream:** `getNextTask` filters by `feature` (default `verification`) and
 joins the anchor to the feature table; `submitAttempt` routes scoring by
-`tasks.feature` (Verification = rule/keyword + difficulty XP; Judgement/R&G =
-option weights).
+`tasks.feature` — all three controlled-choice features score the selected option's
+weight; Verification falls back to `keywords` only for free-text scenarios.
 
 **Effort:** Medium–large (schema + seed + controller routing + migration).
 
 > Supersedes the single-table approach in "Reconcile the task data model" above.
+
+---
+
+## P0 — Scoring metrics & readiness (canonical)
+
+### Scoring metrics (per feature)
+| Feature | Interaction | Score | Pass |
+|---|---|---|---|
+| Verification | 1 correct option (all-or-nothing) | 100 correct / 0 wrong | ≥ 60 |
+| AI Judgement | decision (3) + reason (3) | decision 50/25/0 + reason 50/0 | ≥ 50 |
+| Risk & Governance | decision (2) + reason (3) | decision 50/0 + reason 50/0 | ≥ 50 |
+| Prompt Design | criteria checklist | weighted % of criteria met | ≥ 60 (or 7/9) |
+| Interview | ungraded, read-only | — | n/a |
+
+Difficulty affects **XP only**, never the score.
+
+### Readiness score (weighted — skills + interview coverage)
+`readiness_score` = **weighted mean of the skill scores**, recomputed on every
+scored attempt **and** whenever interview practice is recorded (never gated on
+level-up). Weights: **Verification 0.30, AI Judgement 0.30, Risk & Governance
+0.20, Prompt Design 0.10, Interview 0.10** — Interview counts the **least** (it is
+optional). Prompt Design joins when built; until then renormalise over the four
+available skills. XP/level is a **separate** progression signal and does **not**
+feed readiness.
+
+`interview_readiness = round(100 × practised_questions / total_questions_for_track)`
+— coverage, not grading (Option A). See Interview Practice below.
+
+> Replaces the current flat `AVG(skill_scores.score)` in `progressController.js:11`.
 
 ---
 
@@ -152,26 +198,42 @@ tasks per user, which kills demos and real usage.
 
 ---
 
-## P1 — Difficulty-scaled XP reward (verification scoring)
+## P1 — XP reward: no points for wrong answers (+ difficulty scaling)
 
-`calculateXp(score)` (`services/scoringService.js`) depends only on correctness,
-so an easy task and a hard task answered equally award the same XP. Complexity
-should be worth more.
+`calculateXp(score)` (`services/scoringService.js`) has a **floor of 20**, so a
+wrong answer (score 0) still earns XP, and it ignores difficulty. Both are wrong.
 
 **Do:**
-- Pass `task.difficulty` into `calculateXp` (it is already selected in
-  `submitAttempt` but currently unused) and scale the reward per tier — e.g.
-  factors `{ easy: 0.7, medium: 1.0, hard: 1.4 }` on the existing curve, with
-  `medium` left unchanged.
-- **Keep the clamped scoring** so rewards stay bounded, but scope the clamp to
-  each difficulty instead of one global 10–70 range — a hard task's floor and
-  ceiling should both sit above an easy task's.
+- **No points for a wrong answer.** XP is proportional to the score, so score 0 →
+  **0 XP**. Remove the `Math.max(10, …)` floor.
+- **Partial credit only where the feature allows it:** AI Judgement (decision 25)
+  and Risk & Governance (decision 50) can score below 100 and still earn
+  proportional XP. Verification is **all-or-nothing** (correct 100 / wrong 0).
+- **Scale by difficulty** — pass `task.difficulty` (already selected in
+  `submitAttempt`, currently unused) into `calculateXp`. Suggested max XP per
+  tier: `{ easy: 50, medium: 70, hard: 100 }`, with
+  `xp = round((score / 100) × maxXp)`.
 - Do **not** scale the dimension/readiness score (`skill_scores`) by difficulty;
   that is a 0–100 competency measure and stays difficulty-independent.
 
-**Why:** the product intends "more complexity, more points"; today it is flat.
+**Why:** a wrong answer should not buy progression, and a harder task answered
+correctly should be worth more.
 
-**Effort:** Small (one function signature, one call site, tests).
+**Effort:** Small (one function + one call site + tests).
+
+---
+
+## P1 — Harden verification scoring (see `backend/SCORING_REVIEW.md`)
+
+`SCORING_REVIEW.md` lists the outstanding scoring weaknesses so they don't rot in
+the review file: synonym / negation handling for any free-text path,
+`ScoringCriterion.weight` normalisation, an anti-gaming guard on the Prompt Design
+checklist, and per-track checklist element sets.
+
+**Do:** triage the review's recommendations and fold the accepted ones into the
+scoring path.
+
+**Effort:** depends on which items are adopted.
 
 ---
 
@@ -246,13 +308,16 @@ day, so streaks can break incorrectly.
 
 ## Suggested order
 1. P0 schema restructure (per-feature tables) + reseed
-2. P0 reconcile/`embedded_flaw` + scoring (now per-feature)
-3. P0 content volume / run-out policy
-4. P1 leaderboard
-5. P1 activity / streak history
-6. P2 achievements catalog
-7. P2 milestones
-8. P2 streak timezone
+2. P0 scoring metrics + readiness formula
+3. P0 reconcile/`embedded_flaw` + scoring (now per-feature)
+4. P0 content volume / run-out policy
+5. P1 difficulty-scaled XP
+6. P1 harden verification scoring (`SCORING_REVIEW.md`)
+7. P1 leaderboard
+8. P1 activity / streak history
+9. P2 achievements catalog
+10. P2 milestones
+11. P2 streak timezone
 
 ---
 
@@ -338,7 +403,9 @@ When `decision_option_id` + `reason_option_id` are present: validate both belong
 to the task with the right `kind`, set `score` = decision option's `score` +
 reason option's `score`, store both ids + `rationale`, and skip `scoreAnswer`.
 Otherwise keep the existing keyword path. The XP/streak/skill-score/achievement
-flow is unchanged, so the `AI Judgement` dimension updates automatically.
+flow is unchanged, so the `AI Judgement` dimension updates automatically. After a
+successful attempt, return `correct_option_id` (and the correct decision/reason
+ids) so the feedback screen can reveal the correct answer.
 
 ### AJ-B5 — Content: 5 tasks per track
 Author **5 AI Judgement scenarios per track** (20 total) using the exact layout
@@ -380,25 +447,36 @@ Same as AI Judgement, only the dimension and the 2-option decision differ:
 ## Interview Practice (Legal only for now)
 
 Read-only and ungraded (FR12): a bank of interview questions with sample answers,
-outside the scored loop. No scoring, no XP, no attempt endpoint.
+outside the scored loop. No scoring and no XP — but it **contributes to readiness
+via coverage** (Option A, least weight).
 
 ### API
-`GET /api/interview/questions` → questions for the user's track.
+`GET /api/interview/questions` → questions for the user's track, each with a
+`practiced` flag.
 ```json
 { "questions": [
   { "id": 1, "track_id": 2, "question": "...", "sample_answer": "...",
-    "what_employers_test": "...", "sort_order": 1 }
+    "what_employers_test": "...", "sort_order": 1, "practiced": false }
 ] }
 ```
+`POST /api/interview/questions/:id/practice` → records that the user has worked
+through the question (idempotent). Drives `interview_readiness`.
 
 ### Work items
 - **IP-B1 — Schema:** `interview_questions (id, track_id FK, question TEXT,
-  sample_answer TEXT, what_employers_test TEXT, sort_order INT)`.
-- **IP-B2 — Migration:** `backend/db/migrations/003_interview_questions.sql`.
-- **IP-B3 — Route:** `GET /api/interview/questions` scoped to the user's track.
+  sample_answer TEXT, what_employers_test TEXT, sort_order INT)` **and**
+  `interview_practice (user_id FK, question_id FK interview_questions,
+  practiced_at, UNIQUE (user_id, question_id))`.
+- **IP-B2 — Migration:** `backend/db/migrations/003_interview_practice.sql`.
+- **IP-B3 — Routes:** `GET /api/interview/questions` (scoped to the user's track,
+  with `practiced`) and `POST /api/interview/questions/:id/practice` (idempotent).
 - **IP-B4 — Content:** seed the Legal Interview Practice panels from the Legal
-  task bank docx.
-- **IP-B5 — Tests:** returns only the user's track; empty when none.
+  task bank docx. Coverage is linear, so the bank size sets how much prep full
+  readiness requires — seed a substantial bank.
+- **IP-B5 — Readiness:** `interview_readiness = round(100 × practised / total)`
+  feeds the weighted readiness score (least weight).
+- **IP-B6 — Tests:** returns only the user's track; practice is idempotent;
+  readiness rises with coverage.
 
 ### Noted for later (do not build now)
 - Adopt Deliverable 3's full `ScoringCriterion` / `VerificationResult` model with
