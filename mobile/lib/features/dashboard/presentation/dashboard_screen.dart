@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
@@ -218,68 +217,64 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           // Duo Metric Bento Row
           Row(
             children: [
-              // Bento 1: Day Streak (tap to open Progress)
+              // Bento 1: Day Streak
               Expanded(
-                child: GestureDetector(
-                  onTap: () => context.push('/progress'),
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(
-                        color: AppColors.border,
+                child: Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    border: Border.all(
+                      color: AppColors.border,
+                    ),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: AppColors.shadow,
+                        blurRadius: 12,
+                        offset: Offset(0, 3),
                       ),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: AppColors.shadow,
-                          blurRadius: 12,
-                          offset: Offset(0, 3),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: AppColors.background,
+                          shape: BoxShape.circle,
                         ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: AppColors.background,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.local_fire_department_rounded,
-                            color: AppColors.primaryNavy,
-                            size: 22,
-                          ),
+                        child: const Icon(
+                          Icons.local_fire_department_rounded,
+                          color: AppColors.primaryNavy,
+                          size: 22,
                         ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${data.streakDays} Days',
-                                style: AppTypography.textTheme.titleMedium
-                                    ?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -0.4,
-                                ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${data.streakDays} Days',
+                              style:
+                                  AppTypography.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.4,
                               ),
-                              Text(
-                                'Streak Active',
-                                style: AppTypography.textTheme.labelSmall
-                                    ?.copyWith(
-                                  color: AppColors.textSecondary,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 10,
-                                ),
+                            ),
+                            Text(
+                              'Streak Active',
+                              style:
+                                  AppTypography.textTheme.labelSmall?.copyWith(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 10,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -338,40 +333,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           // Daily Mission Hero Bento Card
           if (data.dailyTask != null) ...[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Next verification',
-                  style: AppTypography.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.4,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => context.push('/tasks'),
-                  behavior: HitTestBehavior.opaque,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'View tasks',
-                        style: AppTypography.textTheme.labelMedium?.copyWith(
-                          color: AppColors.accentGreen,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        size: 18,
-                        color: AppColors.accentGreen,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            Text(
+              'Next verification',
+              style: AppTypography.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.4,
+                color: AppColors.textPrimary,
+              ),
             ),
             const SizedBox(height: AppSpacing.sm),
             DailyTaskCard(

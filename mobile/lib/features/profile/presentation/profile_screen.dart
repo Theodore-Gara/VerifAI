@@ -21,8 +21,8 @@ class ProfileScreen extends ConsumerWidget {
 
     // Achievements earned by this user (GET /api/achievements/me). The full
     // catalog is known to the app, so locked ones can be shown too.
-    final earned = ref.watch(achievementsProvider).valueOrNull ??
-        const <Achievement>[];
+    final earned =
+        ref.watch(achievementsProvider).valueOrNull ?? const <Achievement>[];
     final earnedCodes = earned.map((a) => a.code).toSet();
 
     final badges = _badgeCatalog
@@ -331,92 +331,6 @@ class ProfileScreen extends ConsumerWidget {
                     return _buildModernBadgeTile(badge);
                   },
                 ),
-                const SizedBox(height: AppSpacing.xl),
-
-                // Account status
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(color: AppColors.border),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: AppColors.shadow,
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color:
-                                  AppColors.primaryNavy.withValues(alpha: 0.06),
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                            ),
-                            child: const Icon(Icons.alt_route_rounded,
-                                size: 20, color: AppColors.primaryNavy),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Account status',
-                                  style: AppTypography.textTheme.titleSmall
-                                      ?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                Text(
-                                  'Your profile and readiness data are synced.',
-                                  style: AppTypography.textTheme.bodySmall
-                                      ?.copyWith(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Container(
-                        width: double.infinity,
-                        padding:
-                            const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                        decoration: BoxDecoration(
-                          color: AppColors.accentLight,
-                          borderRadius: BorderRadius.circular(AppRadius.button),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.verified_rounded,
-                                size: 18, color: AppColors.accentGreen),
-                            const SizedBox(width: AppSpacing.sm),
-                            Text(
-                              'Verified profile',
-                              style:
-                                  AppTypography.textTheme.labelLarge?.copyWith(
-                                color: AppColors.accentGreen,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
@@ -638,18 +552,30 @@ class _BadgeSpec {
 }
 
 const List<_BadgeSpec> _badgeCatalog = [
-  _BadgeSpec('first-task', 'First Assessment',
-      'Complete your first workplace readiness task.', Icons.flag_rounded,
+  _BadgeSpec(
+      'first-task',
+      'First Assessment',
+      'Complete your first workplace readiness task.',
+      Icons.flag_rounded,
       AppColors.accentGreen),
-  _BadgeSpec('five-tasks', 'Five in the Bag',
-      'Complete five workplace readiness tasks.', Icons.checklist_rounded,
+  _BadgeSpec(
+      'five-tasks',
+      'Five in the Bag',
+      'Complete five workplace readiness tasks.',
+      Icons.checklist_rounded,
       AppColors.accentCyan),
-  _BadgeSpec('ten-tasks', 'Consistent Practitioner',
-      'Complete ten workplace readiness tasks.', Icons.military_tech_rounded,
+  _BadgeSpec(
+      'ten-tasks',
+      'Consistent Practitioner',
+      'Complete ten workplace readiness tasks.',
+      Icons.military_tech_rounded,
       AppColors.xpPurple),
   _BadgeSpec('xp-500', '500 XP', 'Earn at least 500 XP.', Icons.bolt_rounded,
       AppColors.gold),
-  _BadgeSpec('dimension-80', 'Strong Dimension',
+  _BadgeSpec(
+      'dimension-80',
+      'Strong Dimension',
       'Reach a score of at least 80 in one readiness dimension.',
-      Icons.workspace_premium_rounded, AppColors.info),
+      Icons.workspace_premium_rounded,
+      AppColors.info),
 ];
