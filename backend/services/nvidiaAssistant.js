@@ -35,9 +35,13 @@ async function getAssistantReply({ task, messages, fetchImpl = fetch }) {
           { role: 'system', content: systemMessage },
           ...messages,
         ],
-        temperature: 0.3,
-        max_tokens: 500,
+        temperature: 0.7,
+        top_p: 0.95,
+        max_tokens: 800,
         stream: false,
+        chat_template_kwargs: {
+          enable_thinking: false,
+        },
       }),
       signal: AbortSignal.timeout(30_000),
     });

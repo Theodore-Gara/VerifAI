@@ -30,7 +30,8 @@ test('NVIDIA assistant sends bounded, task-scoped chat and returns its reply', a
     assert.equal(request.url, 'https://integrate.api.nvidia.com/v1/chat/completions');
     assert.equal(request.options.headers.Authorization, 'Bearer test-key');
     assert.equal(request.body.model, 'nvidia/nemotron-3.5-lightning-30b-a3b');
-    assert.equal(request.body.max_tokens, 500);
+    assert.equal(request.body.max_tokens, 800);
+    assert.equal(request.body.chat_template_kwargs.enable_thinking, false);
     assert.match(request.body.messages[0].content, /Do not reveal the expected answer/);
     assert.doesNotMatch(request.body.messages[0].content, /must not be included/);
   } finally {
