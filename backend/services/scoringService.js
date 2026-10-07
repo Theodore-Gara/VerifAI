@@ -39,6 +39,7 @@ function phrasePresent(answerTokens, phrase) {
   return false;
 }
 
+// Free-text fallback (Verification scenarios with `keywords` instead of options).
 function scoreAnswer(userAnswer, correctAnswer) {
   const normalizedAnswer = normalize(userAnswer);
   const keywords = extractKeywords(correctAnswer);
@@ -66,13 +67,37 @@ function scoreAnswer(userAnswer, correctAnswer) {
   };
 }
 
-function calculateXp(score) {
+// Controlled-choice scoring: sum the selected options' weights (0-100).
+// Verification is all-or-nothing (one option scores 100); AI Judgement and
+// Risk & Governance split the total across a decision and a reason.
+function scoreOptions(optionScores) {
+  const total = (optionScores || []).reduce((sum, value) => sum + (Number(value) || 0), 0);
+  return Math.max(0, Math.min(100, Math.round(total)));
+}
+
+// XP is proportional to the score, so a wrong answer (score 0) earns nothing.
+// Difficulty scales the ceiling; partial credit flows through automatically.
+const DIFFICULTY_MAX_XP = { easy: 50, medium: 70, hard: 100 };
+
+function calculateXp(score, difficulty = 'medium') {
   const bounded = Math.max(0, Math.min(100, Number(score) || 0));
-  return Math.max(10, Math.min(70, 20 + Math.round(bounded * 0.5)));
+  if (bounded <= 0) return 0;
+  const maxXp = DIFFICULTY_MAX_XP[difficulty] ?? DIFFICULTY_MAX_XP.medium;
+  return Math.max(0, Math.min(100, Math.round((bounded / 100) * maxXp)));
+}
+
+// Cumulative XP required to *reach* a level. Each level costs +60 more XP than
+// the last: L1->L2 250, L2->L3 310, L3->L4 370, ... (250, 560, 930, 1360, ...).
+function xpForLevel(level) {
+  const k = Math.max(0, Math.floor(Number(level) || 1) - 1);
+  return 250 * k + 30 * k * (k - 1);
 }
 
 function calculateLevel(xp) {
-  return Math.max(1, Math.floor(Math.max(0, Number(xp) || 0) / 250) + 1);
+  const total = Math.max(0, Number(xp) || 0);
+  let level = 1;
+  while (total >= xpForLevel(level + 1)) level += 1;
+  return level;
 }
 
 module.exports = {
@@ -80,6 +105,8 @@ module.exports = {
   tokenize,
   extractKeywords,
   scoreAnswer,
+  scoreOptions,
   calculateXp,
+  xpForLevel,
   calculateLevel,
 };
