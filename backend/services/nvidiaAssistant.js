@@ -1,5 +1,5 @@
 const NVIDIA_CHAT_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
-const DEFAULT_MODEL = 'deepseek-ai/deepseek-v4.1-flash';
+const DEFAULT_MODEL = 'nvidia/nemotron-3.5-lightning-30b-a3b';
 
 async function getAssistantReply({ task, messages, fetchImpl = fetch }) {
   const apiKey = process.env.NVIDIA_API_KEY;
