@@ -136,4 +136,13 @@ class MockApiClient implements ApiClient {
       missedKeywords: const [],
     );
   }
+
+  @override
+  Future<String> sendAssistantMessage({
+    required int taskId,
+    required List<AssistantMessage> messages,
+  }) async {
+    await _delay();
+    return 'Start by identifying the specific claim in the scenario. What source or information would help you check it?';
+  }
 }

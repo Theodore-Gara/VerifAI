@@ -68,6 +68,20 @@ Protected. Returns XP, level, streak, completed task count, readiness score and 
 ### GET /api/achievements/me
 Protected. Returns achievements earned by the current user.
 
+### POST /api/assistant/chat
+Protected. Sends up to eight conversation messages to the NVIDIA-hosted Learning Assistant, scoped to a task belonging to the authenticated user's selected track. The assistant receives task title/scenario only, not the answer key. Requests are limited to 8 per user per minute; each message is limited to 1,200 characters.
+
+Request:
+
+```json
+{
+  "task_id": 123,
+  "messages": [{ "role": "user", "content": "Can you give me a hint?" }]
+}
+```
+
+Requires `NVIDIA_API_KEY` in the backend environment. `NVIDIA_MODEL` optionally overrides the default model.
+
 ## Scoring
 
 Scores are always 0–100 and stored per dimension; the highest of any dimension named `best_dimension` drives the `dimension-80` achievement.

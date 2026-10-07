@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:verifai/features/auth/presentation.dart';
 import 'package:verifai/features/auth/providers.dart';
+import 'package:verifai/features/assistant/presentation/learning_assistant_screen.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
 import 'package:verifai/features/navigation/main_nav_shell.dart';
@@ -133,6 +134,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/tasks',
         name: 'tasks',
         builder: (context, state) => const TaskScreen(),
+      ),
+      GoRoute(
+        path: '/assistant',
+        name: 'assistant',
+        builder: (context, state) {
+          final task = state.extra;
+          if (task is DailyTask) {
+            return LearningAssistantScreen(task: task);
+          }
+          return const Scaffold(
+            body: Center(child: Text('Open the assistant from a task.')),
+          );
+        },
       ),
       GoRoute(
         path: '/progress',
