@@ -23,7 +23,11 @@ final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(BaseOptions(
     baseUrl: const String.fromEnvironment(
       'API_BASE_URL',
-      defaultValue: 'https://verifai-production-29ae.up.railway.app/api/',
+      // Production backend on Render. Override for local development with
+      // --dart-define=API_BASE_URL=http://<host>:3000/api/
+      // Note: the Render free tier spins down when idle, so the first request
+      // after a quiet period can take ~50s while the instance wakes.
+      defaultValue: 'https://verifai-2wnm.onrender.com/api/',
     ),
     connectTimeout: const Duration(seconds: 10),
     receiveTimeout: const Duration(seconds: 10),
