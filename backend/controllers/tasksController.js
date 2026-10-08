@@ -1,8 +1,11 @@
 const pool = require('../db/pool');
 const { positiveIntegerParam, requiredString } = require('../middleware/validate');
 const {
-  scoreAnswer,
   scoreOptions,
+  scoreCriteria,
+  scoreFlawLines,
+  FIX_POINTS,
+  REASON_POINTS,
   calculateXp,
   calculateLevel,
 } = require('../services/scoringService');
@@ -91,7 +94,7 @@ async function getNextTask(req, res, next) {
     if (feature === 'verification') {
       const difficulties = preferredDifficulties(Number(user.level));
       const result = await pool.query(
-        `SELECT t.id, t.feature, v.title, v.scenario, v.embedded_flaw, v.difficulty
+        `SELECT t.id, v.format, v.title, v.scenario, v.embedded_flaw, v.difficulty, v.ai_output_lines
          FROM tasks t
          JOIN verification_tasks v ON v.task_id = t.id
          WHERE t.feature = 'verification' AND t.track_id = $1 AND ${seenFilter}
@@ -101,13 +104,32 @@ async function getNextTask(req, res, next) {
          LIMIT 1`,
         [user.industry_track_id, user.id, difficulties[0], difficulties[1], difficulties[2]]
       );
-      task = result.rows[0];
-      if (task) {
+      const row = result.rows[0];
+      if (row && row.format === 'line_text') {
+        task = {
+          id: row.id,
+          feature: 'verification',
+          format: 'line_text',
+          title: row.title,
+          scenario: row.scenario,
+          difficulty: row.difficulty,
+          ai_output_lines: row.ai_output_lines,
+        };
+      } else if (row) {
         const options = await pool.query(
           `SELECT id, label FROM task_options WHERE task_id = $1 AND kind = 'answer' ORDER BY sort_order`,
-          [task.id]
+          [row.id]
         );
-        task.options = options.rows;
+        task = {
+          id: row.id,
+          feature: 'verification',
+          format: 'choice',
+          title: row.title,
+          scenario: row.scenario,
+          embedded_flaw: row.embedded_flaw,
+          difficulty: row.difficulty,
+          options: options.rows,
+        };
       }
     } else {
       const table = feature === 'judgement' ? 'judgement_tasks' : 'risk_governance_tasks';
@@ -197,13 +219,13 @@ async function submitAttempt(req, res, next) {
     const attemptResult = await client.query(
       `INSERT INTO task_attempts
         (user_id, task_id, answer, rationale, answer_option_id, decision_option_id,
-         reason_option_id, task_title, score, passed, practice, feedback, xp_earned)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+         reason_option_id, selected_lines, task_title, score, passed, practice, feedback, xp_earned)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
        RETURNING id, task_id, score, passed, practice, xp_earned, submitted_at`,
       [
         user.id, task.id, scored.answer, scored.rationale, scored.answerOptionId,
-        scored.decisionOptionId, scored.reasonOptionId, content.title, scored.score,
-        passed, practice, content.feedback, xpEarned,
+        scored.decisionOptionId, scored.reasonOptionId, scored.selectedLines, content.title,
+        scored.score, passed, practice, content.feedback, xpEarned,
       ]
     );
 
@@ -231,6 +253,8 @@ async function submitAttempt(req, res, next) {
         correct_option_id: content.correctOptionId ?? null,
         correct_decision_id: content.correctDecisionId ?? null,
         correct_reason_id: content.correctReasonId ?? null,
+        flaw_lines: content.flawLines ?? null,
+        expected_answer: content.expectedAnswer ?? null,
       },
       skill_score: skillScore,
       progress,
@@ -258,19 +282,33 @@ async function loadTaskContent(client, task) {
 
   if (task.feature === 'verification') {
     const r = await client.query(
-      `SELECT title, scenario, embedded_flaw, expected_answer, feedback, difficulty, keywords
+      `SELECT format, title, scenario, embedded_flaw, expected_answer, feedback, difficulty,
+              ai_output_lines, flaw_lines, fix_keywords, reason_keywords
        FROM verification_tasks WHERE task_id = $1`,
       [task.id]
     );
     const row = r.rows[0] || {};
+    if (row.format === 'line_text') {
+      return {
+        format: 'line_text',
+        title: row.title,
+        feedback: row.feedback,
+        difficulty: row.difficulty,
+        aiOutputLines: row.ai_output_lines,
+        flawLines: row.flaw_lines,
+        expectedAnswer: row.expected_answer,
+        fixKeywords: row.fix_keywords,
+        reasonKeywords: row.reason_keywords,
+      };
+    }
     const answerOptions = options.filter((o) => o.kind === 'answer');
     const correct = answerOptions.find((o) => o.score >= 100);
     return {
+      format: 'choice',
       title: row.title,
       feedback: row.feedback,
       difficulty: row.difficulty,
       expectedAnswer: row.expected_answer,
-      keywords: row.keywords,
       options: answerOptions,
       correctOptionId: correct ? correct.id : null,
     };
@@ -300,16 +338,29 @@ async function loadTaskContent(client, task) {
 
 function scoreByFeature(feature, content, body) {
   if (feature === 'verification') {
+    if (content.format === 'line_text') {
+      const selected = Array.isArray(body.selected_lines) ? body.selected_lines.map(Number) : [];
+      if (!selected.length) throw new Error('Select the flawed line(s) first.');
+      const fix = String(body.fix == null ? '' : body.fix);
+      const reason = String(body.reason == null ? '' : body.reason);
+      const flawScore = scoreFlawLines(selected, content.flawLines);
+      const fixResult = scoreCriteria(fix, content.fixKeywords, FIX_POINTS);
+      const reasonResult = scoreCriteria(reason, content.reasonKeywords, REASON_POINTS);
+      return {
+        score: flawScore + fixResult.score + reasonResult.score,
+        selectedLines: selected,
+        answer: fix,
+        rationale: reason,
+        answerOptionId: null,
+        decisionOptionId: null,
+        reasonOptionId: null,
+      };
+    }
     if (body.answer_option_id != null) {
       const id = positiveIntegerParam(body.answer_option_id, 'answer option id');
       const option = content.options.find((o) => o.id === id);
       if (!option) throw new Error('Selected option does not belong to this task.');
-      return { score: option.score, answerOptionId: id, answer: null, rationale: null, decisionOptionId: null, reasonOptionId: null };
-    }
-    if (content.keywords && content.keywords.length && body.answer != null) {
-      const answer = requiredString(body.answer, 'answer', 10000);
-      const result = scoreAnswer(answer, content.keywords.join(', '));
-      return { score: result.score, answer, answerOptionId: null, rationale: null, decisionOptionId: null, reasonOptionId: null };
+      return { score: option.score, answerOptionId: id, answer: null, rationale: null, decisionOptionId: null, reasonOptionId: null, selectedLines: null };
     }
     throw new Error('An answer option is required for this task.');
   }
@@ -329,6 +380,7 @@ function scoreByFeature(feature, content, body) {
     rationale,
     answer: null,
     answerOptionId: null,
+    selectedLines: null,
   };
 }
 

@@ -96,3 +96,221 @@ SELECT seed_verification(
     {"label":"Claim on everything except entertainment.","score":0}
   ]$j$::jsonb
 );
+
+-- ===========================================================================
+-- Additional line_text tasks (9) — VerifAI_Finance_Verification_Tasks.pdf
+-- ===========================================================================
+
+SELECT seed_verification_text(
+  'verification-finance-07', 'Finance', $$The Invoice VAT$$,
+  $$You work in accounts receivable at an office-supplies distributor in Johannesburg. AI prepared a tax invoice that will be emailed to a customer in the next batch. The VAT rate is 15%.$$,
+  'easy',
+  ARRAY[
+    $$TAX INVOICE  INV-2026-0418$$,
+    $$Customer: Mokoena Legal Inc.$$,
+    $$$$,
+    $$Item                        Qty    Unit price      Line total$$,
+    $$A4 paper (box of 5)          40       R185.00       R7,400.00$$,
+    $$Toner cartridge              25       R200.00       R5,000.00$$,
+    $$Subtotal (excl. VAT)                               R12,400.00$$,
+    $$VAT @ 15%                                           R1,660.00$$,
+    $$TOTAL DUE                                          R14,060.00$$
+  ],
+  ARRAY[8, 9],
+  $$Lines 8 to 9. The VAT line is wrong and the total inherits the error. 15% of R12,400 is not R1,660.$$,
+  $$VAT = R12,400 x 15% = R1,860.00. Total due = R12,400 + R1,860 = R14,260.00. The invoice is under-charged by R200.$$,
+  $$A tax invoice with the wrong VAT understates the output VAT the company owes SARS and short-charges the customer by R200. The customer would also claim the wrong input VAT.$$,
+  ARRAY[$$1,860|1860$$, $$14,260|14260$$, $$12,400 x 15|15% of 12,400|12400 x 15$$],
+  ARRAY[$$output vat$$, $$sars$$, $$under-charged|undercharged|under charged$$, $$tax invoice$$, $$input vat$$]
+);
+
+SELECT seed_verification_text(
+  'verification-finance-08', 'Finance', $$The Straight-Line Depreciation$$,
+  $$At month-end for a Durban logistics company, AI prepared the depreciation entry for a new delivery truck. Company policy is straight-line depreciation over 5 years with a residual value of R60,000.$$,
+  'easy',
+  ARRAY[
+    $$Asset:             Delivery truck (full-year charge)$$,
+    $$Cost:              R480,000$$,
+    $$Residual value:    R60,000$$,
+    $$Useful life:       5 years$$,
+    $$Method:            Straight-line$$,
+    $$$$,
+    $$Annual depreciation = Cost / Useful life$$,
+    $$                    = R480,000 / 5$$,
+    $$                    = R96,000$$,
+    $$$$,
+    $$Journal:  Dr Depreciation expense          R96,000$$,
+    $$          Cr Accumulated depreciation      R96,000$$
+  ],
+  ARRAY[7, 8, 9],
+  $$Lines 7 to 9. The formula ignores the residual value, so it depreciates the full cost instead of the depreciable amount.$$,
+  $$Depreciable amount = Cost - Residual value = R480,000 - R60,000 = R420,000. Annual depreciation = R420,000 / 5 = R84,000.$$,
+  $$Depreciation is calculated on cost less residual value (IAS 16). Overstating the charge understates profit and the carrying amount of the asset every year, and the error repeats across all five years.$$,
+  ARRAY[$$84,000|84000$$, $$420,000|420000$$, $$residual value$$],
+  ARRAY[$$depreciable amount$$, $$ias 16$$, $$overstated|overstate$$, $$profit$$, $$carrying amount$$]
+);
+
+SELECT seed_verification_text(
+  'verification-finance-09', 'Finance', $$The Margin That Is Really a Markup$$,
+  $$You are preparing a benchmarking slide for a retail client. AI calculated the client's gross margin and compared it with the industry average of 31%.$$,
+  'easy',
+  ARRAY[
+    $$Revenue                         R850,000$$,
+    $$Cost of sales                   R595,000$$,
+    $$Gross profit                    R255,000$$,
+    $$$$,
+    $$Gross margin = Gross profit / Cost of sales$$,
+    $$             = R255,000 / R595,000$$,
+    $$             = 42.9%$$,
+    $$$$,
+    $$Industry average gross margin: 31%$$,
+    $$Conclusion: the client's gross margin is well above the industry average.$$
+  ],
+  ARRAY[5, 6, 7, 10],
+  $$Lines 5 to 7 and 10. Gross margin is divided by cost of sales, which gives the markup, not the margin, so the conclusion is wrong.$$,
+  $$Gross margin = Gross profit / Revenue = R255,000 / R850,000 = 30.0%. The client is slightly below the 31% industry average, not well above it.$$,
+  $$Margin and markup are easy to mix up, and here the mix-up flips the conclusion. A slide that says a client is outperforming the industry when it is slightly behind leads to the wrong advice.$$,
+  ARRAY[$$30%|30.0|30 percent$$, $$revenue$$],
+  ARRAY[$$markup$$, $$denominator$$, $$industry average$$, $$below$$, $$margin$$]
+);
+
+SELECT seed_verification_text(
+  'verification-finance-10', 'Finance', $$The Bank Reconciliation$$,
+  $$You are a graduate accountant at a manufacturing firm. AI prepared the 30 June bank reconciliation. It shows an unexplained difference and recommends a fraud investigation.$$,
+  'medium',
+  ARRAY[
+    $$Bank reconciliation - 30 June 2026$$,
+    $$Balance per bank statement                                 R81,600$$,
+    $$Add:  Deposits in transit                                   R9,500$$,
+    $$Add:  Unpresented cheques                                   R6,200$$,
+    $$Adjusted bank balance                                      R97,300$$,
+    $$$$,
+    $$Balance per cash book                                      R84,300$$,
+    $$Less: Bank charges not yet in cash book                     (R350)$$,
+    $$Add:  Direct deposit not yet in cash book                     R950$$,
+    $$Adjusted cash book balance                                 R84,900$$,
+    $$$$,
+    $$Difference                                                 R12,400$$,
+    $$Status: UNEXPLAINED. Escalate for possible fraud investigation.$$
+  ],
+  ARRAY[4, 5],
+  $$Lines 4 to 5. Unpresented cheques are added to the bank balance when they should be deducted. That creates the whole R12,400 difference.$$,
+  $$Unpresented cheques are deducted: R81,600 + R9,500 - R6,200 = R84,900, which equals the adjusted cash book balance, so there is no difference to investigate.$$,
+  $$Unpresented cheques are cheques already recorded in the cash book that the bank has not yet paid, so the bank balance is higher than the true position. Getting the direction wrong triggers a needless fraud alarm.$$,
+  ARRAY[$$deduct|less|subtract$$, $$84,900|84900$$, $$less$$],
+  ARRAY[$$unpresented$$, $$not yet paid|not yet cleared$$, $$cleared$$, $$reconcil$$, $$fraud$$]
+);
+
+SELECT seed_verification_text(
+  'verification-finance-11', 'Finance', $$The Obsolete Stock$$,
+  $$You are on the year-end audit file of a Cape Town electronics retailer. A new phone model launched in November and the previous generation is selling slowly. AI wrote the inventory valuation note.$$,
+  'medium',
+  ARRAY[
+    $$Inventory at 31 December 2025$$,
+    $$Standard lines (at cost)                  R850,000$$,
+    $$Previous-generation phones (at cost)      R400,000$$,
+    $$Total inventory at cost                 R1,250,000$$,
+    $$$$,
+    $$Previous-generation phones: expected selling price R360,000;$$,
+    $$estimated costs to sell R40,000.$$,
+    $$$$,
+    $$Conclusion: IAS 2 requires inventory to be measured at cost.$$,
+    $$Cost of R1,250,000 stands. No write-down is required.$$
+  ],
+  ARRAY[9, 10],
+  $$Lines 9 to 10. IAS 2 does not say inventory is held at cost. It says inventory is measured at the lower of cost and net realisable value (NRV).$$,
+  $$NRV of the old phones = R360,000 - R40,000 = R320,000, which is below their cost of R400,000. Write down by R80,000; inventory is carried at R1,170,000.$$,
+  $$Leaving slow-moving stock at cost overstates assets and profit. Auditors check this area closely, and an unrecorded write-down is a common audit adjustment.$$,
+  ARRAY[$$80,000|80000$$, $$1,170,000|1170000$$, $$net realisable value|nrv$$],
+  ARRAY[$$lower of cost$$, $$ias 2$$, $$write-down|writedown|write down$$, $$overstate$$]
+);
+
+SELECT seed_verification_text(
+  'verification-finance-12', 'Finance', $$The Insurance Prepayment$$,
+  $$A client pays its annual insurance premium on 1 October and has a 31 December year-end. AI prepared the journal and said no year-end adjustment is needed.$$,
+  'medium',
+  ARRAY[
+    $$Premium paid 1 Oct 2025: R36,000 (12 months of cover to 30 Sep 2026)$$,
+    $$Financial year-end: 31 December 2025$$,
+    $$$$,
+    $$Journal 1 October 2025:$$,
+    $$  Dr Insurance expense      R36,000$$,
+    $$  Cr Bank                   R36,000$$,
+    $$$$,
+    $$Year-end adjustment: none required. The full premium is an expense of$$,
+    $$the year because it was paid during the year.$$
+  ],
+  ARRAY[5, 8, 9],
+  $$Lines 5, 8 and 9. The whole premium is treated as an expense of the year because it was paid in the year. Only the part of the cover used by 31 December is an expense.$$,
+  $$Only 3 months (October to December) are used: R36,000 x 3/12 = R9,000 is the expense. R27,000 is a prepayment (current asset). Year-end entry: Dr Prepaid insurance R27,000, Cr Insurance expense R27,000.$$,
+  $$Accrual accounting matches expenses to the period in which the cover is used, not the period in which cash is paid. Expensing all R36,000 overstates expenses and understates profit by R27,000.$$,
+  ARRAY[$$9,000|9000$$, $$27,000|27000$$, $$prepaid|prepayment$$],
+  ARRAY[$$accrual$$, $$matching$$, $$expense overstated|overstates expense$$, $$profit understated|understates profit$$, $$3 months|three months$$]
+);
+
+SELECT seed_verification_text(
+  'verification-finance-13', 'Finance', $$The Lease That Vanished$$,
+  $$A Pretoria manufacturer signs a 3-year warehouse lease from 1 January 2026. Payments are R20,000 a month, paid at the end of each month. The incremental borrowing rate is 9% a year. AI wrote the accounting note.$$,
+  'hard',
+  ARRAY[
+    $$Lease: warehouse, 36 months from 1 January 2026$$,
+    $$Payments: R20,000 per month, paid at the end of each month$$,
+    $$Incremental borrowing rate: 9% per year (0.75% per month)$$,
+    $$$$,
+    $$Treatment: rent is an operating expense.$$,
+    $$  Each month: Dr Rent expense R20,000 / Cr Bank R20,000$$,
+    $$  Annual rent expense: R240,000$$,
+    $$  Balance sheet impact: none$$,
+    $$  IFRS 16 disclosure: not required$$
+  ],
+  ARRAY[5, 6, 7, 8, 9],
+  $$Lines 5 to 9. This is the old operating-lease treatment. IFRS 16 requires a lessee to put most leases on the balance sheet.$$,
+  $$Recognise a lease liability and a right-of-use asset at the present value of the payments (about R628,936). Year-1 expense is depreciation of about R209,645 plus interest of about R48,847, about R258,492, not R240,000.$$,
+  $$Leaving a R629k obligation off the balance sheet understates liabilities and makes gearing and debt covenants look better than they are. Lenders and auditors look for this, and IFRS 16 has applied since 2019.$$,
+  ARRAY[$$right-of-use|right of use$$, $$lease liability$$, $$present value$$, $$628$$],
+  ARRAY[$$ifrs 16$$, $$off balance sheet|off-balance$$, $$liabilities$$, $$gearing$$, $$covenant$$]
+);
+
+SELECT seed_verification_text(
+  'verification-finance-14', 'Finance', $$The Unrevalued Payable$$,
+  $$A South African company bought equipment from a Texas supplier. AI recorded the purchase and left the unpaid invoice unchanged at year-end because 'it is already recorded'.$$,
+  'hard',
+  ARRAY[
+    $$Invoice: USD 50,000, dated 1 November 2025$$,
+    $$Exchange rate on 1 Nov 2025: R18.20 per USD$$,
+    $$Journal 1 Nov:  Dr Equipment            R910,000$$,
+    $$                Cr Trade payables        R910,000$$,
+    $$$$,
+    $$Year-end 31 Dec 2025: spot rate R18.65 per USD$$,
+    $$Trade payables remain at R910,000 because the invoice is already$$,
+    $$recorded. No year-end adjustment is needed.$$
+  ],
+  ARRAY[7, 8],
+  $$Lines 7 to 8. A foreign-currency payable is a monetary item. It must be retranslated at the closing rate at every reporting date.$$,
+  $$Closing payable = USD 50,000 x R18.65 = R932,500. Record an exchange loss of R22,500 in profit or loss: Dr Foreign exchange loss R22,500, Cr Trade payables R22,500. The equipment stays at R910,000 (non-monetary, historical rate).$$,
+  $$Ignoring the rand weakening understates the liability and hides a real FX loss. The unpaid invoice is also still exposed to further currency moves, which management should know about.$$,
+  ARRAY[$$932,500|932500$$, $$22,500|22500$$, $$closing rate$$, $$exchange loss$$],
+  ARRAY[$$monetary item$$, $$ias 21$$, $$historical rate$$, $$profit or loss$$]
+);
+
+SELECT seed_verification_text(
+  'verification-finance-15', 'Finance', $$The Wrong Share Count$$,
+  $$You are preparing the earnings per share (EPS) line for a mid-sized listed company with a 31 December year-end. New shares were issued at full market price during the year. AI divided profit by the closing number of shares.$$,
+  'hard',
+  ARRAY[
+    $$Profit attributable to ordinary shareholders:   R12,000,000$$,
+    $$Shares in issue at 1 January 2025:             4,000,000$$,
+    $$Shares issued on 1 October 2025:               2,000,000$$,
+    $$Shares in issue at 31 December 2025:           6,000,000$$,
+    $$$$,
+    $$EPS = Profit / Shares in issue at year-end$$,
+    $$    = R12,000,000 / 6,000,000$$,
+    $$    = R2.00 per share$$
+  ],
+  ARRAY[6, 7, 8],
+  $$Lines 6 to 8. EPS must use the weighted average number of shares outstanding during the year, not the closing number.$$,
+  $$Weighted average = 4,000,000 + (2,000,000 x 3/12) = 4,500,000. EPS = R12,000,000 / 4,500,000 = R2.67 per share, not R2.00.$$,
+  $$The new shares were only in issue for 3 months and earned profit for 3 months, so they should count for 3 months. Using the closing number understates EPS by about 25%, which can change how investors read the results.$$,
+  ARRAY[$$4,500,000|4500000$$, $$2.67$$, $$weighted average$$],
+  ARRAY[$$ias 33$$, $$time$$, $$issued during the year$$, $$understate$$]
+);

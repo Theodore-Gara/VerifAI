@@ -96,3 +96,191 @@ SELECT seed_verification(
     {"label":"Ask the AI to confirm the test was applied.","score":0}
   ]$j$::jsonb
 );
+
+-- ===========================================================================
+-- Additional line_text tasks (9) — VerifAI_Legal_Verification_Tasks.pdf
+-- ===========================================================================
+
+SELECT seed_verification_text(
+  'verification-legal-07', 'Legal', $$The Ten-Year Debt$$,
+  $$You are a candidate attorney. A client wants to sue for an unpaid invoice. AI wrote the prescription note below on 20 October 2026.$$,
+  'easy',
+  ARRAY[
+    $$MEMO - Collection of unpaid invoice$$,
+    $$Client: Dlamini Packaging (Pty) Ltd   Debtor: Karoo Foods CC$$,
+    $$Invoice dated 15 March 2021, payable within 30 days (due 14 April 2021).$$,
+    $$No summons issued. No written acknowledgement of debt by the debtor.$$,
+    $$$$,
+    $$Prescription: ordinary commercial debts prescribe after 10 years under$$,
+    $$the Prescription Act 68 of 1969. The debt runs until 14 April 2031, so$$,
+    $$the claim is still valid and we can issue summons now.$$
+  ],
+  ARRAY[6, 7, 8],
+  $$Lines 6 to 8. The wrong prescription period. Ten years is not the general period for an ordinary commercial debt.$$,
+  $$The general period is 3 years (Prescription Act, section 11(d)), running from the date the debt is due (section 12). The debt fell due on 14 April 2021, so it prescribed on 14 April 2024 unless interrupted. Neither summons nor acknowledgement happened, so the claim has prescribed.$$,
+  $$Issuing summons on a prescribed debt invites a successful plea of prescription and an adverse costs order, and the client has relied on bad advice. The 30-year limit applies only to special debts such as judgment debts.$$,
+  ARRAY[$$3 years|three years$$, $$section 11$$, $$14 april 2024$$, $$prescribed$$],
+  ARRAY[$$interrupt$$, $$costs$$, $$prescription act$$, $$plea$$, $$summons$$]
+);
+
+SELECT seed_verification_text(
+  'verification-legal-08', 'Legal', $$The 90-Day Referral$$,
+  $$You work in the labour department of a law firm. A dismissed employee came to see you. AI summarised the referral deadline for the partner.$$,
+  'easy',
+  ARRAY[
+    $$To: Partner      Re: Mr T. Naidoo, dismissed 12 October 2026$$,
+    $$$$,
+    $$Mr Naidoo was dismissed for alleged misconduct on 12 October 2026.$$,
+    $$An unfair dismissal dispute must be referred to the CCMA within 90 days$$,
+    $$of the date of dismissal. The deadline is therefore 10 January 2027.$$,
+    $$There is no urgency: we can collect his documents in December.$$
+  ],
+  ARRAY[4, 5],
+  $$Lines 4 to 5. The 90-day period is the wrong one for a dismissal dispute.$$,
+  $$An unfair dismissal must be referred to the CCMA within 30 days of the date of dismissal (LRA section 191(1)(b)(i)). The deadline is 11 November 2026. The 90-day period applies to unfair labour practice disputes; a late referral needs condonation.$$,
+  $$Believing there are 90 days means the referral could be filed about two months late. The employee then has to apply for condonation and may lose the case on the delay alone.$$,
+  ARRAY[$$30 days|thirty days$$, $$11 november$$, $$section 191$$],
+  ARRAY[$$condonation$$, $$unfair labour practice$$, $$late$$, $$ccma$$]
+);
+
+SELECT seed_verification_text(
+  'verification-legal-09', 'Legal', $$The Two-Week Notice$$,
+  $$You are drafting a termination letter for an employer. AI produced the notice paragraph. The employee has worked for the company since 1 March 2023 and the letter is dated 15 October 2026.$$,
+  'easy',
+  ARRAY[
+    $$Dear Ms Pillay,$$,
+    $$$$,
+    $$Mavuso Logistics is terminating your employment for operational reasons.$$,
+    $$You have been employed with us since 1 March 2023.$$,
+    $$Under section 37 of the Basic Conditions of Employment Act you are$$,
+    $$entitled to two weeks' notice. Your last day will be 29 October 2026.$$
+  ],
+  ARRAY[5, 6],
+  $$Lines 5 to 6. The notice period is too short for an employee with more than a year of service.$$,
+  $$Under BCEA section 37(1), an employee employed for more than one year is entitled to at least four weeks' notice (unless the contract or a collective agreement gives longer). Ms Pillay has over 3 years' service, so she must receive at least four weeks' notice, with a last day of 12 November 2026 at the earliest.$$,
+  $$Too short a notice period is a breach of the BCEA. The employer would have to pay the shortfall, and it adds to the risk of a challenge to the whole termination process.$$,
+  ARRAY[$$four weeks|4 weeks$$, $$section 37$$],
+  ARRAY[$$more than one year$$, $$notice pay$$, $$breach$$, $$bcea$$]
+);
+
+SELECT seed_verification_text(
+  'verification-legal-10', 'Legal', $$The Severance Estimate$$,
+  $$Your firm acts for an employer retrenching staff for operational reasons. AI prepared the severance calculation for one employee and described it as the legal minimum.$$,
+  'medium',
+  ARRAY[
+    $$Retrenchment summary - Ms L. Zulu$$,
+    $$Monthly salary: R22,000     Completed years of service: 6$$,
+    $$Reason for dismissal: operational requirements$$,
+    $$$$,
+    $$Statutory severance (BCEA section 41): one month's pay per completed$$,
+    $$year of service.$$,
+    $$R22,000 x 6 = R132,000$$,
+    $$Offer: R132,000, which is the statutory minimum.$$
+  ],
+  ARRAY[5, 6, 7, 8],
+  $$Lines 5 to 8. The statutory severance minimum is not one month's pay per year. The AI mixed it up with a common contractual or negotiated figure.$$,
+  $$BCEA section 41 sets the minimum at one week's remuneration for each completed year of service. Weekly pay = R22,000 x 12 / 52 = R5,076.92. Severance minimum = R5,076.92 x 6 = R30,461.54. An offer of R132,000 is well above the statutory minimum.$$,
+  $$Calling R132,000 the minimum misleads the client about its obligations and sets a high anchor in negotiations, costing the employer about R101,500 more than the law requires.$$,
+  ARRAY[$$one week|1 week$$, $$30,461|30461$$, $$completed year$$],
+  ARRAY[$$section 41$$, $$minimum$$, $$operational requirements$$, $$bcea$$]
+);
+
+SELECT seed_verification_text(
+  'verification-legal-11', 'Legal', $$The Cooling-Off Claim$$,
+  $$You work for a retailer's legal adviser. A customer wants her money back for a TV she bought in-store and no longer wants. AI wrote the advice below.$$,
+  'medium',
+  ARRAY[
+    $$Client: Hi-Fi House (Pty) Ltd     Query: refund for a TV$$,
+    $$Facts: TV bought in-store on 2 October 2026 and taken home the same day.$$,
+    $$On 6 October the customer changed her mind. The TV works and is unused.$$,
+    $$$$,
+    $$Advice: Under section 16 of the Consumer Protection Act 68 of 2008 a$$,
+    $$consumer may cancel any purchase within 5 business days without giving$$,
+    $$a reason or paying a penalty. Hi-Fi House must refund her in full.$$
+  ],
+  ARRAY[5, 6, 7],
+  $$Lines 5 to 7. Section 16 does not give a cooling-off right on every purchase.$$,
+  $$The 5-business-day cooling-off right in CPA section 16 applies to transactions resulting from direct marketing (door-to-door or telephone sales), not ordinary in-store purchases. There is no general statutory right to return a working item bought in a shop; the customer's position depends on the store's own returns policy. Statutory remedies for in-store goods apply to defects (section 56).$$,
+  $$Advising the retailer to refund every change-of-mind purchase would cost it money it does not owe, and it could also mislead the customer about her rights.$$,
+  ARRAY[$$direct marketing$$, $$returns policy$$, $$in-store|in store$$],
+  ARRAY[$$section 16$$, $$section 56$$, $$defect$$, $$cooling-off|cooling off$$]
+);
+
+SELECT seed_verification_text(
+  'verification-legal-12', 'Legal', $$The 72-Hour Grace Period$$,
+  $$A medical group discovered unauthorised access to patient records. You asked AI for advice on when it must notify the Information Regulator and patients.$$,
+  'medium',
+  ARRAY[
+    $$Client: Sunrise Medical Group   Incident: unauthorised access to patient files$$,
+    $$Discovered: Tuesday 6 October 2026, 09:00$$,
+    $$$$,
+    $$Advice: POPIA gives a responsible party 72 hours from discovery before$$,
+    $$any notification is required. Complete the internal investigation first$$,
+    $$and notify the Information Regulator and patients on Friday.$$
+  ],
+  ARRAY[4, 5, 6],
+  $$Lines 4 to 6. This treats 72 hours as a legal grace period under POPIA.$$,
+  $$POPIA section 22 requires notification of the Regulator and affected data subjects as soon as reasonably possible after discovery. There is no fixed hour limit or grace period in the Act. The 72-hour rule is a hard deadline in the EU GDPR, and the Regulator uses about 72 hours only as a benchmark. Only the time reasonably needed to establish the scope of the compromise and restore system integrity is allowed.$$,
+  $$Deliberately waiting until Friday risks breaching section 22. The Information Regulator has issued enforcement notices for late notification, and patients need to be told quickly so they can protect themselves.$$,
+  ARRAY[$$as soon as reasonably possible$$, $$section 22$$, $$no fixed$$],
+  ARRAY[$$gdpr$$, $$benchmark$$, $$data subjects$$, $$regulator$$, $$delay$$]
+);
+
+SELECT seed_verification_text(
+  'verification-legal-13', 'Legal', $$The Misread Judgment$$,
+  $$You are reviewing AI-drafted heads of argument. The insurer is relying on a clause that bars any claim not brought within 90 days of repudiation. Your client wants to argue the clause is unenforceable. The AI cites a real Constitutional Court case, but you must check what it actually decided.$$,
+  'hard',
+  ARRAY[
+    $$HEADS OF ARGUMENT (draft) - paragraph 14$$,
+    $$The insurer relies on clause 9.2, which bars any claim not instituted$$,
+    $$within 90 days of repudiation. The clause is unenforceable. In$$,
+    $$Barkhuizen v Napier 2007 (5) SA 323 (CC) the Constitutional Court held$$,
+    $$that contractual time-limit clauses are contrary to public policy and$$,
+    $$cannot be enforced.$$
+  ],
+  ARRAY[3, 4, 5, 6],
+  $$Lines 3 to 6. The case is real but it is described as supporting the opposite of what it decided.$$,
+  $$In Barkhuizen v Napier the Constitutional Court held that time-limitation clauses are not inherently contrary to public policy. A court asks whether the clause is reasonable, and whether enforcing it would be unreasonable in the circumstances. The 90-day clause in that case was found reasonable and the claim failed, so the authority is adverse to the client unless the facts can be distinguished.$$,
+  $$Misstating a case to the court is a serious professional risk and the opposing side will read the judgment. Heads of argument must deal honestly with adverse authority, so read the judgment itself on SAFLII rather than rely on an AI summary.$$,
+  ARRAY[$$not contrary to public policy|not inherently$$, $$reasonable$$, $$adverse$$],
+  ARRAY[$$read the judgment|read the case$$, $$saflii$$, $$court$$, $$distinguish$$, $$verify$$]
+);
+
+SELECT seed_verification_text(
+  'verification-legal-14', 'Legal', $$The Quick Retrenchment$$,
+  $$A client wants to retrench staff for operational reasons. You ask AI which procedure applies and how long the process takes.$$,
+  'hard',
+  ARRAY[
+    $$Client: Cape Fabrics (Pty) Ltd - 120 employees$$,
+    $$Plan: retrench 15 machine operators for operational reasons.$$,
+    $$$$,
+    $$Procedure: this is a standard section 189 retrenchment. Issue the$$,
+    $$s189(3) notice, consult for 30 days, then issue notices of termination$$,
+    $$on day 31. A facilitator and strike rights do not apply.$$
+  ],
+  ARRAY[4, 5, 6],
+  $$Lines 4 to 6. With these numbers the large-scale procedure in section 189A applies, not just section 189.$$,
+  $$Section 189A applies to an employer with more than 50 employees that contemplates dismissing at least 10 employees (where it employs up to 200). Cape Fabrics has 120 employees and plans 15 dismissals. Notice of termination may not be given until at least 60 days have passed from the section 189(3) notice. A CCMA facilitator can be requested, and employees may strike or approach the Labour Court.$$,
+  $$Issuing termination notices on day 31 makes the process procedurally unfair and invites an urgent Labour Court application to stop it (section 189A(13)). The client could face delay, costs and compensation orders.$$,
+  ARRAY[$$189a$$, $$60 days|sixty days$$, $$large-scale|large scale$$, $$at least 10$$],
+  ARRAY[$$facilitator$$, $$strike$$, $$labour court$$, $$procedurally unfair$$, $$notice of termination$$]
+);
+
+SELECT seed_verification_text(
+  'verification-legal-15', 'Legal', $$The Runaway Interest$$,
+  $$A lender's attorney asks AI to draft a letter of demand for a business loan in default. No summons has been issued yet. You review the figures.$$,
+  'hard',
+  ARRAY[
+    $$LETTER OF DEMAND (draft) - Mazibuko Finance v Ndlovu Builders CC$$,
+    $$Capital outstanding on loan:                 R150,000$$,
+    $$Arrear interest accrued to date:             R210,000$$,
+    $$Total amount due:                            R360,000$$,
+    $$Interest continues to accrue at the contract rate until payment.$$
+  ],
+  ARRAY[3, 4, 5],
+  $$Lines 3 to 5. The claim ignores the in duplum rule, which caps arrear interest at the amount of the unpaid capital.$$,
+  $$Under the in duplum rule, arrear interest stops running once it equals the unpaid capital. Interest is capped at R150,000, so the most the lender can claim is R150,000 + R150,000 = R300,000, not R360,000, and interest should not continue to accrue in the meantime.$$,
+  $$Demanding more than the law allows exposes the lender to a challenge, a costs order and a loss of credibility. The rule is a long-standing one that protects borrowers from interest running without limit.$$,
+  ARRAY[$$in duplum$$, $$150,000|150000$$, $$300,000|300000$$],
+  ARRAY[$$capital$$, $$stops$$, $$double$$, $$cap$$, $$accru$$]
+);

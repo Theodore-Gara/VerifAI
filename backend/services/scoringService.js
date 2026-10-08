@@ -100,12 +100,66 @@ function calculateLevel(xp) {
   return level;
 }
 
+// ---------------------------------------------------------------------------
+// Verification 'line_text' scoring
+// ---------------------------------------------------------------------------
+// Find the flaw: 30 (exact line set). Fix: 40, Reason: 30 (proportional to the
+// criteria matched). A criterion is a group of '|'-separated variants; it matches
+// if any variant appears in the answer (exact token, phrase, or prefix/stem, or a
+// compact alphanumeric substring for numbers like "1,860" -> "1860").
+
+const FLAW_POINTS = 30;
+const FIX_POINTS = 40;
+const REASON_POINTS = 30;
+
+function compact(text) {
+  return String(text || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function variantPresent(answerTokens, answerCompact, variant) {
+  const vt = tokenize(variant);
+  if (!vt.length) return false;
+  if (vt.length > 1 && phrasePresent(answerTokens, variant)) return true;
+  if (vt.length === 1) {
+    const word = vt[0];
+    if (answerTokens.some((t) => t === word || (word.length >= 4 && t.startsWith(word)))) return true;
+  }
+  const cv = compact(variant);
+  return cv.length >= 2 && answerCompact.includes(cv);
+}
+
+function criterionMatches(answerTokens, answerCompact, criterion) {
+  const variants = String(criterion).split('|').map((v) => v.trim()).filter(Boolean);
+  return variants.some((v) => variantPresent(answerTokens, answerCompact, v));
+}
+
+function scoreCriteria(userText, criteria, points) {
+  const list = (criteria || []).filter(Boolean);
+  if (!list.length) return { score: 0, matched: 0, total: 0 };
+  const answerTokens = tokenize(userText);
+  const answerCompact = compact(userText);
+  const matched = list.filter((c) => criterionMatches(answerTokens, answerCompact, c)).length;
+  return { score: Math.round((points * matched) / list.length), matched, total: list.length };
+}
+
+function scoreFlawLines(selected, flawed) {
+  const a = [...new Set((selected || []).map(Number))].sort((x, y) => x - y);
+  const b = [...new Set((flawed || []).map(Number))].sort((x, y) => x - y);
+  const equal = a.length === b.length && b.length > 0 && a.every((v, i) => v === b[i]);
+  return equal ? FLAW_POINTS : 0;
+}
+
 module.exports = {
   normalize,
   tokenize,
   extractKeywords,
   scoreAnswer,
   scoreOptions,
+  scoreCriteria,
+  scoreFlawLines,
+  FLAW_POINTS,
+  FIX_POINTS,
+  REASON_POINTS,
   calculateXp,
   xpForLevel,
   calculateLevel,

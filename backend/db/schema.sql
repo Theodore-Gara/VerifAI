@@ -38,15 +38,21 @@ CREATE TABLE IF NOT EXISTS tasks (
 -- Per-feature content tables
 -- ---------------------------------------------------------------------------
 
+-- `format` selects the interaction: 'choice' (options in task_options) or
+-- 'line_text' (tap the flawed line(s) + typed fix + typed reason).
 CREATE TABLE IF NOT EXISTS verification_tasks (
   task_id INTEGER PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
+  format VARCHAR(20) NOT NULL DEFAULT 'choice' CHECK (format IN ('choice', 'line_text')),
   title VARCHAR(255) NOT NULL,
   scenario TEXT NOT NULL,
   embedded_flaw TEXT NOT NULL,
   expected_answer TEXT NOT NULL,
   feedback TEXT NOT NULL,
   difficulty VARCHAR(20) NOT NULL CHECK (difficulty IN ('easy', 'medium', 'hard')),
-  keywords TEXT[]
+  ai_output_lines TEXT[],
+  flaw_lines INTEGER[],
+  fix_keywords TEXT[],
+  reason_keywords TEXT[]
 );
 
 CREATE TABLE IF NOT EXISTS judgement_tasks (
@@ -104,6 +110,7 @@ CREATE TABLE IF NOT EXISTS task_attempts (
   answer_option_id INTEGER REFERENCES task_options(id) ON DELETE CASCADE,
   decision_option_id INTEGER REFERENCES task_options(id) ON DELETE CASCADE,
   reason_option_id INTEGER REFERENCES task_options(id) ON DELETE CASCADE,
+  selected_lines INTEGER[],
   task_title VARCHAR(255) NOT NULL,
   score INTEGER NOT NULL CHECK (score BETWEEN 0 AND 100),
   passed BOOLEAN NOT NULL DEFAULT FALSE,

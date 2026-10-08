@@ -5,6 +5,10 @@ const {
   extractKeywords,
   scoreAnswer,
   scoreOptions,
+  scoreCriteria,
+  scoreFlawLines,
+  FIX_POINTS,
+  REASON_POINTS,
   calculateXp,
   xpForLevel,
   calculateLevel,
@@ -79,4 +83,32 @@ test('calculateLevel follows the rising curve', () => {
   assert.equal(calculateLevel(560), 3);
   assert.equal(calculateLevel(929), 3);
   assert.equal(calculateLevel(930), 4);
+});
+
+test('flaw scoring is an exact line-set match (order-insensitive)', () => {
+  assert.equal(scoreFlawLines([8, 9], [8, 9]), 30);
+  assert.equal(scoreFlawLines([9, 8], [8, 9]), 30);
+  assert.equal(scoreFlawLines([8, 9, 9], [8, 9]), 30);
+  assert.equal(scoreFlawLines([8], [8, 9]), 0);
+  assert.equal(scoreFlawLines([8, 9, 10], [8, 9]), 0);
+  assert.equal(scoreFlawLines([], [8, 9]), 0);
+});
+
+test('criteria scoring is proportional and synonym/prefix aware', () => {
+  const criteria = ['deduct|less|subtract', '84,900|84900', 'reconcil'];
+  const full = scoreCriteria(
+    'Deduct R6,200 so the reconciliation balances at 84900',
+    criteria,
+    FIX_POINTS
+  );
+  assert.equal(full.matched, 3);
+  assert.equal(full.score, FIX_POINTS);
+
+  const partial = scoreCriteria('I would subtract it', criteria, FIX_POINTS);
+  assert.equal(partial.matched, 1);
+  assert.equal(partial.score, Math.round(FIX_POINTS / 3));
+
+  const none = scoreCriteria('no idea', criteria, REASON_POINTS);
+  assert.equal(none.matched, 0);
+  assert.equal(none.score, 0);
 });

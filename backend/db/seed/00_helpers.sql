@@ -25,9 +25,10 @@ BEGIN
   ON CONFLICT (code) DO UPDATE SET feature = EXCLUDED.feature, track_id = EXCLUDED.track_id
   RETURNING id INTO v_task_id;
 
-  INSERT INTO verification_tasks (task_id, title, scenario, embedded_flaw, expected_answer, feedback, difficulty)
-  VALUES (v_task_id, p_title, p_scenario, p_flaw, p_answer, p_feedback, p_difficulty)
+  INSERT INTO verification_tasks (task_id, format, title, scenario, embedded_flaw, expected_answer, feedback, difficulty)
+  VALUES (v_task_id, 'choice', p_title, p_scenario, p_flaw, p_answer, p_feedback, p_difficulty)
   ON CONFLICT (task_id) DO UPDATE SET
+    format = EXCLUDED.format,
     title = EXCLUDED.title,
     scenario = EXCLUDED.scenario,
     embedded_flaw = EXCLUDED.embedded_flaw,
@@ -41,6 +42,51 @@ BEGIN
     VALUES (v_task_id, 'answer', v_opt->>'label', (v_opt->>'score')::int, v_i);
     v_i := v_i + 1;
   END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Verification task in the 'line_text' format: numbered AI output, the flawed
+-- line(s), a typed fix and a typed reason, each checked against keyword criteria.
+CREATE OR REPLACE FUNCTION seed_verification_text(
+  p_code TEXT,
+  p_track TEXT,
+  p_title TEXT,
+  p_scenario TEXT,
+  p_difficulty TEXT,
+  p_lines TEXT[],
+  p_flaw_lines INTEGER[],
+  p_flaw TEXT,
+  p_answer TEXT,
+  p_feedback TEXT,
+  p_fix_keywords TEXT[],
+  p_reason_keywords TEXT[]
+) RETURNS void AS $$
+DECLARE
+  v_task_id INTEGER;
+BEGIN
+  INSERT INTO tasks (code, feature, track_id)
+  VALUES (p_code, 'verification', (SELECT id FROM industry_tracks WHERE name = p_track))
+  ON CONFLICT (code) DO UPDATE SET feature = EXCLUDED.feature, track_id = EXCLUDED.track_id
+  RETURNING id INTO v_task_id;
+
+  INSERT INTO verification_tasks
+    (task_id, format, title, scenario, embedded_flaw, expected_answer, feedback, difficulty,
+     ai_output_lines, flaw_lines, fix_keywords, reason_keywords)
+  VALUES
+    (v_task_id, 'line_text', p_title, p_scenario, p_flaw, p_answer, p_feedback, p_difficulty,
+     p_lines, p_flaw_lines, p_fix_keywords, p_reason_keywords)
+  ON CONFLICT (task_id) DO UPDATE SET
+    format = EXCLUDED.format,
+    title = EXCLUDED.title,
+    scenario = EXCLUDED.scenario,
+    embedded_flaw = EXCLUDED.embedded_flaw,
+    expected_answer = EXCLUDED.expected_answer,
+    feedback = EXCLUDED.feedback,
+    difficulty = EXCLUDED.difficulty,
+    ai_output_lines = EXCLUDED.ai_output_lines,
+    flaw_lines = EXCLUDED.flaw_lines,
+    fix_keywords = EXCLUDED.fix_keywords,
+    reason_keywords = EXCLUDED.reason_keywords;
 END;
 $$ LANGUAGE plpgsql;
 
