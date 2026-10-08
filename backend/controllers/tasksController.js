@@ -44,6 +44,34 @@ const TIERS = [
 
 const FEATURES = new Set(Object.keys(FEATURE_DIMENSION));
 
+// API `dimension` display names (case-insensitive) -> feature key.
+const DIMENSION_FEATURE = {
+  verification: 'verification',
+  'ai judgement': 'judgement',
+  'risk & governance': 'risk_governance',
+  'prompt design': 'prompt_design',
+};
+
+// Resolves ?feature= / ?dimension= into one feature key. `byId` is true when
+// the caller named a dimension explicitly, which drops the difficulty ordering
+// (the caller is asking for a specific mode, not the level-adaptive default).
+function resolveFeature(query) {
+  const rawFeature = query.feature == null ? null : String(query.feature).toLowerCase().trim();
+  const rawDimension = query.dimension == null ? null : String(query.dimension).toLowerCase().trim();
+
+  if (rawFeature != null && !FEATURES.has(rawFeature)) return { error: 'Unknown feature.' };
+  if (rawDimension != null && !DIMENSION_FEATURE[rawDimension]) return { error: 'Unknown dimension.' };
+
+  let feature = rawFeature;
+  if (rawDimension != null) {
+    const mapped = DIMENSION_FEATURE[rawDimension];
+    if (feature != null && feature !== mapped) return { error: 'feature and dimension do not match.' };
+    feature = mapped;
+  }
+
+  return { feature: feature || 'verification', byId: rawDimension != null };
+}
+
 async function getCurrentUser(client, firebaseUid) {
   const result = await client.query(
     `SELECT id, industry_track_id FROM users WHERE firebase_uid = $1`,
@@ -59,13 +87,13 @@ function preferredDifficulties(level) {
 }
 
 // ---------------------------------------------------------------------------
-// GET /api/tasks/next?feature=verification
+// GET /api/tasks/next?feature=verification | ?dimension=AI%20Judgement
 // ---------------------------------------------------------------------------
 async function getNextTask(req, res, next) {
   try {
-    const feature = String(req.query.feature || 'verification').toLowerCase();
-    if (!FEATURES.has(feature)) {
-      return res.status(400).json({ error: 'Unknown feature.', request_id: req.requestId });
+    const { feature, byId, error } = resolveFeature(req.query);
+    if (error) {
+      return res.status(400).json({ error, request_id: req.requestId });
     }
 
     const userResult = await pool.query(
@@ -92,17 +120,23 @@ async function getNextTask(req, res, next) {
 
     let task;
     if (feature === 'verification') {
-      const difficulties = preferredDifficulties(Number(user.level));
+      const params = [user.industry_track_id, user.id];
+      let order = 't.id ASC';
+      if (!byId) {
+        const difficulties = preferredDifficulties(Number(user.level));
+        params.push(difficulties[0], difficulties[1], difficulties[2]);
+        order = `CASE v.difficulty
+           WHEN $3 THEN 0 WHEN $4 THEN 1 WHEN $5 THEN 2 ELSE 3
+         END, t.id ASC`;
+      }
       const result = await pool.query(
         `SELECT t.id, v.format, v.title, v.scenario, v.embedded_flaw, v.difficulty, v.ai_output_lines
          FROM tasks t
          JOIN verification_tasks v ON v.task_id = t.id
          WHERE t.feature = 'verification' AND t.track_id = $1 AND ${seenFilter}
-         ORDER BY CASE v.difficulty
-           WHEN $3 THEN 0 WHEN $4 THEN 1 WHEN $5 THEN 2 ELSE 3
-         END, t.id ASC
+         ORDER BY ${order}
          LIMIT 1`,
-        [user.industry_track_id, user.id, difficulties[0], difficulties[1], difficulties[2]]
+        params
       );
       const row = result.rows[0];
       if (row && row.format === 'line_text') {
@@ -159,6 +193,9 @@ async function getNextTask(req, res, next) {
         request_id: req.requestId,
       });
     }
+
+    // The app's DailyTask requires `dimension`; `feature` is the schema key.
+    task.dimension = FEATURE_DIMENSION[feature];
 
     return res.status(200).json({ task, request_id: req.requestId });
   } catch (err) {
@@ -529,4 +566,4 @@ async function awardAchievements(client, userId) {
   return newlyEarned;
 }
 
-module.exports = { getNextTask, submitAttempt, awardAchievements };
+module.exports = { getNextTask, submitAttempt, awardAchievements, refreshReadiness, scoreByFeature };

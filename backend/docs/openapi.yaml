@@ -22,9 +22,19 @@ components:
         request_id: { type: string }
     AttemptRequest:
       type: object
-      required: [answer]
       properties:
-        answer: { type: string, minLength: 1, maxLength: 10000 }
+        practice: { type: boolean, description: 'Record as a practice run (0 XP, no skill-score change)' }
+        rationale: { type: string, maxLength: 10000 }
+        answer_option_id: { type: integer, minimum: 1, description: 'Verification choice task' }
+        decision_option_id: { type: integer, minimum: 1, description: 'Judgement / Risk & Governance' }
+        reason_option_id: { type: integer, minimum: 1 }
+        answer: { type: string, minLength: 1, maxLength: 10000, description: 'Legacy verification line_text task' }
+        reason: { type: string, maxLength: 10000 }
+        selected_lines: { type: array, items: { type: integer, minimum: 1 } }
+      oneOf:
+        - required: [answer_option_id]
+        - required: [decision_option_id]
+        - required: [answer]
 paths:
   /api/health:
     get:
@@ -72,9 +82,18 @@ paths:
     get:
       summary: Get next unseen task
       security: [{ bearerAuth: [] }]
+      parameters:
+        - name: feature
+          in: query
+          schema: { type: string, enum: [verification, judgement, risk_governance, prompt_design], default: verification }
+          description: Restrict to a feature.
+        - name: dimension
+          in: query
+          schema: { type: string }
+          description: Display-name alias for feature (Verification, AI Judgement, Risk & Governance, Prompt Design). Must agree with feature.
       responses:
         '200': { description: Task or null when the track has no unseen tasks }
-        '400': { description: Track selection required }
+        '400': { description: Track selection required / unknown or conflicting dimension }
         '401': { description: Unauthorized }
   /api/tasks/{id}/attempt:
     post:
@@ -107,3 +126,25 @@ paths:
       security: [{ bearerAuth: [] }]
       responses:
         '200': { description: Earned achievements }
+  /api/interview/questions:
+    get:
+      summary: List the interview question bank for the user's track
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Question bank with practiced flags }
+        '400': { description: Track selection required (or track not synchronised) }
+        '401': { description: Unauthorized }
+  /api/interview/questions/{id}/practice:
+    post:
+      summary: Mark an interview question as practised (idempotent)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200': { description: Question marked practised; readiness recomputed }
+        '400': { description: Invalid id }
+        '403': { description: Question does not belong to the user's track }
+        '404': { description: Question not found }

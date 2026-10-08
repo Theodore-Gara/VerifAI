@@ -30,16 +30,37 @@ Protected. Updates `display_name` and/or `industry_track_id`.
 ### GET /api/tasks/next
 Protected. Returns the next task for the authenticated user's selected industry track. The reference answer is never returned.
 
-### POST /api/tasks/:id/attempt
-Protected. Submits an answer and atomically updates attempt history, skill score, XP, level, streak and achievements.
+Query parameters:
 
-Request:
+- `feature` — restrict to a feature: `verification`, `judgement`, `risk_governance`, `prompt_design`. Default `verification`.
+- `dimension` — display-name alias, e.g. `Verification`, `AI Judgement`, `Risk & Governance`, `Prompt Design`. Must agree with `feature` when both are given; otherwise `400`.
+
+Every task payload carries `feature` and `dimension` (e.g. `"feature": "judgement", "dimension": "AI Judgement"`).
+
+### POST /api/tasks/:id/attempt
+Protected. Submits an answer and atomically updates attempt history, skill score, XP, level, streak, readiness and achievements.
+
+The request body depends on the task feature:
 
 ```json
 {
-  "answer": "I would verify the original source before relying on the generated summary."
+  "decision_option_id": 11,
+  "reason_option_id": 14,
+  "rationale": "optional free-text rationale"
 }
 ```
+
+- Verification `choice` tasks: `{ "answer_option_id": 31, "rationale": "..." }`.
+- Verification `line_text` tasks (legacy): `{ "answer": "...", "reason": "...", "selected_lines": [8, 9] }`.
+- To record a practice run (no XP, does not affect skill score): `{ ..., "practice": true }`.
+
+The response includes the score, whether it passed, XP earned, the correct option ids, and the updated `skill_score`, `progress` and `newly_earned_achievements`, plus `request_id`.
+
+### GET /api/interview/questions
+Protected. Returns the interview question bank for the authenticated user's selected track, each with a boolean `practiced` flag.
+
+### POST /api/interview/questions/:id/practice
+Protected. Marks a question as practised. Idempotent: practising the same question again returns 200 with the same count. Recomputes the readiness score. Returns the question's `practised_count` and `total`.
 
 ### GET /api/progress/me
 Protected. Returns XP, level, streak, completed task count, readiness score and per-dimension scores.
@@ -49,18 +70,26 @@ Protected. Returns achievements earned by the current user.
 
 ## Scoring
 
-Reference answers use `Keywords:` concepts. The scoring service normalizes text and checks exact token/phrase presence. The score is the percentage of required concepts matched, from 0 to 100. A score of 60+ is a pass.
+Scores are always 0–100 and stored per dimension; the highest of any dimension named `best_dimension` drives the `dimension-80` achievement.
+
+- **AI Judgement** and **Risk & Governance**: the decision option and reason option each carry a weight (decision 50 + reason 50). The selected decision scores its full weight when best, half when the neighbouring option, zero otherwise; the reason scores its full weight when correct, zero otherwise.
+- **Verification (choice)**: select the single correct answer — 100 or 0.
+- **Verification (line_text, legacy)**: reference answers use `Keywords:` concepts. The scoring service normalizes text and checks exact token/phrase presence. The score is the percentage of required concepts matched; flaw-line matches and reasoning keywords add points.
 
 XP:
 
-- minimum: 10
-- maximum: 70
-- formula: `20 + round(score * 0.5)` bounded to 10–70
+- practice runs earn 0 XP
+- otherwise scaled by score and difficulty: `round(score/100 * difficulty_max)`, with difficulty maxima easy 50 / medium 70 / hard 100
+- a pass is `score >= 50` for judgement and risk & governance, `>= 60` for verification
 
 Level:
 
 - level 1 starts at 0 XP
-- each additional 250 XP increases the level by 1
+- each 250 XP increases the level by 1
+
+Readiness:
+
+- weighted mean of the dimension skill scores plus interview coverage (each question practised counts `100 / total`); stored monotonically via `GREATEST` so readiness never drops
 
 Streak:
 
