@@ -1,5 +1,5 @@
 const NVIDIA_CHAT_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
-const DEFAULT_MODEL = 'nvidia/nemotron-3.5-lightning-30b-a3b';
+const DEFAULT_MODEL = 'openai/gpt-oss-20b';
 
 async function getAssistantReply({ task, messages, fetchImpl = fetch }) {
   const apiKey = process.env.NVIDIA_API_KEY;
@@ -37,7 +37,12 @@ async function getAssistantReply({ task, messages, fetchImpl = fetch }) {
         ],
         temperature: 0.7,
         top_p: 0.95,
-        max_tokens: 800,
+        // gpt-oss-20b is a reasoning model: it emits a reasoning trace before
+        // the answer. If max_tokens is too low the whole budget is spent on the
+        // trace and `content` comes back empty with finish_reason "length",
+        // which reads as a broken model. 2000 leaves ample headroom for a short
+        // hint; measured replies use well under 200 tokens.
+        max_tokens: 2000,
         stream: false,
         chat_template_kwargs: {
           enable_thinking: false,
