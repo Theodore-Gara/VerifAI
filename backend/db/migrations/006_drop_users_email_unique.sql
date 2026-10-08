@@ -1,0 +1,25 @@
+-- =============================================================================
+-- 006: drop the prototype users_email_key unique constraint
+-- =============================================================================
+-- The prototype enforced UNIQUE(email) on users. db/schema.sql declares email
+-- as plain NOT NULL, and no migration ever dropped the prototype constraint, so
+-- a migrated database rejected an insert that a fresh one would accept.
+--
+-- The backend treats firebase_uid as the identity and upserts on it:
+--
+--   INSERT INTO users (firebase_uid, email, display_name) ...
+--   ON CONFLICT (firebase_uid) DO UPDATE ...
+--
+-- A Google or email sign-in whose address already exists under a *different*
+-- firebase_uid therefore failed with:
+--
+--   23505: duplicate key value violates unique constraint "users_email_key"
+--   detail: Key (email)=(...) already exists.
+--
+-- That surfaced in the app as the generic "sign-in could not be completed".
+-- Emails are not the identity here (they can change and can be shared by
+-- pre-existing rows), so the constraint is dropped to match schema.sql.
+--
+-- The runner wraps this file in a transaction; do NOT put BEGIN/COMMIT here.
+
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key;
