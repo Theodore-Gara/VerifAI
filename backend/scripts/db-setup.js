@@ -7,6 +7,7 @@ const pool = require('../db/pool');
 
 const DB_DIR = path.join(__dirname, '..', 'db');
 const MIGRATIONS_DIR = path.join(DB_DIR, 'migrations');
+const SEED_DIR = path.join(DB_DIR, 'seed');
 
 const LEDGER_DDL = `
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -32,6 +33,16 @@ const listMigrations = () =>
         checksum: crypto.createHash('sha256').update(sql).digest('hex').slice(0, 16),
       };
     });
+
+// Per-feature content files in db/seed/, applied in filename order.
+const listSeeds = () =>
+  fs.existsSync(SEED_DIR)
+    ? fs
+        .readdirSync(SEED_DIR)
+        .filter((f) => f.endsWith('.sql'))
+        .sort()
+        .map((name) => ({ name, sql: fs.readFileSync(path.join(SEED_DIR, name), 'utf8') }))
+    : [];
 
 const ensureLedger = (client) => client.query(LEDGER_DDL);
 
@@ -82,6 +93,28 @@ async function runMigrations(client, migrations, { log = () => {} } = {}) {
 }
 
 /**
+ * Applies the shared seed.sql then every db/seed/*.sql content file, each in its
+ * own transaction. Seeds are idempotent, so this is safe to re-run.
+ */
+async function runSeeds(client, seeds, { log = () => {} } = {}) {
+  const files = [
+    { name: 'seed.sql', sql: fs.readFileSync(path.join(DB_DIR, 'seed.sql'), 'utf8') },
+    ...seeds,
+  ];
+  for (const f of files) {
+    log(`  seed  ${f.name}`);
+    await client.query('BEGIN');
+    try {
+      await client.query(f.sql);
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw new Error(`${f.name} failed and was rolled back: ${err.message}`);
+    }
+  }
+}
+
+/**
  * A fresh database built from schema.sql is already at the latest schema, so
  * record every existing migration as applied. Without this the first
  * `db:migrate` on a fresh install would try to convert tables that were never
@@ -99,9 +132,10 @@ async function baseline(client, migrations) {
 }
 
 async function main() {
-  // node scripts/db-setup.js          fresh database   -> schema.sql + seed.sql, baselined
+  // node scripts/db-setup.js          fresh database   -> schema.sql + seed data, baselined
   // node scripts/db-setup.js migrate  existing schema   -> pending migrations only
-  const mode = process.argv[2] === 'migrate' ? 'migrate' : 'fresh';
+  // node scripts/db-setup.js seed     (re)apply seed data only
+  const mode = ['migrate', 'seed'].includes(process.argv[2]) ? process.argv[2] : 'fresh';
 
   if (!process.env.DATABASE_URL) {
     console.error('DATABASE_URL is not set. Copy .env.example to .env and fill it in.');
@@ -121,12 +155,16 @@ async function main() {
         const ran = await runMigrations(client, migrations, { log: console.log });
         console.log(ran ? `\n${ran} applied.` : '\nAlready up to date, nothing to run.');
       }
+    } else if (mode === 'seed') {
+      console.log('Applying seed data:');
+      await runSeeds(client, listSeeds(), { log: console.log });
+      console.log('\nSeed data applied.');
     } else {
-      for (const file of ['schema.sql', 'seed.sql']) {
-        process.stdout.write(`  ${file} ... `);
-        await client.query(fs.readFileSync(path.join(DB_DIR, file), 'utf8'));
-        console.log('ok');
-      }
+      process.stdout.write('  schema.sql ... ');
+      await client.query(fs.readFileSync(path.join(DB_DIR, 'schema.sql'), 'utf8'));
+      console.log('ok');
+      console.log('Applying seed data:');
+      await runSeeds(client, listSeeds(), { log: console.log });
       const migrations = listMigrations();
       await baseline(client, migrations);
       console.log(`Fresh database ready. ${migrations.length} migration(s) baselined as applied.`);

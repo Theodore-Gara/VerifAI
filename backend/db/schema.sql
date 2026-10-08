@@ -1,5 +1,9 @@
--- VerifAI Deliverable 4 — PostgreSQL schema
--- Eight required application tables. Run on a fresh database before seed.sql.
+-- VerifAI — PostgreSQL schema (per-feature task model)
+-- Run on a fresh database before seed.sql and db/seed/*.sql.
+
+-- ---------------------------------------------------------------------------
+-- Shared tables
+-- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS industry_tracks (
   id SERIAL PRIMARY KEY,
@@ -16,28 +20,109 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ---------------------------------------------------------------------------
+-- Task anchor
+-- ---------------------------------------------------------------------------
+-- Holds identity only (no seed content) so task_attempts/skill_scores keep one
+-- FK across every feature. `code` is the stable seed key used for idempotency.
+
 CREATE TABLE IF NOT EXISTS tasks (
   id SERIAL PRIMARY KEY,
+  code VARCHAR(120) NOT NULL UNIQUE,
+  feature VARCHAR(30) NOT NULL CHECK (feature IN ('verification', 'judgement', 'risk_governance', 'prompt_design')),
   track_id INTEGER NOT NULL REFERENCES industry_tracks(id) ON DELETE CASCADE,
-  title VARCHAR(255) NOT NULL,
-  scenario TEXT NOT NULL,
-  correct_answer TEXT NOT NULL,
-  feedback TEXT NOT NULL,
-  dimension VARCHAR(50) NOT NULL CHECK (dimension IN ('Verification', 'AI Judgement', 'Prompt Design', 'Risk & Governance')),
-  difficulty VARCHAR(20) NOT NULL DEFAULT 'medium' CHECK (difficulty IN ('easy', 'medium', 'hard')),
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ---------------------------------------------------------------------------
+-- Per-feature content tables
+-- ---------------------------------------------------------------------------
+
+-- `format` selects the interaction: 'choice' (options in task_options) or
+-- 'line_text' (tap the flawed line(s) + typed fix + typed reason).
+CREATE TABLE IF NOT EXISTS verification_tasks (
+  task_id INTEGER PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
+  format VARCHAR(20) NOT NULL DEFAULT 'choice' CHECK (format IN ('choice', 'line_text')),
+  title VARCHAR(255) NOT NULL,
+  scenario TEXT NOT NULL,
+  embedded_flaw TEXT NOT NULL,
+  expected_answer TEXT NOT NULL,
+  feedback TEXT NOT NULL,
+  difficulty VARCHAR(20) NOT NULL CHECK (difficulty IN ('easy', 'medium', 'hard')),
+  ai_output_lines TEXT[],
+  flaw_lines INTEGER[],
+  fix_keywords TEXT[],
+  reason_keywords TEXT[]
+);
+
+CREATE TABLE IF NOT EXISTS judgement_tasks (
+  task_id INTEGER PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  scenario TEXT NOT NULL,
+  feedback TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS risk_governance_tasks (
+  task_id INTEGER PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  scenario TEXT NOT NULL,
+  feedback TEXT NOT NULL
+);
+
+-- Controlled-choice options, shared by Verification ('answer'), AI Judgement and
+-- Risk & Governance ('decision' + 'reason'). `score` is never returned to the app.
+CREATE TABLE IF NOT EXISTS task_options (
+  id SERIAL PRIMARY KEY,
+  task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  kind VARCHAR(20) NOT NULL CHECK (kind IN ('answer', 'decision', 'reason')),
+  label TEXT NOT NULL,
+  score INTEGER NOT NULL CHECK (score BETWEEN 0 AND 100),
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+-- Interview Practice (ungraded, read-only; contributes to readiness via coverage).
+CREATE TABLE IF NOT EXISTS interview_questions (
+  id SERIAL PRIMARY KEY,
+  track_id INTEGER NOT NULL REFERENCES industry_tracks(id) ON DELETE CASCADE,
+  question TEXT NOT NULL,
+  sample_answer TEXT NOT NULL,
+  what_employers_test TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS interview_practice (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  question_id INTEGER NOT NULL REFERENCES interview_questions(id) ON DELETE CASCADE,
+  practiced_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, question_id)
+);
+
+-- ---------------------------------------------------------------------------
+-- Attempts
+-- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS task_attempts (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-  answer TEXT NOT NULL,
+  answer TEXT,
+  rationale TEXT,
+  answer_option_id INTEGER REFERENCES task_options(id) ON DELETE CASCADE,
+  decision_option_id INTEGER REFERENCES task_options(id) ON DELETE CASCADE,
+  reason_option_id INTEGER REFERENCES task_options(id) ON DELETE CASCADE,
+  selected_lines INTEGER[],
+  task_title VARCHAR(255) NOT NULL,
   score INTEGER NOT NULL CHECK (score BETWEEN 0 AND 100),
+  passed BOOLEAN NOT NULL DEFAULT FALSE,
+  practice BOOLEAN NOT NULL DEFAULT FALSE,
   feedback TEXT NOT NULL,
   xp_earned INTEGER NOT NULL DEFAULT 0 CHECK (xp_earned >= 0),
   submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ---------------------------------------------------------------------------
+-- Progression
+-- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS skill_scores (
   id SERIAL PRIMARY KEY,
@@ -56,6 +141,9 @@ CREATE TABLE IF NOT EXISTS user_progress (
   level INTEGER NOT NULL DEFAULT 1 CHECK (level >= 1),
   streak INTEGER NOT NULL DEFAULT 0 CHECK (streak >= 0),
   last_activity_date DATE,
+  tier VARCHAR(20) NOT NULL DEFAULT 'Novice' CHECK (tier IN ('Novice', 'Developing', 'Proficient', 'Advanced')),
+  tier_tasks_completed INTEGER NOT NULL DEFAULT 0 CHECK (tier_tasks_completed >= 0),
+  readiness_score INTEGER NOT NULL DEFAULT 0 CHECK (readiness_score BETWEEN 0 AND 100),
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -74,11 +162,22 @@ CREATE TABLE IF NOT EXISTS user_achievements (
   UNIQUE (user_id, achievement_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_tasks_track_difficulty ON tasks(track_id, difficulty, id);
+-- ---------------------------------------------------------------------------
+-- Indexes
+-- ---------------------------------------------------------------------------
+
+CREATE INDEX IF NOT EXISTS idx_tasks_feature_track ON tasks(feature, track_id);
+CREATE INDEX IF NOT EXISTS idx_verification_tasks_difficulty ON verification_tasks(difficulty);
+CREATE INDEX IF NOT EXISTS idx_task_options_task ON task_options(task_id, kind, sort_order);
+CREATE INDEX IF NOT EXISTS idx_interview_questions_track ON interview_questions(track_id, sort_order);
 CREATE INDEX IF NOT EXISTS idx_task_attempts_user ON task_attempts(user_id, submitted_at DESC);
 CREATE INDEX IF NOT EXISTS idx_task_attempts_user_task ON task_attempts(user_id, task_id);
 CREATE INDEX IF NOT EXISTS idx_skill_scores_user ON skill_scores(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_achievements_user ON user_achievements(user_id, earned_at DESC);
+
+-- ---------------------------------------------------------------------------
+-- updated_at triggers
+-- ---------------------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$
