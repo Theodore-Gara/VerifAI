@@ -113,9 +113,13 @@ async function getNextTask(req, res, next) {
       return res.status(400).json({ error: 'Select an industry track before requesting a task.', request_id: req.requestId });
     }
 
-    const seenFilter = `NOT EXISTS (
+    // Shared "not already attempted" guard. The user-id placeholder differs
+    // between the two branches below (the verification query puts the track at
+    // $1 and the user at $2, while the judgement/risk query adds a leading
+    // `feature` parameter), so it is passed in rather than hardcoded.
+    const seenFilter = (userParam) => `NOT EXISTS (
       SELECT 1 FROM task_attempts ta
-      WHERE ta.user_id = $2 AND ta.task_id = t.id AND ta.practice = FALSE
+      WHERE ta.user_id = ${userParam} AND ta.task_id = t.id AND ta.practice = FALSE
     )`;
 
     let task;
@@ -133,7 +137,7 @@ async function getNextTask(req, res, next) {
         `SELECT t.id, v.format, v.title, v.scenario, v.embedded_flaw, v.difficulty, v.ai_output_lines
          FROM tasks t
          JOIN verification_tasks v ON v.task_id = t.id
-         WHERE t.feature = 'verification' AND t.track_id = $1 AND ${seenFilter}
+         WHERE t.feature = 'verification' AND t.track_id = $1 AND ${seenFilter('$2')}
          ORDER BY ${order}
          LIMIT 1`,
         params
@@ -171,7 +175,7 @@ async function getNextTask(req, res, next) {
         `SELECT t.id, t.feature, f.title, f.scenario
          FROM tasks t
          JOIN ${table} f ON f.task_id = t.id
-         WHERE t.feature = $1 AND t.track_id = $2 AND ${seenFilter}
+         WHERE t.feature = $1 AND t.track_id = $2 AND ${seenFilter('$3')}
          ORDER BY t.id ASC
          LIMIT 1`,
         [feature, user.industry_track_id, user.id]
