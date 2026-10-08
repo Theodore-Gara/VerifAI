@@ -74,3 +74,8 @@ mobile/package.json
 # IDE
 *.swp
 *.swo
+
+# opencode project config (local tooling, includes a project-scoped Supabase MCP)
+opencode.json
+opencode.jsonc
+.opencode/
