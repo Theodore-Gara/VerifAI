@@ -7,6 +7,19 @@ abstract class ApiClient {
   Future<DashboardData> getDashboard();
   Future<List<Achievement>> getAchievements();
   Future<TaskSubmissionResponse> submitTask(TaskSubmissionRequest request);
+  Future<String> sendAssistantMessage({
+    required int taskId,
+    required List<AssistantMessage> messages,
+  });
+}
+
+class AssistantMessage {
+  final String role;
+  final String content;
+
+  const AssistantMessage({required this.role, required this.content});
+
+  Map<String, String> toJson() => {'role': role, 'content': content};
 }
 
 class AuthSyncResponse {

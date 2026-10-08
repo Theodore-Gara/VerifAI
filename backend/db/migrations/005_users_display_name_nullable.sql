@@ -1,0 +1,24 @@
+-- =============================================================================
+-- 005: users.display_name becomes nullable
+-- =============================================================================
+-- Repairs drift that migration 001 introduced.
+--
+-- 001 renamed the prototype column `full_name` to `display_name` but never
+-- dropped the prototype's NOT NULL, so a *migrated* database kept
+-- display_name NOT NULL while db/schema.sql declares it nullable. A database
+-- built fresh and a database built by migrating therefore disagreed.
+--
+-- The backend hits this: POST /api/auth/sync inserts display_name from the
+-- Firebase token's optional `name` claim and passes NULL when it is absent
+-- (main's authController sends `name || null`), which a migrated database
+-- rejected with:
+--
+--   error 23502: null value in column "display_name" of relation "users"
+--   violates not-null constraint
+--
+-- Real Google tokens normally carry a name, so this surfaced only for tokens
+-- without one - but the two schema paths must agree regardless.
+--
+-- The runner wraps this file in a transaction; do NOT put BEGIN/COMMIT here.
+
+ALTER TABLE users ALTER COLUMN display_name DROP NOT NULL;

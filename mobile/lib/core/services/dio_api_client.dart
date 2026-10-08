@@ -98,7 +98,8 @@ class DioApiClient implements ApiClient {
     );
     final list = response.data?['achievements'] as List<dynamic>? ?? const [];
     return list
-        .map((item) => Achievement.fromJson(Map<String, dynamic>.from(item as Map)))
+        .map((item) =>
+            Achievement.fromJson(Map<String, dynamic>.from(item as Map)))
         .toList();
   }
 
@@ -131,6 +132,27 @@ class DioApiClient implements ApiClient {
               Achievement.fromJson(Map<String, dynamic>.from(item as Map)))
           .toList(),
     );
+  }
+
+  @override
+  Future<String> sendAssistantMessage({
+    required int taskId,
+    required List<AssistantMessage> messages,
+  }) async {
+    final token = await _idToken();
+    final response = await _dio.post<Map<String, dynamic>>(
+      'assistant/chat',
+      data: {
+        'task_id': taskId,
+        'messages': messages.map((message) => message.toJson()).toList(),
+      },
+      options: Options(headers: _authHeaders(token)),
+    );
+    final reply = response.data?['reply'];
+    if (reply is! String || reply.isEmpty) {
+      throw const FormatException('The assistant returned an empty reply.');
+    }
+    return reply;
   }
 
   Future<String> _idToken() async {

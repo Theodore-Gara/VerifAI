@@ -220,6 +220,14 @@ class _TaskChallengeModalState extends ConsumerState<TaskChallengeModal> {
                     const SizedBox(height: AppSpacing.xl),
                   ],
 
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        context.push('/assistant', extra: widget.task),
+                    icon: const Icon(Icons.support_agent_rounded),
+                    label: const Text('Ask the Learning Assistant'),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+
                   Text(
                     'What would you do with this output?',
                     style: AppTypography.textTheme.titleMedium?.copyWith(
