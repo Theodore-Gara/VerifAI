@@ -1,0 +1,40 @@
+# Render Blueprint for the VerifAI backend API.
+# Docs: https://render.com/docs/blueprint-spec
+#
+# The Node service lives entirely in backend/. The repo root has no
+# package.json, so `rootDir` is required — without it Render builds from the
+# root and fails to detect a Node app.
+
+services:
+  - type: web
+    name: verifai-backend
+    runtime: node
+    plan: free
+    # Closest Render region to the Supabase database (eu-west-2 / London).
+    # region cannot be changed after the service is created.
+    region: frankfurt
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Render does not guarantee NODE_ENV. It is set explicitly because the
+      # error handler hides internal detail and pool.js selects TLS based on it.
+      - key: NODE_ENV
+        value: production
+
+      # Secrets: these prompt for a value in the Render Dashboard on first
+      # sync and are deliberately NOT stored in this file.
+      - key: DATABASE_URL
+        sync: false
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
+
+      # Optional. Left unset, CORS allows all origins, which is fine for the
+      # mobile client (native requests send no Origin header). Set a
+      # comma-separated list if a browser client is added later.
+      # - key: ALLOWED_ORIGINS
+      #   sync: false
