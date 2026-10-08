@@ -15,7 +15,13 @@ services:
     region: frankfurt
     rootDir: backend
     buildCommand: npm ci
-    startCommand: npm start
+    # Migrations run before the server starts, so the schema can never drift
+    # behind the deployed code (the cause of the Supabase outage on 2026-10-08).
+    # db:migrate is ledger-based, so it is a fast no-op once current, and if it
+    # fails the start command fails, so Render keeps the previous deploy live.
+    # Render's preDeployCommand would be the natural place for this, but it is
+    # paid-only; the start command is its free-tier equivalent.
+    startCommand: npm run db:migrate && npm start
     healthCheckPath: /api/health
     autoDeployTrigger: commit
     envVars:
