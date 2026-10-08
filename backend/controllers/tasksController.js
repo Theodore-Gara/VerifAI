@@ -566,4 +566,4 @@ async function awardAchievements(client, userId) {
   return newlyEarned;
 }
 
-module.exports = { getNextTask, submitAttempt, awardAchievements, refreshReadiness };
+module.exports = { getNextTask, submitAttempt, awardAchievements, refreshReadiness, scoreByFeature };

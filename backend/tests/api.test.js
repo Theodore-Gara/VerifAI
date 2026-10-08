@@ -60,8 +60,48 @@ pool.query = async (sql) => {
   if (sql.includes('SELECT 1')) return { rows: [{ '?column?': 1 }] };
   return { rows: [] };
 };
-pool.connect = async () => {};
+pool.connect = async () => fakeClient;
 pool.end = async () => {};
+
+// Fake transaction client for the end-to-end attempt test (AJ-B6).
+const SCORED_OPTIONS = [
+  { id: 11, kind: 'decision', label: 'Use AI', score: 50 },
+  { id: 12, kind: 'decision', label: 'Use AI with human review', score: 25 },
+  { id: 13, kind: 'decision', label: "Don't use AI", score: 0 },
+  { id: 14, kind: 'reason', label: 'A. It is routine, low-risk work.', score: 50 },
+  { id: 15, kind: 'reason', label: 'B. AI always saves time.', score: 0 },
+  { id: 16, kind: 'reason', label: 'C. AI output is never professional.', score: 0 },
+];
+
+const fakeClient = {
+  async query(sql) {
+    queries.push(sql);
+    const s = sql.replace(/\s+/g, ' ').trim();
+    if (s === 'BEGIN' || s === 'COMMIT' || s === 'ROLLBACK') return { rows: [] };
+    if (s.includes('FROM users WHERE firebase_uid')) return { rows: [{ id: 7, industry_track_id: 1, level: 1 }] };
+    if (s.includes('FROM tasks WHERE id') && s.includes('FOR SHARE')) return { rows: [{ id: 5, feature: 'judgement', track_id: 1 }] };
+    if (s.includes('FROM task_options')) return { rows: SCORED_OPTIONS };
+    if (s.includes('FROM judgement_tasks')) return { rows: [{ title: 'The Month-End Agenda', feedback: 'Good call.' }] };
+    if (s.includes('INSERT INTO task_attempts')) {
+      return { rows: [{ id: 1, task_id: 5, score: 100, passed: true, practice: false, xp_earned: 70, submitted_at: '2026-10-08T00:00:00.000Z' }] };
+    }
+    if (s.includes('INSERT INTO skill_scores')) return { rows: [{ dimension: 'AI Judgement', score: 100, attempts_count: 1 }] };
+    if (s.includes('INSERT INTO user_progress')) {
+      return { rows: [{ id: 1, xp: 0, level: 1, streak: 0, last_activity_date: null, tier: 'Novice', tier_tasks_completed: 0 }] };
+    }
+    if (s.includes('UPDATE user_progress') && s.includes('SET xp')) {
+      return { rows: [{ xp: 70, level: 2, streak: 1, last_activity_date: '2026-10-08', tier: 'Developing', tier_tasks_completed: 0, readiness_score: 100 }] };
+    }
+    if (s.includes('UPDATE user_progress') && s.includes('readiness_score')) return { rows: [] };
+    if (s.includes('SUM(xp_earned)')) return { rows: [{ attempts: 1, xp: 70 }] };
+    if (s.includes('MAX(score)')) return { rows: [{ best_dimension: 100 }] };
+    if (s.includes('FROM skill_scores')) return { rows: [{ dimension: 'AI Judgement', score: 100 }] };
+    if (s.includes('COUNT(*)::int AS total FROM interview_questions')) return { rows: [{ total: 0 }] };
+    if (s.includes('FROM achievements')) return { rows: [] };
+    return { rows: [] };
+  },
+  release() {},
+};
 
 const app = require('../app');
 
@@ -225,4 +265,24 @@ test('a question from another track is rejected', async () => {
   } finally {
     foreignQuestion = false;
   }
+});
+
+test('POST /api/tasks/:id/attempt scores a judgement task and commits', async () => {
+  queries.length = 0;
+  const response = await request(app)
+    .post('/api/tasks/5/attempt')
+    .send({ decision_option_id: 11, reason_option_id: 14 })
+    .set('Authorization', 'Bearer test-token');
+
+  assert.equal(response.status, 201);
+  assert.equal(response.body.result.score, 100);
+  assert.equal(response.body.result.passed, true);
+  assert.equal(response.body.result.xp_earned, 70);
+  assert.equal(response.body.result.correct_decision_id, 11);
+  assert.equal(response.body.result.correct_reason_id, 14);
+  assert.equal(response.body.attempt.score, 100);
+  assert.equal(response.body.progress.xp, 70);
+
+  assert.ok(queries.includes('COMMIT'), 'transaction committed');
+  assert.ok(!queries.includes('ROLLBACK'), 'transaction not rolled back');
 });

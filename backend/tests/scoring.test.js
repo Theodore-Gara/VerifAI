@@ -112,3 +112,55 @@ test('criteria scoring is proportional and synonym/prefix aware', () => {
   assert.equal(none.matched, 0);
   assert.equal(none.score, 0);
 });
+
+// ---------------------------------------------------------------------------
+// Feature-scoring paths (scoreByFeature) — AJ-B6 / RG-B2.
+// ---------------------------------------------------------------------------
+const { scoreByFeature } = require('../controllers/tasksController');
+
+const JUDGEMENT_CONTENT = {
+  decisions: [
+    { id: 11, score: 50 },
+    { id: 12, score: 25 },
+    { id: 13, score: 0 },
+  ],
+  reasons: [
+    { id: 14, score: 50 },
+    { id: 15, score: 0 },
+    { id: 16, score: 0 },
+  ],
+};
+
+test('AI Judgement scoring sums the decision and reason weights', () => {
+  assert.equal(scoreByFeature('judgement', JUDGEMENT_CONTENT, { decision_option_id: 11, reason_option_id: 14 }).score, 100);
+  assert.equal(scoreByFeature('judgement', JUDGEMENT_CONTENT, { decision_option_id: 12, reason_option_id: 14 }).score, 75);
+  assert.equal(scoreByFeature('judgement', JUDGEMENT_CONTENT, { decision_option_id: 13, reason_option_id: 15 }).score, 0);
+});
+
+test('Risk & Governance scoring uses the 2-option decision with the same reason bank', () => {
+  const rg = {
+    decisions: [
+      { id: 21, score: 50 },
+      { id: 22, score: 0 },
+    ],
+    reasons: JUDGEMENT_CONTENT.reasons,
+  };
+  assert.equal(scoreByFeature('risk_governance', rg, { decision_option_id: 21, reason_option_id: 14 }).score, 100);
+  assert.equal(scoreByFeature('risk_governance', rg, { decision_option_id: 21, reason_option_id: 16 }).score, 50);
+  assert.equal(scoreByFeature('risk_governance', rg, { decision_option_id: 22, reason_option_id: 14 }).score, 50);
+  assert.equal(scoreByFeature('risk_governance', rg, { decision_option_id: 22, reason_option_id: 15 }).score, 0);
+});
+
+test('scoring rejects option ids that do not belong to the task', () => {
+  assert.throws(() => scoreByFeature('judgement', JUDGEMENT_CONTENT, { decision_option_id: 999, reason_option_id: 14 }), /decision/);
+  assert.throws(() => scoreByFeature('judgement', JUDGEMENT_CONTENT, { decision_option_id: 11, reason_option_id: 999 }), /reason/);
+  assert.throws(() => scoreByFeature('judgement', JUDGEMENT_CONTENT, { reason_option_id: 14 }), /decision/);
+});
+
+test('verification choice scoring is all-or-nothing', () => {
+  const content = { format: 'choice', options: [{ id: 31, score: 100 }, { id: 32, score: 0 }] };
+  assert.equal(scoreByFeature('verification', content, { answer_option_id: 31 }).score, 100);
+  assert.equal(scoreByFeature('verification', content, { answer_option_id: 32 }).score, 0);
+  assert.throws(() => scoreByFeature('verification', content, {}), /answer option/);
+  assert.throws(() => scoreByFeature('verification', content, { answer_option_id: 41 }), /does not belong/);
+});
