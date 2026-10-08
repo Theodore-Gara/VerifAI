@@ -11,6 +11,7 @@ const trackRoutes = require('./routes/tracks');
 const taskRoutes = require('./routes/tasks');
 const progressRoutes = require('./routes/progress');
 const achievementRoutes = require('./routes/achievements');
+const interviewRoutes = require('./routes/interview');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -63,6 +64,7 @@ app.use('/api/tracks', trackRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/progress', progressRoutes);
 app.use('/api/achievements', achievementRoutes);
+app.use('/api/interview', interviewRoutes);
 
 app.get('/api/docs', (req, res) => {
   res.json({
@@ -78,6 +80,8 @@ app.get('/api/docs', (req, res) => {
       'POST /api/tasks/:id/attempt',
       'GET /api/progress/me',
       'GET /api/achievements/me',
+      'GET /api/interview/questions',
+      'POST /api/interview/questions/:id/practice',
     ],
   });
 });
