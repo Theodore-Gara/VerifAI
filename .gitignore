@@ -44,6 +44,11 @@ ios/Runner.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
 # Generated
 generated/
 
+# Flutter generated plugin registrants (rebuilt on every build)
+**/generated_plugin_registrant.*
+**/generated_plugins.cmake
+**/GeneratedPluginRegistrant.*
+
 # Graphify: the curated graph is committed (see README). Only local-only
 # build artifacts are ignored.
 graphify-out/cache/
