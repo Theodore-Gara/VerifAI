@@ -43,6 +43,16 @@ pool.query = async (sql) => {
     ] };
   }
   if (sql.includes('ROW_NUMBER() OVER')) return { rows: LEADERBOARD_ROWS };
+  // Achievements catalog + milestones mocks.
+  if (sql.includes('FROM achievements a')) {
+    return { rows: [
+      { id: 1, code: 'first_steps', name: 'First Steps', description: 'Complete your first task', earned: true, earned_at: '2026-10-09T00:00:00.000Z' },
+      { id: 2, code: 'xp_1000', name: 'Dedicated', description: 'Earn 1000 XP', earned: false, earned_at: null },
+    ] };
+  }
+  if (sql.includes('FROM tasks t') && sql.includes('COUNT(DISTINCT')) {
+    return { rows: [{ total_tasks: 5, completed: 3 }] };
+  }
   if (sql.includes('COUNT(*)::int + 1')) return { rows: [{ rank: 2 }] };
   if (sql.includes('FROM users u') && sql.includes('firebase_uid') && sql.includes('user_progress p')) {
     return { rows: [{ user_id: 7, display_name: 'Test User', industry_track_id: 1, level: 2, xp: 70, streak: 1, readiness_score: 100, tier: 'Developing' }] };
@@ -205,6 +215,46 @@ test('GET /api/progress/me/activity clamps ?days to 1..90', async () => {
     .set('Authorization', 'Bearer test-token');
   assert.equal(response.status, 200);
   assert.equal(response.body.days, 90);
+});
+
+test('GET /api/achievements returns the full catalog with earned flags', async () => {
+  const response = await request(app)
+    .get('/api/achievements')
+    .set('Authorization', 'Bearer test-token');
+  assert.equal(response.status, 200);
+  assert.equal(response.body.achievements.length, 2);
+  assert.equal(response.body.achievements[0].earned, true);
+  assert.ok(response.body.achievements[0].earned_at);
+  assert.equal(response.body.achievements[1].earned, false);
+  assert.equal(response.body.achievements[1].earned_at, null);
+});
+
+test('GET /api/achievements/milestones computes live progress', async () => {
+  const response = await request(app)
+    .get('/api/achievements/milestones')
+    .set('Authorization', 'Bearer test-token');
+  assert.equal(response.status, 200);
+  assert.equal(response.body.track_id, 1);
+  const byCode = Object.fromEntries(response.body.milestones.map((m) => [m.code, m]));
+  assert.equal(byCode.first_task.current, 3);
+  assert.equal(byCode.first_task.achieved, true);
+  assert.equal(byCode.track_master.target, 5);
+  assert.equal(byCode.track_master.achieved, false);
+  assert.equal(byCode.xp_250.current, 70);
+  assert.equal(byCode.xp_250.achieved, false);
+  assert.equal(byCode.streak_7.current, 1);
+  assert.equal(byCode.level_5.current, 2);
+});
+
+test('GET /api/achievements/milestones?track= overrides the track', async () => {
+  queries.length = 0;
+  const response = await request(app)
+    .get('/api/achievements/milestones?track=2')
+    .set('Authorization', 'Bearer test-token');
+  assert.equal(response.status, 200);
+  assert.equal(response.body.track_id, 2);
+  const totalsSql = queries.find((q) => q.includes('FROM tasks t'));
+  assert.match(totalsSql, /t\.track_id = \$1/);
 });
 
 test('protected endpoint rejects missing Firebase token', async () => {

@@ -86,6 +86,8 @@ app.get('/api/docs', (req, res) => {
       'GET /api/progress/me/activity',
       'GET /api/leaderboard',
       'GET /api/achievements/me',
+      'GET /api/achievements',
+      'GET /api/achievements/milestones',
       'GET /api/interview/questions',
       'POST /api/interview/questions/:id/practice',
       'POST /api/assistant/chat',

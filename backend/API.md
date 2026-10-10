@@ -82,6 +82,14 @@ Response: `{ track_id, leaderboard: [{ rank, user_id, display_name, level, xp, s
 ### GET /api/achievements/me
 Protected. Returns achievements earned by the current user.
 
+### GET /api/achievements
+Protected. Full achievements catalog — every achievement with an `earned` flag and, when earned, its `earned_at` timestamp, so locked and unlocked states render from one call.
+
+### GET /api/achievements/milestones
+Protected. Code-defined track milestones with live progress. Optional `?track=<id>` overrides the user's selected track (400 if neither is set).
+
+Response: `{ track_id, milestones: [{ code, name, description, target, current, achieved }] }`. Milestones cover task completion (first task, all tasks in the track), XP (250, 1000), streak (7 days) and level (5). `achieved` flips as soon as `current >= target`.
+
 ### POST /api/assistant/chat
 Protected. Sends up to eight conversation messages to the NVIDIA-hosted Learning Assistant, scoped to a task belonging to the authenticated user's selected track. The assistant receives task title/scenario only, not the answer key. Requests are limited to 8 per user per minute; each message is limited to 1,200 characters.
 
