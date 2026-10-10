@@ -42,6 +42,11 @@ const TIERS = [
   { name: 'Advanced', required: 20 },
 ];
 
+// Streak days are anchored to this timezone, NOT the database server clock
+// (which is usually UTC). A SAST user active at 00:30 local must roll into the
+// new local day even though UTC still shows the previous date.
+const STREAK_TIMEZONE = process.env.STREAK_TIMEZONE || 'Africa/Johannesburg';
+
 const FEATURES = new Set(Object.keys(FEATURE_DIMENSION));
 
 // API `dimension` display names (case-insensitive) -> feature key.
@@ -455,9 +460,10 @@ async function updateProgress(client, user, xpEarned, passed) {
     newStreak = 1;
   } else {
     const dateResult = await client.query(
-      `SELECT CURRENT_DATE AS today, CURRENT_DATE - last_activity_date AS day_gap
+      `SELECT (NOW() AT TIME ZONE $2)::date AS today,
+              (NOW() AT TIME ZONE $2)::date - last_activity_date AS day_gap
        FROM user_progress WHERE id = $1`,
-      [progress.id]
+      [progress.id, STREAK_TIMEZONE]
     );
     const dayGap = dateResult.rows[0].day_gap;
     if (Number(dayGap) === 0) newStreak = progress.streak;
@@ -481,11 +487,12 @@ async function updateProgress(client, user, xpEarned, passed) {
 
   const updated = await client.query(
     `UPDATE user_progress
-     SET xp = $1, level = $2, streak = $3, last_activity_date = CURRENT_DATE,
+     SET xp = $1, level = $2, streak = $3,
+         last_activity_date = (NOW() AT TIME ZONE $7)::date,
          tier = $4, tier_tasks_completed = $5, updated_at = CURRENT_TIMESTAMP
      WHERE user_id = $6
      RETURNING xp, level, streak, last_activity_date, tier, tier_tasks_completed, readiness_score`,
-    [newXp, newLevel, newStreak, tier, tierCount, user.id]
+    [newXp, newLevel, newStreak, tier, tierCount, user.id, STREAK_TIMEZONE]
   );
   return updated.rows[0];
 }
@@ -570,4 +577,4 @@ async function awardAchievements(client, userId) {
   return newlyEarned;
 }
 
-module.exports = { getNextTask, submitAttempt, awardAchievements, refreshReadiness, scoreByFeature };
+module.exports = { getNextTask, submitAttempt, awardAchievements, refreshReadiness, scoreByFeature, updateProgress };
