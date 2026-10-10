@@ -10,6 +10,7 @@ firebase.getFirebaseAuth = () => ({
 
 // Every query is recorded so tests can assert on the SQL that was issued.
 const queries = [];
+const queryCalls = [];
 let foreignQuestion = false;
 
 // Leaderboard fixtures (checked before the generic FROM users catch-all).
@@ -29,8 +30,9 @@ const REASON_OPTIONS = [
   { id: 16, kind: 'reason', label: 'C. AI output is never professional.' },
 ];
 
-pool.query = async (sql) => {
+pool.query = async (sql, values = []) => {
   queries.push(sql);
+  queryCalls.push({ sql, values });
   if (sql.includes('FROM industry_tracks')) return { rows: [{ id: 1, name: 'Finance', description: 'Finance' }] };
   // Activity-history mocks (must precede the leaderboard/generic users rules).
   if (sql.includes('last_activity_date') && sql.includes('firebase_uid')) {
@@ -165,6 +167,7 @@ test('GET /api/tracks returns tracks', async () => {
 
 test('GET /api/leaderboard returns board and requesting user rank', async () => {
   queries.length = 0;
+  queryCalls.length = 0;
   const response = await request(app)
     .get('/api/leaderboard')
     .set('Authorization', 'Bearer test-token');
@@ -178,10 +181,16 @@ test('GET /api/leaderboard returns board and requesting user rank', async () => 
   // The board must be deterministic: XP desc, readiness desc, id asc.
   const boardSql = queries.find((sql) => sql.includes('ROW_NUMBER() OVER'));
   assert.match(boardSql, /ORDER BY COALESCE\(p\.xp, 0\) DESC/);
+  assert.match(boardSql, /ORDER BY r\.rank ASC\s+LIMIT/);
+  const rankCall = queryCalls.find((call) => call.sql.includes('COUNT(*)::int + 1'));
+  assert.match(rankCall.sql, /COALESCE\(p\.readiness_score, 0\) > \$2/);
+  assert.match(rankCall.sql, /COALESCE\(p\.readiness_score, 0\) = \$2 AND u\.id < \$3/);
+  assert.deepEqual(rankCall.values, [70, 100, 7]);
 });
 
 test('GET /api/leaderboard?track= filters the board to one track', async () => {
   queries.length = 0;
+  queryCalls.length = 0;
   const response = await request(app)
     .get('/api/leaderboard?track=2')
     .set('Authorization', 'Bearer test-token');
@@ -189,10 +198,14 @@ test('GET /api/leaderboard?track= filters the board to one track', async () => {
   assert.equal(response.body.track_id, 2);
   const boardSql = queries.find((sql) => sql.includes('ROW_NUMBER() OVER'));
   assert.match(boardSql, /industry_track_id = \$1/);
+  const rankCall = queryCalls.find((call) => call.sql.includes('COUNT(*)::int + 1'));
+  assert.match(rankCall.sql, /industry_track_id = \$4/);
+  assert.deepEqual(rankCall.values, [70, 100, 7, 2]);
 });
 
 test('GET /api/progress/me/activity returns daily activity and streak', async () => {
   queries.length = 0;
+  queryCalls.length = 0;
   const response = await request(app)
     .get('/api/progress/me/activity')
     .set('Authorization', 'Bearer test-token');
@@ -206,6 +219,11 @@ test('GET /api/progress/me/activity returns daily activity and streak', async ()
   assert.equal(response.body.activity[0].passed, 1);
   const sql = queries.find((q) => q.includes('FROM task_attempts ta'));
   assert.match(sql, /GROUP BY/);
+  assert.match(sql, /submitted_at::timestamptz AT TIME ZONE \$3/);
+  assert.match(sql, /NOW\(\) AT TIME ZONE \$3/);
+  assert.doesNotMatch(sql, /CURRENT_DATE/);
+  const activityCall = queryCalls.find((call) => call.sql.includes('FROM task_attempts ta'));
+  assert.deepEqual(activityCall.values, [7, 30, process.env.STREAK_TIMEZONE || 'Africa/Johannesburg']);
 });
 
 test('GET /api/progress/me/activity clamps ?days to 1..90', async () => {

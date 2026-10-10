@@ -54,6 +54,7 @@ async function getLeaderboard(req, res, next) {
          LEFT JOIN user_progress p ON p.user_id = u.id
          ${trackFilter}
        ) r
+       ORDER BY r.rank ASC
        LIMIT $${boardParams.length}`,
       boardParams
     );
@@ -79,9 +80,8 @@ async function getLeaderboard(req, res, next) {
     }
     const meRow = me.rows[0];
 
-    // Rank = number of users strictly ahead on XP, plus one. Same track scope
-    // as the board so the two numbers are always comparable.
-    const rankParams = [meRow.xp];
+    // Use the same tie-breakers as the board so `me.rank` matches its row rank.
+    const rankParams = [meRow.xp, meRow.readiness_score, meRow.user_id];
     let rankFilter = '';
     if (trackFilter) {
       rankParams.push(boardParams[0]);
@@ -92,7 +92,11 @@ async function getLeaderboard(req, res, next) {
       `SELECT (COUNT(*)::int + 1) AS rank
        FROM users u
        LEFT JOIN user_progress p ON p.user_id = u.id
-       WHERE COALESCE(p.xp, 0) > $1${rankFilter}`,
+       WHERE (
+         COALESCE(p.xp, 0) > $1
+         OR (COALESCE(p.xp, 0) = $1 AND COALESCE(p.readiness_score, 0) > $2)
+         OR (COALESCE(p.xp, 0) = $1 AND COALESCE(p.readiness_score, 0) = $2 AND u.id < $3)
+       )${rankFilter}`,
       rankParams
     );
 

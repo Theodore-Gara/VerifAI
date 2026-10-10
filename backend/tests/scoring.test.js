@@ -134,6 +134,26 @@ test('negated criteria do not count as matched', () => {
   assert.equal(distant.matched, 1);
 });
 
+test('not only does not negate criteria or free-text keywords', () => {
+  const criteria = scoreCriteria(
+    'I would not only anonymise the data, but also verify the totals',
+    ['anonymise', 'verify'],
+    REASON_POINTS
+  );
+  assert.equal(criteria.matched, 2);
+
+  const negated = scoreAnswer('I will not anonymise data', 'Keywords: anonymise data');
+  assert.equal(negated.score, 0);
+  assert.equal(negated.passed, false);
+
+  const positive = scoreAnswer(
+    'I would not only anonymise the data, but also verify the source',
+    'Keywords: anonymise data verify source'
+  );
+  assert.equal(positive.score, 100);
+  assert.equal(positive.passed, true);
+});
+
 test('compact matching only applies to numbers, not short words', () => {
   // Numeric variants still match after separator stripping.
   const numbers = scoreCriteria('The balance is 1860 units', ['1,860|1860'], FIX_POINTS);
@@ -207,10 +227,13 @@ const PROGRESS_ROW = { id: 1, xp: 20, level: 1, streak: 1, last_activity_date: '
 
 function fakeProgressClient(dayGap) {
   const sqls = [];
+  const calls = [];
   return {
     sqls,
-    async query(sql) {
+    calls,
+    async query(sql, values) {
       sqls.push(sql);
+      calls.push({ sql, values });
       if (sql.includes('INSERT INTO user_progress')) return { rows: [PROGRESS_ROW] };
       if (sql.includes('day_gap')) return { rows: [{ today: '2026-10-09', day_gap: dayGap }] };
       if (sql.includes('UPDATE user_progress') && sql.includes('SET xp')) {
@@ -232,6 +255,8 @@ test('streak increments on a 1-day gap and pins the timezone, not the server clo
   assert.match(gapSql, /AT TIME ZONE \$2/);
   assert.match(updateSql, /AT TIME ZONE \$7/);
   assert.doesNotMatch(updateSql, /last_activity_date = CURRENT_DATE/);
+  assert.deepEqual(fake.calls.find((call) => call.sql.includes('day_gap')).values, [1, process.env.STREAK_TIMEZONE || 'Africa/Johannesburg']);
+  assert.equal(fake.calls.find((call) => call.sql.includes('SET xp')).values[6], process.env.STREAK_TIMEZONE || 'Africa/Johannesburg');
 });
 
 test('streak keeps on a same-day gap and resets after a missed day', async () => {

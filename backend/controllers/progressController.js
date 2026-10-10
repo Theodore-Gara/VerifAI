@@ -40,6 +40,7 @@ async function getProgress(req, res, next) {
 // least one attempt (practice attempts included, but they earn no XP).
 const DEFAULT_DAYS = 30;
 const MAX_DAYS = 90;
+const ACTIVITY_TIMEZONE = process.env.STREAK_TIMEZONE || 'Africa/Johannesburg';
 
 function parseDays(raw) {
   const parsed = Number.parseInt(raw, 10);
@@ -66,16 +67,17 @@ async function getActivityHistory(req, res, next) {
     }
 
     const activity = await pool.query(
-      `SELECT ta.submitted_at::date AS activity_date,
+      `SELECT (ta.submitted_at::timestamptz AT TIME ZONE $3)::date AS activity_date,
               COUNT(*)::int AS attempts,
               COALESCE(SUM(ta.xp_earned), 0)::int AS xp_earned,
               COUNT(*) FILTER (WHERE ta.passed)::int AS passed
        FROM task_attempts ta
        WHERE ta.user_id = $1
-         AND ta.submitted_at::date >= CURRENT_DATE - ($2::int - 1)
-       GROUP BY ta.submitted_at::date
+         AND (ta.submitted_at::timestamptz AT TIME ZONE $3)::date >=
+             (NOW() AT TIME ZONE $3)::date - ($2::int - 1)
+       GROUP BY (ta.submitted_at::timestamptz AT TIME ZONE $3)::date
        ORDER BY activity_date ASC`,
-      [me.rows[0].user_id, days]
+      [me.rows[0].user_id, days, ACTIVITY_TIMEZONE]
     );
 
     return res.status(200).json({

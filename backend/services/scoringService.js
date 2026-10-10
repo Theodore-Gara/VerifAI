@@ -40,23 +40,24 @@ const NEGATORS = new Set([
 // True when the token at `index` sits within `window` tokens after a negator.
 function isNegatedAt(answerTokens, index, window = 3) {
   for (let i = Math.max(0, index - window); i < index; i += 1) {
+    if (answerTokens[i] === 'not' && answerTokens[i + 1] === 'only') continue;
     if (NEGATORS.has(answerTokens[i])) return true;
   }
   return false;
 }
 
 // Index of the first place `phrase` appears consecutively in answerTokens, or -1.
-function phraseStartIndex(answerTokens, phrase) {
+function phraseStartIndex(answerTokens, phrase, accept = () => true) {
   const phraseTokens = tokenize(phrase);
   if (!phraseTokens.length) return -1;
   for (let i = 0; i <= answerTokens.length - phraseTokens.length; i += 1) {
-    if (phraseTokens.every((token, index) => answerTokens[i + index] === token)) return i;
+    if (phraseTokens.every((token, index) => answerTokens[i + index] === token) && accept(i)) return i;
   }
   return -1;
 }
 
 function phrasePresent(answerTokens, phrase) {
-  return phraseStartIndex(answerTokens, phrase) !== -1;
+  return phraseStartIndex(answerTokens, phrase, (index) => !isNegatedAt(answerTokens, index)) !== -1;
 }
 
 // Free-text fallback (Verification scenarios with `keywords` instead of options).
@@ -140,8 +141,7 @@ function variantPresent(answerTokens, answerCompact, variant) {
   const vt = tokenize(variant);
   if (!vt.length) return false;
   if (vt.length > 1) {
-    const start = phraseStartIndex(answerTokens, variant);
-    return start !== -1 && !isNegatedAt(answerTokens, start);
+    return phraseStartIndex(answerTokens, variant, (index) => !isNegatedAt(answerTokens, index)) !== -1;
   }
   if (vt.length === 1) {
     const word = vt[0];
