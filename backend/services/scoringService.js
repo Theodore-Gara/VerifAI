@@ -28,15 +28,35 @@ function extractKeywords(correctAnswer) {
   return [...new Set(words)];
 }
 
-function phrasePresent(answerTokens, phrase) {
-  const phraseTokens = tokenize(phrase);
-  if (!phraseTokens.length) return false;
-  if (phraseTokens.length === 1) return answerTokens.includes(phraseTokens[0]);
+// Words that flip the meaning of a nearby criterion token. A criterion that
+// only appears negated in the answer must NOT count as matched (SCORING_REVIEW
+// §3.1: "I will not anonymise" must not pass an 'anonymise' criterion).
+const NEGATORS = new Set([
+  'not','no','never','without','avoid','avoided','avoiding','exclude','excluded','excluding',
+  'prohibit','prohibited','dont','cant','cannot','couldnt','wont','wouldnt','shouldnt','shouldnot',
+  'isnt','arent','wasnt','werent','didnt','doesnt','unless','instead','fake','falsify','falsified','refuse','refused','omit','omitted','skip','skipped',
+]);
 
-  for (let i = 0; i <= answerTokens.length - phraseTokens.length; i += 1) {
-    if (phraseTokens.every((token, index) => answerTokens[i + index] === token)) return true;
+// True when the token at `index` sits within `window` tokens after a negator.
+function isNegatedAt(answerTokens, index, window = 3) {
+  for (let i = Math.max(0, index - window); i < index; i += 1) {
+    if (NEGATORS.has(answerTokens[i])) return true;
   }
   return false;
+}
+
+// Index of the first place `phrase` appears consecutively in answerTokens, or -1.
+function phraseStartIndex(answerTokens, phrase) {
+  const phraseTokens = tokenize(phrase);
+  if (!phraseTokens.length) return -1;
+  for (let i = 0; i <= answerTokens.length - phraseTokens.length; i += 1) {
+    if (phraseTokens.every((token, index) => answerTokens[i + index] === token)) return i;
+  }
+  return -1;
+}
+
+function phrasePresent(answerTokens, phrase) {
+  return phraseStartIndex(answerTokens, phrase) !== -1;
 }
 
 // Free-text fallback (Verification scenarios with `keywords` instead of options).
@@ -119,13 +139,25 @@ function compact(text) {
 function variantPresent(answerTokens, answerCompact, variant) {
   const vt = tokenize(variant);
   if (!vt.length) return false;
-  if (vt.length > 1 && phrasePresent(answerTokens, variant)) return true;
+  if (vt.length > 1) {
+    const start = phraseStartIndex(answerTokens, variant);
+    return start !== -1 && !isNegatedAt(answerTokens, start);
+  }
   if (vt.length === 1) {
     const word = vt[0];
-    if (answerTokens.some((t) => t === word || (word.length >= 4 && t.startsWith(word)))) return true;
+    const hits = [];
+    for (let i = 0; i < answerTokens.length; i += 1) {
+      const token = answerTokens[i];
+      if (token === word || (word.length >= 4 && token.startsWith(word))) hits.push(i);
+    }
+    // Matched only if at least one occurrence is NOT in a negation window.
+    if (hits.length) return hits.some((index) => !isNegatedAt(answerTokens, index));
   }
+  // Compact fallback is for NUMBERS written with separators ("1,860" -> "1860",
+  // "84,900" -> "84900"). Restricting it to digit-bearing variants prevents
+  // short words falsely matching mid-word inside longer tokens.
   const cv = compact(variant);
-  return cv.length >= 2 && answerCompact.includes(cv);
+  return /\d/.test(variant) && cv.length >= 3 && answerCompact.includes(cv);
 }
 
 function criterionMatches(answerTokens, answerCompact, criterion) {

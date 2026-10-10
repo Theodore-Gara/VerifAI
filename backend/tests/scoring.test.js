@@ -113,6 +113,39 @@ test('criteria scoring is proportional and synonym/prefix aware', () => {
   assert.equal(none.score, 0);
 });
 
+test('negated criteria do not count as matched', () => {
+  const criteria = ['anonymise|anonymization', 'verify|verification'];
+
+  // Positive answers still match.
+  const positive = scoreCriteria('I would anonymise the data and verify the totals', criteria, REASON_POINTS);
+  assert.equal(positive.matched, 2);
+
+  // Negated usage must NOT count (SCORING_REVIEW §3.1).
+  const negated = scoreCriteria('I will not anonymise the data', criteria, REASON_POINTS);
+  assert.equal(negated.matched, 0);
+  assert.equal(negated.score, 0);
+
+  // A negation more than 3 tokens before the criterion does not block it.
+  const distant = scoreCriteria(
+    'Never assume anything. The first step is to verify the totals.',
+    criteria,
+    REASON_POINTS
+  );
+  assert.equal(distant.matched, 1);
+});
+
+test('compact matching only applies to numbers, not short words', () => {
+  // Numeric variants still match after separator stripping.
+  const numbers = scoreCriteria('The balance is 1860 units', ['1,860|1860'], FIX_POINTS);
+  assert.equal(numbers.matched, 1);
+
+  // A short non-numeric variant must not falsely match mid-word in a longer token
+  // ('gen' is too short for the prefix-stem rule, and compact matching no longer
+  // applies to words).
+  const words = scoreCriteria('a generic passphrase example', ['gen'], FIX_POINTS);
+  assert.equal(words.matched, 0);
+});
+
 // ---------------------------------------------------------------------------
 // Feature-scoring paths (scoreByFeature) — AJ-B6 / RG-B2.
 // ---------------------------------------------------------------------------
