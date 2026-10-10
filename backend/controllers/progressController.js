@@ -33,4 +33,63 @@ async function getProgress(req, res, next) {
   }
 }
 
-module.exports = { getProgress };
+// GET /api/progress/me/activity
+//
+// Daily activity history for the requesting user, plus current streak info.
+// Optional ?days=<1..90> (default 30) window. One row per day that has at
+// least one attempt (practice attempts included, but they earn no XP).
+const DEFAULT_DAYS = 30;
+const MAX_DAYS = 90;
+
+function parseDays(raw) {
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isInteger(parsed)) return DEFAULT_DAYS;
+  return Math.min(MAX_DAYS, Math.max(1, parsed));
+}
+
+async function getActivityHistory(req, res, next) {
+  try {
+    const days = parseDays(req.query.days);
+
+    const me = await pool.query(
+      `SELECT u.id AS user_id,
+              COALESCE(p.streak, 0)::int AS streak,
+              p.last_activity_date
+       FROM users u
+       LEFT JOIN user_progress p ON p.user_id = u.id
+       WHERE u.firebase_uid = $1`,
+      [req.firebaseUser.uid]
+    );
+
+    if (!me.rows.length) {
+      return res.status(404).json({ error: 'User not found. Call /api/auth/sync first.', request_id: req.requestId });
+    }
+
+    const activity = await pool.query(
+      `SELECT ta.submitted_at::date AS activity_date,
+              COUNT(*)::int AS attempts,
+              COALESCE(SUM(ta.xp_earned), 0)::int AS xp_earned,
+              COUNT(*) FILTER (WHERE ta.passed)::int AS passed
+       FROM task_attempts ta
+       WHERE ta.user_id = $1
+         AND ta.submitted_at::date >= CURRENT_DATE - ($2::int - 1)
+       GROUP BY ta.submitted_at::date
+       ORDER BY activity_date ASC`,
+      [me.rows[0].user_id, days]
+    );
+
+    return res.status(200).json({
+      days,
+      streak: {
+        current: me.rows[0].streak,
+        last_activity_date: me.rows[0].last_activity_date,
+      },
+      activity: activity.rows,
+      request_id: req.requestId,
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+module.exports = { getProgress, getActivityHistory };

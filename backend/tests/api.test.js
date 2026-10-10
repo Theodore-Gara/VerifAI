@@ -32,6 +32,16 @@ const REASON_OPTIONS = [
 pool.query = async (sql) => {
   queries.push(sql);
   if (sql.includes('FROM industry_tracks')) return { rows: [{ id: 1, name: 'Finance', description: 'Finance' }] };
+  // Activity-history mocks (must precede the leaderboard/generic users rules).
+  if (sql.includes('last_activity_date') && sql.includes('firebase_uid')) {
+    return { rows: [{ user_id: 7, streak: 3, last_activity_date: '2026-10-09' }] };
+  }
+  if (sql.includes('FROM task_attempts ta') && sql.includes('GROUP BY')) {
+    return { rows: [
+      { activity_date: '2026-10-08', attempts: 2, xp_earned: 70, passed: 1 },
+      { activity_date: '2026-10-09', attempts: 1, xp_earned: 25, passed: 1 },
+    ] };
+  }
   if (sql.includes('ROW_NUMBER() OVER')) return { rows: LEADERBOARD_ROWS };
   if (sql.includes('COUNT(*)::int + 1')) return { rows: [{ rank: 2 }] };
   if (sql.includes('FROM users u') && sql.includes('firebase_uid') && sql.includes('user_progress p')) {
@@ -169,6 +179,32 @@ test('GET /api/leaderboard?track= filters the board to one track', async () => {
   assert.equal(response.body.track_id, 2);
   const boardSql = queries.find((sql) => sql.includes('ROW_NUMBER() OVER'));
   assert.match(boardSql, /industry_track_id = \$1/);
+});
+
+test('GET /api/progress/me/activity returns daily activity and streak', async () => {
+  queries.length = 0;
+  const response = await request(app)
+    .get('/api/progress/me/activity')
+    .set('Authorization', 'Bearer test-token');
+  assert.equal(response.status, 200);
+  assert.equal(response.body.days, 30);
+  assert.equal(response.body.streak.current, 3);
+  assert.equal(response.body.streak.last_activity_date, '2026-10-09');
+  assert.equal(response.body.activity.length, 2);
+  assert.equal(response.body.activity[0].activity_date, '2026-10-08');
+  assert.equal(response.body.activity[0].xp_earned, 70);
+  assert.equal(response.body.activity[0].passed, 1);
+  const sql = queries.find((q) => q.includes('FROM task_attempts ta'));
+  assert.match(sql, /GROUP BY/);
+});
+
+test('GET /api/progress/me/activity clamps ?days to 1..90', async () => {
+  queries.length = 0;
+  const response = await request(app)
+    .get('/api/progress/me/activity?days=500')
+    .set('Authorization', 'Bearer test-token');
+  assert.equal(response.status, 200);
+  assert.equal(response.body.days, 90);
 });
 
 test('protected endpoint rejects missing Firebase token', async () => {

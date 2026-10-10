@@ -65,6 +65,11 @@ Protected. Marks a question as practised. Idempotent: practising the same questi
 ### GET /api/progress/me
 Protected. Returns XP, level, streak, completed task count, readiness score and per-dimension scores.
 
+### GET /api/progress/me/activity
+Protected. Daily activity history plus current streak info. Optional `?days=<1..90>` (default 30) window; values outside the range are clamped.
+
+Response: `{ days, streak: { current, last_activity_date }, activity: [{ activity_date, attempts, xp_earned, passed }] }`. One row per day with at least one attempt, ordered oldest first (practice attempts included but earn no XP).
+
 ### GET /api/leaderboard
 Protected. Deterministic top-N board ordered by XP (ties broken by readiness score, then user id).
 

@@ -83,6 +83,7 @@ app.get('/api/docs', (req, res) => {
       'GET /api/tasks/next',
       'POST /api/tasks/:id/attempt',
       'GET /api/progress/me',
+      'GET /api/progress/me/activity',
       'GET /api/leaderboard',
       'GET /api/achievements/me',
       'GET /api/interview/questions',
