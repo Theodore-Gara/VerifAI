@@ -65,6 +65,15 @@ Protected. Marks a question as practised. Idempotent: practising the same questi
 ### GET /api/progress/me
 Protected. Returns XP, level, streak, completed task count, readiness score and per-dimension scores.
 
+### GET /api/leaderboard
+Protected. Deterministic top-N board ordered by XP (ties broken by readiness score, then user id).
+
+Query parameters:
+- `?track=<industry_track_id>` — limit the board to one industry track (default: global)
+- `?limit=<1..50>` — board size (default 20)
+
+Response: `{ track_id, leaderboard: [{ rank, user_id, display_name, level, xp, streak, readiness_score, tier }], me: { ...same fields, rank } }`. `me` is always included, with the requesting user's computed rank even when they sit outside the top N.
+
 ### GET /api/achievements/me
 Protected. Returns achievements earned by the current user.
 

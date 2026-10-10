@@ -12,6 +12,12 @@ firebase.getFirebaseAuth = () => ({
 const queries = [];
 let foreignQuestion = false;
 
+// Leaderboard fixtures (checked before the generic FROM users catch-all).
+const LEADERBOARD_ROWS = [
+  { rank: 1, user_id: 7, display_name: 'Test User', level: 2, xp: 70, streak: 1, readiness_score: 100, tier: 'Developing' },
+  { rank: 2, user_id: 9, display_name: 'Peer User', level: 1, xp: 40, streak: 0, readiness_score: 60, tier: 'Novice' },
+];
+
 const DECISION_OPTIONS = [
   { id: 11, kind: 'decision', label: 'Use AI' },
   { id: 12, kind: 'decision', label: 'Use AI with human review' },
@@ -26,6 +32,11 @@ const REASON_OPTIONS = [
 pool.query = async (sql) => {
   queries.push(sql);
   if (sql.includes('FROM industry_tracks')) return { rows: [{ id: 1, name: 'Finance', description: 'Finance' }] };
+  if (sql.includes('ROW_NUMBER() OVER')) return { rows: LEADERBOARD_ROWS };
+  if (sql.includes('COUNT(*)::int + 1')) return { rows: [{ rank: 2 }] };
+  if (sql.includes('FROM users u') && sql.includes('firebase_uid') && sql.includes('user_progress p')) {
+    return { rows: [{ user_id: 7, display_name: 'Test User', industry_track_id: 1, level: 2, xp: 70, streak: 1, readiness_score: 100, tier: 'Developing' }] };
+  }
   if (sql.includes('FROM users')) return { rows: [{ id: 7, industry_track_id: 1, level: 1 }] };
   if (sql.includes('FROM interview_questions WHERE id = $1')) {
     return { rows: [{ id: 9, track_id: foreignQuestion ? 2 : 1 }] };
@@ -130,6 +141,34 @@ test('GET /api/tracks returns tracks', async () => {
   const response = await request(app).get('/api/tracks');
   assert.equal(response.status, 200);
   assert.equal(response.body.tracks.length, 1);
+});
+
+test('GET /api/leaderboard returns board and requesting user rank', async () => {
+  queries.length = 0;
+  const response = await request(app)
+    .get('/api/leaderboard')
+    .set('Authorization', 'Bearer test-token');
+  assert.equal(response.status, 200);
+  assert.equal(response.body.leaderboard.length, 2);
+  assert.equal(response.body.leaderboard[0].rank, 1);
+  assert.equal(response.body.leaderboard[0].display_name, 'Test User');
+  assert.equal(response.body.me.user_id, 7);
+  assert.equal(response.body.me.rank, 2);
+  assert.equal(response.body.track_id, null);
+  // The board must be deterministic: XP desc, readiness desc, id asc.
+  const boardSql = queries.find((sql) => sql.includes('ROW_NUMBER() OVER'));
+  assert.match(boardSql, /ORDER BY COALESCE\(p\.xp, 0\) DESC/);
+});
+
+test('GET /api/leaderboard?track= filters the board to one track', async () => {
+  queries.length = 0;
+  const response = await request(app)
+    .get('/api/leaderboard?track=2')
+    .set('Authorization', 'Bearer test-token');
+  assert.equal(response.status, 200);
+  assert.equal(response.body.track_id, 2);
+  const boardSql = queries.find((sql) => sql.includes('ROW_NUMBER() OVER'));
+  assert.match(boardSql, /industry_track_id = \$1/);
 });
 
 test('protected endpoint rejects missing Firebase token', async () => {

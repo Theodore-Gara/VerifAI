@@ -11,6 +11,7 @@ const trackRoutes = require('./routes/tracks');
 const taskRoutes = require('./routes/tasks');
 const progressRoutes = require('./routes/progress');
 const achievementRoutes = require('./routes/achievements');
+const leaderboardRoutes = require('./routes/leaderboard');
 const interviewRoutes = require('./routes/interview');
 const assistantRoutes = require('./routes/assistant');
 const errorHandler = require('./middleware/errorHandler');
@@ -65,6 +66,7 @@ app.use('/api/tracks', trackRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/progress', progressRoutes);
 app.use('/api/achievements', achievementRoutes);
+app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/interview', interviewRoutes);
 app.use('/api/assistant', assistantRoutes);
 
@@ -81,6 +83,7 @@ app.get('/api/docs', (req, res) => {
       'GET /api/tasks/next',
       'POST /api/tasks/:id/attempt',
       'GET /api/progress/me',
+      'GET /api/leaderboard',
       'GET /api/achievements/me',
       'GET /api/interview/questions',
       'POST /api/interview/questions/:id/practice',
