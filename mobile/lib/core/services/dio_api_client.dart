@@ -109,10 +109,7 @@ class DioApiClient implements ApiClient {
     final token = await _idToken();
     final response = await _dio.post<Map<String, dynamic>>(
       'tasks/${request.taskId}/attempt',
-      data: {
-        'answer': request.answer,
-        if (request.explanation != null) 'explanation': request.explanation,
-      },
+      data: request.toJson(),
       options: Options(headers: _authHeaders(token)),
     );
     final result =
@@ -125,6 +122,7 @@ class DioApiClient implements ApiClient {
       passed: result['passed'] as bool? ?? false,
       feedback: result['feedback'] as String? ?? '',
       xpEarned: _int(result['xp_earned']),
+      correctAnswer: result['expected_answer'] as String?,
       matchedKeywords: _stringList(result['matched_keywords']),
       missedKeywords: _stringList(result['missed_keywords']),
       newlyEarnedAchievements: newlyEarned

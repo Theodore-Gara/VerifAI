@@ -7,7 +7,8 @@ import 'package:verifai/features/auth/data/auth_repository.dart';
 import 'package:verifai/features/auth/data/auth_repository.dart' as auth_data;
 import 'package:verifai/shared/models.dart';
 
-final authRepositoryProvider = FutureProvider<AuthRepository>((ref) async {
+final FutureProvider<AuthRepository> authRepositoryProvider =
+    FutureProvider<AuthRepository>((ref) async {
   final secureStorage = ref.watch(secureStorageProvider);
   final apiClient = ref.watch(apiClientProvider);
   return auth_data.FirebaseAuthRepository(
@@ -50,7 +51,8 @@ final currentUserProvider = FutureProvider<User?>((ref) async {
   );
 });
 
-final authNotifierProvider = AsyncNotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
+final authNotifierProvider =
+    AsyncNotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
 
 class AuthNotifier extends AsyncNotifier<AuthState> {
   @override
@@ -95,7 +97,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     try {
       final repository = await ref.read(authRepositoryProvider.future);
       final result = await repository.register(email, password, name);
-      state = AsyncData(AuthState.needsOnboarding(user: result.user, token: result.token));
+      state = AsyncData(
+          AuthState.needsOnboarding(user: result.user, token: result.token));
     } catch (e) {
       state = AsyncError(e, StackTrace.current);
       state = AsyncData(previous ?? const AuthState.unauthenticated());

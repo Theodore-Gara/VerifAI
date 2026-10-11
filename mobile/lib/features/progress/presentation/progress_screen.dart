@@ -8,6 +8,7 @@ import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/dimension_bar.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
+import 'package:verifai/shared/widgets/sample_data_banner.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
 import 'package:verifai/shared/widgets/streak_badge.dart';
 import 'package:verifai/shared/widgets/xp_bar.dart';
@@ -15,8 +16,7 @@ import 'package:verifai/shared/widgets/xp_bar.dart';
 class ProgressScreen extends ConsumerWidget {
   const ProgressScreen({super.key});
 
-  /// Weekly practice XP is not exposed by the backend yet, so this chart stays
-  /// illustrative until an endpoint provides per-day activity.
+  /// Weekly practice XP is not exposed by the backend yet, so this chart stays illustrative until an endpoint provides per-day activity.
   static const List<Map<String, int>> _weeklyActivity = [
     {'day': 1, 'xp': 40},
     {'day': 2, 'xp': 70},
@@ -79,8 +79,9 @@ class ProgressScreen extends ConsumerWidget {
               child: dashboardAsync.when(
                 data: (data) => _buildContent(context, data),
                 loading: () => _buildShimmer(),
-                error: (error, stackTrace) => ErrorState(
-                  message: 'Failed to load your progress.',
+                error: (error, stackTrace) => AsyncErrorView(
+                  error: error,
+                  fallbackMessage: 'Failed to load your progress.',
                   onRetry: () => ref.invalidate(dashboardProvider),
                 ),
               ),
@@ -211,12 +212,27 @@ class ProgressScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.xl),
 
           // Weekly XP Activity (illustrative — no backend endpoint yet)
+          Row(
+            children: [
+              Flexible(
+                child: Text(
+                  'Practice activity',
+                  style: AppTypography.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              const SampleDataPill(),
+            ],
+          ),
+          const SizedBox(height: 2),
           Text(
-            'Practice activity',
-            style: AppTypography.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.4,
-              color: AppColors.textPrimary,
+            'Illustrative only. Daily activity tracking is coming soon.',
+            style: AppTypography.textTheme.bodySmall?.copyWith(
+              color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),

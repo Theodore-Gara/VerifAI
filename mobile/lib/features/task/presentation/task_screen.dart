@@ -109,8 +109,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               child: dashboardAsync.when(
                 data: (data) => _buildTasks(data.dailyTask),
                 loading: () => _buildShimmer(),
-                error: (error, stackTrace) => ErrorState(
-                  message: 'Failed to load your next task.',
+                error: (error, stackTrace) => AsyncErrorView(
+                  error: error,
+                  fallbackMessage: 'Failed to load your next task.',
                   onRetry: () => ref.invalidate(dashboardProvider),
                 ),
               ),

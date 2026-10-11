@@ -5,6 +5,7 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
+import 'package:verifai/shared/widgets/sample_data_banner.dart';
 
 class ScoreboardScreen extends ConsumerStatefulWidget {
   const ScoreboardScreen({super.key});
@@ -13,7 +14,8 @@ class ScoreboardScreen extends ConsumerStatefulWidget {
   ConsumerState<ScoreboardScreen> createState() => _ScoreboardScreenState();
 }
 
-class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with SingleTickerProviderStateMixin {
+class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -33,13 +35,55 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
     final user = ref.watch(currentUserProvider).valueOrNull;
 
     final leaderboardUsers = [
-      _LeaderboardEntry(rank: 1, name: 'Elena Rostova', xp: 4850, streak: 24, track: 'Finance', isCurrentUser: false),
-      _LeaderboardEntry(rank: 2, name: 'Marcus Chen', xp: 4210, streak: 18, track: 'IT / Software', isCurrentUser: false),
-      _LeaderboardEntry(rank: 3, name: 'Sarah Jenkins', xp: 3980, streak: 14, track: 'Legal', isCurrentUser: false),
-      _LeaderboardEntry(rank: 4, name: 'David Kim', xp: 3450, streak: 11, track: 'Finance', isCurrentUser: false),
-      _LeaderboardEntry(rank: 5, name: 'Amina Al-Sayed', xp: 3120, streak: 9, track: 'Consulting', isCurrentUser: false),
-      _LeaderboardEntry(rank: 6, name: 'Lucas Meyer', xp: 2890, streak: 8, track: 'IT / Software', isCurrentUser: false),
-      _LeaderboardEntry(rank: 7, name: 'Priya Sharma', xp: 2750, streak: 12, track: 'Finance', isCurrentUser: false),
+      _LeaderboardEntry(
+          rank: 1,
+          name: 'Elena Rostova',
+          xp: 4850,
+          streak: 24,
+          track: 'Finance',
+          isCurrentUser: false),
+      _LeaderboardEntry(
+          rank: 2,
+          name: 'Marcus Chen',
+          xp: 4210,
+          streak: 18,
+          track: 'IT / Software',
+          isCurrentUser: false),
+      _LeaderboardEntry(
+          rank: 3,
+          name: 'Sarah Jenkins',
+          xp: 3980,
+          streak: 14,
+          track: 'Legal',
+          isCurrentUser: false),
+      _LeaderboardEntry(
+          rank: 4,
+          name: 'David Kim',
+          xp: 3450,
+          streak: 11,
+          track: 'Finance',
+          isCurrentUser: false),
+      _LeaderboardEntry(
+          rank: 5,
+          name: 'Amina Al-Sayed',
+          xp: 3120,
+          streak: 9,
+          track: 'Consulting',
+          isCurrentUser: false),
+      _LeaderboardEntry(
+          rank: 6,
+          name: 'Lucas Meyer',
+          xp: 2890,
+          streak: 8,
+          track: 'IT / Software',
+          isCurrentUser: false),
+      _LeaderboardEntry(
+          rank: 7,
+          name: 'Priya Sharma',
+          xp: 2750,
+          streak: 12,
+          track: 'Finance',
+          isCurrentUser: false),
       _LeaderboardEntry(
         rank: 8,
         name: user?.name ?? 'You',
@@ -48,8 +92,20 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
         track: user?.trackName ?? 'Finance',
         isCurrentUser: true,
       ),
-      _LeaderboardEntry(rank: 9, name: 'Thomas Wright', xp: 2100, streak: 5, track: 'Legal', isCurrentUser: false),
-      _LeaderboardEntry(rank: 10, name: 'Chloe Dubois', xp: 1980, streak: 6, track: 'Consulting', isCurrentUser: false),
+      _LeaderboardEntry(
+          rank: 9,
+          name: 'Thomas Wright',
+          xp: 2100,
+          streak: 5,
+          track: 'Legal',
+          isCurrentUser: false),
+      _LeaderboardEntry(
+          rank: 10,
+          name: 'Chloe Dubois',
+          xp: 1980,
+          streak: 6,
+          track: 'Consulting',
+          isCurrentUser: false),
     ];
 
     return Scaffold(
@@ -66,12 +122,14 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
             decoration: BoxDecoration(
               color: AppColors.goldLight,
               borderRadius: BorderRadius.circular(AppRadius.pill),
-              border: Border.all(color: AppColors.gold.withValues(alpha: 0.4), width: 1),
+              border: Border.all(
+                  color: AppColors.gold.withValues(alpha: 0.4), width: 1),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.emoji_events_rounded, size: 14, color: AppColors.goldDark),
+                const Icon(Icons.emoji_events_rounded,
+                    size: 14, color: AppColors.goldDark),
                 const SizedBox(width: 4),
                 Text(
                   'TOP 10 ADVANCE',
@@ -124,9 +182,16 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
             ),
             child: Column(
               children: [
+                const SampleDataBanner(
+                  message:
+                      'Preview leaderboard with sample data. Rankings, XP and the league reset timer are not live yet.',
+                ),
+                const SizedBox(height: AppSpacing.sm),
+
                 // Division League Banner
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md, vertical: 10),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [AppColors.primaryNavy, Color(0xFF1E293B)],
@@ -148,7 +213,8 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
                           color: AppColors.accentGreen.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.workspace_premium_rounded, color: AppColors.accentCyan, size: 22),
+                        child: const Icon(Icons.workspace_premium_rounded,
+                            color: AppColors.accentCyan, size: 22),
                       ),
                       const SizedBox(width: AppSpacing.md),
                       Expanded(
@@ -157,7 +223,8 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
                           children: [
                             Text(
                               'EMERALD LEAGUE • TIER 1',
-                              style: AppTypography.textTheme.labelSmall?.copyWith(
+                              style:
+                                  AppTypography.textTheme.labelSmall?.copyWith(
                                 color: AppColors.accentCyan,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 10,
@@ -166,14 +233,16 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
                             ),
                             Text(
                               'Weekly reset in 2d 14h',
-                              style: AppTypography.textTheme.bodySmall?.copyWith(
+                              style:
+                                  AppTypography.textTheme.bodySmall?.copyWith(
                                 color: Colors.white.withValues(alpha: 0.8),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 12),
+                      const Icon(Icons.arrow_forward_ios_rounded,
+                          color: Colors.white, size: 12),
                     ],
                   ),
                 ),
@@ -197,7 +266,8 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
                     ),
                     labelColor: Colors.white,
                     unselectedLabelColor: AppColors.textSecondary,
-                    labelStyle: AppTypography.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w800),
+                    labelStyle: AppTypography.textTheme.labelMedium
+                        ?.copyWith(fontWeight: FontWeight.w800),
                     tabs: const [
                       Tab(text: 'Global League'),
                       Tab(text: 'Industry Track'),
@@ -243,7 +313,9 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
                 const SizedBox(height: AppSpacing.md),
 
                 // Leaderboard List
-                ...leaderboardUsers.sublist(3).map((entry) => _buildLeaderboardTile(entry)),
+                ...leaderboardUsers
+                    .sublist(3)
+                    .map((entry) => _buildLeaderboardTile(entry)),
               ],
             ),
           ),
@@ -356,9 +428,12 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
   Widget _buildLeaderboardTile(_LeaderboardEntry entry) {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
+      padding:
+          const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
       decoration: BoxDecoration(
-        color: entry.isCurrentUser ? AppColors.accentLight.withValues(alpha: 0.6) : AppColors.surface,
+        color: entry.isCurrentUser
+            ? AppColors.accentLight.withValues(alpha: 0.6)
+            : AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
           color: entry.isCurrentUser ? AppColors.accentGreen : AppColors.border,
@@ -379,18 +454,22 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
             child: Text(
               '#${entry.rank}',
               style: AppTypography.textTheme.labelLarge?.copyWith(
-                color: entry.isCurrentUser ? AppColors.accentGreen : AppColors.textSecondary,
+                color: entry.isCurrentUser
+                    ? AppColors.accentGreen
+                    : AppColors.textSecondary,
                 fontWeight: FontWeight.w800,
               ),
             ),
           ),
           CircleAvatar(
             radius: 16,
-            backgroundColor: entry.isCurrentUser ? AppColors.accentGreen : AppColors.border,
+            backgroundColor:
+                entry.isCurrentUser ? AppColors.accentGreen : AppColors.border,
             child: Text(
               entry.name.substring(0, 1),
               style: AppTypography.textTheme.labelSmall?.copyWith(
-                color: entry.isCurrentUser ? Colors.white : AppColors.textPrimary,
+                color:
+                    entry.isCurrentUser ? Colors.white : AppColors.textPrimary,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -405,14 +484,17 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
                     Text(
                       entry.name,
                       style: AppTypography.textTheme.bodyMedium?.copyWith(
-                        fontWeight: entry.isCurrentUser ? FontWeight.w800 : FontWeight.w700,
+                        fontWeight: entry.isCurrentUser
+                            ? FontWeight.w800
+                            : FontWeight.w700,
                         color: AppColors.textPrimary,
                       ),
                     ),
                     if (entry.isCurrentUser) ...[
                       const SizedBox(width: 5),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 1.5),
                         decoration: BoxDecoration(
                           color: AppColors.accentGreen,
                           borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -439,7 +521,8 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> with Single
                       ),
                     ),
                     const SizedBox(width: 6),
-                    const Icon(Icons.local_fire_department_rounded, size: 13, color: AppColors.goldDark),
+                    const Icon(Icons.local_fire_department_rounded,
+                        size: 13, color: AppColors.goldDark),
                     Text(
                       '${entry.streak}d',
                       style: AppTypography.textTheme.labelSmall?.copyWith(

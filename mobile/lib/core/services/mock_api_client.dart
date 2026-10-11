@@ -39,6 +39,14 @@ class MockApiClient implements ApiClient {
       scenario:
           'An AI model has predicted Q3 revenue with 15% growth. The model used last year\'s data but didn\'t account for the new market entrant.',
       dimension: 'verification',
+      embeddedFlaw: 'The forecast ignores the new market entrant.',
+      options: [
+        TaskOption(
+            id: 1, label: 'Verify the source data and recalculate growth.'),
+        TaskOption(id: 2, label: 'Approve the forecast as presented.'),
+        TaskOption(id: 3, label: 'Reject the forecast without review.'),
+        TaskOption(id: 4, label: 'Request supporting citations first.'),
+      ],
       trackName: 'Finance',
       difficulty: 'medium',
       trackId: 1,
@@ -49,6 +57,14 @@ class MockApiClient implements ApiClient {
       scenario:
           'AI suggested a force majeure clause that excludes pandemics. The jurisdiction recently ruled pandemics are covered.',
       dimension: 'judgement',
+      embeddedFlaw:
+          'The suggested clause excludes pandemics despite the recent ruling.',
+      options: [
+        TaskOption(
+            id: 5, label: 'Check the current ruling and revise the clause.'),
+        TaskOption(id: 6, label: 'Use the suggested clause as written.'),
+        TaskOption(id: 7, label: 'Remove every force majeure provision.'),
+      ],
       trackName: 'Legal',
       difficulty: 'hard',
       trackId: 2,
@@ -59,6 +75,12 @@ class MockApiClient implements ApiClient {
       scenario:
           'AI wrote a recursive function without a base case. The function causes stack overflow on large inputs.',
       dimension: 'prompt_design',
+      embeddedFlaw: 'The recursive function has no base case.',
+      options: [
+        TaskOption(id: 8, label: 'Add and test a terminating base case.'),
+        TaskOption(id: 9, label: 'Increase the recursion limit.'),
+        TaskOption(id: 10, label: 'Deploy without changes.'),
+      ],
       trackName: 'IT / Software',
       difficulty: 'easy',
       trackId: 3,
@@ -69,6 +91,13 @@ class MockApiClient implements ApiClient {
       scenario:
           'AI recommended a candidate based on keywords but missed a 2-year employment gap that explains the skill mismatch.',
       dimension: 'risk_governance',
+      embeddedFlaw: 'The recommendation overlooks relevant employment history.',
+      options: [
+        TaskOption(id: 11, label: 'Review the complete application fairly.'),
+        TaskOption(id: 12, label: 'Accept the recommendation without review.'),
+        TaskOption(
+            id: 13, label: 'Reject the candidate based only on the gap.'),
+      ],
       trackName: 'Business Consulting',
       difficulty: 'medium',
       trackId: 4,
@@ -129,6 +158,7 @@ class MockApiClient implements ApiClient {
       passed: true,
       feedback: 'Great job! You correctly identified the missing base case.',
       xpEarned: 120,
+      correctAnswer: 'Verify the source data and recalculate growth.',
       matchedKeywords: const [
         'verify source records',
         'correct the missed payment',

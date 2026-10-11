@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
@@ -9,6 +10,7 @@ import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/dimension_bar.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/score_ring.dart';
+import 'package:verifai/shared/widgets/shimmer_loader.dart';
 import 'package:verifai/shared/widgets/verifai_button.dart';
 
 class FeedbackScreen extends ConsumerWidget {
@@ -21,6 +23,8 @@ class FeedbackScreen extends ConsumerWidget {
   final List<Achievement> newlyEarnedAchievements;
   final Map<String, int> dimensionScores;
   final VoidCallback? onContinue;
+  final VoidCallback? onRetry;
+  final String? correctAnswer;
 
   const FeedbackScreen({
     super.key,
@@ -33,21 +37,20 @@ class FeedbackScreen extends ConsumerWidget {
     this.newlyEarnedAchievements = const [],
     this.dimensionScores = const {},
     this.onContinue,
+    this.onRetry,
+    this.correctAnswer,
   });
 
-  bool get _didPass => passed || score >= 60;
+  bool get _didPass => passed;
 
   String get _headline => _didPass
       ? 'You found the issue. Here\'s why it matters.'
-      : 'Review the missed signal before trying again.';
+      : 'Not quite. Here\'s what to review before your next attempt.';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Prefer the live readiness breakdown; fall back to any passed-in scores.
-    final dimensions = dimensionScores.isNotEmpty
-        ? dimensionScores
-        : (ref.watch(dashboardProvider).valueOrNull?.dimensionScores ??
-            const <String, int>{});
+    // Prefer any passed-in scores; otherwise use the live readiness breakdown which can still be loading or fail to load (handled in the section below)
+    final dashboardAsync = ref.watch(dashboardProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -131,19 +134,35 @@ class FeedbackScreen extends ConsumerWidget {
                           decoration: BoxDecoration(
                             color: _didPass
                                 ? AppColors.accentLight
-                                : AppColors.goldLight,
+                                : AppColors.error.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(AppRadius.pill),
                           ),
-                          child: Text(
-                            _didPass ? 'VERIFICATION PASSED' : 'REVIEW REQUIRED',
-                            style: AppTypography.textTheme.labelSmall?.copyWith(
-                              color: _didPass
-                                  ? AppColors.accentGreen
-                                  : AppColors.goldDark,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 9.5,
-                              letterSpacing: 0.5,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _didPass
+                                    ? Icons.check_circle_rounded
+                                    : Icons.cancel_rounded,
+                                size: 12,
+                                color: _didPass
+                                    ? AppColors.accentGreen
+                                    : AppColors.error,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _didPass ? 'CORRECT' : 'INCORRECT',
+                                style: AppTypography.textTheme.labelSmall
+                                    ?.copyWith(
+                                  color: _didPass
+                                      ? AppColors.accentGreen
+                                      : AppColors.error,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 9.5,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(height: AppSpacing.md),
@@ -167,6 +186,45 @@ class FeedbackScreen extends ConsumerWidget {
                               height: 1.4,
                             ),
                             textAlign: TextAlign.center,
+                          ),
+                        ],
+                        if (!_didPass && correctAnswer?.isNotEmpty == true) ...[
+                          const SizedBox(height: AppSpacing.md),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            decoration: BoxDecoration(
+                              color: AppColors.accentLight,
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.card),
+                              border: Border.all(
+                                color: AppColors.accentGreen
+                                    .withValues(alpha: 0.4),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'A STRONGER RESPONSE',
+                                  style: AppTypography.textTheme.labelSmall
+                                      ?.copyWith(
+                                    color: AppColors.accentGreen,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.xs),
+                                Text(
+                                  correctAnswer!,
+                                  style: AppTypography.textTheme.bodyMedium
+                                      ?.copyWith(
+                                    color: AppColors.textPrimary,
+                                    height: 1.45,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                         const SizedBox(height: AppSpacing.md),
@@ -206,7 +264,8 @@ class FeedbackScreen extends ConsumerWidget {
                             padding: const EdgeInsets.all(AppSpacing.md),
                             decoration: BoxDecoration(
                               color: AppColors.accentLight,
-                              borderRadius: BorderRadius.circular(AppRadius.card),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.card),
                               border: Border.all(
                                   color: AppColors.accentGreen
                                       .withValues(alpha: 0.4)),
@@ -236,7 +295,8 @@ class FeedbackScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.xl),
 
                   // Matched / missed concepts
-                  if (matchedKeywords.isNotEmpty || missedKeywords.isNotEmpty) ...[
+                  if (matchedKeywords.isNotEmpty ||
+                      missedKeywords.isNotEmpty) ...[
                     Text(
                       'Concepts',
                       style: AppTypography.textTheme.headlineMedium?.copyWith(
@@ -269,24 +329,37 @@ class FeedbackScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  if (dimensions.isEmpty)
-                    Text(
-                      'Your readiness dimensions will appear once a task has been scored.',
-                      style: AppTypography.textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    )
+                  if (dimensionScores.isNotEmpty)
+                    ..._dimensionBars(dimensionScores)
                   else
-                    ...dimensions.entries.map((entry) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: DimensionBar(
-                          label: _dimensionLabel(entry.key),
-                          value: entry.value,
-                          icon: Icons.insights_rounded,
+                    ...dashboardAsync.when(
+                      data: (data) => data.dimensionScores.isEmpty
+                          ? [
+                              Text(
+                                'Your readiness dimensions will appear once a task has been scored.',
+                                style: AppTypography.textTheme.bodyMedium
+                                    ?.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ]
+                          : _dimensionBars(data.dimensionScores),
+                      loading: () => const <Widget>[
+                        ShimmerLoader(height: 16),
+                        SizedBox(height: AppSpacing.sm),
+                        ShimmerLoader(height: 16),
+                        SizedBox(height: AppSpacing.sm),
+                        ShimmerLoader(height: 16),
+                      ],
+                      error: (error, _) => <Widget>[
+                        InlineErrorCard(
+                          error: error,
+                          fallbackMessage:
+                              'We could not load your dimension breakdown.',
+                          onRetry: () => ref.invalidate(dashboardProvider),
                         ),
-                      );
-                    }),
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -294,7 +367,7 @@ class FeedbackScreen extends ConsumerWidget {
         ],
       ),
       // Bottom Continue Action
-      bottomNavigationBar: onContinue != null
+      bottomNavigationBar: onContinue != null || onRetry != null
           ? SafeArea(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
@@ -303,16 +376,43 @@ class FeedbackScreen extends ConsumerWidget {
                   AppSpacing.screenPadding,
                   MediaQuery.of(context).padding.bottom > 0 ? 8 : 16,
                 ),
-                child: VerifAIButton(
-                  label: 'Continue',
-                  variant: VerifAIButtonVariant.verification,
-                  onPressed: onContinue,
-                  trailingIcon: Icons.arrow_forward_rounded,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!_didPass && onRetry != null) ...[
+                      OutlinedButton.icon(
+                        onPressed: onRetry,
+                        icon: const Icon(Icons.replay_rounded),
+                        label: const Text('Try this task again'),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                    ],
+                    if (onContinue != null)
+                      VerifAIButton(
+                        label: 'Continue',
+                        variant: VerifAIButtonVariant.verification,
+                        onPressed: onContinue,
+                        trailingIcon: Icons.arrow_forward_rounded,
+                      ),
+                  ],
                 ),
               ),
             )
           : null,
     );
+  }
+
+  List<Widget> _dimensionBars(Map<String, int> dimensions) {
+    return dimensions.entries
+        .map((entry) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: DimensionBar(
+                label: _dimensionLabel(entry.key),
+                value: entry.value,
+                icon: Icons.insights_rounded,
+              ),
+            ))
+        .toList();
   }
 
   String _dimensionLabel(String key) {
@@ -328,7 +428,8 @@ class FeedbackScreen extends ConsumerWidget {
         key
             .replaceAll('_', ' ')
             .split(' ')
-            .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+            .map(
+                (w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
             .join(' ');
   }
 }
@@ -343,8 +444,8 @@ class _ConceptChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = matched ? AppColors.accentGreen : AppColors.goldDark;
     return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: 6),
+      padding:
+          const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 6),
       decoration: BoxDecoration(
         color: matched ? AppColors.accentLight : AppColors.goldLight,
         borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -381,6 +482,8 @@ class FeedbackResult {
   final List<String> matchedKeywords;
   final List<String> missedKeywords;
   final List<Achievement> newlyEarnedAchievements;
+  final String? correctAnswer;
+  final DailyTask? task;
 
   const FeedbackResult({
     required this.score,
@@ -390,11 +493,12 @@ class FeedbackResult {
     this.matchedKeywords = const [],
     this.missedKeywords = const [],
     this.newlyEarnedAchievements = const [],
+    this.correctAnswer,
+    this.task,
   });
 }
 
-/// Placeholder page variant used when the screen is opened standalone
-/// without a completed attempt (e.g. from navigation).
+/// Shown when /feedback is opened without a completed attempt (deep link, estored route, ...). Showing a zero score there would look like a failed attempt, which it is not.
 class FeedbackEmptyScreen extends StatelessWidget {
   const FeedbackEmptyScreen({super.key});
 
@@ -414,11 +518,13 @@ class FeedbackEmptyScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: const EmptyState(
+      body: EmptyState(
         icon: Icons.rate_review_rounded,
         title: 'No feedback yet',
         message:
-            'Complete a mission to see your personalised feedback and dimension breakdown here.',
+            'Complete a task to see your personalised feedback and dimension breakdown here.',
+        actionLabel: 'Back to dashboard',
+        onAction: () => context.go('/dashboard'),
       ),
     );
   }

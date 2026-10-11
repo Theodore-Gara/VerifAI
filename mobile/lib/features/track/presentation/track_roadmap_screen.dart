@@ -5,6 +5,7 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
+import 'package:verifai/shared/widgets/sample_data_banner.dart';
 import 'package:verifai/shared/widgets/verifai_button.dart';
 
 enum MilestoneStatus {
@@ -19,7 +20,7 @@ class TrackRoadmapScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider).valueOrNull;
-    final trackName = user?.trackName ?? 'Finance Track';
+    final trackName = user?.trackName ?? 'Your track';
 
     final milestones = [
       _Milestone(
@@ -108,6 +109,12 @@ class TrackRoadmapScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SampleDataBanner(
+              message:
+                  'Preview roadmap with sample milestones. Your real milestone progress is not tracked here yet.',
+            ),
+            const SizedBox(height: AppSpacing.md),
+
             // Track Hero Banner
             Container(
               width: double.infinity,
@@ -444,7 +451,7 @@ class TrackRoadmapScreen extends ConsumerWidget {
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Starting milestone quest...'),
+                    content: Text('Milestone quests are coming soon.'),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
