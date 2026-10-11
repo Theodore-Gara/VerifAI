@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'package:verifai/core/providers/app_reconnect.dart';
 import 'package:verifai/core/theme/app_colors.dart';
@@ -14,11 +17,47 @@ import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  Uint8List? _localProfileImage;
+
+  Future<void> _chooseProfileImage() async {
+    try {
+      final image = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1200,
+      );
+      if (image == null) return;
+      final bytes = await image.readAsBytes();
+      if (!mounted) return;
+      setState(() => _localProfileImage = bytes);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Photo preview updated on this device. Profile storage is not connected.',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open your photo gallery. Try again.'),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = this.ref;
     final user = ref.watch(currentUserProvider).valueOrNull;
     final dashboardAsync = ref.watch(dashboardProvider);
     // Achievements earned by this user (GET /api/achievements/me). The full
@@ -145,19 +184,28 @@ class ProfileScreen extends ConsumerWidget {
                                   ),
                                 ],
                               ),
-                              child: CircleAvatar(
-                                radius: 42,
-                                backgroundColor: AppColors.primaryNavy,
-                                child: Text(
-                                  initial,
-                                  style: AppTypography.textTheme.displaySmall
-                                      ?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w800,
+                              child: GestureDetector(
+                                onTap: _chooseProfileImage,
+                                child: CircleAvatar(
+                                  radius: 42,
+                                  backgroundColor: AppColors.primaryNavy,
+                                  backgroundImage: _localProfileImage == null
+                                      ? null
+                                      : MemoryImage(_localProfileImage!),
+                                  child: _localProfileImage == null
+                                      ? Text(
+                                          initial,
+                                          style: AppTypography
+                                              .textTheme.displaySmall
+                                              ?.copyWith(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        )
+: null,
                                   ),
                                 ),
                               ),
-                            ),
                             Container(
                               padding: const EdgeInsets.all(5),
                               decoration: BoxDecoration(
@@ -174,7 +222,7 @@ class ProfileScreen extends ConsumerWidget {
                                   ),
                                 ],
                               ),
-                              child: const Icon(Icons.verified_rounded,
+                              child: const Icon(Icons.camera_alt_rounded,
                                   size: 14, color: Colors.white),
                             ),
                           ],

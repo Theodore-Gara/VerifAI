@@ -83,7 +83,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppColors.primaryNavy, AppColors.primaryDark],
+            colors: [
+              AppColors.accentGreen,
+              AppColors.accentCyan,
+              AppColors.accentGreen,
+            ],
           ),
         ),
         child: Center(
@@ -111,18 +115,32 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 child: FadeTransition(
                   opacity: _fadeAnimation,
                   child: Text(
-                    'AI Workplace Readiness',
+                    'VerifAI',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: AppColors.primaryNavy.withValues(alpha: 0.9),
                         ),
                   ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              FadeTransition(
+                opacity: _fadeAnimation,
+                child: Text(
+                  'AI assists. Humans verify.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color:
+                            AppColors.primaryNavy.withValues(alpha: 0.82),
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                      ),
                 ),
               ),
               const SizedBox(height: AppSpacing.xxxl),
               FadeTransition(
                 opacity: _fadeAnimation,
                 child: const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.accentGreen),
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(AppColors.primaryNavy),
                   strokeWidth: 3,
                 ),
               ),

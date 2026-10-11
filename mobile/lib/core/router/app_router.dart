@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:verifai/features/auth/presentation.dart';
+import 'package:verifai/features/auth/presentation/recovery_screen.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/assistant/presentation/learning_assistant_screen.dart';
 import 'package:verifai/core/providers/app_providers.dart';
+import 'package:verifai/features/product_hub/presentation/product_hub_screen.dart';
 import 'package:verifai/features/dashboard/presentation/task_challenge_modal.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
@@ -62,7 +64,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // Public routes (login, register)
-      final isPublicRoute = location == '/login' || location == '/register';
+      final isPublicRoute = location == '/login' ||
+          location == '/register' ||
+          location == '/forgot-password' ||
+          location == '/forgot-email';
 
       if (!isAuthenticated && !isPublicRoute) {
         return '/login';
@@ -101,6 +106,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/login',
         name: 'login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        name: 'forgot-password',
+        builder: (context, state) => const RecoveryScreen(),
+      ),
+      GoRoute(
+        path: '/forgot-email',
+        name: 'forgot-email',
+        builder: (context, state) =>
+            const RecoveryScreen(forgotEmail: true),
       ),
       GoRoute(
         path: '/register',
@@ -145,10 +161,38 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (task is DailyTask) {
             return LearningAssistantScreen(task: task);
           }
-          return const Scaffold(
-            body: Center(child: Text('Open the assistant from a task.')),
-          );
+          return const ProductHubScreen(mode: VerifAiHubMode.assistant);
         },
+      ),
+      GoRoute(
+        path: '/verification-studio',
+        name: 'verification-studio',
+        builder: (context, state) =>
+            const ProductHubScreen(mode: VerifAiHubMode.verify),
+      ),
+      GoRoute(
+        path: '/ai-lab',
+        name: 'ai-lab',
+        builder: (context, state) =>
+            const ProductHubScreen(mode: VerifAiHubMode.lab),
+      ),
+      GoRoute(
+        path: '/industry-practice',
+        name: 'industry-practice',
+        builder: (context, state) =>
+            const ProductHubScreen(mode: VerifAiHubMode.practice),
+      ),
+      GoRoute(
+        path: '/rewards',
+        name: 'rewards',
+        builder: (context, state) =>
+            const ProductHubScreen(mode: VerifAiHubMode.rewards),
+      ),
+      GoRoute(
+        path: '/task-history',
+        name: 'task-history',
+        builder: (context, state) =>
+            const ProductHubScreen(mode: VerifAiHubMode.history),
       ),
       GoRoute(
         path: '/progress',

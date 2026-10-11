@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:verifai/core/providers/app_reconnect.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
@@ -336,6 +337,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ],
           ),
+          const SizedBox(height: AppSpacing.md),
+          _buildQuickLaunches(context),
           const SizedBox(height: AppSpacing.xl),
 
           // Daily Mission Hero Bento Card
@@ -398,6 +401,159 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         const SizedBox(height: AppSpacing.xl),
         const ShimmerLoader.card(height: 200),
+      ],
+    );
+  }
+
+  Widget _buildQuickLaunches(BuildContext context) {
+    final items =
+        <({String title, String subtitle, IconData icon, String route})>[
+      (
+        title: 'AI Assistant',
+        subtitle: 'Think it through',
+        icon: Icons.auto_awesome_rounded,
+        route: '/assistant',
+      ),
+      (
+        title: 'Verify',
+        subtitle: 'Check evidence',
+        icon: Icons.fact_check_rounded,
+        route: '/verification-studio',
+      ),
+      (
+        title: 'AI Lab',
+        subtitle: 'Learn by doing',
+        icon: Icons.science_rounded,
+        route: '/ai-lab',
+      ),
+      (
+        title: 'Practice',
+        subtitle: 'Real scenarios',
+        icon: Icons.psychology_alt_rounded,
+        route: '/industry-practice',
+      ),
+      (
+        title: 'Rewards',
+        subtitle: 'XP & milestones',
+        icon: Icons.workspace_premium_rounded,
+        route: '/rewards',
+      ),
+      (
+        title: 'History',
+        subtitle: 'Review attempts',
+        icon: Icons.history_rounded,
+        route: '/task-history',
+      ),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Explore VerifAI',
+          style: AppTypography.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: AppColors.primaryNavy,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          'Build confidence. Verify before you rely.',
+          style: AppTypography.textTheme.bodySmall
+              ?.copyWith(color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 13),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: items.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 11,
+            mainAxisSpacing: 11,
+            childAspectRatio: 1.55,
+          ),
+          itemBuilder: (context, index) {
+            final item = items[index];
+            return Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: () => context.push(item.route),
+                child: Container(
+                  padding: const EdgeInsets.all(13),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: AppColors.border),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primaryNavy.withValues(alpha: .035),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        width: 35,
+                        height: 35,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.accentGreen.withValues(alpha: .20),
+                              AppColors.accentCyan.withValues(alpha: .20),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        child: Icon(
+                          item.icon,
+                          color: AppColors.primaryNavy,
+                          size: 19,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 13,
+                                    color: AppColors.primaryNavy,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  item.subtitle,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_outward_rounded,
+                            size: 15,
+                            color: AppColors.accentGreen,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       ],
     );
   }

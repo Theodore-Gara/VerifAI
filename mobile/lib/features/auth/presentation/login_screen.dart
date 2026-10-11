@@ -108,6 +108,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     return null;
                   },
                 ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: 4,
+                    children: [
+                      TextButton(
+                        onPressed: () => context.go('/forgot-password'),
+                        child: const Text('Forgot password?'),
+                      ),
+                      TextButton(
+                        onPressed: () => context.go('/forgot-email'),
+                        child: const Text('Forgot email?'),
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.xl),
                 VerifAIButton(
                   label: 'Sign In',

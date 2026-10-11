@@ -24,7 +24,7 @@ void main() {
     await tester.pump();
 
     // Splash screen shows the tagline while the entry animation plays.
-    expect(find.text('AI Workplace Readiness'), findsOneWidget);
+    expect(find.text('AI assists. Humans verify.'), findsOneWidget);
 
     // Let the splash timer fire and the navigation settle so no timers pend.
     await tester.pump(const Duration(seconds: 3));

@@ -48,7 +48,7 @@ void main() {
     await tester.pump();
 
     // Splash screen first.
-    expect(find.text('AI Workplace Readiness'), findsOneWidget);
+    expect(find.text('AI assists. Humans verify.'), findsOneWidget);
 
     // Splash timer navigates to industry select.
     await tester.pump(const Duration(seconds: 3));
