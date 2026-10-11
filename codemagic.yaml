@@ -2,10 +2,7 @@ workflows:
   manual_android_release:
     name: Manual Android Release
     max_build_duration: 60
-    instance_type: mac_mini_m1
-    triggering:
-      events:
-        - manual
+    instance_type: mac_mini_m2
     environment:
       groups:
         - verifai_android_signing
@@ -44,7 +41,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - theodoregara34@gmail.com
+          - theodorenangara@gmail.com
         notify:
           success: true
           failure: true
