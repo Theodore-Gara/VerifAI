@@ -1,0 +1,50 @@
+workflows:
+  manual_android_release:
+    name: Manual Android Release
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    triggering:
+      events:
+        - manual
+    environment:
+      groups:
+        - verifai_android_signing
+      flutter: stable
+      java: 17
+      vars:
+        FIREBASE_PROJECT_ID: verifai-859db
+    scripts:
+      - name: Set up keystore from environment
+        script: |
+          set -e
+          cd mobile
+          : "${VERIFAI_RELEASE_KEYSTORE_BASE64:?Missing release keystore}"
+          : "${VERIFAI_RELEASE_STORE_PASSWORD:?Missing keystore password}"
+          : "${VERIFAI_RELEASE_KEY_PASSWORD:?Missing key password}"
+          : "${VERIFAI_RELEASE_KEY_ALIAS:?Missing key alias}"
+          mkdir -p android/app
+          python3 -c 'import base64, os, pathlib; pathlib.Path("android/app/release-keystore.jks").write_bytes(base64.b64decode(os.environ["VERIFAI_RELEASE_KEYSTORE_BASE64"], validate=True))'
+          cat > android/key.properties <<EOF
+          storePassword=$VERIFAI_RELEASE_STORE_PASSWORD
+          keyPassword=$VERIFAI_RELEASE_KEY_PASSWORD
+          keyAlias=$VERIFAI_RELEASE_KEY_ALIAS
+          storeFile=release-keystore.jks
+          EOF
+          echo "Keystore and key.properties written"
+      - name: Get Flutter dependencies
+        script: |
+          cd mobile
+          flutter pub get
+      - name: Build release APK
+        script: |
+          cd mobile
+          flutter build apk --release
+    artifacts:
+      - mobile/build/app/outputs/flutter-apk/*.apk
+    publishing:
+      email:
+        recipients:
+          - theodoregara34@gmail.com
+        notify:
+          success: true
+          failure: true
