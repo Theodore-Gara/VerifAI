@@ -14,7 +14,7 @@ class ActivityDay {
   });
 
   factory ActivityDay.fromJson(Map<String, dynamic> json) => ActivityDay(
-        date: json['activity_date'] as String? ?? '',
+        date: (json['activity_date'] as String? ?? '').split('T').first,
         attempts: _int(json['attempts']),
         xpEarned: _int(json['xp_earned']),
         passed: _int(json['passed']),

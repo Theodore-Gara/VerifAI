@@ -16,7 +16,8 @@ async function getProgress(req, res, next) {
                   'score', ss.score,
                   'attempts_count', ss.attempts_count
                 ) ORDER BY ss.dimension) FROM skill_scores ss WHERE ss.user_id = u.id), '[]'::json) AS skill_scores,
-              COALESCE((SELECT COUNT(*)::int FROM task_attempts ta WHERE ta.user_id = u.id), 0) AS completed_tasks
+              COALESCE((SELECT COUNT(DISTINCT ta.task_id)::int FROM task_attempts ta
+                        WHERE ta.user_id = u.id AND ta.passed AND ta.practice = FALSE), 0) AS completed_tasks
        FROM users u
        LEFT JOIN user_progress p ON p.user_id = u.id
        WHERE u.firebase_uid = $1`,
@@ -67,7 +68,7 @@ async function getActivityHistory(req, res, next) {
     }
 
     const activity = await pool.query(
-      `SELECT (ta.submitted_at::timestamptz AT TIME ZONE $3)::date AS activity_date,
+      `SELECT to_char((ta.submitted_at::timestamptz AT TIME ZONE $3)::date, 'YYYY-MM-DD') AS activity_date,
               COUNT(*)::int AS attempts,
               COALESCE(SUM(ta.xp_earned), 0)::int AS xp_earned,
               COUNT(*) FILTER (WHERE ta.passed)::int AS passed

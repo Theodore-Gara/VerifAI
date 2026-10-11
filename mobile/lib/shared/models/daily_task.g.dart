@@ -24,6 +24,7 @@ _$DailyTaskImpl _$$DailyTaskImplFromJson(Map<String, dynamic> json) =>
           const [],
       trackName: json['trackName'] as String?,
       difficulty: json['difficulty'] as String?,
+      feature: json['feature'] as String?,
       trackId: (json['trackId'] as num?)?.toInt(),
     );
 
@@ -39,5 +40,6 @@ Map<String, dynamic> _$$DailyTaskImplToJson(_$DailyTaskImpl instance) =>
       'ai_output_lines': instance.aiOutputLines,
       'trackName': instance.trackName,
       'difficulty': instance.difficulty,
+      'feature': instance.feature,
       'trackId': instance.trackId,
     };

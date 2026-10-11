@@ -26,8 +26,11 @@ mixin _$DashboardData {
   int get currentXp => throw _privateConstructorUsedError;
   int get level => throw _privateConstructorUsedError;
   int get completedTasks => throw _privateConstructorUsedError;
+  String? get tier => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _dailyTaskFromJson, toJson: _dailyTaskToJson)
   DailyTask? get dailyTask => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _dailyTaskListFromJson, toJson: _dailyTaskListToJson)
+  List<DailyTask> get tasks => throw _privateConstructorUsedError;
 
   /// Serializes this DashboardData to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -52,8 +55,11 @@ abstract class $DashboardDataCopyWith<$Res> {
       int currentXp,
       int level,
       int completedTasks,
+      String? tier,
       @JsonKey(fromJson: _dailyTaskFromJson, toJson: _dailyTaskToJson)
-      DailyTask? dailyTask});
+      DailyTask? dailyTask,
+      @JsonKey(fromJson: _dailyTaskListFromJson, toJson: _dailyTaskListToJson)
+      List<DailyTask> tasks});
 
   $DailyTaskCopyWith<$Res>? get dailyTask;
 }
@@ -79,7 +85,9 @@ class _$DashboardDataCopyWithImpl<$Res, $Val extends DashboardData>
     Object? currentXp = null,
     Object? level = null,
     Object? completedTasks = null,
+    Object? tier = freezed,
     Object? dailyTask = freezed,
+    Object? tasks = null,
   }) {
     return _then(_value.copyWith(
       overallScore: null == overallScore
@@ -106,10 +114,18 @@ class _$DashboardDataCopyWithImpl<$Res, $Val extends DashboardData>
           ? _value.completedTasks
           : completedTasks // ignore: cast_nullable_to_non_nullable
               as int,
+      tier: freezed == tier
+          ? _value.tier
+          : tier // ignore: cast_nullable_to_non_nullable
+              as String?,
       dailyTask: freezed == dailyTask
           ? _value.dailyTask
           : dailyTask // ignore: cast_nullable_to_non_nullable
               as DailyTask?,
+      tasks: null == tasks
+          ? _value.tasks
+          : tasks // ignore: cast_nullable_to_non_nullable
+              as List<DailyTask>,
     ) as $Val);
   }
 
@@ -143,8 +159,11 @@ abstract class _$$DashboardDataImplCopyWith<$Res>
       int currentXp,
       int level,
       int completedTasks,
+      String? tier,
       @JsonKey(fromJson: _dailyTaskFromJson, toJson: _dailyTaskToJson)
-      DailyTask? dailyTask});
+      DailyTask? dailyTask,
+      @JsonKey(fromJson: _dailyTaskListFromJson, toJson: _dailyTaskListToJson)
+      List<DailyTask> tasks});
 
   @override
   $DailyTaskCopyWith<$Res>? get dailyTask;
@@ -169,7 +188,9 @@ class __$$DashboardDataImplCopyWithImpl<$Res>
     Object? currentXp = null,
     Object? level = null,
     Object? completedTasks = null,
+    Object? tier = freezed,
     Object? dailyTask = freezed,
+    Object? tasks = null,
   }) {
     return _then(_$DashboardDataImpl(
       overallScore: null == overallScore
@@ -196,10 +217,18 @@ class __$$DashboardDataImplCopyWithImpl<$Res>
           ? _value.completedTasks
           : completedTasks // ignore: cast_nullable_to_non_nullable
               as int,
+      tier: freezed == tier
+          ? _value.tier
+          : tier // ignore: cast_nullable_to_non_nullable
+              as String?,
       dailyTask: freezed == dailyTask
           ? _value.dailyTask
           : dailyTask // ignore: cast_nullable_to_non_nullable
               as DailyTask?,
+      tasks: null == tasks
+          ? _value._tasks
+          : tasks // ignore: cast_nullable_to_non_nullable
+              as List<DailyTask>,
     ));
   }
 }
@@ -214,9 +243,13 @@ class _$DashboardDataImpl implements _DashboardData {
       this.currentXp = 0,
       this.level = 1,
       this.completedTasks = 0,
+      this.tier,
       @JsonKey(fromJson: _dailyTaskFromJson, toJson: _dailyTaskToJson)
-      this.dailyTask})
-      : _dimensionScores = dimensionScores;
+      this.dailyTask,
+      @JsonKey(fromJson: _dailyTaskListFromJson, toJson: _dailyTaskListToJson)
+      final List<DailyTask> tasks = const []})
+      : _dimensionScores = dimensionScores,
+        _tasks = tasks;
 
   factory _$DashboardDataImpl.fromJson(Map<String, dynamic> json) =>
       _$$DashboardDataImplFromJson(json);
@@ -243,12 +276,22 @@ class _$DashboardDataImpl implements _DashboardData {
   @JsonKey()
   final int completedTasks;
   @override
+  final String? tier;
+  @override
   @JsonKey(fromJson: _dailyTaskFromJson, toJson: _dailyTaskToJson)
   final DailyTask? dailyTask;
+  final List<DailyTask> _tasks;
+  @override
+  @JsonKey(fromJson: _dailyTaskListFromJson, toJson: _dailyTaskListToJson)
+  List<DailyTask> get tasks {
+    if (_tasks is EqualUnmodifiableListView) return _tasks;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_tasks);
+  }
 
   @override
   String toString() {
-    return 'DashboardData(overallScore: $overallScore, dimensionScores: $dimensionScores, streakDays: $streakDays, currentXp: $currentXp, level: $level, completedTasks: $completedTasks, dailyTask: $dailyTask)';
+    return 'DashboardData(overallScore: $overallScore, dimensionScores: $dimensionScores, streakDays: $streakDays, currentXp: $currentXp, level: $level, completedTasks: $completedTasks, tier: $tier, dailyTask: $dailyTask, tasks: $tasks)';
   }
 
   @override
@@ -267,8 +310,10 @@ class _$DashboardDataImpl implements _DashboardData {
             (identical(other.level, level) || other.level == level) &&
             (identical(other.completedTasks, completedTasks) ||
                 other.completedTasks == completedTasks) &&
+            (identical(other.tier, tier) || other.tier == tier) &&
             (identical(other.dailyTask, dailyTask) ||
-                other.dailyTask == dailyTask));
+                other.dailyTask == dailyTask) &&
+            const DeepCollectionEquality().equals(other._tasks, _tasks));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -281,7 +326,9 @@ class _$DashboardDataImpl implements _DashboardData {
       currentXp,
       level,
       completedTasks,
-      dailyTask);
+      tier,
+      dailyTask,
+      const DeepCollectionEquality().hash(_tasks));
 
   /// Create a copy of DashboardData
   /// with the given fields replaced by the non-null parameter values.
@@ -307,8 +354,11 @@ abstract class _DashboardData implements DashboardData {
       final int currentXp,
       final int level,
       final int completedTasks,
+      final String? tier,
       @JsonKey(fromJson: _dailyTaskFromJson, toJson: _dailyTaskToJson)
-      final DailyTask? dailyTask}) = _$DashboardDataImpl;
+      final DailyTask? dailyTask,
+      @JsonKey(fromJson: _dailyTaskListFromJson, toJson: _dailyTaskListToJson)
+      final List<DailyTask> tasks}) = _$DashboardDataImpl;
 
   factory _DashboardData.fromJson(Map<String, dynamic> json) =
       _$DashboardDataImpl.fromJson;
@@ -326,8 +376,13 @@ abstract class _DashboardData implements DashboardData {
   @override
   int get completedTasks;
   @override
+  String? get tier;
+  @override
   @JsonKey(fromJson: _dailyTaskFromJson, toJson: _dailyTaskToJson)
   DailyTask? get dailyTask;
+  @override
+  @JsonKey(fromJson: _dailyTaskListFromJson, toJson: _dailyTaskListToJson)
+  List<DailyTask> get tasks;
 
   /// Create a copy of DashboardData
   /// with the given fields replaced by the non-null parameter values.

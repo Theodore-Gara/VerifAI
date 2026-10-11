@@ -37,6 +37,7 @@ class DailyTask with _$DailyTask {
     @JsonKey(name: 'ai_output_lines') @Default([]) List<String> aiOutputLines,
     String? trackName,
     String? difficulty,
+    String? feature,
     int? trackId,
   }) = _DailyTask;
 

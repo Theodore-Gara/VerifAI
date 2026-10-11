@@ -18,12 +18,14 @@ class TaskChallengeModal extends ConsumerStatefulWidget {
   final DailyTask task;
   final VoidCallback onTaskCompleted;
   final bool practice;
+  final bool replace;
 
   const TaskChallengeModal({
     super.key,
     required this.task,
     required this.onTaskCompleted,
     this.practice = false,
+    this.replace = false,
   });
 
   static Future<void> show(
@@ -31,6 +33,7 @@ class TaskChallengeModal extends ConsumerStatefulWidget {
     DailyTask task,
     VoidCallback onCompleted, {
     bool practice = false,
+    bool replace = false,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -40,6 +43,7 @@ class TaskChallengeModal extends ConsumerStatefulWidget {
         task: task,
         onTaskCompleted: onCompleted,
         practice: practice,
+        replace: replace,
       ),
     );
   }
@@ -104,20 +108,24 @@ class _TaskChallengeModalState extends ConsumerState<TaskChallengeModal> {
       ref.invalidate(achievementsProvider);
 
       if (!context.mounted) return;
-      context.push(
-        '/feedback',
-        extra: FeedbackResult(
-          score: response.score,
-          passed: response.passed,
-          feedback: response.feedback,
-          xpEarned: response.xpEarned,
-          correctAnswer: response.correctAnswer,
-          matchedKeywords: response.matchedKeywords,
-          missedKeywords: response.missedKeywords,
-          newlyEarnedAchievements: response.newlyEarnedAchievements,
-          task: widget.task,
-        ),
+      final feedback = FeedbackResult(
+        score: response.score,
+        passed: response.passed,
+        feedback: response.feedback,
+        xpEarned: response.xpEarned,
+        correctAnswer: response.correctAnswer,
+        matchedKeywords: response.matchedKeywords,
+        missedKeywords: response.missedKeywords,
+        newlyEarnedAchievements: response.newlyEarnedAchievements,
+        task: widget.task,
       );
+      // Opened from an existing feedback screen (Continue / retry): swap it out
+      // so the back stack never grows one feedback screen per attempt.
+      if (widget.replace) {
+        context.pushReplacement('/feedback', extra: feedback);
+      } else {
+        context.push('/feedback', extra: feedback);
+      }
       widget.onTaskCompleted();
     } catch (e) {
       if (!mounted) return;
@@ -135,9 +143,13 @@ class _TaskChallengeModalState extends ConsumerState<TaskChallengeModal> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.88,
-      decoration: const BoxDecoration(
+    final media = MediaQuery.of(context);
+    final bottomInset = media.viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Container(
+        height: media.size.height * 0.88 - bottomInset,
+        decoration: const BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(AppRadius.xxxl),
@@ -342,6 +354,7 @@ class _TaskChallengeModalState extends ConsumerState<TaskChallengeModal> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

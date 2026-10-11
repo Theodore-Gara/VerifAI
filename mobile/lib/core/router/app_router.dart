@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:verifai/features/auth/presentation.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/assistant/presentation/learning_assistant_screen.dart';
+import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/features/dashboard/presentation/task_challenge_modal.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
@@ -178,9 +179,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                       result.task!,
                       () => ref.invalidate(dashboardProvider),
                       practice: true,
+                      replace: true,
                     ),
             onContinue: () =>
-                context.canPop() ? context.pop() : context.go('/dashboard'),
+                _continueToNextTask(context, ref, result.task),
           );
         },
       ),
@@ -194,4 +196,52 @@ final routerProvider = Provider<GoRouter>((ref) {
 
 class GoRouterRefreshNotifier extends ChangeNotifier {
   void notify() => notifyListeners();
+}
+
+/// "Continue" on the feedback screen: load the next unseen task at the same
+/// difficulty and launch it in place, so the run keeps its level.
+Future<void> _continueToNextTask(
+  BuildContext context,
+  Ref ref,
+  DailyTask? task,
+) async {
+  if (task == null) {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/dashboard');
+    }
+    return;
+  }
+
+  final messenger = ScaffoldMessenger.of(context);
+  try {
+    final next = await ref.read(apiClientProvider).getNextTask(
+          feature: task.feature,
+          difficulty: task.difficulty,
+        );
+    if (!context.mounted) return;
+    if (next == null) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('No more tasks at this difficulty yet.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    TaskChallengeModal.show(
+      context,
+      next,
+      () => ref.invalidate(dashboardProvider),
+      replace: true,
+    );
+  } catch (_) {
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Could not load the next task. Please try again.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 }

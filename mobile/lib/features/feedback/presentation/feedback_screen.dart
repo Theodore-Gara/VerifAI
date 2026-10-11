@@ -319,9 +319,9 @@ class FeedbackScreen extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.xl),
                   ],
 
-                  // Dimension Breakdown
+                  // Skill Breakdown
                   Text(
-                    'Dimension Breakdown',
+                    'Skill Breakdown',
                     style: AppTypography.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.4,
@@ -336,7 +336,7 @@ class FeedbackScreen extends ConsumerWidget {
                       data: (data) => data.dimensionScores.isEmpty
                           ? [
                               Text(
-                                'Your readiness dimensions will appear once a task has been scored.',
+                                'Your readiness skills will appear once a task has been scored.',
                                 style: AppTypography.textTheme.bodyMedium
                                     ?.copyWith(
                                   color: AppColors.textSecondary,
@@ -355,7 +355,7 @@ class FeedbackScreen extends ConsumerWidget {
                         InlineErrorCard(
                           error: error,
                           fallbackMessage:
-                              'We could not load your dimension breakdown.',
+                              'We could not load your skill breakdown.',
                           onRetry: () => ref.invalidate(dashboardProvider),
                         ),
                       ],
@@ -522,7 +522,7 @@ class FeedbackEmptyScreen extends StatelessWidget {
         icon: Icons.rate_review_rounded,
         title: 'No feedback yet',
         message:
-            'Complete a task to see your personalised feedback and dimension breakdown here.',
+            'Complete a task to see your personalised feedback and skill breakdown here.',
         actionLabel: 'Back to dashboard',
         onAction: () => context.go('/dashboard'),
       ),

@@ -430,6 +430,32 @@ test('?dimension=Verification drops the difficulty ordering', async () => {
   assert.ok(!taskSql.includes('CASE v.difficulty'), 'difficulty ordering must be dropped');
 });
 
+test('?difficulty= pins the verification task to one band', async () => {
+  queries.length = 0;
+  queryCalls.length = 0;
+  const response = await request(app)
+    .get('/api/tasks/next')
+    .query({ dimension: 'Verification', difficulty: 'easy' })
+    .set('Authorization', 'Bearer test-token');
+
+  assert.equal(response.status, 200);
+  const taskSql = queries.find((sql) => sql.includes('JOIN verification_tasks'));
+  assert.ok(taskSql, 'expected the verification task query');
+  assert.match(taskSql, /v\.difficulty = \$3/);
+  assert.ok(!taskSql.includes('CASE v.difficulty'), 'a pinned band drops the ordering');
+  const taskCall = queryCalls.find((call) => call.sql.includes('JOIN verification_tasks'));
+  assert.equal(taskCall.values[taskCall.values.length - 1], 'easy');
+});
+
+test('an unknown difficulty is rejected', async () => {
+  const response = await request(app)
+    .get('/api/tasks/next')
+    .query({ feature: 'verification', difficulty: 'extreme' })
+    .set('Authorization', 'Bearer test-token');
+  assert.equal(response.status, 400);
+  assert.match(response.body.error, /difficulty/);
+});
+
 test('the default request keeps the level-adaptive difficulty ordering', async () => {
   queries.length = 0;
   const response = await request(app).get('/api/tasks/next').set('Authorization', 'Bearer test-token');

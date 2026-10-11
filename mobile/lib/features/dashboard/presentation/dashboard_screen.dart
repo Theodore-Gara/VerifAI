@@ -158,7 +158,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
             child: Row(
               children: [
-                ScoreRing(score: data.overallScore, size: 116, strokeWidth: 11),
+                ScoreRing(
+                  score: data.overallScore,
+                  size: 116,
+                  strokeWidth: 11,
+                  tierLabel: data.tier,
+                ),
                 const SizedBox(width: AppSpacing.lg),
                 Expanded(
                   child: Column(

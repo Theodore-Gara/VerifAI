@@ -659,8 +659,8 @@ const List<_BadgeSpec> _badgeCatalog = [
       AppColors.gold),
   _BadgeSpec(
       'dimension-80',
-      'Strong Dimension',
-      'Reach a score of at least 80 in one readiness dimension.',
+      'Strong Skill',
+      'Reach a score of at least 80 in one readiness skill.',
       Icons.workspace_premium_rounded,
       AppColors.info),
 ];

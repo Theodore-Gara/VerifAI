@@ -52,21 +52,38 @@ class DioApiClient implements ApiClient {
   @override
   Future<DashboardData> getDashboard() async {
     final token = await _idToken();
+    final auth = Options(headers: _authHeaders(token));
     final responses = await Future.wait([
-      _dio.get<Map<String, dynamic>>('users/me',
-          options: Options(headers: _authHeaders(token))),
-      _dio.get<Map<String, dynamic>>('progress/me',
-          options: Options(headers: _authHeaders(token))),
+      _dio.get<Map<String, dynamic>>('users/me', options: auth),
+      _dio.get<Map<String, dynamic>>('progress/me', options: auth),
       _dio.get<Map<String, dynamic>>('tasks/next',
-          options: Options(headers: _authHeaders(token))),
+          queryParameters: {'feature': 'verification', 'difficulty': 'easy'},
+          options: auth),
+      _dio.get<Map<String, dynamic>>('tasks/next',
+          queryParameters: {'feature': 'verification', 'difficulty': 'medium'},
+          options: auth),
+      _dio.get<Map<String, dynamic>>('tasks/next',
+          queryParameters: {'feature': 'verification', 'difficulty': 'hard'},
+          options: auth),
     ]);
 
     final profile =
         responses[0].data?['user'] as Map<String, dynamic>? ?? const {};
     final progress =
         responses[1].data?['progress'] as Map<String, dynamic>? ?? const {};
-    final task = responses[2].data?['task'] as Map<String, dynamic>?;
     final skillScores = progress['skill_scores'] as List<dynamic>? ?? const [];
+
+    // One card per difficulty; a track may not have content for every band.
+    final tasks = <DailyTask>[];
+    for (final response in responses.skip(2)) {
+      final task = response.data?['task'] as Map<String, dynamic>?;
+      if (task == null) continue;
+      tasks.add(DailyTask.fromJson({
+        ...task,
+        'trackName': profile['industry_track_name'],
+        'trackId': task['track_id'],
+      }));
+    }
 
     return DashboardData(
       overallScore: _int(progress['readiness_score']),
@@ -79,14 +96,26 @@ class DioApiClient implements ApiClient {
       currentXp: _int(progress['xp']),
       level: _int(progress['level'], fallback: 1),
       completedTasks: _int(progress['completed_tasks']),
-      dailyTask: task == null
-          ? null
-          : DailyTask.fromJson({
-              ...task,
-              'trackName': profile['industry_track_name'],
-              'trackId': task['track_id'],
-            }),
+      tier: progress['tier'] as String?,
+      dailyTask: tasks.isEmpty ? null : tasks.first,
+      tasks: tasks,
     );
+  }
+
+  @override
+  Future<DailyTask?> getNextTask({String? feature, String? difficulty}) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>(
+      'tasks/next',
+      queryParameters: {
+        if (feature != null) 'feature': feature,
+        if (difficulty != null) 'difficulty': difficulty,
+      },
+      options: Options(headers: _authHeaders(token)),
+    );
+    final task = response.data?['task'] as Map<String, dynamic>?;
+    if (task == null) return null;
+    return DailyTask.fromJson(task);
   }
 
   @override

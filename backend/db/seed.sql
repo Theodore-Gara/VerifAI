@@ -26,5 +26,5 @@ INSERT INTO achievements (code, name, description) VALUES
   ('five-tasks', 'Five in the Bag', 'Complete five workplace readiness tasks.'),
   ('ten-tasks', 'Consistent Practitioner', 'Complete ten workplace readiness tasks.'),
   ('xp-500', '500 XP', 'Earn at least 500 XP.'),
-  ('dimension-80', 'Strong Dimension', 'Reach a score of at least 80 in one readiness dimension.')
+  ('dimension-80', 'Strong Skill', 'Reach a score of at least 80 in one readiness skill.')
 ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description;

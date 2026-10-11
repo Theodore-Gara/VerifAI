@@ -101,6 +101,14 @@ async function getNextTask(req, res, next) {
       return res.status(400).json({ error, request_id: req.requestId });
     }
 
+    // Optional ?difficulty= pins the next task to one band (used by the app's
+    // "Continue" action to stay on the same difficulty). Verification only.
+    const rawDifficulty = req.query.difficulty == null ? null : String(req.query.difficulty).toLowerCase().trim();
+    if (rawDifficulty != null && !['easy', 'medium', 'hard'].includes(rawDifficulty)) {
+      return res.status(400).json({ error: 'Unknown difficulty.', request_id: req.requestId });
+    }
+    const difficulty = rawDifficulty;
+
     const userResult = await pool.query(
       `SELECT u.id, u.industry_track_id, COALESCE(p.level, 1) AS level
        FROM users u
@@ -138,11 +146,16 @@ async function getNextTask(req, res, next) {
            WHEN $3 THEN 0 WHEN $4 THEN 1 WHEN $5 THEN 2 ELSE 3
          END, t.id ASC`;
       }
+      let difficultyFilter = '';
+      if (difficulty) {
+        params.push(difficulty);
+        difficultyFilter = ` AND v.difficulty = $${params.length}`;
+      }
       const result = await pool.query(
         `SELECT t.id, v.format, v.title, v.scenario, v.embedded_flaw, v.difficulty, v.ai_output_lines
          FROM tasks t
          JOIN verification_tasks v ON v.task_id = t.id
-         WHERE t.feature = 'verification' AND t.track_id = $1 AND ${seenFilter('$2')}
+         WHERE t.feature = 'verification' AND t.track_id = $1 AND ${seenFilter('$2')}${difficultyFilter}
          ORDER BY ${order}
          LIMIT 1`,
         params
@@ -539,7 +552,8 @@ async function refreshReadiness(client, userId, trackId) {
 
 async function awardAchievements(client, userId) {
   const stats = await client.query(
-    `SELECT COUNT(*)::int AS attempts, COALESCE(SUM(xp_earned), 0)::int AS xp
+    `SELECT COUNT(DISTINCT task_id) FILTER (WHERE passed)::int AS attempts,
+            COALESCE(SUM(xp_earned), 0)::int AS xp
      FROM task_attempts WHERE user_id = $1 AND practice = FALSE`,
     [userId]
   );

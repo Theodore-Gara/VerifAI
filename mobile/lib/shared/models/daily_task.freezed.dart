@@ -32,6 +32,7 @@ mixin _$DailyTask {
   List<String> get aiOutputLines => throw _privateConstructorUsedError;
   String? get trackName => throw _privateConstructorUsedError;
   String? get difficulty => throw _privateConstructorUsedError;
+  String? get feature => throw _privateConstructorUsedError;
   int? get trackId => throw _privateConstructorUsedError;
 
   /// Serializes this DailyTask to a JSON map.
@@ -60,6 +61,7 @@ abstract class $DailyTaskCopyWith<$Res> {
       @JsonKey(name: 'ai_output_lines') List<String> aiOutputLines,
       String? trackName,
       String? difficulty,
+      String? feature,
       int? trackId});
 }
 
@@ -88,6 +90,7 @@ class _$DailyTaskCopyWithImpl<$Res, $Val extends DailyTask>
     Object? aiOutputLines = null,
     Object? trackName = freezed,
     Object? difficulty = freezed,
+    Object? feature = freezed,
     Object? trackId = freezed,
   }) {
     return _then(_value.copyWith(
@@ -131,6 +134,10 @@ class _$DailyTaskCopyWithImpl<$Res, $Val extends DailyTask>
           ? _value.difficulty
           : difficulty // ignore: cast_nullable_to_non_nullable
               as String?,
+      feature: freezed == feature
+          ? _value.feature
+          : feature // ignore: cast_nullable_to_non_nullable
+              as String?,
       trackId: freezed == trackId
           ? _value.trackId
           : trackId // ignore: cast_nullable_to_non_nullable
@@ -158,6 +165,7 @@ abstract class _$$DailyTaskImplCopyWith<$Res>
       @JsonKey(name: 'ai_output_lines') List<String> aiOutputLines,
       String? trackName,
       String? difficulty,
+      String? feature,
       int? trackId});
 }
 
@@ -184,6 +192,7 @@ class __$$DailyTaskImplCopyWithImpl<$Res>
     Object? aiOutputLines = null,
     Object? trackName = freezed,
     Object? difficulty = freezed,
+    Object? feature = freezed,
     Object? trackId = freezed,
   }) {
     return _then(_$DailyTaskImpl(
@@ -227,6 +236,10 @@ class __$$DailyTaskImplCopyWithImpl<$Res>
           ? _value.difficulty
           : difficulty // ignore: cast_nullable_to_non_nullable
               as String?,
+      feature: freezed == feature
+          ? _value.feature
+          : feature // ignore: cast_nullable_to_non_nullable
+              as String?,
       trackId: freezed == trackId
           ? _value.trackId
           : trackId // ignore: cast_nullable_to_non_nullable
@@ -251,6 +264,7 @@ class _$DailyTaskImpl implements _DailyTask {
       final List<String> aiOutputLines = const [],
       this.trackName,
       this.difficulty,
+      this.feature,
       this.trackId})
       : _options = options,
         _aiOutputLines = aiOutputLines;
@@ -295,11 +309,13 @@ class _$DailyTaskImpl implements _DailyTask {
   @override
   final String? difficulty;
   @override
+  final String? feature;
+  @override
   final int? trackId;
 
   @override
   String toString() {
-    return 'DailyTask(id: $id, title: $title, scenario: $scenario, dimension: $dimension, format: $format, embeddedFlaw: $embeddedFlaw, options: $options, aiOutputLines: $aiOutputLines, trackName: $trackName, difficulty: $difficulty, trackId: $trackId)';
+    return 'DailyTask(id: $id, title: $title, scenario: $scenario, dimension: $dimension, format: $format, embeddedFlaw: $embeddedFlaw, options: $options, aiOutputLines: $aiOutputLines, trackName: $trackName, difficulty: $difficulty, feature: $feature, trackId: $trackId)';
   }
 
   @override
@@ -323,6 +339,7 @@ class _$DailyTaskImpl implements _DailyTask {
                 other.trackName == trackName) &&
             (identical(other.difficulty, difficulty) ||
                 other.difficulty == difficulty) &&
+            (identical(other.feature, feature) || other.feature == feature) &&
             (identical(other.trackId, trackId) || other.trackId == trackId));
   }
 
@@ -340,6 +357,7 @@ class _$DailyTaskImpl implements _DailyTask {
       const DeepCollectionEquality().hash(_aiOutputLines),
       trackName,
       difficulty,
+      feature,
       trackId);
 
   /// Create a copy of DailyTask
@@ -370,6 +388,7 @@ abstract class _DailyTask implements DailyTask {
       @JsonKey(name: 'ai_output_lines') final List<String> aiOutputLines,
       final String? trackName,
       final String? difficulty,
+      final String? feature,
       final int? trackId}) = _$DailyTaskImpl;
 
   factory _DailyTask.fromJson(Map<String, dynamic> json) =
@@ -397,6 +416,8 @@ abstract class _DailyTask implements DailyTask {
   String? get trackName;
   @override
   String? get difficulty;
+  @override
+  String? get feature;
   @override
   int? get trackId;
 

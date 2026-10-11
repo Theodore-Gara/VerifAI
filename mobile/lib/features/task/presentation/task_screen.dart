@@ -7,7 +7,7 @@ import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/dashboard/presentation/task_challenge_modal.dart';
 import 'package:verifai/features/dashboard/providers.dart';
-import 'package:verifai/shared/models/daily_task.dart';
+import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/daily_task_card.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
@@ -107,7 +107,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             child: RefreshIndicator(
               onRefresh: () async => ref.invalidate(dashboardProvider),
               child: dashboardAsync.when(
-                data: (data) => _buildTasks(data.dailyTask),
+                data: (data) => _buildTasks(data),
                 loading: () => _buildShimmer(),
                 error: (error, stackTrace) => AsyncErrorView(
                   error: error,
@@ -122,8 +122,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     );
   }
 
-  Widget _buildTasks(DailyTask? task) {
-    if (task == null) {
+  Widget _buildTasks(DashboardData data) {
+    // One card per difficulty, so every band stays reachable. Fall back to the
+    // single level-adaptive task if the per-difficulty list is empty.
+    final tasks = data.tasks.isNotEmpty
+        ? data.tasks
+        : [if (data.dailyTask != null) data.dailyTask!];
+
+    if (tasks.isEmpty) {
       return ListView(
         // keep pull-to-refresh working on an empty screen
         physics: const AlwaysScrollableScrollPhysics(),
@@ -159,10 +165,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          DailyTaskCard(
-            task: task,
-            onStart: () => _startTask(task),
-          ),
+          for (final task in tasks) ...[
+            DailyTaskCard(
+              task: task,
+              onStart: () => _startTask(task),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
         ],
       ),
     );

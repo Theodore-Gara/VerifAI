@@ -232,7 +232,7 @@ class ProgressScreen extends ConsumerWidget {
 
           // Dimension Scores
           Text(
-            'Readiness Dimensions',
+            'Readiness Skills',
             style: AppTypography.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.w800,
               letterSpacing: -0.4,
@@ -264,16 +264,20 @@ class ProgressScreen extends ConsumerWidget {
   }
 
   Widget _buildWeeklyChart(ActivityData activity) {
-    final today = DateTime.now();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    // Week runs Monday..Sunday so the bars line up with working days.
+    final monday = today.subtract(Duration(days: today.weekday - 1));
     final xpByDate = activity.xpByDate;
     final days = List.generate(7, (i) {
-      final date = today.subtract(Duration(days: 6 - i));
+      final date = monday.add(Duration(days: i));
       final iso = '${date.year.toString().padLeft(4, '0')}-'
           '${date.month.toString().padLeft(2, '0')}-'
           '${date.day.toString().padLeft(2, '0')}';
       return MapEntry(date, xpByDate[iso] ?? 0);
     });
     final maxXp = days.map((d) => d.value).fold(0, (a, b) => a > b ? a : b);
+    const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     return Container(
       width: double.infinity,
@@ -292,8 +296,8 @@ class ProgressScreen extends ConsumerWidget {
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
-        children: days.map((entry) {
-          final xp = entry.value;
+        children: days.asMap().entries.map((entry) {
+          final xp = entry.value.value;
           final ratio = maxXp == 0 ? 0.0 : xp / maxXp;
           final height = 12.0 + 88.0 * ratio;
           return Expanded(
@@ -322,7 +326,7 @@ class ProgressScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${entry.key.day}',
+                  weekdayLabels[entry.key],
                   style: AppTypography.textTheme.labelSmall?.copyWith(
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w700,

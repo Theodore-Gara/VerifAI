@@ -14,7 +14,11 @@ _$DashboardDataImpl _$$DashboardDataImplFromJson(Map<String, dynamic> json) =>
       currentXp: (json['currentXp'] as num?)?.toInt() ?? 0,
       level: (json['level'] as num?)?.toInt() ?? 1,
       completedTasks: (json['completedTasks'] as num?)?.toInt() ?? 0,
+      tier: json['tier'] as String?,
       dailyTask: _dailyTaskFromJson(json['dailyTask'] as Map<String, dynamic>?),
+      tasks: json['tasks'] == null
+          ? const []
+          : _dailyTaskListFromJson(json['tasks'] as List?),
     );
 
 Map<String, dynamic> _$$DashboardDataImplToJson(_$DashboardDataImpl instance) =>
@@ -25,5 +29,7 @@ Map<String, dynamic> _$$DashboardDataImplToJson(_$DashboardDataImpl instance) =>
       'currentXp': instance.currentXp,
       'level': instance.level,
       'completedTasks': instance.completedTasks,
+      'tier': instance.tier,
       'dailyTask': _dailyTaskToJson(instance.dailyTask),
+      'tasks': _dailyTaskListToJson(instance.tasks),
     };

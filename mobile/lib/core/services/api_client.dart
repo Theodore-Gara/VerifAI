@@ -5,6 +5,7 @@ abstract class ApiClient {
   Future<AuthSyncResponse> syncUser(User user);
   Future<void> updateProfile(int trackId);
   Future<DashboardData> getDashboard();
+  Future<DailyTask?> getNextTask({String? feature, String? difficulty});
   Future<List<Achievement>> getAchievements();
   Future<LeaderboardData> getLeaderboard({int? trackId, int limit = 20});
   Future<ActivityData> getActivity({int days = 7});

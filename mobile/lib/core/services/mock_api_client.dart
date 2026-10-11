@@ -134,13 +134,30 @@ class MockApiClient implements ApiClient {
   @override
   Future<DashboardData> getDashboard() async {
     await _delay();
-    final dailyTask = _dailyTasks[_random.nextInt(_dailyTasks.length)];
+    final tasks = <DailyTask>[];
+    for (final difficulty in const ['easy', 'medium', 'hard']) {
+      final match = _dailyTasks.where((t) => t.difficulty == difficulty);
+      if (match.isNotEmpty) tasks.add(match.first);
+    }
     return DashboardData(
       overallScore: 68,
       dimensionScores: Map.from(_dimensionScores),
       streakDays: 7,
-      dailyTask: dailyTask,
+      tier: 'Developing',
+      dailyTask: _dailyTasks[_random.nextInt(_dailyTasks.length)],
+      tasks: tasks,
     );
+  }
+
+  @override
+  Future<DailyTask?> getNextTask({String? feature, String? difficulty}) async {
+    await _delay();
+    for (final task in _dailyTasks) {
+      if (feature != null && task.dimension != feature) continue;
+      if (difficulty != null && task.difficulty != difficulty) continue;
+      return task;
+    }
+    return null;
   }
 
   @override

@@ -13,11 +13,17 @@ class DashboardData with _$DashboardData {
     @Default(0) int currentXp,
     @Default(1) int level,
     @Default(0) int completedTasks,
+    String? tier,
     @JsonKey(
       fromJson: _dailyTaskFromJson,
       toJson: _dailyTaskToJson,
     )
     DailyTask? dailyTask,
+    @JsonKey(
+      fromJson: _dailyTaskListFromJson,
+      toJson: _dailyTaskListToJson,
+    )
+    @Default([]) List<DailyTask> tasks,
   }) = _DashboardData;
 
   factory DashboardData.fromJson(Map<String, dynamic> json) =>
@@ -30,3 +36,12 @@ DailyTask? _dailyTaskFromJson(Map<String, dynamic>? json) {
 }
 
 Map<String, dynamic>? _dailyTaskToJson(DailyTask? task) => task?.toJson();
+
+List<DailyTask> _dailyTaskListFromJson(List<dynamic>? json) => [
+      for (final item in json ?? const [])
+        if (item != null)
+          DailyTask.fromJson(Map<String, dynamic>.from(item as Map)),
+    ];
+
+List<Map<String, dynamic>> _dailyTaskListToJson(List<DailyTask> tasks) =>
+    tasks.map((task) => task.toJson()).toList();
