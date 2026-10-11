@@ -8,6 +8,8 @@ import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/profile/providers.dart';
 import 'package:verifai/shared/models.dart';
+import 'package:verifai/shared/widgets/empty_state.dart';
+import 'package:verifai/shared/widgets/shimmer_loader.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -15,26 +17,15 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider).valueOrNull;
-    final progress = ref.watch(dashboardProvider).valueOrNull;
-    final xp = progress?.currentXp ?? 0;
-    final streak = progress?.streakDays ?? 0;
-
+    final dashboardAsync = ref.watch(dashboardProvider);
     // Achievements earned by this user (GET /api/achievements/me). The full
-    // catalog is known to the app, so locked ones can be shown too.
-    final earned =
-        ref.watch(achievementsProvider).valueOrNull ?? const <Achievement>[];
-    final earnedCodes = earned.map((a) => a.code).toSet();
+    // catalog is known to the app, so locked ones can be shown too
+    final achievementsAsync = ref.watch(achievementsProvider);
 
-    final badges = _badgeCatalog
-        .map((spec) => _Badge(
-              title: spec.name,
-              description: spec.description,
-              isUnlocked: earnedCodes.contains(spec.code),
-              icon: spec.icon,
-              color: spec.color,
-            ))
-        .toList();
-    final unlockedCount = badges.where((b) => b.isUnlocked).length;
+    final userName = (user?.name?.isNotEmpty == true) ? user!.name! : null;
+    final displayName = userName ?? user?.email ?? '';
+    final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
+    final trackName = user?.trackName;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -86,256 +77,350 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ),
           ),
-          SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.screenPadding,
-              AppSpacing.sm,
-              AppSpacing.screenPadding,
-              100, // accommodate floating navigation dock
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Modern Hero Player Bento Card
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(AppSpacing.xl),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryNavy,
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(color: AppColors.border),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primaryNavy.withValues(alpha: 0.04),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                      const BoxShadow(
-                        color: AppColors.shadow,
-                        blurRadius: 4,
-                        offset: Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // Avatar with glowing gradient halo
-                      Stack(
-                        alignment: Alignment.bottomRight,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: const LinearGradient(
-                                colors: [
-                                  AppColors.primaryNavy,
-                                  AppColors.accentGreen
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.accentCyan
-                                      .withValues(alpha: 0.35),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: CircleAvatar(
-                              radius: 42,
-                              backgroundColor: AppColors.primaryNavy,
-                              child: Text(
-                                (user?.name?.isNotEmpty == true)
-                                    ? user!.name![0].toUpperCase()
-                                    : 'U',
-                                style: AppTypography.textTheme.displaySmall
-                                    ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                              color: AppColors.accentGreen,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                  color: AppColors.surface, width: 2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.accentGreen
-                                      .withValues(alpha: 0.4),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(Icons.verified_rounded,
-                                size: 14, color: Colors.white),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Text(
-                        user?.name ?? 'Alex Mercer',
-                        style: AppTypography.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.4,
-                          color: Colors.white,
+          RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(dashboardProvider);
+              ref.invalidate(achievementsProvider);
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPadding,
+                AppSpacing.sm,
+                AppSpacing.screenPadding,
+                100, // accommodate floating navigation dock
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Modern Hero Player Bento Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppSpacing.xl),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryNavy,
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(color: AppColors.border),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primaryNavy.withValues(alpha: 0.04),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        user?.email ?? 'alex.mercer@company.com',
-                        style: AppTypography.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.75),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppColors.accentGreen.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          border: Border.all(
-                              color: AppColors.accentGreen
-                                  .withValues(alpha: 0.45)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.workspace_premium_rounded,
-                                size: 14, color: AppColors.accentGreen),
-                            const SizedBox(width: 6),
-                            Text(
-                              user?.trackName ?? 'Finance Track Specialist',
-                              style:
-                                  AppTypography.textTheme.labelSmall?.copyWith(
-                                color: AppColors.accentGreen,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-
-                // Bento Stat Metrics Row
-                Row(
-                  children: [
-                    _buildBentoStat(
-                      label: 'TOTAL XP',
-                      value: _formatNumber(xp),
-                      icon: Icons.bolt_rounded,
-                      iconColor: AppColors.xpPurple,
-                      bgColor: AppColors.xpPurpleLight.withValues(alpha: 0.5),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    _buildBentoStat(
-                      label: 'STREAK',
-                      value: '$streak Days',
-                      icon: Icons.local_fire_department_rounded,
-                      iconColor: AppColors.primaryNavy,
-                      bgColor: AppColors.background,
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    _buildBentoStat(
-                      label: 'LEAGUE RANK',
-                      value: '—',
-                      icon: Icons.emoji_events_rounded,
-                      iconColor: AppColors.accentGreen,
-                      bgColor: AppColors.accentLight,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.xl),
-
-                // Badges & Achievements Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          'Achievements',
-                          style:
-                              AppTypography.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.4,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.xpPurpleLight,
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                          ),
-                          child: Text(
-                            'TROPHIES',
-                            style: AppTypography.textTheme.labelSmall?.copyWith(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.xpPurple,
-                            ),
-                          ),
+                        const BoxShadow(
+                          color: AppColors.shadow,
+                          blurRadius: 4,
+                          offset: Offset(0, 1),
                         ),
                       ],
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Text(
-                        '$unlockedCount / ${_badgeCatalog.length} Unlocked',
-                        style: AppTypography.textTheme.labelSmall?.copyWith(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w700,
+                    child: Column(
+                      children: [
+                        // Avatar with glowing gradient halo
+                        Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    AppColors.primaryNavy,
+                                    AppColors.accentGreen
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.accentCyan
+                                        .withValues(alpha: 0.35),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: CircleAvatar(
+                                radius: 42,
+                                backgroundColor: AppColors.primaryNavy,
+                                child: Text(
+                                  initial,
+                                  style: AppTypography.textTheme.displaySmall
+                                      ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                color: AppColors.accentGreen,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                    color: AppColors.surface, width: 2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.accentGreen
+                                        .withValues(alpha: 0.4),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(Icons.verified_rounded,
+                                  size: 14, color: Colors.white),
+                            ),
+                          ],
                         ),
-                      ),
+                        const SizedBox(height: AppSpacing.md),
+                        if (user == null) ...[
+                          // Profile still loading: placeholders instead of
+                          // made-up identity text.
+                          ShimmerLoader(
+                            width: 160,
+                            height: 26,
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                          const SizedBox(height: 6),
+                          ShimmerLoader(
+                            width: 200,
+                            height: 14,
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                        ] else ...[
+                          Text(
+                            displayName,
+                            style: AppTypography.textTheme.headlineMedium
+                                ?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.4,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          if (userName != null && user.email.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              user.email,
+                              style:
+                                  AppTypography.textTheme.bodySmall?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.75),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ],
+                        if (trackName != null && trackName.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.md),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 6),
+                            decoration: BoxDecoration(
+                              color:
+                                  AppColors.accentGreen.withValues(alpha: 0.12),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.pill),
+                              border: Border.all(
+                                  color: AppColors.accentGreen
+                                      .withValues(alpha: 0.45)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.workspace_premium_rounded,
+                                    size: 14, color: AppColors.accentGreen),
+                                const SizedBox(width: 6),
+                                Text(
+                                  trackName,
+                                  style: AppTypography.textTheme.labelSmall
+                                      ?.copyWith(
+                                    color: AppColors.accentGreen,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-
-                // Grid of modern Bento Badges
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: AppSpacing.md,
-                    mainAxisSpacing: AppSpacing.md,
-                    mainAxisExtent: 136,
                   ),
-                  itemCount: badges.length,
-                  itemBuilder: (context, index) {
-                    final badge = badges[index];
-                    return _buildModernBadgeTile(badge);
-                  },
-                ),
-              ],
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Bento Stat Metrics Row
+                  dashboardAsync.when(
+                    data: (progress) =>
+                        _buildStatsRow(progress.currentXp, progress.streakDays),
+                    loading: () => const Row(
+                      children: [
+                        Expanded(child: ShimmerLoader(height: 96)),
+                        SizedBox(width: AppSpacing.md),
+                        Expanded(child: ShimmerLoader(height: 96)),
+                        SizedBox(width: AppSpacing.md),
+                        Expanded(child: ShimmerLoader(height: 96)),
+                      ],
+                    ),
+                    error: (error, _) => InlineErrorCard(
+                      error: error,
+                      fallbackMessage: 'We could not load your stats.',
+                      onRetry: () => ref.invalidate(dashboardProvider),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+
+                  _buildAchievements(ref, achievementsAsync),
+                ],
+              ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatsRow(int xp, int streak) {
+    return Row(
+      children: [
+        _buildBentoStat(
+          label: 'TOTAL XP',
+          value: _formatNumber(xp),
+          icon: Icons.bolt_rounded,
+          iconColor: AppColors.xpPurple,
+          bgColor: AppColors.xpPurpleLight.withValues(alpha: 0.5),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        _buildBentoStat(
+          label: 'STREAK',
+          value: '$streak Days',
+          icon: Icons.local_fire_department_rounded,
+          iconColor: AppColors.primaryNavy,
+          bgColor: AppColors.background,
+        ),
+        const SizedBox(width: AppSpacing.md),
+        _buildBentoStat(
+          label: 'LEAGUE RANK',
+          value: '—',
+          icon: Icons.emoji_events_rounded,
+          iconColor: AppColors.accentGreen,
+          bgColor: AppColors.accentLight,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAchievements(
+      WidgetRef ref, AsyncValue<List<Achievement>> achievementsAsync) {
+    final earnedCodes = (achievementsAsync.valueOrNull ?? const <Achievement>[])
+        .map((a) => a.code)
+        .toSet();
+    final badges = _badgeCatalog
+        .map((spec) => _Badge(
+              title: spec.name,
+              description: spec.description,
+              isUnlocked: earnedCodes.contains(spec.code),
+              icon: spec.icon,
+              color: spec.color,
+            ))
+        .toList();
+    final unlockedCount = badges.where((b) => b.isUnlocked).length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Badges & Achievements Header
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'Achievements',
+                  style: AppTypography.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.xpPurpleLight,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                  child: Text(
+                    'TROPHIES',
+                    style: AppTypography.textTheme.labelSmall?.copyWith(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.xpPurple,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (achievementsAsync.hasValue)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Text(
+                  '$unlockedCount / ${_badgeCatalog.length} Unlocked',
+                  style: AppTypography.textTheme.labelSmall?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        achievementsAsync.when(
+          // Grid of modern Bento Badges
+          data: (_) => _buildBadgeGrid(badges),
+          loading: () => GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: AppSpacing.md,
+              mainAxisSpacing: AppSpacing.md,
+              mainAxisExtent: 136,
+            ),
+            itemCount: 4,
+            itemBuilder: (context, index) => const ShimmerLoader.card(),
+          ),
+          error: (error, _) => InlineErrorCard(
+            error: error,
+            fallbackMessage: 'We could not load your achievements.',
+            onRetry: () => ref.invalidate(achievementsProvider),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBadgeGrid(List<_Badge> badges) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: AppSpacing.md,
+        mainAxisSpacing: AppSpacing.md,
+        mainAxisExtent: 136,
+      ),
+      itemCount: badges.length,
+      itemBuilder: (context, index) => _buildModernBadgeTile(badges[index]),
     );
   }
 

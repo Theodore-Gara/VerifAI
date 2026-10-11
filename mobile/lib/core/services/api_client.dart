@@ -6,6 +6,9 @@ abstract class ApiClient {
   Future<void> updateProfile(int trackId);
   Future<DashboardData> getDashboard();
   Future<List<Achievement>> getAchievements();
+  Future<LeaderboardData> getLeaderboard({int? trackId, int limit = 20});
+  Future<ActivityData> getActivity({int days = 7});
+  Future<List<Milestone>> getMilestones({int? trackId});
   Future<TaskSubmissionResponse> submitTask(TaskSubmissionRequest request);
   Future<String> sendAssistantMessage({
     required int taskId,
@@ -31,14 +34,34 @@ class AuthSyncResponse {
 
 class TaskSubmissionRequest {
   final int taskId;
-  final String answer;
+  final String? answer;
+  final int? answerOptionId;
   final String? explanation;
+  final List<int>? selectedLines;
+  final String? fix;
+  final String? reason;
+  final bool practice;
 
   TaskSubmissionRequest({
     required this.taskId,
-    required this.answer,
+    this.answer,
+    this.answerOptionId,
     this.explanation,
+    this.selectedLines,
+    this.fix,
+    this.reason,
+    this.practice = false,
   });
+
+  Map<String, dynamic> toJson() => {
+        if (answer != null) 'answer': answer,
+        if (answerOptionId != null) 'answer_option_id': answerOptionId,
+        if (explanation != null) 'explanation': explanation,
+        if (selectedLines != null) 'selected_lines': selectedLines,
+        if (fix != null) 'fix': fix,
+        if (reason != null) 'reason': reason,
+        if (practice) 'practice': true,
+      };
 }
 
 class TaskSubmissionResponse {
@@ -46,6 +69,7 @@ class TaskSubmissionResponse {
   final bool passed;
   final String feedback;
   final int xpEarned;
+  final String? correctAnswer;
   final List<String> matchedKeywords;
   final List<String> missedKeywords;
   final List<Achievement> newlyEarnedAchievements;
@@ -55,6 +79,7 @@ class TaskSubmissionResponse {
     this.passed = false,
     required this.feedback,
     required this.xpEarned,
+    this.correctAnswer,
     this.matchedKeywords = const [],
     this.missedKeywords = const [],
     this.newlyEarnedAchievements = const [],

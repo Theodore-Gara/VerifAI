@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:verifai/core/services/api_error.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
@@ -14,12 +15,14 @@ class IndustrySelectScreen extends ConsumerStatefulWidget {
   const IndustrySelectScreen({super.key});
 
   @override
-  ConsumerState<IndustrySelectScreen> createState() => _IndustrySelectScreenState();
+  ConsumerState<IndustrySelectScreen> createState() =>
+      _IndustrySelectScreenState();
 }
 
 class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
   int? _selectedTrackId;
   bool _isSubmitting = false;
+  String? _submitError;
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +43,8 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.flash_on_rounded, size: 14, color: AppColors.accentGreen),
+                const Icon(Icons.flash_on_rounded,
+                    size: 14, color: AppColors.accentGreen),
                 const SizedBox(width: 4),
                 Text(
                   'STEP 1 OF 1',
@@ -56,10 +60,20 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
         ],
       ),
       body: tracksAsync.when(
-        data: (tracks) => _buildTracksList(tracks),
+        data: (tracks) => tracks.isEmpty
+            ? EmptyState(
+                icon: Icons.work_off_outlined,
+                title: 'No industries available yet',
+                message:
+                    'We could not find any industry tracks to choose from. Please check back shortly.',
+                actionLabel: 'Refresh',
+                onAction: () => ref.invalidate(tracksProvider),
+              )
+            : _buildTracksList(tracks),
         loading: () => _buildShimmerList(),
-        error: (error, stackTrace) => ErrorState(
-          message: 'Failed to load industry tracks. Please try again.',
+        error: (error, stackTrace) => AsyncErrorView(
+          error: error,
+          fallbackMessage: 'Failed to load industry tracks. Please try again.',
           onRetry: () => ref.invalidate(tracksProvider),
         ),
       ),
@@ -67,12 +81,44 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
           ? SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.screenPadding),
-                child: VerifAIButton(
-                  label: 'Continue',
-                  variant: VerifAIButtonVariant.verification,
-                  isLoading: _isSubmitting,
-                  onPressed: _handleContinue,
-                  leadingIcon: Icons.arrow_forward_rounded,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_submitError != null) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                          border: Border.all(
+                              color: AppColors.error.withValues(alpha: 0.35)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline_rounded,
+                                size: 18, color: AppColors.error),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Text(
+                                _submitError!,
+                                style: AppTypography.textTheme.bodySmall
+                                    ?.copyWith(color: AppColors.textPrimary),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                    ],
+                    VerifAIButton(
+                      label: _submitError != null ? 'Try Again' : 'Continue',
+                      variant: VerifAIButtonVariant.verification,
+                      isLoading: _isSubmitting,
+                      onPressed: _handleContinue,
+                      leadingIcon: Icons.arrow_forward_rounded,
+                    ),
+                  ],
                 ),
               ),
             )
@@ -81,14 +127,31 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
   }
 
   Future<void> _handleContinue() async {
-    if (_selectedTrackId == null) return;
-    setState(() => _isSubmitting = true);
+    final trackId = _selectedTrackId;
+    if (trackId == null || _isSubmitting) return;
+    setState(() {
+      _isSubmitting = true;
+      _submitError = null;
+    });
 
-    await ref.read(selectTrackProvider(_selectedTrackId!).future);
-    await ref.read(authNotifierProvider.notifier).completeOnboarding();
+    try {
+      // Call the repository directly: selectTrackProvider is a cached
+      // FutureProvider.family, so after one failure a retry would re-throw the
+      // same cached error without ever reaching the network.
+      await ref.read(trackRepositoryProvider).selectTrack(trackId);
+      ref.read(selectedTrackProvider.notifier).state = trackId;
+      await ref.read(authNotifierProvider.notifier).completeOnboarding();
 
-    if (!mounted) return;
-    context.go('/dashboard');
+      if (!mounted) return;
+      context.go('/dashboard');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _submitError =
+            'We could not save your industry. ${classifyError(e).message}';
+      });
+    }
   }
 
   Widget _buildTracksList(List<IndustryTrack> tracks) {
@@ -127,7 +190,13 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
                 return _TrackCard(
                   track: track,
                   isSelected: isSelected,
-                  onTap: () => setState(() => _selectedTrackId = track.id),
+                  onTap: () {
+                    if (_isSubmitting) return;
+                    setState(() {
+                      _selectedTrackId = track.id;
+                      _submitError = null;
+                    });
+                  },
                 );
               },
             ),
@@ -142,9 +211,15 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       child: Column(
         children: [
-          ShimmerLoader(width: double.infinity, height: 28, borderRadius: BorderRadius.circular(AppRadius.md)),
+          ShimmerLoader(
+              width: double.infinity,
+              height: 28,
+              borderRadius: BorderRadius.circular(AppRadius.md)),
           const SizedBox(height: AppSpacing.sm),
-          ShimmerLoader(width: double.infinity, height: 18, borderRadius: BorderRadius.circular(AppRadius.md)),
+          ShimmerLoader(
+              width: double.infinity,
+              height: 18,
+              borderRadius: BorderRadius.circular(AppRadius.md)),
           const SizedBox(height: AppSpacing.xl),
           Expanded(
             child: GridView.builder(
@@ -185,7 +260,9 @@ class _TrackCard extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.accentLight.withValues(alpha: 0.6) : AppColors.surface,
+          color: isSelected
+              ? AppColors.accentLight.withValues(alpha: 0.6)
+              : AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.card),
           border: Border.all(
             color: isSelected ? AppColors.accentGreen : AppColors.border,
@@ -221,7 +298,9 @@ class _TrackCard extends StatelessWidget {
                           colors: [AppColors.accentGreen, AppColors.accentCyan],
                         )
                       : null,
-                  color: isSelected ? null : AppColors.primaryNavy.withValues(alpha: 0.08),
+                  color: isSelected
+                      ? null
+                      : AppColors.primaryNavy.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
                   boxShadow: isSelected
                       ? [
@@ -243,7 +322,9 @@ class _TrackCard extends StatelessWidget {
               Text(
                 track.name,
                 style: AppTypography.textTheme.titleMedium?.copyWith(
-                  color: isSelected ? AppColors.accentGreen : AppColors.textPrimary,
+                  color: isSelected
+                      ? AppColors.accentGreen
+                      : AppColors.textPrimary,
                   fontWeight: FontWeight.w800,
                 ),
                 textAlign: TextAlign.center,
@@ -265,7 +346,9 @@ class _TrackCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.accentGreen : AppColors.border.withValues(alpha: 0.6),
+                  color: isSelected
+                      ? AppColors.accentGreen
+                      : AppColors.border.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(AppRadius.xs),
                 ),
                 child: Text(

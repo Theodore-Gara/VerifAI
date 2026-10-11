@@ -44,6 +44,16 @@ pool.query = async (sql, values = []) => {
       { activity_date: '2026-10-09', attempts: 1, xp_earned: 25, passed: 1 },
     ] };
   }
+  // Attempt-history mocks.
+  if (sql.includes('COUNT(*)::int AS total') && sql.includes('FROM task_attempts ta')) {
+    return { rows: [{ total: 2 }] };
+  }
+  if (sql.includes('FROM task_attempts ta') && sql.includes('ta.task_title AS title')) {
+    return { rows: [
+      { id: 2, task_id: 5, feature: 'judgement', title: 'The Month-End Agenda', score: 75, passed: true, xp_earned: 53, submitted_at: '2026-10-09T00:00:00.000Z', feedback: 'Good call.', answer: null, rationale: null, selected_lines: null },
+      { id: 1, task_id: 3, feature: 'verification', title: 'Verify the summary', score: 100, passed: true, xp_earned: 50, submitted_at: '2026-10-08T00:00:00.000Z', feedback: 'Correct.', answer: null, rationale: null, selected_lines: [8, 9] },
+    ] };
+  }
   if (sql.includes('ROW_NUMBER() OVER')) return { rows: LEADERBOARD_ROWS };
   // Achievements catalog + milestones mocks.
   if (sql.includes('FROM achievements a')) {
@@ -519,4 +529,33 @@ test('POST /api/tasks/:id/attempt scores a judgement task and commits', async ()
 
   assert.ok(queries.includes('COMMIT'), 'transaction committed');
   assert.ok(!queries.includes('ROLLBACK'), 'transaction not rolled back');
+});
+
+test('GET /api/tasks/history returns the user attempts, newest first', async () => {
+  const response = await request(app)
+    .get('/api/tasks/history?limit=5')
+    .set('Authorization', 'Bearer test-token');
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.total, 2);
+  assert.equal(response.body.attempts.length, 2);
+  assert.equal(response.body.attempts[0].feature, 'judgement');
+  assert.ok(
+    queryCalls.some((c) => c.sql.includes('ta.practice = FALSE')),
+    'practice attempts are excluded',
+  );
+});
+
+test('GET /api/tasks/history rejects an unknown feature filter', async () => {
+  const response = await request(app)
+    .get('/api/tasks/history?feature=nope')
+    .set('Authorization', 'Bearer test-token');
+  assert.equal(response.status, 400);
+});
+
+test('GET /api/tasks/history rejects a malformed passed filter', async () => {
+  const response = await request(app)
+    .get('/api/tasks/history?passed=maybe')
+    .set('Authorization', 'Bearer test-token');
+  assert.equal(response.status, 400);
 });

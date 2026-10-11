@@ -577,4 +577,95 @@ async function awardAchievements(client, userId) {
   return newlyEarned;
 }
 
-module.exports = { getNextTask, submitAttempt, awardAchievements, refreshReadiness, scoreByFeature, updateProgress };
+// ---------------------------------------------------------------------------
+// GET /api/tasks/history?limit=&offset=&feature=&passed=
+// The user's scored attempts (practice excluded), newest first.
+// ---------------------------------------------------------------------------
+const HISTORY_DEFAULT_LIMIT = 20;
+const HISTORY_MAX_LIMIT = 50;
+
+function clampInt(raw, fallback, min, max) {
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isInteger(parsed)) return fallback;
+  return Math.min(max, Math.max(min, parsed));
+}
+
+async function getHistory(req, res, next) {
+  try {
+    const limit = clampInt(req.query.limit, HISTORY_DEFAULT_LIMIT, 1, HISTORY_MAX_LIMIT);
+    const offset = clampInt(req.query.offset, 0, 0, 100000);
+
+    const feature = req.query.feature == null ? null : String(req.query.feature).toLowerCase().trim();
+    if (feature != null && !FEATURES.has(feature)) {
+      return res.status(400).json({ error: 'Unknown feature.', request_id: req.requestId });
+    }
+
+    let passedFilter = null;
+    if (req.query.passed != null) {
+      const value = String(req.query.passed).toLowerCase();
+      if (value === 'true') passedFilter = true;
+      else if (value === 'false') passedFilter = false;
+      else return res.status(400).json({ error: 'passed must be true or false.', request_id: req.requestId });
+    }
+
+    const userResult = await pool.query(
+      `SELECT id FROM users WHERE firebase_uid = $1`,
+      [req.firebaseUser.uid]
+    );
+    if (!userResult.rows.length) {
+      return res.status(404).json({ error: 'User not found. Call /api/auth/sync first.', request_id: req.requestId });
+    }
+
+    const params = [userResult.rows[0].id];
+    let where = 'WHERE ta.user_id = $1 AND ta.practice = FALSE';
+    if (feature) {
+      params.push(feature);
+      where += ` AND t.feature = $${params.length}`;
+    }
+    if (passedFilter !== null) {
+      params.push(passedFilter);
+      where += ` AND ta.passed = $${params.length}`;
+    }
+
+    const totalResult = await pool.query(
+      `SELECT COUNT(*)::int AS total
+       FROM task_attempts ta
+       JOIN tasks t ON t.id = ta.task_id
+       ${where}`,
+      params
+    );
+
+    params.push(limit, offset);
+    const rows = await pool.query(
+      `SELECT ta.id, ta.task_id, t.feature, ta.task_title AS title, ta.score,
+              ta.passed, ta.xp_earned, ta.submitted_at, ta.feedback,
+              ta.answer, ta.rationale, ta.selected_lines
+       FROM task_attempts ta
+       JOIN tasks t ON t.id = ta.task_id
+       ${where}
+       ORDER BY ta.submitted_at DESC, ta.id DESC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
+
+    return res.status(200).json({
+      attempts: rows.rows,
+      total: totalResult.rows[0].total,
+      limit,
+      offset,
+      request_id: req.requestId,
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+module.exports = {
+  getNextTask,
+  submitAttempt,
+  getHistory,
+  awardAchievements,
+  refreshReadiness,
+  scoreByFeature,
+  updateProgress,
+};

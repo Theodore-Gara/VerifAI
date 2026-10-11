@@ -5,6 +5,7 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/dashboard/providers.dart';
+import 'package:verifai/features/progress/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/dimension_bar.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
@@ -15,21 +16,10 @@ import 'package:verifai/shared/widgets/xp_bar.dart';
 class ProgressScreen extends ConsumerWidget {
   const ProgressScreen({super.key});
 
-  /// Weekly practice XP is not exposed by the backend yet, so this chart stays
-  /// illustrative until an endpoint provides per-day activity.
-  static const List<Map<String, int>> _weeklyActivity = [
-    {'day': 1, 'xp': 40},
-    {'day': 2, 'xp': 70},
-    {'day': 3, 'xp': 25},
-    {'day': 4, 'xp': 55},
-    {'day': 5, 'xp': 60},
-    {'day': 6, 'xp': 30},
-    {'day': 7, 'xp': 60},
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dashboardAsync = ref.watch(dashboardProvider);
+    final activityAsync = ref.watch(activityProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -75,12 +65,16 @@ class ProgressScreen extends ConsumerWidget {
           SafeArea(
             top: false,
             child: RefreshIndicator(
-              onRefresh: () async => ref.invalidate(dashboardProvider),
+              onRefresh: () async {
+                ref.invalidate(dashboardProvider);
+                ref.invalidate(activityProvider);
+              },
               child: dashboardAsync.when(
-                data: (data) => _buildContent(context, data),
+                data: (data) => _buildContent(ref, data, activityAsync),
                 loading: () => _buildShimmer(),
-                error: (error, stackTrace) => ErrorState(
-                  message: 'Failed to load your progress.',
+                error: (error, stackTrace) => AsyncErrorView(
+                  error: error,
+                  fallbackMessage: 'Failed to load your progress.',
                   onRetry: () => ref.invalidate(dashboardProvider),
                 ),
               ),
@@ -91,12 +85,10 @@ class ProgressScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildContent(BuildContext context, DashboardData data) {
-    final maxWeekXP =
-        _weeklyActivity.map((e) => e['xp']!).reduce((a, b) => a > b ? a : b);
-    // Level starts at 1 and each level is 250 XP, so the next threshold is
-    // level * 250. Mirrors the backend's XP -> level rule.
-    final nextLevelXP = data.level * 250;
+  Widget _buildContent(
+      WidgetRef ref, DashboardData data, AsyncValue<ActivityData> activityAsync) {
+    // Mirrors the backend's rising level curve (each level costs +60 more XP).
+    final nextLevelXP = _xpForLevel(data.level + 1);
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -210,7 +202,7 @@ class ProgressScreen extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.xl),
 
-          // Weekly XP Activity (illustrative — no backend endpoint yet)
+          // Weekly XP Activity
           Text(
             'Practice activity',
             style: AppTypography.textTheme.headlineMedium?.copyWith(
@@ -219,67 +211,21 @@ class ProgressScreen extends ConsumerWidget {
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.card),
-              border: Border.all(color: AppColors.border),
-              boxShadow: const [
-                BoxShadow(
-                  color: AppColors.shadow,
-                  blurRadius: 6,
-                  offset: Offset(0, 2),
-                ),
-              ],
+          const SizedBox(height: 2),
+          Text(
+            'XP earned over the last 7 days.',
+            style: AppTypography.textTheme.bodySmall?.copyWith(
+              color: AppColors.textSecondary,
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: _weeklyActivity.map((entry) {
-                final xp = entry['xp']!;
-                final height = 12.0 + 88.0 * (xp / maxWeekXP);
-                return Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        '$xp',
-                        style: AppTypography.textTheme.labelSmall?.copyWith(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 9,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        width: 16,
-                        height: height,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [
-                              AppColors.accentGreen,
-                              AppColors.accentCyan
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'D${entry['day']}',
-                        style: AppTypography.textTheme.labelSmall?.copyWith(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 9,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          activityAsync.when(
+            data: (activity) => _buildWeeklyChart(activity),
+            loading: () => const ShimmerLoader(height: 150),
+            error: (error, _) => InlineErrorCard(
+              error: error,
+              fallbackMessage: 'We could not load your activity.',
+              onRetry: () => ref.invalidate(activityProvider),
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -317,32 +263,106 @@ class ProgressScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildWeeklyChart(ActivityData activity) {
+    final today = DateTime.now();
+    final xpByDate = activity.xpByDate;
+    final days = List.generate(7, (i) {
+      final date = today.subtract(Duration(days: 6 - i));
+      final iso = '${date.year.toString().padLeft(4, '0')}-'
+          '${date.month.toString().padLeft(2, '0')}-'
+          '${date.day.toString().padLeft(2, '0')}';
+      return MapEntry(date, xpByDate[iso] ?? 0);
+    });
+    final maxXp = days.map((d) => d.value).fold(0, (a, b) => a > b ? a : b);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.border),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: days.map((entry) {
+          final xp = entry.value;
+          final ratio = maxXp == 0 ? 0.0 : xp / maxXp;
+          final height = 12.0 + 88.0 * ratio;
+          return Expanded(
+            child: Column(
+              children: [
+                Text(
+                  '$xp',
+                  style: AppTypography.textTheme.labelSmall?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 9,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  width: 16,
+                  height: height,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.accentGreen, AppColors.accentCyan],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${entry.key.day}',
+                  style: AppTypography.textTheme.labelSmall?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 9,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  int _xpForLevel(int level) {
+    final k = level - 1;
+    return 250 * k + 30 * k * (k - 1);
+  }
+
   Widget _buildShimmer() {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
-      children: [
-        ShimmerLoader(
-          height: 78,
-          borderRadius: BorderRadius.circular(AppRadius.card),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        const Row(
+      children: const [
+        ShimmerLoader(height: 78),
+        SizedBox(height: AppSpacing.md),
+        Row(
           children: [
             Expanded(child: ShimmerLoader(height: 74)),
             SizedBox(width: AppSpacing.md),
             Expanded(child: ShimmerLoader(height: 74)),
           ],
         ),
-        const SizedBox(height: AppSpacing.xl),
-        const ShimmerLoader(height: 150),
-        const SizedBox(height: AppSpacing.xl),
-        const ShimmerLoader(height: 24, width: 200),
-        const SizedBox(height: AppSpacing.md),
-        const ShimmerLoader(height: 16),
-        const SizedBox(height: AppSpacing.sm),
-        const ShimmerLoader(height: 16),
-        const SizedBox(height: AppSpacing.sm),
-        const ShimmerLoader(height: 16),
+        SizedBox(height: AppSpacing.xl),
+        ShimmerLoader(height: 150),
+        SizedBox(height: AppSpacing.xl),
+        ShimmerLoader(height: 24, width: 200),
+        SizedBox(height: AppSpacing.md),
+        ShimmerLoader(height: 16),
+        SizedBox(height: AppSpacing.sm),
+        ShimmerLoader(height: 16),
       ],
     );
   }

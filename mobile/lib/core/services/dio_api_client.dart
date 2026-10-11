@@ -104,15 +104,48 @@ class DioApiClient implements ApiClient {
   }
 
   @override
+  Future<LeaderboardData> getLeaderboard({int? trackId, int limit = 20}) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>(
+      'leaderboard',
+      queryParameters: {'limit': limit, if (trackId != null) 'track': trackId},
+      options: Options(headers: _authHeaders(token)),
+    );
+    return LeaderboardData.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<ActivityData> getActivity({int days = 7}) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>(
+      'progress/me/activity',
+      queryParameters: {'days': days},
+      options: Options(headers: _authHeaders(token)),
+    );
+    return ActivityData.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<List<Milestone>> getMilestones({int? trackId}) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>(
+      'achievements/milestones',
+      queryParameters: {if (trackId != null) 'track': trackId},
+      options: Options(headers: _authHeaders(token)),
+    );
+    final list = response.data?['milestones'] as List<dynamic>? ?? const [];
+    return list
+        .map((e) => Milestone.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+
+  @override
   Future<TaskSubmissionResponse> submitTask(
       TaskSubmissionRequest request) async {
     final token = await _idToken();
     final response = await _dio.post<Map<String, dynamic>>(
       'tasks/${request.taskId}/attempt',
-      data: {
-        'answer': request.answer,
-        if (request.explanation != null) 'explanation': request.explanation,
-      },
+      data: request.toJson(),
       options: Options(headers: _authHeaders(token)),
     );
     final result =
@@ -125,6 +158,7 @@ class DioApiClient implements ApiClient {
       passed: result['passed'] as bool? ?? false,
       feedback: result['feedback'] as String? ?? '',
       xpEarned: _int(result['xp_earned']),
+      correctAnswer: result['expected_answer'] as String?,
       matchedKeywords: _stringList(result['matched_keywords']),
       missedKeywords: _stringList(result['missed_keywords']),
       newlyEarnedAchievements: newlyEarned

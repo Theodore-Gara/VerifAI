@@ -81,6 +81,7 @@ app.get('/api/docs', (req, res) => {
       'PUT /api/users/profile',
       'GET /api/tracks',
       'GET /api/tasks/next',
+      'GET /api/tasks/history',
       'POST /api/tasks/:id/attempt',
       'GET /api/progress/me',
       'GET /api/progress/me/activity',

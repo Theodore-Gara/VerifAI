@@ -111,8 +111,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: dashboardAsync.when(
               data: (data) => _buildDashboard(data, user),
               loading: () => _buildShimmer(),
-              error: (error, stackTrace) => ErrorState(
-                message: 'Failed to load dashboard. Pull to refresh.',
+              error: (error, stackTrace) => AsyncErrorView(
+                error: error,
+                fallbackMessage: 'Failed to load dashboard. Pull to refresh.',
                 onRetry: () => ref.invalidate(dashboardProvider),
               ),
             ),

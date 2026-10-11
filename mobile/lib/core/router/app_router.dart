@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:verifai/features/auth/presentation.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/assistant/presentation/learning_assistant_screen.dart';
+import 'package:verifai/features/dashboard/presentation/task_challenge_modal.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
 import 'package:verifai/features/navigation/main_nav_shell.dart';
@@ -157,18 +158,29 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/feedback',
         name: 'feedback',
         builder: (context, state) {
-          final result = state.extra is FeedbackResult
-              ? state.extra! as FeedbackResult
-              : const FeedbackResult(score: 0, feedback: '', xpEarned: 0);
+          final result = state.extra;
+          // Opened without a completed attempt (deep link / restored route):
+          // show the empty state instead of a misleading zero score.
+          if (result is! FeedbackResult) return const FeedbackEmptyScreen();
           return FeedbackScreen(
             score: result.score,
             passed: result.passed,
             feedback: result.feedback,
             xpEarned: result.xpEarned,
+            correctAnswer: result.correctAnswer,
             matchedKeywords: result.matchedKeywords,
             missedKeywords: result.missedKeywords,
             newlyEarnedAchievements: result.newlyEarnedAchievements,
-            onContinue: () => context.pop(),
+            onRetry: result.task == null
+                ? null
+                : () => TaskChallengeModal.show(
+                      context,
+                      result.task!,
+                      () => ref.invalidate(dashboardProvider),
+                      practice: true,
+                    ),
+            onContinue: () =>
+                context.canPop() ? context.pop() : context.go('/dashboard'),
           );
         },
       ),

@@ -39,6 +39,14 @@ class MockApiClient implements ApiClient {
       scenario:
           'An AI model has predicted Q3 revenue with 15% growth. The model used last year\'s data but didn\'t account for the new market entrant.',
       dimension: 'verification',
+      embeddedFlaw: 'The forecast ignores the new market entrant.',
+      options: [
+        TaskOption(
+            id: 1, label: 'Verify the source data and recalculate growth.'),
+        TaskOption(id: 2, label: 'Approve the forecast as presented.'),
+        TaskOption(id: 3, label: 'Reject the forecast without review.'),
+        TaskOption(id: 4, label: 'Request supporting citations first.'),
+      ],
       trackName: 'Finance',
       difficulty: 'medium',
       trackId: 1,
@@ -49,6 +57,14 @@ class MockApiClient implements ApiClient {
       scenario:
           'AI suggested a force majeure clause that excludes pandemics. The jurisdiction recently ruled pandemics are covered.',
       dimension: 'judgement',
+      embeddedFlaw:
+          'The suggested clause excludes pandemics despite the recent ruling.',
+      options: [
+        TaskOption(
+            id: 5, label: 'Check the current ruling and revise the clause.'),
+        TaskOption(id: 6, label: 'Use the suggested clause as written.'),
+        TaskOption(id: 7, label: 'Remove every force majeure provision.'),
+      ],
       trackName: 'Legal',
       difficulty: 'hard',
       trackId: 2,
@@ -59,6 +75,12 @@ class MockApiClient implements ApiClient {
       scenario:
           'AI wrote a recursive function without a base case. The function causes stack overflow on large inputs.',
       dimension: 'prompt_design',
+      embeddedFlaw: 'The recursive function has no base case.',
+      options: [
+        TaskOption(id: 8, label: 'Add and test a terminating base case.'),
+        TaskOption(id: 9, label: 'Increase the recursion limit.'),
+        TaskOption(id: 10, label: 'Deploy without changes.'),
+      ],
       trackName: 'IT / Software',
       difficulty: 'easy',
       trackId: 3,
@@ -69,6 +91,13 @@ class MockApiClient implements ApiClient {
       scenario:
           'AI recommended a candidate based on keywords but missed a 2-year employment gap that explains the skill mismatch.',
       dimension: 'risk_governance',
+      embeddedFlaw: 'The recommendation overlooks relevant employment history.',
+      options: [
+        TaskOption(id: 11, label: 'Review the complete application fairly.'),
+        TaskOption(id: 12, label: 'Accept the recommendation without review.'),
+        TaskOption(
+            id: 13, label: 'Reject the candidate based only on the gap.'),
+      ],
       trackName: 'Business Consulting',
       difficulty: 'medium',
       trackId: 4,
@@ -121,6 +150,69 @@ class MockApiClient implements ApiClient {
   }
 
   @override
+  Future<LeaderboardData> getLeaderboard({int? trackId, int limit = 20}) async {
+    await _delay();
+    const me = LeaderboardEntry(
+      rank: 8,
+      userId: 1,
+      name: 'You',
+      level: 5,
+      xp: 2450,
+      streak: 7,
+      readinessScore: 68,
+      tier: 'Developing',
+      isCurrentUser: true,
+    );
+    const others = [
+      LeaderboardEntry(rank: 1, userId: 21, name: 'Elena Rostova', level: 12, xp: 4850, streak: 24, readinessScore: 92, tier: 'Advanced', isCurrentUser: false),
+      LeaderboardEntry(rank: 2, userId: 22, name: 'Marcus Chen', level: 11, xp: 4210, streak: 18, readinessScore: 88, tier: 'Advanced', isCurrentUser: false),
+      LeaderboardEntry(rank: 3, userId: 23, name: 'Sarah Jenkins', level: 10, xp: 3980, streak: 14, readinessScore: 85, tier: 'Advanced', isCurrentUser: false),
+      LeaderboardEntry(rank: 4, userId: 24, name: 'David Kim', level: 9, xp: 3450, streak: 11, readinessScore: 78, tier: 'Proficient', isCurrentUser: false),
+    ];
+    return LeaderboardData(
+      trackId: trackId,
+      entries: [...others, me],
+      me: me,
+    );
+  }
+
+  @override
+  Future<ActivityData> getActivity({int days = 7}) async {
+    await _delay();
+    final today = DateTime.now();
+    final activity = List.generate(days, (index) {
+      final date = today.subtract(Duration(days: days - 1 - index));
+      final iso = date.toIso8601String().split('T').first;
+      final xp = (index % 3 == 0) ? 0 : 30 + index * 6;
+      return ActivityDay(
+        date: iso,
+        attempts: xp == 0 ? 0 : 1,
+        xpEarned: xp,
+        passed: xp == 0 ? 0 : 1,
+      );
+    });
+    return ActivityData(
+      days: days,
+      streak: 7,
+      lastActivityDate: activity.last.date,
+      activity: activity,
+    );
+  }
+
+  @override
+  Future<List<Milestone>> getMilestones({int? trackId}) async {
+    await _delay();
+    return const [
+      Milestone(code: 'first_task', name: 'First Steps', description: 'Complete your first task', target: 1, current: 1, achieved: true),
+      Milestone(code: 'track_master', name: 'Track Master', description: 'Complete every task in the track (15)', target: 15, current: 6, achieved: false),
+      Milestone(code: 'xp_250', name: 'Committed', description: 'Earn 250 XP', target: 250, current: 2450, achieved: true),
+      Milestone(code: 'xp_1000', name: 'Dedicated', description: 'Earn 1000 XP', target: 1000, current: 2450, achieved: true),
+      Milestone(code: 'streak_7', name: 'On Fire', description: 'Reach a 7-day streak', target: 7, current: 7, achieved: true),
+      Milestone(code: 'level_5', name: 'Seasoned', description: 'Reach level 5', target: 5, current: 5, achieved: true),
+    ];
+  }
+
+  @override
   Future<TaskSubmissionResponse> submitTask(
       TaskSubmissionRequest request) async {
     await _delay();
@@ -129,6 +221,7 @@ class MockApiClient implements ApiClient {
       passed: true,
       feedback: 'Great job! You correctly identified the missing base case.',
       xpEarned: 120,
+      correctAnswer: 'Verify the source data and recalculate growth.',
       matchedKeywords: const [
         'verify source records',
         'correct the missed payment',

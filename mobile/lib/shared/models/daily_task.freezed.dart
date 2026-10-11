@@ -24,6 +24,12 @@ mixin _$DailyTask {
   String get title => throw _privateConstructorUsedError;
   String? get scenario => throw _privateConstructorUsedError;
   String get dimension => throw _privateConstructorUsedError;
+  String get format => throw _privateConstructorUsedError;
+  @JsonKey(name: 'embedded_flaw')
+  String? get embeddedFlaw => throw _privateConstructorUsedError;
+  List<TaskOption> get options => throw _privateConstructorUsedError;
+  @JsonKey(name: 'ai_output_lines')
+  List<String> get aiOutputLines => throw _privateConstructorUsedError;
   String? get trackName => throw _privateConstructorUsedError;
   String? get difficulty => throw _privateConstructorUsedError;
   int? get trackId => throw _privateConstructorUsedError;
@@ -48,6 +54,10 @@ abstract class $DailyTaskCopyWith<$Res> {
       String title,
       String? scenario,
       String dimension,
+      String format,
+      @JsonKey(name: 'embedded_flaw') String? embeddedFlaw,
+      List<TaskOption> options,
+      @JsonKey(name: 'ai_output_lines') List<String> aiOutputLines,
       String? trackName,
       String? difficulty,
       int? trackId});
@@ -72,6 +82,10 @@ class _$DailyTaskCopyWithImpl<$Res, $Val extends DailyTask>
     Object? title = null,
     Object? scenario = freezed,
     Object? dimension = null,
+    Object? format = null,
+    Object? embeddedFlaw = freezed,
+    Object? options = null,
+    Object? aiOutputLines = null,
     Object? trackName = freezed,
     Object? difficulty = freezed,
     Object? trackId = freezed,
@@ -93,6 +107,22 @@ class _$DailyTaskCopyWithImpl<$Res, $Val extends DailyTask>
           ? _value.dimension
           : dimension // ignore: cast_nullable_to_non_nullable
               as String,
+      format: null == format
+          ? _value.format
+          : format // ignore: cast_nullable_to_non_nullable
+              as String,
+      embeddedFlaw: freezed == embeddedFlaw
+          ? _value.embeddedFlaw
+          : embeddedFlaw // ignore: cast_nullable_to_non_nullable
+              as String?,
+      options: null == options
+          ? _value.options
+          : options // ignore: cast_nullable_to_non_nullable
+              as List<TaskOption>,
+      aiOutputLines: null == aiOutputLines
+          ? _value.aiOutputLines
+          : aiOutputLines // ignore: cast_nullable_to_non_nullable
+              as List<String>,
       trackName: freezed == trackName
           ? _value.trackName
           : trackName // ignore: cast_nullable_to_non_nullable
@@ -122,6 +152,10 @@ abstract class _$$DailyTaskImplCopyWith<$Res>
       String title,
       String? scenario,
       String dimension,
+      String format,
+      @JsonKey(name: 'embedded_flaw') String? embeddedFlaw,
+      List<TaskOption> options,
+      @JsonKey(name: 'ai_output_lines') List<String> aiOutputLines,
       String? trackName,
       String? difficulty,
       int? trackId});
@@ -144,6 +178,10 @@ class __$$DailyTaskImplCopyWithImpl<$Res>
     Object? title = null,
     Object? scenario = freezed,
     Object? dimension = null,
+    Object? format = null,
+    Object? embeddedFlaw = freezed,
+    Object? options = null,
+    Object? aiOutputLines = null,
     Object? trackName = freezed,
     Object? difficulty = freezed,
     Object? trackId = freezed,
@@ -165,6 +203,22 @@ class __$$DailyTaskImplCopyWithImpl<$Res>
           ? _value.dimension
           : dimension // ignore: cast_nullable_to_non_nullable
               as String,
+      format: null == format
+          ? _value.format
+          : format // ignore: cast_nullable_to_non_nullable
+              as String,
+      embeddedFlaw: freezed == embeddedFlaw
+          ? _value.embeddedFlaw
+          : embeddedFlaw // ignore: cast_nullable_to_non_nullable
+              as String?,
+      options: null == options
+          ? _value._options
+          : options // ignore: cast_nullable_to_non_nullable
+              as List<TaskOption>,
+      aiOutputLines: null == aiOutputLines
+          ? _value._aiOutputLines
+          : aiOutputLines // ignore: cast_nullable_to_non_nullable
+              as List<String>,
       trackName: freezed == trackName
           ? _value.trackName
           : trackName // ignore: cast_nullable_to_non_nullable
@@ -182,16 +236,24 @@ class __$$DailyTaskImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(explicitToJson: true)
 class _$DailyTaskImpl implements _DailyTask {
   const _$DailyTaskImpl(
       {required this.id,
       required this.title,
       this.scenario,
       required this.dimension,
+      this.format = 'choice',
+      @JsonKey(name: 'embedded_flaw') this.embeddedFlaw,
+      final List<TaskOption> options = const [],
+      @JsonKey(name: 'ai_output_lines')
+      final List<String> aiOutputLines = const [],
       this.trackName,
       this.difficulty,
-      this.trackId});
+      this.trackId})
+      : _options = options,
+        _aiOutputLines = aiOutputLines;
 
   factory _$DailyTaskImpl.fromJson(Map<String, dynamic> json) =>
       _$$DailyTaskImplFromJson(json);
@@ -205,6 +267,30 @@ class _$DailyTaskImpl implements _DailyTask {
   @override
   final String dimension;
   @override
+  @JsonKey()
+  final String format;
+  @override
+  @JsonKey(name: 'embedded_flaw')
+  final String? embeddedFlaw;
+  final List<TaskOption> _options;
+  @override
+  @JsonKey()
+  List<TaskOption> get options {
+    if (_options is EqualUnmodifiableListView) return _options;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_options);
+  }
+
+  final List<String> _aiOutputLines;
+  @override
+  @JsonKey(name: 'ai_output_lines')
+  List<String> get aiOutputLines {
+    if (_aiOutputLines is EqualUnmodifiableListView) return _aiOutputLines;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_aiOutputLines);
+  }
+
+  @override
   final String? trackName;
   @override
   final String? difficulty;
@@ -213,7 +299,7 @@ class _$DailyTaskImpl implements _DailyTask {
 
   @override
   String toString() {
-    return 'DailyTask(id: $id, title: $title, scenario: $scenario, dimension: $dimension, trackName: $trackName, difficulty: $difficulty, trackId: $trackId)';
+    return 'DailyTask(id: $id, title: $title, scenario: $scenario, dimension: $dimension, format: $format, embeddedFlaw: $embeddedFlaw, options: $options, aiOutputLines: $aiOutputLines, trackName: $trackName, difficulty: $difficulty, trackId: $trackId)';
   }
 
   @override
@@ -227,6 +313,12 @@ class _$DailyTaskImpl implements _DailyTask {
                 other.scenario == scenario) &&
             (identical(other.dimension, dimension) ||
                 other.dimension == dimension) &&
+            (identical(other.format, format) || other.format == format) &&
+            (identical(other.embeddedFlaw, embeddedFlaw) ||
+                other.embeddedFlaw == embeddedFlaw) &&
+            const DeepCollectionEquality().equals(other._options, _options) &&
+            const DeepCollectionEquality()
+                .equals(other._aiOutputLines, _aiOutputLines) &&
             (identical(other.trackName, trackName) ||
                 other.trackName == trackName) &&
             (identical(other.difficulty, difficulty) ||
@@ -236,8 +328,19 @@ class _$DailyTaskImpl implements _DailyTask {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, title, scenario, dimension,
-      trackName, difficulty, trackId);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      title,
+      scenario,
+      dimension,
+      format,
+      embeddedFlaw,
+      const DeepCollectionEquality().hash(_options),
+      const DeepCollectionEquality().hash(_aiOutputLines),
+      trackName,
+      difficulty,
+      trackId);
 
   /// Create a copy of DailyTask
   /// with the given fields replaced by the non-null parameter values.
@@ -261,6 +364,10 @@ abstract class _DailyTask implements DailyTask {
       required final String title,
       final String? scenario,
       required final String dimension,
+      final String format,
+      @JsonKey(name: 'embedded_flaw') final String? embeddedFlaw,
+      final List<TaskOption> options,
+      @JsonKey(name: 'ai_output_lines') final List<String> aiOutputLines,
       final String? trackName,
       final String? difficulty,
       final int? trackId}) = _$DailyTaskImpl;
@@ -276,6 +383,16 @@ abstract class _DailyTask implements DailyTask {
   String? get scenario;
   @override
   String get dimension;
+  @override
+  String get format;
+  @override
+  @JsonKey(name: 'embedded_flaw')
+  String? get embeddedFlaw;
+  @override
+  List<TaskOption> get options;
+  @override
+  @JsonKey(name: 'ai_output_lines')
+  List<String> get aiOutputLines;
   @override
   String? get trackName;
   @override
