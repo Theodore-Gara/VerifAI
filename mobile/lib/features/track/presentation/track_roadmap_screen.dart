@@ -5,14 +5,12 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
-import 'package:verifai/shared/widgets/sample_data_banner.dart';
-import 'package:verifai/shared/widgets/verifai_button.dart';
+import 'package:verifai/features/track/providers.dart';
+import 'package:verifai/shared/models.dart';
+import 'package:verifai/shared/widgets/empty_state.dart';
+import 'package:verifai/shared/widgets/shimmer_loader.dart';
 
-enum MilestoneStatus {
-  completed,
-  active,
-  locked,
-}
+enum MilestoneStatus { completed, active, locked }
 
 class TrackRoadmapScreen extends ConsumerWidget {
   const TrackRoadmapScreen({super.key});
@@ -21,49 +19,7 @@ class TrackRoadmapScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider).valueOrNull;
     final trackName = user?.trackName ?? 'Your track';
-
-    final milestones = [
-      _Milestone(
-        title: 'AI Verification Fundamentals',
-        description:
-            'Understand hallucination patterns and basic factuality checks',
-        status: MilestoneStatus.completed,
-        icon: Icons.shield_rounded,
-        xpReward: 100,
-      ),
-      _Milestone(
-        title: 'Hallucination Spotting',
-        description:
-            'Detect subtle numerical errors and fabricated citations in outputs',
-        status: MilestoneStatus.completed,
-        icon: Icons.search_rounded,
-        xpReward: 150,
-      ),
-      _Milestone(
-        title: 'Prompt Quality & Robustness',
-        description:
-            'Design deterministic constraints and few-shot calibration guides',
-        status: MilestoneStatus.active,
-        icon: Icons.terminal_rounded,
-        xpReward: 200,
-      ),
-      _Milestone(
-        title: 'Risk & Compliance Guardrails',
-        description:
-            'Corporate policy adherence, privacy leaks, and bias filters',
-        status: MilestoneStatus.locked,
-        icon: Icons.gavel_rounded,
-        xpReward: 250,
-      ),
-      _Milestone(
-        title: 'Capstone: Autonomous Agent Oversight',
-        description:
-            'Master enterprise-grade verification for multi-agent workflows',
-        status: MilestoneStatus.locked,
-        icon: Icons.military_tech_rounded,
-        xpReward: 400,
-      ),
-    ];
+    final milestonesAsync = ref.watch(milestonesProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -99,137 +55,175 @@ class TrackRoadmapScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.screenPadding,
-          AppSpacing.sm,
-          AppSpacing.screenPadding,
-          100, // accommodates floating dock
+      body: RefreshIndicator(
+        onRefresh: () async => ref.invalidate(milestonesProvider),
+        child: milestonesAsync.when(
+          data: (milestones) => _buildContent(trackName, milestones),
+          loading: () => _buildShimmer(),
+          error: (error, stackTrace) => AsyncErrorView(
+            error: error,
+            fallbackMessage: 'Failed to load your track milestones.',
+            onRetry: () => ref.invalidate(milestonesProvider),
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SampleDataBanner(
-              message:
-                  'Preview roadmap with sample milestones. Your real milestone progress is not tracked here yet.',
-            ),
-            const SizedBox(height: AppSpacing.md),
+      ),
+    );
+  }
 
-            // Track Hero Banner
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.primaryNavy, Color(0xFF1E293B)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(AppRadius.card),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primaryNavy.withValues(alpha: 0.15),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+  Widget _buildContent(String trackName, List<Milestone> milestones) {
+    final achieved = milestones.where((m) => m.achieved).length;
+    final progress =
+        milestones.isEmpty ? 0.0 : achieved / milestones.length;
+
+    // First not-yet-achieved milestone is the active one; the rest are locked.
+    final activeIndex = milestones.indexWhere((m) => !m.achieved);
+
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPadding,
+        AppSpacing.sm,
+        AppSpacing.screenPadding,
+        100, // accommodates floating dock
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Track Hero Banner
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.primaryNavy, Color(0xFF1E293B)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.accentGreen.withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.alt_route_rounded,
-                          color: AppColors.accentGreen,
-                          size: 22,
-                        ),
+              borderRadius: BorderRadius.circular(AppRadius.card),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primaryNavy.withValues(alpha: 0.15),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.accentGreen.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
                       ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'SPECIALIZATION PATH',
-                            style: AppTypography.textTheme.labelSmall?.copyWith(
-                              color: AppColors.accentCyan,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.8,
-                              fontSize: 9.5,
-                            ),
-                          ),
-                          Text(
-                            trackName,
-                            style: AppTypography.textTheme.titleLarge?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                        ],
+                      child: const Icon(
+                        Icons.alt_route_rounded,
+                        color: AppColors.accentGreen,
+                        size: 22,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    'Follow the path, master AI verification milestones, and earn your certified readiness credential.',
-                    style: AppTypography.textTheme.bodySmall?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      height: 1.35,
                     ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'SPECIALIZATION PATH',
+                          style: AppTypography.textTheme.labelSmall?.copyWith(
+                            color: AppColors.accentCyan,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                            fontSize: 9.5,
+                          ),
+                        ),
+                        Text(
+                          trackName,
+                          style: AppTypography.textTheme.titleLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'Track your milestones and earn your readiness credential.',
+                  style: AppTypography.textTheme.bodySmall?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    height: 1.35,
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                ),
+                const SizedBox(height: AppSpacing.md),
 
-                  // Progress Track Bar
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                    child: Container(
-                      height: 6,
-                      color: Colors.white.withValues(alpha: 0.15),
-                      child: Stack(
-                        children: [
-                          FractionallySizedBox(
-                            widthFactor: 0.4,
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    AppColors.accentGreen,
-                                    AppColors.accentCyan
-                                  ],
-                                ),
+                // Progress Track Bar
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  child: Container(
+                    height: 6,
+                    color: Colors.white.withValues(alpha: 0.15),
+                    child: Stack(
+                      children: [
+                        FractionallySizedBox(
+                          widthFactor: progress,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.accentGreen,
+                                  AppColors.accentCyan
+                                ],
                               ),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '$achieved of ${milestones.length} milestones reached',
+                  style: AppTypography.textTheme.labelSmall?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.75),
+                    fontSize: 10,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: AppSpacing.xxl),
+          ),
+          const SizedBox(height: AppSpacing.xxl),
 
-            Text(
-              'Your learning journey',
-              style: AppTypography.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.4,
-                color: AppColors.textPrimary,
-              ),
+          Text(
+            'Your learning journey',
+            style: AppTypography.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.4,
+              color: AppColors.textPrimary,
             ),
-            const SizedBox(height: AppSpacing.lg),
+          ),
+          const SizedBox(height: AppSpacing.lg),
 
-            // Skill Tree Nodes
+          if (milestones.isEmpty)
+            const EmptyState(
+              icon: Icons.alt_route_rounded,
+              title: 'No milestones yet',
+              message:
+                  'Milestones appear once your track has content to work through.',
+            )
+          else
             ...List.generate(milestones.length, (index) {
               final milestone = milestones[index];
               final isLast = index == milestones.length - 1;
+              final status = milestone.achieved
+                  ? MilestoneStatus.completed
+                  : (index == activeIndex
+                      ? MilestoneStatus.active
+                      : MilestoneStatus.locked);
 
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,24 +231,23 @@ class TrackRoadmapScreen extends ConsumerWidget {
                   // Timeline Node & Connector Line
                   Column(
                     children: [
-                      _buildNodeIndicator(context, milestone.status),
+                      _buildNodeIndicator(status),
                       if (!isLast)
                         Container(
                           width: 3,
                           height: 80,
                           decoration: BoxDecoration(
-                            gradient:
-                                milestone.status == MilestoneStatus.completed
-                                    ? const LinearGradient(
-                                        colors: [
-                                          AppColors.accentGreen,
-                                          AppColors.accentCyan
-                                        ],
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                      )
-                                    : null,
-                            color: milestone.status == MilestoneStatus.completed
+                            gradient: status == MilestoneStatus.completed
+                                ? const LinearGradient(
+                                    colors: [
+                                      AppColors.accentGreen,
+                                      AppColors.accentCyan
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  )
+                                : null,
+                            color: status == MilestoneStatus.completed
                                 ? null
                                 : AppColors.border,
                             borderRadius: BorderRadius.circular(1.5),
@@ -268,19 +261,27 @@ class TrackRoadmapScreen extends ConsumerWidget {
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-                      child: _buildMilestoneCard(context, milestone),
+                      child: _buildMilestoneCard(milestone, status),
                     ),
                   ),
                 ],
               );
             }),
-          ],
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildNodeIndicator(BuildContext context, MilestoneStatus status) {
+  IconData _iconFor(String code) {
+    if (code.startsWith('first_task')) return Icons.flag_rounded;
+    if (code.startsWith('track_master')) return Icons.military_tech_rounded;
+    if (code.startsWith('xp_')) return Icons.bolt_rounded;
+    if (code.startsWith('streak_')) return Icons.local_fire_department_rounded;
+    if (code.startsWith('level_')) return Icons.workspace_premium_rounded;
+    return Icons.emoji_events_rounded;
+  }
+
+  Widget _buildNodeIndicator(MilestoneStatus status) {
     switch (status) {
       case MilestoneStatus.completed:
         return Container(
@@ -341,9 +342,9 @@ class TrackRoadmapScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildMilestoneCard(BuildContext context, _Milestone milestone) {
-    final isActive = milestone.status == MilestoneStatus.active;
-    final isLocked = milestone.status == MilestoneStatus.locked;
+  Widget _buildMilestoneCard(Milestone milestone, MilestoneStatus status) {
+    final isActive = status == MilestoneStatus.active;
+    final isLocked = status == MilestoneStatus.locked;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -386,25 +387,23 @@ class TrackRoadmapScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: isLocked
                       ? AppColors.border.withValues(alpha: 0.5)
-                      : (isActive
-                          ? AppColors.accentLight
-                          : AppColors.accentLight.withValues(alpha: 0.5)),
+                      : AppColors.accentLight,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Icon(
-                  milestone.icon,
+                  milestone.achieved
+                      ? Icons.check_circle_rounded
+                      : _iconFor(milestone.code),
                   size: 16,
                   color: isLocked
                       ? AppColors.textSecondary
-                      : (isActive
-                          ? AppColors.primaryNavy
-                          : AppColors.accentGreen),
+                      : AppColors.accentGreen,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
-                  milestone.title,
+                  milestone.name,
                   style: AppTypography.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.2,
@@ -418,13 +417,17 @@ class TrackRoadmapScreen extends ConsumerWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                 decoration: BoxDecoration(
-                  color: AppColors.xpPurpleLight,
+                  color: milestone.achieved
+                      ? AppColors.accentLight
+                      : AppColors.xpPurpleLight,
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
                 child: Text(
-                  '+${milestone.xpReward} XP',
+                  '${milestone.current}/${milestone.target}',
                   style: AppTypography.textTheme.labelSmall?.copyWith(
-                    color: AppColors.xpPurple,
+                    color: milestone.achieved
+                        ? AppColors.accentGreen
+                        : AppColors.xpPurple,
                     fontWeight: FontWeight.w800,
                     fontSize: 9,
                   ),
@@ -441,41 +444,25 @@ class TrackRoadmapScreen extends ConsumerWidget {
               height: 1.35,
             ),
           ),
-          if (isActive) ...[
-            const SizedBox(height: AppSpacing.md),
-            VerifAIButton(
-              label: 'Continue learning',
-              variant: VerifAIButtonVariant.verification,
-              height: 40,
-              leadingIcon: Icons.play_arrow_rounded,
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Milestone quests are coming soon.'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-            ),
-          ],
         ],
       ),
     );
   }
-}
 
-class _Milestone {
-  final String title;
-  final String description;
-  final MilestoneStatus status;
-  final IconData icon;
-  final int xpReward;
-
-  _Milestone({
-    required this.title,
-    required this.description,
-    required this.status,
-    required this.icon,
-    required this.xpReward,
-  });
+  Widget _buildShimmer() {
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.screenPadding),
+      children: const [
+        ShimmerLoader(height: 140),
+        SizedBox(height: AppSpacing.xl),
+        ShimmerLoader(height: 24, width: 200),
+        SizedBox(height: AppSpacing.md),
+        ShimmerLoader(height: 90),
+        SizedBox(height: AppSpacing.sm),
+        ShimmerLoader(height: 90),
+        SizedBox(height: AppSpacing.sm),
+        ShimmerLoader(height: 90),
+      ],
+    );
+  }
 }

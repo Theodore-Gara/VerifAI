@@ -6,6 +6,9 @@ abstract class ApiClient {
   Future<void> updateProfile(int trackId);
   Future<DashboardData> getDashboard();
   Future<List<Achievement>> getAchievements();
+  Future<LeaderboardData> getLeaderboard({int? trackId, int limit = 20});
+  Future<ActivityData> getActivity({int days = 7});
+  Future<List<Milestone>> getMilestones({int? trackId});
   Future<TaskSubmissionResponse> submitTask(TaskSubmissionRequest request);
   Future<String> sendAssistantMessage({
     required int taskId,

@@ -56,6 +56,17 @@ The request body depends on the task feature:
 
 The response includes the score, whether it passed, XP earned, the correct option ids, and the updated `skill_score`, `progress` and `newly_earned_achievements`, plus `request_id`.
 
+### GET /api/tasks/history
+Protected. The authenticated user's scored attempts, newest first (practice attempts are excluded).
+
+Query parameters:
+
+- `?limit=<1..50>` — page size (default 20); `?offset=<n>` — pagination offset (default 0).
+- `?feature=<key>` — restrict to one feature (`verification`, `judgement`, `risk_governance`, `prompt_design`); `400` if unknown.
+- `?passed=true|false` — restrict to passed or failed attempts; `400` if malformed.
+
+Response: `{ attempts: [{ id, task_id, feature, title, score, passed, xp_earned, submitted_at, feedback, answer, rationale, selected_lines }], total, limit, offset }`.
+
 ### GET /api/interview/questions
 Protected. Returns the interview question bank for the authenticated user's selected track, each with a boolean `practiced` flag.
 

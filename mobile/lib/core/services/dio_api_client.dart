@@ -104,6 +104,42 @@ class DioApiClient implements ApiClient {
   }
 
   @override
+  Future<LeaderboardData> getLeaderboard({int? trackId, int limit = 20}) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>(
+      'leaderboard',
+      queryParameters: {'limit': limit, if (trackId != null) 'track': trackId},
+      options: Options(headers: _authHeaders(token)),
+    );
+    return LeaderboardData.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<ActivityData> getActivity({int days = 7}) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>(
+      'progress/me/activity',
+      queryParameters: {'days': days},
+      options: Options(headers: _authHeaders(token)),
+    );
+    return ActivityData.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<List<Milestone>> getMilestones({int? trackId}) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>(
+      'achievements/milestones',
+      queryParameters: {if (trackId != null) 'track': trackId},
+      options: Options(headers: _authHeaders(token)),
+    );
+    final list = response.data?['milestones'] as List<dynamic>? ?? const [];
+    return list
+        .map((e) => Milestone.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+
+  @override
   Future<TaskSubmissionResponse> submitTask(
       TaskSubmissionRequest request) async {
     final token = await _idToken();

@@ -177,7 +177,7 @@ class _TaskChallengeModalState extends ConsumerState<TaskChallengeModal> {
                           size: 16, color: AppColors.accentGreen),
                       const SizedBox(width: 4),
                       Text(
-                        'VERIFICATION',
+                        widget.task.dimension.toUpperCase(),
                         style: AppTypography.textTheme.labelSmall?.copyWith(
                           color: AppColors.accentGreen,
                           fontWeight: FontWeight.w800,
@@ -334,8 +334,7 @@ class _TaskChallengeModalState extends ConsumerState<TaskChallengeModal> {
           Padding(
             padding: const EdgeInsets.all(AppSpacing.screenPadding),
             child: VerifAIButton(
-              label:
-                  widget.practice ? 'Submit Practice' : 'Submit Verification',
+              label: widget.practice ? 'Submit Practice' : 'Submit Answer',
               variant: VerifAIButtonVariant.verification,
               isLoading: _isSubmitting,
               onPressed: _canSubmit ? _handleSubmit : null,
