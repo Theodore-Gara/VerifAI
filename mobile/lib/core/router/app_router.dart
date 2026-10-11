@@ -129,6 +129,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const IndustrySelectScreen(),
       ),
       GoRoute(
+        path: '/change-industry',
+        name: 'change-industry',
+        builder: (context, state) =>
+            const IndustrySelectScreen(isChangingIndustry: true),
+      ),
+      GoRoute(
+        path: '/welcome-tour',
+        name: 'welcome-tour',
+        builder: (context, state) => const WelcomeTutorialScreen(),
+      ),
+      GoRoute(
         path: '/dashboard',
         name: 'dashboard',
         builder: (context, state) => const MainNavShell(initialIndex: 0),

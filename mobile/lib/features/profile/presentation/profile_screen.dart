@@ -328,6 +328,37 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   const SizedBox(height: AppSpacing.xl),
 
+                  Material(
+                    color: AppColors.primaryNavy,
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    child: ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                      ),
+                      leading: const Icon(
+                        Icons.swap_horiz_rounded,
+                        color: AppColors.accentGreen,
+                      ),
+                      title: const Text(
+                        'Explore another industry',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      subtitle: const Text(
+                        'Switch learning pathways without signing out.',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                      trailing: const Icon(
+                        Icons.arrow_forward_rounded,
+                        color: AppColors.accentGreen,
+                      ),
+                      onTap: () => context.go('/change-industry'),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+
                   _buildAchievements(ref, achievementsAsync),
                 ],
               ),

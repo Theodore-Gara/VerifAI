@@ -8,12 +8,18 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
+import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/onboarding/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets.dart';
 
 class IndustrySelectScreen extends ConsumerStatefulWidget {
-  const IndustrySelectScreen({super.key});
+  const IndustrySelectScreen({
+    super.key,
+    this.isChangingIndustry = false,
+  });
+
+  final bool isChangingIndustry;
 
   @override
   ConsumerState<IndustrySelectScreen> createState() =>
@@ -31,8 +37,18 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Choose Specialization'),
-        automaticallyImplyLeading: false,
+        title: Text(
+          widget.isChangingIndustry
+              ? 'Change Industry'
+              : 'Choose Specialization',
+        ),
+        automaticallyImplyLeading: widget.isChangingIndustry,
+        leading: widget.isChangingIndustry
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: () => context.go('/profile'),
+              )
+            : null,
         actions: [
           Container(
             margin: const EdgeInsets.only(right: AppSpacing.screenPadding),
@@ -141,10 +157,13 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
       // same cached error without ever reaching the network.
       await ref.read(trackRepositoryProvider).selectTrack(trackId);
       ref.read(selectedTrackProvider.notifier).state = trackId;
-      await ref.read(authNotifierProvider.notifier).completeOnboarding();
+      ref.invalidate(dashboardProvider);
+      if (!widget.isChangingIndustry) {
+        await ref.read(authNotifierProvider.notifier).completeOnboarding();
+      }
 
       if (!mounted) return;
-      context.go('/dashboard');
+      context.go(widget.isChangingIndustry ? '/dashboard' : '/welcome-tour');
     } catch (e) {
       if (!mounted) return;
       setState(() {

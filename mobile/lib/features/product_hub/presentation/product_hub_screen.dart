@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 
 /// Polished frontend-first product areas. These screens are safe demo surfaces:
@@ -20,9 +22,75 @@ class _ProductHubScreenState extends State<ProductHubScreen> {
   int _xp = 240;
   int _selected = -1;
   bool _showReport = false;
+  final FlutterTts _tts = FlutterTts();
 
   @override
-  void dispose() { _message.dispose(); _documentName.dispose(); super.dispose(); }
+  void initState() {
+    super.initState();
+    if (widget.mode == VerifAiHubMode.lab) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _speakLabWelcome());
+    }
+  }
+
+  Future<void> _speakLabWelcome() async {
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      final alreadyWelcomed =
+          preferences.getBool('verifai_ai_lab_voice_welcomed_v1') ?? false;
+      if (alreadyWelcomed || !mounted) return;
+      await _tts.setLanguage('en-ZA');
+      await _tts.setSpeechRate(0.48);
+      await _tts.setPitch(1);
+      await _tts.awaitSpeakCompletion(true);
+      await _tts.speak(
+        'Welcome to the VerifAI A I Lab. Explore the lesson, ask the Lab Coach for help, and remember: AI assists. Humans verify.',
+      );
+      await preferences.setBool('verifai_ai_lab_voice_welcomed_v1', true);
+    } catch (_) {
+      // The written lesson content remains available if device speech is unavailable.
+    }
+  }
+
+  Future<void> _replayLabWelcome() async {
+    try {
+      await _tts.setLanguage('en-ZA');
+      await _tts.setSpeechRate(0.48);
+      await _tts.speak(
+        'Welcome to the VerifAI A I Lab. Explore the lesson, ask the Lab Coach for help, and remember: AI assists. Humans verify.',
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Speech is unavailable on this device.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _replayAssistantWelcome() async {
+    try {
+      await _tts.setLanguage('en-ZA');
+      await _tts.setSpeechRate(0.47);
+      await _tts.setPitch(1);
+      await _tts.speak(
+        'Hi there, welcome to VerifAI. Bring me a claim, an AI answer, or a tricky idea. I will help you reason through it. AI assists. Humans verify.',
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Speech is unavailable on this device.')),
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _message.dispose();
+    _documentName.dispose();
+    _tts.stop();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,9 +156,39 @@ class _ProductHubScreenState extends State<ProductHubScreen> {
 
   void _askAssistant() {
     final prompt = _message.text.trim();
-    setState(() => _reply = prompt.isEmpty
-      ? 'Try asking me how to verify a claim, spot a hallucination, or test AI-generated code.'
-      : 'Let’s work through that together. First, identify the exact claim or decision. Next, look for a reliable primary source and check whether the evidence actually supports the wording. Then consider what might be missing, outdated or uncertain.\n\nWhat evidence have you found so far?');
+    final lower = prompt.toLowerCase();
+    final String response;
+    if (prompt.isEmpty) {
+      response =
+          'Try asking me how to verify a claim, spot a hallucination, assess bias, protect private data, or test AI-generated code.';
+    } else if (lower.contains('hallucin') ||
+        lower.contains('false') ||
+        lower.contains('wrong')) {
+      response =
+        'Start by isolating the exact claim. Check it against an authoritative, independent source and confirm the source supports the same wording and context. If you cannot confirm it, label it unverified rather than automatically calling it false. What source could you check first?';
+    } else if (lower.contains('bias') || lower.contains('fair')) {
+      response =
+        'Consider who could be affected, whether the data represents those groups, and whether the decision has a disparate impact. Look for measurable evidence, test across relevant groups, and involve a responsible human reviewer. What outcome would you compare to check for unfairness?';
+    } else if (lower.contains('privacy') ||
+        lower.contains('data') ||
+        lower.contains('confidential')) {
+      response =
+        'Before sharing information with an AI tool, identify whether it contains personal, confidential, or regulated data. Check your organisation’s approved-tool policy and the tool’s data-handling terms. Do not upload sensitive information to an unapproved service.';
+    } else if (lower.contains('code') ||
+        lower.contains('software') ||
+        lower.contains('test')) {
+      response =
+        'Treat generated code as a proposal, not a guarantee. Read it, check official documentation, inspect security-sensitive paths, and run unit and edge-case tests before accepting it. Which behaviour or failure case would you test first?';
+    } else if (lower.contains('govern') ||
+        lower.contains('accountab') ||
+        lower.contains('risk')) {
+      response =
+        'Map the use case, affected people, data involved, potential harms, and who is accountable. Then check relevant law, organisational policy, and documented controls. AI output alone is not evidence that a use is compliant.';
+    } else {
+      response =
+        'Let’s work through that together. Identify the exact claim or decision, then look for a reliable primary source and check whether the evidence supports the wording. Consider what might be missing, outdated, biased, or uncertain. What evidence have you found so far?';
+    }
+    setState(() => _reply = response);
   }
 
   Widget _assistant() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -98,7 +196,35 @@ class _ProductHubScreenState extends State<ProductHubScreen> {
     _card(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [Container(width: 48, height: 48, decoration: BoxDecoration(gradient: const LinearGradient(colors: [AppColors.accentGreen, AppColors.accentCyan]), borderRadius: BorderRadius.circular(16)), child: const Icon(Icons.auto_awesome_rounded, size: 27, color: AppColors.primaryNavy)), const SizedBox(width: 12), const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('VerifAI is here ✨', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)), Text('Curious, careful, evidence-first.', style: TextStyle(fontSize: 12, color: AppColors.textSecondary))]))]),
       const SizedBox(height: 16),
-      Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(18)), child: const Text('Hey! 👋 Bring me a claim, an AI answer, or a tricky idea. I’ll help you reason through it—without making the decision for you.', style: TextStyle(fontSize: 13, height: 1.5))),
+      Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFF0FDF8), Color(0xFFE8F7FF)],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.accentGreen.withValues(alpha: .2)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Expanded(
+              child: Text(
+                'Hey! 👋 Bring me a claim, an AI answer, or a tricky idea. I’ll help you reason through it—without making the decision for you.',
+                style: TextStyle(fontSize: 13, height: 1.5),
+              ),
+            ),
+            IconButton(
+              tooltip: 'Listen to welcome',
+              onPressed: _replayAssistantWelcome,
+              icon: const Icon(Icons.volume_up_rounded,
+                  color: AppColors.primaryNavy),
+            ),
+          ],
+        ),
+      ),
       const SizedBox(height: 15), const Text('Choose your industry', style: TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 8),
       DropdownButtonFormField<String>(value: _industry, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)), items: const ['Legal','Finance','Software Engineering','Business'].map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(), onChanged:(v)=>setState(()=>_industry=v ?? _industry)),
       const SizedBox(height: 15), const Text('Quick starters', style: TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 9),
@@ -129,11 +255,11 @@ class _ProductHubScreenState extends State<ProductHubScreen> {
   ].map((l)=>_card(child:Column(children:[Row(children:[Container(width:44,height:44,decoration:BoxDecoration(color:AppColors.accentGreen.withValues(alpha:.12),borderRadius:BorderRadius.circular(13)),child:Icon(l.$4,color:AppColors.primaryNavy)),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(l.$1,style:const TextStyle(fontWeight:FontWeight.w900)),const SizedBox(height:4),Text(l.$2,style:const TextStyle(fontSize:12,color:AppColors.textSecondary,height:1.35))])),_pill(l.$3,color:AppColors.accentGreen)]),const SizedBox(height:14),_button('Start mini-workshop',()=>_showLesson(l.$1,l.$2),icon:Icons.play_arrow_rounded)]))),
   ]);
   Widget _labCoach() => _card(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Row(children:[Container(width:46,height:46,decoration:BoxDecoration(gradient:const LinearGradient(colors:[AppColors.accentGreen,AppColors.accentCyan]),borderRadius:BorderRadius.circular(15)),child:const Icon(Icons.forum_rounded,color:AppColors.primaryNavy,size:25)),const SizedBox(width:11),const Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('Ask the Lab Coach',style:TextStyle(fontWeight:FontWeight.w900,fontSize:16)),Text('Your workshop sidekick',style:TextStyle(color:AppColors.textSecondary,fontSize:12))]))]),
+    Row(children:[Container(width:46,height:46,decoration:BoxDecoration(gradient:const LinearGradient(colors:[AppColors.accentGreen,AppColors.accentCyan]),borderRadius:BorderRadius.circular(15)),child:const Icon(Icons.forum_rounded,color:AppColors.primaryNavy,size:25)),const SizedBox(width:11),const Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('Ask the Lab Coach',style:TextStyle(fontWeight:FontWeight.w900,fontSize:16)),Text('Your workshop sidekick',style:TextStyle(color:AppColors.textSecondary,fontSize:12))])),IconButton(tooltip:'Replay AI welcome',onPressed:_replayLabWelcome,icon:const Icon(Icons.volume_up_rounded,color:AppColors.primaryNavy))]),
     const SizedBox(height:12), _chatBubble(text:'Stuck on a concept? 🧠 Ask me to explain it simply, give you a hint, or help you check your reasoning.', assistant:true),
     TextField(controller:_message,maxLines:2,decoration:InputDecoration(hintText:'Ask about this lesson…',filled:true,fillColor:AppColors.background,border:OutlineInputBorder(borderRadius:BorderRadius.circular(15),borderSide:BorderSide.none))),
     const SizedBox(height:10), _button('Ask the Lab Coach',_askAssistant,icon:Icons.auto_awesome_rounded),
-    if(_reply.isNotEmpty) ...[const SizedBox(height:12),_chatBubble(text:_reply,assistant:true),const Text('Demo assistant UI — live GPT integration requires a configured, secure backend endpoint.',style:TextStyle(fontSize:11,color:AppColors.textSecondary))],
+    if(_reply.isNotEmpty) ...[const SizedBox(height:12),if(_message.text.trim().isNotEmpty)_chatBubble(text:_message.text.trim(),assistant:false),_chatBubble(text:_reply,assistant:true),const Text('Workshop assistant preview: these guided replies are local demo responses. Live GPT conversations require the secure backend integration.',style:TextStyle(fontSize:11,color:AppColors.textSecondary,height:1.4))],
   ]));
 
   void _showLesson(String title,String description)=>showModalBottomSheet(context:context,isScrollControlled:true,backgroundColor:Colors.transparent,builder:(ctx)=>Container(padding:const EdgeInsets.fromLTRB(22,22,22,32),decoration:const BoxDecoration(color:Colors.white,borderRadius:BorderRadius.vertical(top:Radius.circular(28))),child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[Container(width:42,height:4,decoration:BoxDecoration(color:AppColors.border,borderRadius:BorderRadius.circular(4))),const SizedBox(height:20),_pill('AI LAB • INTERACTIVE LESSON'),const SizedBox(height:12),Text(title,style:const TextStyle(fontSize:23,fontWeight:FontWeight.w900,color:AppColors.primaryNavy)),const SizedBox(height:10),Text(description,style:const TextStyle(height:1.5)),const SizedBox(height:14),const Text('Quick check: What should you do before relying on an AI-generated claim?',style:TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:8),...['Check an authoritative source and supporting evidence','Assume confident wording means it is correct','Share it immediately'].map((a)=>Padding(padding:const EdgeInsets.only(bottom:7),child:OutlinedButton(onPressed:(){Navigator.pop(ctx);ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(a.startsWith('Check')?'Correct principle! Evidence matters more than confidence.':'Not quite. AI output still needs independent checking.'),backgroundColor:a.startsWith('Check')?AppColors.accentGreen:AppColors.warning));if(a.startsWith('Check'))setState(()=>_xp+=10);},child:Align(alignment:Alignment.centerLeft,child:Text(a)))))])));
@@ -290,6 +416,11 @@ class _ProductHubScreenState extends State<ProductHubScreen> {
     _rewardTile(image:'reward_paws',title:'Paws for a cause',subtitle:'A demo concept for supporting an animal rescue or shelter once a verified partner is available.',cost:'800 XP',colors:const [Color(0xFFFFE7C9),Color(0xFFFFC8A6)],note:'No donation made'),
     _rewardTile(image:'reward_game',title:'Game night',subtitle:'A gaming reward concept inspired by cozy sandbox adventures and indie games.',cost:'650 XP',colors:const [Color(0xFFE7DFFF),Color(0xFFC9D7FF)],note:'No game code included'),
     _rewardTile(image:'reward_impact',title:'Community impact',subtitle:'Future option to support a vetted organisation such as Gift of the Givers, subject to an approved partnership and transparent funding.',cost:'1,000 XP',colors:const [Color(0xFFD7F7E9),Color(0xFFB6E5E8)],note:'Partner needed'),
+    _rewardTile(image:'reward_grocery',title:'Everyday essentials',subtitle:'Illustrative grocery voucher concept for a future verified rewards partner.',cost:'1,400 XP',colors:const [Color(0xFFE2F8E8),Color(0xFFB6E7CB)],note:'Partner required'),
+    _rewardTile(image:'reward_fuel',title:'Fuel your next move',subtitle:'A petrol voucher concept for celebrating consistent practice and progress.',cost:'1,800 XP',colors:const [Color(0xFFFFE8C2),Color(0xFFFFC98F)],note:'Partner required'),
+    _rewardTile(image:'reward_m365',title:'Microsoft 365 boost',subtitle:'A productivity-software voucher or subscription concept for future learners.',cost:'2,400 XP',colors:const [Color(0xFFDDEBFF),Color(0xFFB7D0FF)],note:'Availability varies'),
+    _rewardTile(image:'reward_workshop',title:'Workshop pass',subtitle:'A future ticket to an AI, software, career or professional-skills workshop.',cost:'2,000 XP',colors:const [Color(0xFFEDE3FF),Color(0xFFD6C2FF)],note:'Workshop partner needed'),
+    _rewardTile(image:'reward_gamecredit',title:'Game store credit',subtitle:'A digital gaming credit concept for reaching a higher learning milestone.',cost:'2,200 XP',colors:const [Color(0xFFFFE1EE),Color(0xFFFFC0D9)],note:'No code included'),
     const SizedBox(height:4), _sectionTitle('Milestones unlocked','Keep learning to unlock new badges.'),
     ...[('Starter','100 XP','Your first steps count',Icons.flag_rounded,true),('Verifier','300 XP','Build evidence-first habits',Icons.verified_rounded,_xp>=300),('Critical Thinker','600 XP','Complete an AI Lab milestone',Icons.psychology_rounded,_xp>=600)].map((r)=>_card(child:Row(children:[Container(width:46,height:46,decoration:BoxDecoration(color:r.$5?AppColors.accentGreen.withValues(alpha:.15):AppColors.background,borderRadius:BorderRadius.circular(15)),child:Icon(r.$4,color:r.$5?AppColors.primaryNavy:AppColors.silver)),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(r.$1,style:const TextStyle(fontWeight:FontWeight.w900)),Text(r.$3,style:const TextStyle(fontSize:12,color:AppColors.textSecondary)),const SizedBox(height:6),_pill(r.$2,color:r.$5?AppColors.accentGreen:AppColors.silver)])),if(r.$5)const Icon(Icons.check_circle,color:AppColors.accentGreen)]))),
     Container(padding:const EdgeInsets.all(13),decoration:BoxDecoration(color:AppColors.warning.withValues(alpha:.08),borderRadius:BorderRadius.circular(15)),child:const Text('Demo notice: XP has no cash value. Rewards, game offers and donations are concepts only. Real redemption requires an approved partner, funding, clear terms and backend validation.',style:TextStyle(fontSize:11,height:1.45,color:AppColors.textSecondary))),

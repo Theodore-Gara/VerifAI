@@ -53,21 +53,25 @@ void main() {
     // Splash timer navigates to industry select.
     await tester.pump(const Duration(seconds: 3));
     await tester.pump(const Duration(seconds: 1));
-    expect(find.text('Select Your Industry'), findsOneWidget);
+    expect(find.text('Choose Specialization'), findsOneWidget);
 
     // Pick the Finance track.
     await tester.tap(find.text('Finance'));
     await tester.pump();
     expect(find.widgetWithText(ElevatedButton, 'Continue'), findsOneWidget);
 
-    // Continue → dashboard (not bounced back to industry select).
+    // Continue → first-run tutorial.
     await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 2)); // track save + backend sync
-    await tester.pump(const Duration(seconds: 2)); // dashboard load
+    await tester.pumpAndSettle();
+
+    expect(find.text('Skip tutorial'), findsOneWidget);
+    await tester.tap(find.text('Skip tutorial'));
+    await tester.pumpAndSettle();
 
     expect(find.text('Home').first, findsOneWidget);
-    expect(find.text('Select Your Industry'), findsNothing);
+    expect(find.text('Choose Specialization'), findsNothing);
   });
 
   testWidgets('track cards fit without overflow on a phone-size screen',
@@ -95,7 +99,7 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
 
     // No RenderFlex overflow exceptions allowed — the test fails otherwise.
-    expect(find.text('Select Your Industry'), findsOneWidget);
+    expect(find.text('Choose Specialization'), findsOneWidget);
     for (final name in [
       'Finance',
       'Legal',

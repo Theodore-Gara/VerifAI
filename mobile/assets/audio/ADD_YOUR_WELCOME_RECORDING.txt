@@ -1,0 +1,15 @@
+VerifAI welcome voice asset
+
+The splash screen is wired to look for this file on first launch:
+  assets/audio/verifai_welcome_voice.mp3
+
+Record the approved welcome in Mpho's own voice, save/export it as MP3 with
+that exact filename, and place it in this folder. The app will attempt to play
+it automatically once on first launch. Until the recording is supplied, the
+app falls back to the included verifai_welcome_chime.wav. No synthetic or
+imitation voice is included.
+
+Suggested script:
+"Hi there! Welcome to VerifAI. I'm so glad you're here. I'm your AI learning
+assistant, here to help you learn, explore, and verify information. Remember,
+AI assists, humans verify. Let's get started!"

@@ -9,6 +9,75 @@ import 'auth_error_messages.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets.dart';
 
+class _PasswordStrengthIndicator extends StatelessWidget {
+  const _PasswordStrengthIndicator({
+    required this.score,
+    required this.label,
+  });
+
+  final int score;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    const colors = [
+      Colors.red,
+      Colors.deepOrange,
+      Colors.amber,
+      Colors.lightGreen,
+      Colors.green,
+    ];
+    final color = colors[score.clamp(0, 4).toInt()];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              'Password strength',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+            const Spacer(),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 7),
+        Row(
+          children: List.generate(
+            4,
+            (index) => Expanded(
+              child: Container(
+                height: 5,
+                margin: EdgeInsets.only(right: index == 3 ? 0 : 5),
+                decoration: BoxDecoration(
+                  color: score > index ? color : const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 5),
+        const Text(
+          'Aim for 8+ characters, uppercase and lowercase letters, and a number or symbol.',
+          style: TextStyle(
+            fontSize: 11,
+            height: 1.35,
+            color: Color(0xFF64748B),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 enum _PendingAction { email, google }
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -27,6 +96,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   /// Which button is currently submitting, so only it shows a spinner.
   _PendingAction? _pending;
+  int _passwordStrength = 0;
+
+  int _strengthFor(String value) {
+    var score = 0;
+    if (value.length >= 8) score++;
+    if (RegExp(r'[A-Z]').hasMatch(value) && RegExp(r'[a-z]').hasMatch(value)) {
+      score++;
+    }
+    if (RegExp(r'\d').hasMatch(value)) score++;
+    if (RegExp(r'[^A-Za-z0-9]').hasMatch(value)) score++;
+    return score;
+  }
+
+  String get _strengthLabel =>
+      const ['Very weak', 'Weak', 'Fair', 'Good', 'Strong'][_passwordStrength];
 
   @override
   void dispose() {
@@ -117,16 +201,27 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   hint: 'Create a password',
                   type: VerifAIInputType.password,
                   controller: _passwordController,
+                  onChanged: (value) =>
+                      setState(() => _passwordStrength = _strengthFor(value)),
                   textInputAction: TextInputAction.next,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter a password';
                     }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
+                    if (value.length < 8 ||
+                        !RegExp(r'[A-Z]').hasMatch(value) ||
+                        !RegExp(r'[a-z]').hasMatch(value) ||
+                        (!RegExp(r'\d').hasMatch(value) &&
+                            !RegExp(r'[^A-Za-z0-9]').hasMatch(value))) {
+                      return 'Use 8+ characters with mixed case and a number or symbol';
                     }
                     return null;
                   },
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                _PasswordStrengthIndicator(
+                  score: _passwordStrength,
+                  label: _strengthLabel,
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 VerifAIInput(
