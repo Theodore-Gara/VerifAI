@@ -62,25 +62,28 @@ class ScoreRing extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 1.5),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                      border: Border.all(
-                          color: color.withValues(alpha: 0.25), width: 1),
-                    ),
-                    child: Text(
-                      tierLabel ?? _getDefaultTier(score),
-                      style: AppTypography.textTheme.labelSmall?.copyWith(
-                        color: color,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 8,
-                        letterSpacing: 0.5,
+                  // The tier pill only shows when the caller supplies a real
+                  // tier; feedback scores are just a number, not a tier.
+                  if (tierLabel != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        border: Border.all(
+                            color: color.withValues(alpha: 0.25), width: 1),
+                      ),
+                      child: Text(
+                        tierLabel!,
+                        style: AppTypography.textTheme.labelSmall?.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 8,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
         ],
@@ -93,13 +96,6 @@ class ScoreRing extends StatelessWidget {
     if (score >= 60) return AppColors.accentCyan;
     if (score >= 40) return AppColors.warning;
     return AppColors.error;
-  }
-
-  String _getDefaultTier(int score) {
-    if (score >= 85) return 'EXPERT';
-    if (score >= 70) return 'PROFICIENT';
-    if (score >= 50) return 'INTERMEDIATE';
-    return 'NOVICE';
   }
 }
 

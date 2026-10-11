@@ -12,6 +12,7 @@ firebase.getFirebaseAuth = () => ({
 const queries = [];
 const queryCalls = [];
 let foreignQuestion = false;
+let exhaustedBand = false;
 
 // Leaderboard fixtures (checked before the generic FROM users catch-all).
 const LEADERBOARD_ROWS = [
@@ -91,6 +92,12 @@ pool.query = async (sql, values = []) => {
     return { rows: [{ id: 5, feature: 'judgement', title: 'The Month-End Agenda', scenario: '...' }] };
   }
   if (sql.includes('JOIN verification_tasks')) {
+    // Band rotation: the unseen query comes back empty, so the fallback query
+    // (which LEFT JOINs task_attempts) re-serves an attempted task.
+    if (sql.includes('LEFT JOIN task_attempts ta')) {
+      return { rows: [{ id: 8, format: 'choice', title: 'The Gross Profit Trap', scenario: '...', embedded_flaw: 'missed payment', difficulty: 'easy' }] };
+    }
+    if (exhaustedBand) return { rows: [] };
     return {
       rows: [{ id: 3, format: 'choice', title: 'Verify the summary', scenario: '...', embedded_flaw: 'missed payment', difficulty: 'easy' }],
     };
@@ -454,6 +461,30 @@ test('an unknown difficulty is rejected', async () => {
     .set('Authorization', 'Bearer test-token');
   assert.equal(response.status, 400);
   assert.match(response.body.error, /difficulty/);
+});
+
+test('an exhausted pinned band rotates attempted tasks as repeats', async () => {
+  queries.length = 0;
+  queryCalls.length = 0;
+  exhaustedBand = true;
+  const response = await request(app)
+    .get('/api/tasks/next')
+    .query({ feature: 'verification', difficulty: 'easy' })
+    .set('Authorization', 'Bearer test-token');
+  exhaustedBand = false;
+
+  assert.equal(response.status, 200);
+  const task = response.body.task;
+  assert.equal(task.is_repeat, true);
+  assert.equal(task.difficulty, 'easy');
+  const unseenSql = queries.find((sql) => sql.includes('JOIN verification_tasks') && !sql.includes('LEFT JOIN task_attempts ta'));
+  const rotateSql = queries.find((sql) => sql.includes('LEFT JOIN task_attempts ta'));
+  assert.ok(unseenSql, 'expected the unseen-task query first');
+  assert.ok(rotateSql, 'expected the rotation fallback query');
+  assert.match(rotateSql, /v\.difficulty = \$3/);
+  assert.match(rotateSql, /ORDER BY last_submitted ASC/);
+  const rotateCall = queryCalls.find((call) => call.sql.includes('LEFT JOIN task_attempts ta'));
+  assert.equal(rotateCall.values[rotateCall.values.length - 1], 'easy');
 });
 
 test('the default request keeps the level-adaptive difficulty ordering', async () => {

@@ -34,6 +34,8 @@ mixin _$DailyTask {
   String? get difficulty => throw _privateConstructorUsedError;
   String? get feature => throw _privateConstructorUsedError;
   int? get trackId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'is_repeat')
+  bool get isRepeat => throw _privateConstructorUsedError;
 
   /// Serializes this DailyTask to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -62,7 +64,8 @@ abstract class $DailyTaskCopyWith<$Res> {
       String? trackName,
       String? difficulty,
       String? feature,
-      int? trackId});
+      int? trackId,
+      @JsonKey(name: 'is_repeat') bool isRepeat});
 }
 
 /// @nodoc
@@ -92,6 +95,7 @@ class _$DailyTaskCopyWithImpl<$Res, $Val extends DailyTask>
     Object? difficulty = freezed,
     Object? feature = freezed,
     Object? trackId = freezed,
+    Object? isRepeat = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -142,6 +146,10 @@ class _$DailyTaskCopyWithImpl<$Res, $Val extends DailyTask>
           ? _value.trackId
           : trackId // ignore: cast_nullable_to_non_nullable
               as int?,
+      isRepeat: null == isRepeat
+          ? _value.isRepeat
+          : isRepeat // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -166,7 +174,8 @@ abstract class _$$DailyTaskImplCopyWith<$Res>
       String? trackName,
       String? difficulty,
       String? feature,
-      int? trackId});
+      int? trackId,
+      @JsonKey(name: 'is_repeat') bool isRepeat});
 }
 
 /// @nodoc
@@ -194,6 +203,7 @@ class __$$DailyTaskImplCopyWithImpl<$Res>
     Object? difficulty = freezed,
     Object? feature = freezed,
     Object? trackId = freezed,
+    Object? isRepeat = null,
   }) {
     return _then(_$DailyTaskImpl(
       id: null == id
@@ -244,6 +254,10 @@ class __$$DailyTaskImplCopyWithImpl<$Res>
           ? _value.trackId
           : trackId // ignore: cast_nullable_to_non_nullable
               as int?,
+      isRepeat: null == isRepeat
+          ? _value.isRepeat
+          : isRepeat // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -265,7 +279,8 @@ class _$DailyTaskImpl implements _DailyTask {
       this.trackName,
       this.difficulty,
       this.feature,
-      this.trackId})
+      this.trackId,
+      @JsonKey(name: 'is_repeat') this.isRepeat = false})
       : _options = options,
         _aiOutputLines = aiOutputLines;
 
@@ -312,10 +327,13 @@ class _$DailyTaskImpl implements _DailyTask {
   final String? feature;
   @override
   final int? trackId;
+  @override
+  @JsonKey(name: 'is_repeat')
+  final bool isRepeat;
 
   @override
   String toString() {
-    return 'DailyTask(id: $id, title: $title, scenario: $scenario, dimension: $dimension, format: $format, embeddedFlaw: $embeddedFlaw, options: $options, aiOutputLines: $aiOutputLines, trackName: $trackName, difficulty: $difficulty, feature: $feature, trackId: $trackId)';
+    return 'DailyTask(id: $id, title: $title, scenario: $scenario, dimension: $dimension, format: $format, embeddedFlaw: $embeddedFlaw, options: $options, aiOutputLines: $aiOutputLines, trackName: $trackName, difficulty: $difficulty, feature: $feature, trackId: $trackId, isRepeat: $isRepeat)';
   }
 
   @override
@@ -340,7 +358,9 @@ class _$DailyTaskImpl implements _DailyTask {
             (identical(other.difficulty, difficulty) ||
                 other.difficulty == difficulty) &&
             (identical(other.feature, feature) || other.feature == feature) &&
-            (identical(other.trackId, trackId) || other.trackId == trackId));
+            (identical(other.trackId, trackId) || other.trackId == trackId) &&
+            (identical(other.isRepeat, isRepeat) ||
+                other.isRepeat == isRepeat));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -358,7 +378,8 @@ class _$DailyTaskImpl implements _DailyTask {
       trackName,
       difficulty,
       feature,
-      trackId);
+      trackId,
+      isRepeat);
 
   /// Create a copy of DailyTask
   /// with the given fields replaced by the non-null parameter values.
@@ -389,7 +410,8 @@ abstract class _DailyTask implements DailyTask {
       final String? trackName,
       final String? difficulty,
       final String? feature,
-      final int? trackId}) = _$DailyTaskImpl;
+      final int? trackId,
+      @JsonKey(name: 'is_repeat') final bool isRepeat}) = _$DailyTaskImpl;
 
   factory _DailyTask.fromJson(Map<String, dynamic> json) =
       _$DailyTaskImpl.fromJson;
@@ -420,6 +442,9 @@ abstract class _DailyTask implements DailyTask {
   String? get feature;
   @override
   int? get trackId;
+  @override
+  @JsonKey(name: 'is_repeat')
+  bool get isRepeat;
 
   /// Create a copy of DailyTask
   /// with the given fields replaced by the non-null parameter values.

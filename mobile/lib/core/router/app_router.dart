@@ -234,6 +234,7 @@ Future<void> _continueToNextTask(
       context,
       next,
       () => ref.invalidate(dashboardProvider),
+      practice: next.isRepeat,
       replace: true,
     );
   } catch (_) {

@@ -26,6 +26,7 @@ _$DailyTaskImpl _$$DailyTaskImplFromJson(Map<String, dynamic> json) =>
       difficulty: json['difficulty'] as String?,
       feature: json['feature'] as String?,
       trackId: (json['trackId'] as num?)?.toInt(),
+      isRepeat: json['is_repeat'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$$DailyTaskImplToJson(_$DailyTaskImpl instance) =>
@@ -42,4 +43,5 @@ Map<String, dynamic> _$$DailyTaskImplToJson(_$DailyTaskImpl instance) =>
       'difficulty': instance.difficulty,
       'feature': instance.feature,
       'trackId': instance.trackId,
+      'is_repeat': instance.isRepeat,
     };

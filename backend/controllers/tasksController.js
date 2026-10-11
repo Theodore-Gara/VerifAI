@@ -160,7 +160,27 @@ async function getNextTask(req, res, next) {
          LIMIT 1`,
         params
       );
-      const row = result.rows[0];
+      let row = result.rows[0];
+      let isRepeat = false;
+      // A pinned band with no unseen tasks left rotates the tasks already
+      // attempted in that band (least-recently attempted first), so the card
+      // keeps working as practice until new tasks are added.
+      if (!row && difficulty) {
+        const rotateResult = await pool.query(
+          `SELECT t.id, v.format, v.title, v.scenario, v.embedded_flaw, v.difficulty, v.ai_output_lines,
+                  COALESCE(MAX(ta.submitted_at), to_timestamp(0)) AS last_submitted
+           FROM tasks t
+           JOIN verification_tasks v ON v.task_id = t.id
+           LEFT JOIN task_attempts ta ON ta.task_id = t.id AND ta.user_id = $2
+           WHERE t.feature = 'verification' AND t.track_id = $1 AND v.difficulty = $3
+           GROUP BY t.id, v.format, v.title, v.scenario, v.embedded_flaw, v.difficulty, v.ai_output_lines
+           ORDER BY last_submitted ASC, t.id ASC
+           LIMIT 1`,
+          [user.industry_track_id, user.id, difficulty]
+        );
+        row = rotateResult.rows[0] || null;
+        isRepeat = !!row;
+      }
       if (row && row.format === 'line_text') {
         task = {
           id: row.id,
@@ -187,6 +207,7 @@ async function getNextTask(req, res, next) {
           options: options.rows,
         };
       }
+      if (isRepeat) task = { ...task, is_repeat: true };
     } else {
       const table = feature === 'judgement' ? 'judgement_tasks' : 'risk_governance_tasks';
       const result = await pool.query(

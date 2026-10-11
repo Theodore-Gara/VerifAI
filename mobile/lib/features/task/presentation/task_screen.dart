@@ -26,7 +26,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     TaskChallengeModal.show(context, task, () {
       // A completed attempt changes XP / streak / the next task.
       ref.invalidate(dashboardProvider);
-    });
+      // A band that is fully attempted re-serves its tasks for practice, which
+      // must not earn XP again.
+    }, practice: task.isRepeat);
   }
 
   @override

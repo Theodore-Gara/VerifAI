@@ -39,6 +39,7 @@ class DailyTask with _$DailyTask {
     String? difficulty,
     String? feature,
     int? trackId,
+    @JsonKey(name: 'is_repeat') @Default(false) bool isRepeat,
   }) = _DailyTask;
 
   factory DailyTask.fromJson(Map<String, dynamic> json) =>

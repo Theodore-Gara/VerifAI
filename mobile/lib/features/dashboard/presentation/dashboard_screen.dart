@@ -405,6 +405,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   void _playTask(DailyTask task) {
     TaskChallengeModal.show(context, task, () {
       ref.invalidate(dashboardProvider);
-    });
+    }, practice: task.isRepeat);
   }
 }

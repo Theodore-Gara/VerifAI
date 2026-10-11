@@ -121,6 +121,28 @@ class DailyTaskCard extends StatelessWidget {
                       ),
                     const SizedBox(width: AppSpacing.sm),
                     _DimensionChip(dimension: task.dimension),
+                    if (task.isRepeat) ...[
+                      const SizedBox(width: AppSpacing.sm),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.xpPurpleLight,
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                        ),
+                        child: Text(
+                          'PRACTICE',
+                          style: AppTypography.textTheme.labelSmall?.copyWith(
+                            color: AppColors.xpPurple,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 9.5,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
                     const Spacer(),
                     if (task.trackName != null)
                       _TrackChip(trackName: task.trackName!),
