@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:verifai/core/providers/app_reconnect.dart';
 import 'package:verifai/core/services/api_error.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
@@ -74,7 +75,7 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
         error: (error, stackTrace) => AsyncErrorView(
           error: error,
           fallbackMessage: 'Failed to load industry tracks. Please try again.',
-          onRetry: () => ref.invalidate(tracksProvider),
+          onRetry: () => reconnectApp(ref),
         ),
       ),
       bottomNavigationBar: _selectedTrackId != null

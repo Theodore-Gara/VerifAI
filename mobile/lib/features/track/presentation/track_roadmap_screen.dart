@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:verifai/core/providers/app_reconnect.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
@@ -63,7 +64,7 @@ class TrackRoadmapScreen extends ConsumerWidget {
           error: (error, stackTrace) => AsyncErrorView(
             error: error,
             fallbackMessage: 'Failed to load your track milestones.',
-            onRetry: () => ref.invalidate(milestonesProvider),
+            onRetry: () => reconnectApp(ref),
           ),
         ),
       ),

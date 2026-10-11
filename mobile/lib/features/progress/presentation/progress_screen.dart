@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:verifai/core/providers/app_reconnect.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/progress/providers.dart';
+import 'package:verifai/features/scoreboard/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/dimension_bar.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
@@ -75,7 +78,7 @@ class ProgressScreen extends ConsumerWidget {
                 error: (error, stackTrace) => AsyncErrorView(
                   error: error,
                   fallbackMessage: 'Failed to load your progress.',
-                  onRetry: () => ref.invalidate(dashboardProvider),
+                  onRetry: () => reconnectApp(ref),
                 ),
               ),
             ),
@@ -202,6 +205,10 @@ class ProgressScreen extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.xl),
 
+          // Leaderboard entry point
+          _leaderboardCard(ref, ref.watch(leaderboardProvider(null))),
+          const SizedBox(height: AppSpacing.xl),
+
           // Weekly XP Activity
           Text(
             'Practice activity',
@@ -225,7 +232,7 @@ class ProgressScreen extends ConsumerWidget {
             error: (error, _) => InlineErrorCard(
               error: error,
               fallbackMessage: 'We could not load your activity.',
-              onRetry: () => ref.invalidate(activityProvider),
+              onRetry: () => reconnectApp(ref),
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -259,6 +266,65 @@ class ProgressScreen extends ConsumerWidget {
               );
             }),
         ],
+      ),
+    );
+  }
+
+  Widget _leaderboardCard(WidgetRef ref, AsyncValue<LeaderboardData> async) {
+    final rank = async.valueOrNull?.me.rank;
+    final subtitle = (rank != null && rank > 0)
+        ? 'You\'re ranked #$rank. Open the scoreboard.'
+        : 'Check how you rank against your peers.';
+    return Material(
+      color: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        side: BorderSide(color: AppColors.accentGreen.withValues(alpha: 0.35)),
+      ),
+      elevation: 1,
+      shadowColor: AppColors.shadow,
+      child: InkWell(
+        onTap: () => ref.context.push('/scoreboard'),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: AppColors.accentLight,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.emoji_events_rounded,
+                    color: AppColors.accentGreen, size: 22),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Leaderboard',
+                      style: AppTypography.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: AppTypography.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded,
+                  color: AppColors.textSecondary),
+            ],
+          ),
+        ),
       ),
     );
   }

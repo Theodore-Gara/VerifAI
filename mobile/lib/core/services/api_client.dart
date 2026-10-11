@@ -1,6 +1,7 @@
 import 'package:verifai/shared/models.dart';
 
 abstract class ApiClient {
+  Future<void> ping();
   Future<List<IndustryTrack>> getTracks();
   Future<AuthSyncResponse> syncUser(User user);
   Future<void> updateProfile(int trackId);

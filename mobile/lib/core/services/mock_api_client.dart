@@ -113,6 +113,11 @@ class MockApiClient implements ApiClient {
   };
 
   @override
+  Future<void> ping() async {
+    await _delay();
+  }
+
+  @override
   Future<List<IndustryTrack>> getTracks() async {
     await _delay();
     return List.from(_tracks);

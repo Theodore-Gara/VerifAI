@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:verifai/core/providers/app_reconnect.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
@@ -7,6 +9,7 @@ import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/profile/providers.dart';
+import 'package:verifai/features/scoreboard/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
@@ -21,6 +24,7 @@ class ProfileScreen extends ConsumerWidget {
     // Achievements earned by this user (GET /api/achievements/me). The full
     // catalog is known to the app, so locked ones can be shown too
     final achievementsAsync = ref.watch(achievementsProvider);
+    final leagueAsync = ref.watch(leaderboardProvider(null));
 
     final userName = (user?.name?.isNotEmpty == true) ? user!.name! : null;
     final displayName = userName ?? user?.email ?? '';
@@ -253,8 +257,12 @@ class ProfileScreen extends ConsumerWidget {
 
                   // Bento Stat Metrics Row
                   dashboardAsync.when(
-                    data: (progress) =>
-                        _buildStatsRow(progress.currentXp, progress.streakDays),
+                    data: (progress) => _buildStatsRow(
+                      ref,
+                      progress.currentXp,
+                      progress.streakDays,
+                      leagueAsync.valueOrNull?.me.rank,
+                    ),
                     loading: () => const Row(
                       children: [
                         Expanded(child: ShimmerLoader(height: 96)),
@@ -267,7 +275,7 @@ class ProfileScreen extends ConsumerWidget {
                     error: (error, _) => InlineErrorCard(
                       error: error,
                       fallbackMessage: 'We could not load your stats.',
-                      onRetry: () => ref.invalidate(dashboardProvider),
+                      onRetry: () => reconnectApp(ref),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
@@ -282,7 +290,7 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsRow(int xp, int streak) {
+  Widget _buildStatsRow(WidgetRef ref, int xp, int streak, int? leagueRank) {
     return Row(
       children: [
         _buildBentoStat(
@@ -303,10 +311,11 @@ class ProfileScreen extends ConsumerWidget {
         const SizedBox(width: AppSpacing.md),
         _buildBentoStat(
           label: 'LEAGUE RANK',
-          value: '—',
+          value: leagueRank == null ? '—' : '#$leagueRank',
           icon: Icons.emoji_events_rounded,
           iconColor: AppColors.accentGreen,
           bgColor: AppColors.accentLight,
+          onTap: () => ref.context.push('/scoreboard'),
         ),
       ],
     );
@@ -402,7 +411,7 @@ class ProfileScreen extends ConsumerWidget {
           error: (error, _) => InlineErrorCard(
             error: error,
             fallbackMessage: 'We could not load your achievements.',
-            onRetry: () => ref.invalidate(achievementsProvider),
+            onRetry: () => reconnectApp(ref),
           ),
         ),
       ],
@@ -430,53 +439,57 @@ class ProfileScreen extends ConsumerWidget {
     required IconData icon,
     required Color iconColor,
     required Color bgColor,
+    VoidCallback? onTap,
   }) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-            vertical: AppSpacing.md, horizontal: AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          border: Border.all(color: AppColors.border),
-          boxShadow: const [
-            BoxShadow(
-              color: AppColors.shadow,
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: bgColor,
-                shape: BoxShape.circle,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+              vertical: AppSpacing.md, horizontal: AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            border: Border.all(color: AppColors.border),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.shadow,
+                blurRadius: 8,
+                offset: Offset(0, 2),
               ),
-              child: Icon(icon, color: iconColor, size: 18),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              value,
-              style: AppTypography.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.3,
-                color: AppColors.textPrimary,
+            ],
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: iconColor, size: 18),
               ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: AppTypography.textTheme.labelSmall?.copyWith(
-                color: AppColors.textSecondary,
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.3,
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                value,
+                style: AppTypography.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: AppTypography.textTheme.labelSmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

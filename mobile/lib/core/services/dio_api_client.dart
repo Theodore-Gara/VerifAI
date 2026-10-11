@@ -15,6 +15,19 @@ class DioApiClient implements ApiClient {
         _firebaseAuth = firebaseAuth ?? firebase_auth.FirebaseAuth.instance;
 
   @override
+  Future<void> ping() async {
+    await _dio.get<Map<String, dynamic>>(
+      'health',
+      // The Render free tier can take ~50s to wake after being idle, far over
+      // the shared 10s timeout, so gives this request its own generous window.
+      options: Options(
+        connectTimeout: const Duration(seconds: 65),
+        receiveTimeout: const Duration(seconds: 65),
+      ),
+    );
+  }
+
+  @override
   Future<List<IndustryTrack>> getTracks() async {
     final response = await _dio.get<Map<String, dynamic>>('tracks');
     final tracks = response.data?['tracks'] as List<dynamic>? ?? const [];

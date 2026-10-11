@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:verifai/core/providers/app_reconnect.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
@@ -99,7 +100,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
                 error: (error, _) => AsyncErrorView(
                   error: error,
                   fallbackMessage: 'Failed to load the leaderboard.',
-                  onRetry: () => ref.invalidate(leaderboardProvider),
+                  onRetry: () => reconnectApp(ref),
                 ),
               ),
             ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:verifai/core/providers/app_reconnect.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
@@ -356,7 +357,7 @@ class FeedbackScreen extends ConsumerWidget {
                           error: error,
                           fallbackMessage:
                               'We could not load your skill breakdown.',
-                          onRetry: () => ref.invalidate(dashboardProvider),
+                          onRetry: () => reconnectApp(ref),
                         ),
                       ],
                     ),

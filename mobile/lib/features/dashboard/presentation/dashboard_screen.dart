@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:verifai/core/providers/app_reconnect.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
@@ -114,7 +115,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               error: (error, stackTrace) => AsyncErrorView(
                 error: error,
                 fallbackMessage: 'Failed to load dashboard. Pull to refresh.',
-                onRetry: () => ref.invalidate(dashboardProvider),
+                onRetry: () => reconnectApp(ref),
               ),
             ),
           ),
