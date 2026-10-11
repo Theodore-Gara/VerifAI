@@ -1,0 +1,4 @@
+storePassword=replace-with-secure-store-password
+keyPassword=replace-with-secure-key-password
+keyAlias=replace-with-release-key-alias
+storeFile=release-keystore.jks
