@@ -19,7 +19,11 @@ const errorHandler = require('./middleware/errorHandler');
 const app = express();
 
 app.disable('x-powered-by');
-app.set('trust proxy', 1);
+// The client sits behind Cloudflare AND Render's load balancer, so the real
+// client IP is two trusted hops away. With 1, req.ip resolved to a Cloudflare
+// edge address that varies per request, which defeated per-IP rate limiting
+// entirely: the counter never went down monotonically.
+app.set('trust proxy', 2);
 
 app.use((req, res, next) => {
   req.requestId = req.headers['x-request-id'] || uuidv4();
@@ -46,9 +50,53 @@ app.use(cors({
 app.use(express.json({ limit: '32kb' }));
 app.use(express.urlencoded({ extended: false, limit: '16kb' }));
 
+// Rate limits are counted per account, not per IP. The client is a signed-in
+// mobile app, and shared proxy addresses meant one busy client could throttle
+// everyone else (and the health checks).
+//
+// The bearer token's payload is decoded WITHOUT verifying its signature. That
+// is deliberate: this only decides which bucket a request counts against, never
+// whether it is allowed - verifyFirebaseToken still gates every protected
+// route, and a forged uid would only earn the sender its own fresh bucket.
+function rateLimitKey(req) {
+  const [scheme, token] = (req.headers.authorization || '').split(' ');
+  if (scheme === 'Bearer' && token) {
+    const payload = token.split('.')[1];
+    if (payload) {
+      try {
+        const claims = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+        const uid = claims.user_id || claims.sub;
+        if (uid) return `user:${uid}`;
+      } catch {
+        // Malformed token - fall through to the IP bucket.
+      }
+    }
+  }
+  const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+  // Mask IPv6 to its /64 so one client cannot rotate through its own subnet.
+  const masked = ip.includes(':')
+    ? `${ip.split(':').slice(0, 4).join(':')}::/64`
+    : ip;
+  return `ip:${masked}`;
+}
+
+// Health checks are polled by Render to decide whether a deploy is healthy, so
+// they must never be rate limited: a 429 here marks the service unhealthy,
+// which restarts it and causes the cold starts clients then see.
+app.use('/api/health', healthRoutes);
+
+// A generous per-account backstop. Task and progress routes are the point of
+// the app, so they are not tightly limited; the assistant keeps its own, much
+// stricter limit because every call costs an LLM request.
 const windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000;
-const max = Number(process.env.RATE_LIMIT_MAX) || 200;
-app.use('/api', rateLimit({ windowMs, limit: max, standardHeaders: true, legacyHeaders: false }));
+const max = Number(process.env.RATE_LIMIT_MAX) || 600;
+app.use('/api', rateLimit({
+  windowMs,
+  limit: max,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: rateLimitKey,
+}));
 
 app.get('/', (req, res) => {
   res.status(200).json({
@@ -59,7 +107,6 @@ app.get('/', (req, res) => {
   });
 });
 
-app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/tracks', trackRoutes);
