@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:verifai/core/providers/app_reconnect.dart';
@@ -9,6 +10,7 @@ import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/scoreboard/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
+import 'package:verifai/shared/widgets/score_ring.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
 
 class ScoreboardScreen extends ConsumerStatefulWidget {
@@ -46,6 +48,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(currentUserProvider).valueOrNull;
     final scope = _scopeTrackId();
     final boardAsync = ref.watch(leaderboardProvider(scope));
 
@@ -54,32 +57,51 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Scoreboard'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Scoreboard',
+              style: AppTypography.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.2,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            Text(
+              'Cohort readiness & rankings',
+              style: AppTypography.textTheme.labelSmall?.copyWith(
+                color: AppColors.textSecondary,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
         centerTitle: false,
         actions: const [
           Padding(
             padding: EdgeInsets.only(right: AppSpacing.screenPadding),
-            child: Center(child: _Pill(label: 'LIVE RANKING')),
+            child: Center(child: _LiveBenchmarkPill()),
           ),
         ],
       ),
       body: Stack(
         children: [
-          // Ambient Mesh Glows
+          // Ambient Mesh Glows (Mint & Cyan on-theme lighting)
           Positioned(
-            top: -40,
+            top: -50,
             right: -30,
             child: Container(
               width: 220,
               height: 220,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.ambientGold,
+                color: AppColors.ambientCyan,
               ),
             ),
           ),
           Positioned(
-            top: 280,
+            top: 260,
             left: -60,
             child: Container(
               width: 200,
@@ -95,7 +117,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
             child: RefreshIndicator(
               onRefresh: () async => ref.invalidate(leaderboardProvider),
               child: boardAsync.when(
-                data: (data) => _buildBoard(data),
+                data: (data) => _buildBoard(data, user),
                 loading: () => _buildShimmer(),
                 error: (error, _) => AsyncErrorView(
                   error: error,
@@ -110,8 +132,13 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
     );
   }
 
-  Widget _buildBoard(LeaderboardData data) {
+  Widget _buildBoard(LeaderboardData data, User? user) {
     final entries = data.entries;
+    final hasTopThree = entries.length >= 3;
+
+    final trackTabLabel = (user?.trackName != null && user!.trackName!.isNotEmpty)
+        ? '${user.trackName} Track'
+        : 'Industry Track';
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -122,18 +149,22 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
         100, // accommodates floating dock
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Your standing
-          _buildStandingBanner(data.me),
-          const SizedBox(height: AppSpacing.sm),
-
-          // Tabs (Global vs Track)
+          // Scope Control Tabs (Global vs Track Cohort)
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.pill),
               border: Border.all(color: AppColors.border),
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.shadow,
+                  blurRadius: 4,
+                  offset: Offset(0, 1),
+                ),
+              ],
             ),
             child: TabBar(
               controller: _tabController,
@@ -142,61 +173,74 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
               indicator: BoxDecoration(
                 color: AppColors.primaryNavy,
                 borderRadius: BorderRadius.circular(AppRadius.pill),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primaryNavy.withValues(alpha: 0.25),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               labelColor: Colors.white,
               unselectedLabelColor: AppColors.textSecondary,
-              labelStyle: AppTypography.textTheme.labelMedium
-                  ?.copyWith(fontWeight: FontWeight.w800),
-              tabs: const [
-                Tab(text: 'Global'),
-                Tab(text: 'Industry Track'),
+              labelStyle: AppTypography.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.1,
+              ),
+              tabs: [
+                const Tab(text: 'Global Cohort'),
+                Tab(text: trackTabLabel),
               ],
             ),
           ),
           const SizedBox(height: AppSpacing.md),
 
+          // Your Cohort Standing Bento Card
+          _buildStandingBanner(data.me, entries.length),
+          const SizedBox(height: AppSpacing.lg),
+
           if (entries.isEmpty)
             const EmptyState(
-              icon: Icons.emoji_events_outlined,
+              icon: Icons.workspace_premium_outlined,
               title: 'No rankings yet',
               message:
-                  'Be the first to earn XP in this board. Rankings appear once users start completing tasks.',
+                  'Be the first to complete verification challenges and establish your AI readiness score.',
             )
           else ...[
-            if (entries.length >= 3)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildPodiumSpot(
-                    entry: entries[1],
-                    place: 2,
-                    color: AppColors.silver,
-                    height: 92,
-                    crownIcon: Icons.military_tech_rounded,
+            if (hasTopThree) ...[
+              // Elite Top 3 Showcase
+              _buildTopPerformersShowcase(entries.take(3).toList()),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+
+            // Section Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'COHORT RANKINGS',
+                  style: AppTypography.textTheme.labelSmall?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.6,
+                    fontSize: 10.5,
                   ),
-                  const SizedBox(width: AppSpacing.md),
-                  _buildPodiumSpot(
-                    entry: entries[0],
-                    place: 1,
-                    color: AppColors.gold,
-                    height: 124,
-                    crownIcon: Icons.emoji_events_rounded,
-                    isFirst: true,
+                ),
+                Text(
+                  '${entries.length} members',
+                  style: AppTypography.textTheme.labelSmall?.copyWith(
+                    color: AppColors.textSecondary.withValues(alpha: 0.7),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(width: AppSpacing.md),
-                  _buildPodiumSpot(
-                    entry: entries[2],
-                    place: 3,
-                    color: AppColors.bronze,
-                    height: 76,
-                    crownIcon: Icons.workspace_premium_rounded,
-                  ),
-                ],
-              ),
-            const SizedBox(height: AppSpacing.md),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+
+            // Remaining Cohort List
             ...entries
-                .skip(entries.length >= 3 ? 3 : 0)
+                .skip(hasTopThree ? 3 : 0)
                 .map(_buildLeaderboardTile),
           ],
         ],
@@ -204,52 +248,142 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
     );
   }
 
-  Widget _buildStandingBanner(LeaderboardEntry me) {
+  Widget _buildStandingBanner(LeaderboardEntry me, int totalEntries) {
+    final percentile = totalEntries > 0
+        ? math.max(1, ((me.rank / math.max(totalEntries, me.rank)) * 100).ceil())
+        : 1;
+    final cohortContext = me.rank == 1
+        ? 'Top 1% · Leader'
+        : 'Top $percentile% Cohort';
+
     return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: 10),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [AppColors.primaryNavy, Color(0xFF1E293B)],
+          colors: [
+            AppColors.primaryNavy,
+            Color(0xFF132235),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.glassBorderDark),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryNavy.withValues(alpha: 0.15),
-            blurRadius: 12,
+            color: AppColors.primaryNavy.withValues(alpha: 0.16),
+            blurRadius: 16,
             offset: const Offset(0, 4),
+          ),
+          const BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 4,
+            offset: Offset(0, 1),
           ),
         ],
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.accentGreen.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
+          // Mini Readiness Gauge
+          ScoreRing(
+            score: me.readinessScore,
+            size: 58,
+            strokeWidth: 5.5,
+            progressColor: AppColors.accentCyan,
+            trackColor: Colors.white.withValues(alpha: 0.12),
+            child: Center(
+              child: Text(
+                '${me.readinessScore}',
+                style: AppTypography.textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
+              ),
             ),
-            child: const Icon(Icons.workspace_premium_rounded,
-                color: AppColors.accentCyan, size: 22),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  children: [
+                    Text(
+                      'YOUR BENCHMARK',
+                      style: AppTypography.textTheme.labelSmall?.copyWith(
+                        color: AppColors.accentCyan,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 9.5,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.accentGreen.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                      ),
+                      child: Text(
+                        cohortContext,
+                        style: AppTypography.textTheme.labelSmall?.copyWith(
+                          color: AppColors.accentCyan,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
                 Text(
-                  'YOUR STANDING',
-                  style: AppTypography.textTheme.labelSmall?.copyWith(
-                    color: AppColors.accentCyan,
+                  'Rank #${me.rank} · ${me.tier}',
+                  style: AppTypography.textTheme.titleSmall?.copyWith(
+                    color: Colors.white,
                     fontWeight: FontWeight.w800,
-                    fontSize: 10,
-                    letterSpacing: 0.6,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
-                  'Rank #${me.rank} · ${me.tier} · ${me.xp} XP',
+                  '${me.streak} day streak · ${me.xp} XP',
                   style: AppTypography.textTheme.bodySmall?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.85),
+                    color: Colors.white.withValues(alpha: 0.75),
+                    fontSize: 11.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+            decoration: BoxDecoration(
+              color: AppColors.accentGreen.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              border: Border.all(
+                color: AppColors.accentGreen.withValues(alpha: 0.35),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.verified_rounded,
+                  size: 11,
+                  color: AppColors.accentCyan,
+                ),
+                const SizedBox(width: 3),
+                Text(
+                  'READY',
+                  style: AppTypography.textTheme.labelSmall?.copyWith(
+                    color: AppColors.accentCyan,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 9,
+                    letterSpacing: 0.4,
                   ),
                 ),
               ],
@@ -260,100 +394,319 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
     );
   }
 
-  Widget _buildPodiumSpot({
-    required LeaderboardEntry entry,
-    required int place,
-    required Color color,
-    required double height,
-    required IconData crownIcon,
-    bool isFirst = false,
-  }) {
-    return Expanded(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(crownIcon, color: color, size: isFirst ? 26 : 20),
-          const SizedBox(height: 2),
-          Container(
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: color, width: isFirst ? 2 : 1.5),
-              boxShadow: isFirst
-                  ? [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.35),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : null,
+  Widget _buildTopPerformersShowcase(List<LeaderboardEntry> topThree) {
+    final first = topThree[0];
+    final second = topThree[1];
+    final third = topThree[2];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 14,
+                  color: AppColors.accentGreen,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'TOP PERFORMERS',
+                  style: AppTypography.textTheme.labelSmall?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.6,
+                    fontSize: 10.5,
+                  ),
+                ),
+              ],
             ),
-            child: CircleAvatar(
-              radius: isFirst ? 22 : 18,
-              backgroundColor: color.withValues(alpha: 0.15),
-              child: Text(
-                entry.name.substring(0, 1),
-                style: AppTypography.textTheme.labelLarge?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w800,
+            Text(
+              'Verified Readiness',
+              style: AppTypography.textTheme.labelSmall?.copyWith(
+                color: AppColors.textSecondary.withValues(alpha: 0.7),
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: _buildEliteSpot(
+                entry: second,
+                rank: 2,
+                isFirst: false,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: _buildEliteSpot(
+                entry: first,
+                rank: 1,
+                isFirst: true,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: _buildEliteSpot(
+                entry: third,
+                rank: 3,
+                isFirst: false,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEliteSpot({
+    required LeaderboardEntry entry,
+    required int rank,
+    required bool isFirst,
+  }) {
+    final initial = entry.name.trim().isEmpty ? '?' : entry.name.trim()[0];
+    final firstName = entry.name.trim().split(RegExp(r'\s+')).first;
+
+    if (isFirst) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.primaryNavy,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          border: Border.all(
+            color: AppColors.accentGreen.withValues(alpha: 0.6),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryNavy.withValues(alpha: 0.22),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+            BoxShadow(
+              color: AppColors.accentGreen.withValues(alpha: 0.15),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Rank 1 Pill
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+              decoration: BoxDecoration(
+                color: AppColors.accentGreen,
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.workspace_premium_rounded,
+                    size: 12,
+                    color: AppColors.primaryNavy,
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    '#1',
+                    style: AppTypography.textTheme.labelSmall?.copyWith(
+                      color: AppColors.primaryNavy,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Avatar
+            Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.accentGreen, width: 2),
+              ),
+              child: CircleAvatar(
+                radius: 20,
+                backgroundColor: AppColors.primaryDark,
+                child: Text(
+                  initial,
+                  style: AppTypography.textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ),
+            const SizedBox(height: 6),
+
+            // First Name
+            Text(
+              firstName,
+              style: AppTypography.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                letterSpacing: -0.2,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+
+            // Readiness Score Chip
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.accentGreen.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                border: Border.all(
+                  color: AppColors.accentGreen.withValues(alpha: 0.4),
+                ),
+              ),
+              child: Text(
+                '${entry.readinessScore}% Ready',
+                style: AppTypography.textTheme.labelSmall?.copyWith(
+                  color: AppColors.accentCyan,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 9.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+
+            // XP
+            Text(
+              '${entry.xp} XP',
+              style: AppTypography.textTheme.labelSmall?.copyWith(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 9.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Rank 2 & 3
+    final isRank2 = rank == 2;
+    final badgeBg = isRank2 ? AppColors.silverLight : AppColors.bronzeLight;
+    final badgeColor = isRank2 ? AppColors.textSecondary : AppColors.bronze;
+    final badgeBorder = isRank2
+        ? AppColors.silver.withValues(alpha: 0.5)
+        : AppColors.bronze.withValues(alpha: 0.4);
+    final badgeIcon =
+        isRank2 ? Icons.shield_outlined : Icons.military_tech_outlined;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.border),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 8,
+            offset: Offset(0, 2),
           ),
-          const SizedBox(height: 4),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Rank Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              color: badgeBg,
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              border: Border.all(color: badgeBorder),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(badgeIcon, size: 11, color: badgeColor),
+                const SizedBox(width: 3),
+                Text(
+                  '#$rank',
+                  style: AppTypography.textTheme.labelSmall?.copyWith(
+                    color: badgeColor,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 9.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+
+          // Avatar
+          CircleAvatar(
+            radius: 17,
+            backgroundColor: AppColors.background,
+            child: Text(
+              initial,
+              style: AppTypography.textTheme.labelMedium?.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(height: 5),
+
+          // First Name
           Text(
-            entry.name.split(' ')[0],
+            firstName,
             style: AppTypography.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
               letterSpacing: -0.2,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
+          const SizedBox(height: 4),
+
+          // Readiness Score Chip
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: AppColors.xpPurpleLight,
+              color: AppColors.accentLight.withValues(alpha: 0.7),
               borderRadius: BorderRadius.circular(AppRadius.pill),
+              border: Border.all(
+                color: AppColors.accentGreen.withValues(alpha: 0.3),
+              ),
             ),
             child: Text(
-              '${entry.xp} XP',
+              '${entry.readinessScore}% Ready',
               style: AppTypography.textTheme.labelSmall?.copyWith(
-                color: AppColors.xpPurple,
+                color: AppColors.accentGreen,
                 fontWeight: FontWeight.w800,
-                fontSize: 9.5,
+                fontSize: 9,
               ),
             ),
           ),
-          const SizedBox(height: 6),
-          Container(
-            height: height,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  color.withValues(alpha: 0.22),
-                  color.withValues(alpha: 0.06),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(AppRadius.lg),
-                topRight: Radius.circular(AppRadius.lg),
-              ),
-              border: Border.all(color: color.withValues(alpha: 0.35)),
-            ),
-            child: Center(
-              child: Text(
-                '#$place',
-                style: AppTypography.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: color,
-                  letterSpacing: -0.5,
-                ),
-              ),
+          const SizedBox(height: 4),
+
+          // XP
+          Text(
+            '${entry.xp} XP',
+            style: AppTypography.textTheme.labelSmall?.copyWith(
+              color: AppColors.textSecondary,
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -362,34 +715,42 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
   }
 
   Widget _buildLeaderboardTile(LeaderboardEntry entry) {
+    final initial = entry.name.trim().isEmpty ? '?' : entry.name.trim()[0];
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding:
-          const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 10,
+      ),
       decoration: BoxDecoration(
         color: entry.isCurrentUser
-            ? AppColors.accentLight.withValues(alpha: 0.6)
+            ? AppColors.accentLight.withValues(alpha: 0.45)
             : AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
-          color: entry.isCurrentUser ? AppColors.accentGreen : AppColors.border,
-          width: entry.isCurrentUser ? 2 : 1,
+          color: entry.isCurrentUser
+              ? AppColors.accentGreen
+              : AppColors.border,
+          width: entry.isCurrentUser ? 1.5 : 1,
         ),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 6,
-            offset: Offset(0, 2),
+            color: entry.isCurrentUser
+                ? AppColors.accentGreen.withValues(alpha: 0.08)
+                : AppColors.shadow,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Row(
         children: [
           SizedBox(
-            width: 28,
+            width: 32,
             child: Text(
               '#${entry.rank}',
-              style: AppTypography.textTheme.labelLarge?.copyWith(
+              style: AppTypography.textTheme.labelMedium?.copyWith(
                 color: entry.isCurrentUser
                     ? AppColors.accentGreen
                     : AppColors.textSecondary,
@@ -398,14 +759,16 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
             ),
           ),
           CircleAvatar(
-            radius: 16,
-            backgroundColor:
-                entry.isCurrentUser ? AppColors.accentGreen : AppColors.border,
+            radius: 17,
+            backgroundColor: entry.isCurrentUser
+                ? AppColors.accentGreen
+                : AppColors.primaryNavy.withValues(alpha: 0.08),
             child: Text(
-              entry.name.substring(0, 1),
+              initial,
               style: AppTypography.textTheme.labelSmall?.copyWith(
-                color:
-                    entry.isCurrentUser ? Colors.white : AppColors.textPrimary,
+                color: entry.isCurrentUser
+                    ? Colors.white
+                    : AppColors.primaryNavy,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -433,7 +796,9 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
                       const SizedBox(width: 5),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 1.5),
+                          horizontal: 6,
+                          vertical: 1.5,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.accentGreen,
                           borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -450,6 +815,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
                     ],
                   ],
                 ),
+                const SizedBox(height: 2),
                 Row(
                   children: [
                     Text(
@@ -457,11 +823,15 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
                       style: AppTypography.textTheme.labelSmall?.copyWith(
                         color: AppColors.textSecondary,
                         fontSize: 11,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(width: 6),
-                    const Icon(Icons.local_fire_department_rounded,
-                        size: 13, color: AppColors.goldDark),
+                    const Icon(
+                      Icons.local_fire_department_rounded,
+                      size: 13,
+                      color: AppColors.goldDark,
+                    ),
                     Text(
                       '${entry.streak}d',
                       style: AppTypography.textTheme.labelSmall?.copyWith(
@@ -475,13 +845,52 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
               ],
             ),
           ),
-          Text(
-            '${entry.xp} XP',
-            style: AppTypography.textTheme.labelLarge?.copyWith(
-              color: AppColors.xpPurple,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.2,
-            ),
+          const SizedBox(width: AppSpacing.sm),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2.5,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.accentLight,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  border: Border.all(
+                    color: AppColors.accentGreen.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.verified_rounded,
+                      size: 12,
+                      color: AppColors.accentGreen,
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      '${entry.readinessScore}%',
+                      style: AppTypography.textTheme.labelSmall?.copyWith(
+                        color: AppColors.accentGreen,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                '${entry.xp} XP',
+                style: AppTypography.textTheme.labelSmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 10.5,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -490,43 +899,76 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
 
   Widget _buildShimmer() {
     return ListView(
-      padding: const EdgeInsets.all(AppSpacing.screenPadding),
-      children: const [
-        ShimmerLoader(height: 54),
-        SizedBox(height: AppSpacing.md),
-        ShimmerLoader(height: 44),
-        SizedBox(height: AppSpacing.md),
-        ShimmerLoader.card(height: 200),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPadding,
+        AppSpacing.sm,
+        AppSpacing.screenPadding,
+        100,
+      ),
+      children: [
+        const ShimmerLoader(
+          height: 44,
+          borderRadius: BorderRadius.all(Radius.circular(AppRadius.pill)),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        const ShimmerLoader(
+          height: 84,
+          borderRadius: BorderRadius.all(Radius.circular(AppRadius.card)),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        const ShimmerLoader(
+          height: 124,
+          borderRadius: BorderRadius.all(Radius.circular(AppRadius.card)),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        ...List.generate(
+          4,
+          (index) => const Padding(
+            padding: EdgeInsets.only(bottom: AppSpacing.sm),
+            child: ShimmerLoader(
+              height: 64,
+              borderRadius: BorderRadius.all(Radius.circular(AppRadius.card)),
+            ),
+          ),
+        ),
       ],
     );
   }
 }
 
-class _Pill extends StatelessWidget {
-  final String label;
-  const _Pill({required this.label});
+class _LiveBenchmarkPill extends StatelessWidget {
+  const _LiveBenchmarkPill();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
       decoration: BoxDecoration(
-        color: AppColors.goldLight,
+        color: AppColors.accentLight.withValues(alpha: 0.65),
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
+        border: Border.all(
+          color: AppColors.accentGreen.withValues(alpha: 0.35),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.emoji_events_rounded,
-              size: 14, color: AppColors.goldDark),
-          const SizedBox(width: 4),
+          Container(
+            width: 6,
+            height: 6,
+            decoration: const BoxDecoration(
+              color: AppColors.accentGreen,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 5),
           Text(
-            label,
+            'LIVE BENCHMARK',
             style: AppTypography.textTheme.labelSmall?.copyWith(
-              color: AppColors.goldDark,
+              color: AppColors.primaryNavy,
               fontWeight: FontWeight.w800,
               fontSize: 9.5,
+              letterSpacing: 0.5,
             ),
           ),
         ],
