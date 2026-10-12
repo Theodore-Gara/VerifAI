@@ -254,8 +254,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   label: 'Continue with Google',
                   variant: VerifAIButtonVariant.secondary,
                   isLoading: _pending == _PendingAction.google,
-                  onPressed:
-                      _pending == null ? _handleGoogleSignIn : null,
+                  onPressed: _pending == null ? _handleGoogleSignIn : null,
                   leadingIcon: Icons.g_mobiledata,
                 ),
                 const SizedBox(height: AppSpacing.lg),

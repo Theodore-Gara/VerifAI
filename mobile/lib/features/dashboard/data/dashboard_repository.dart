@@ -9,7 +9,8 @@ abstract class DashboardRepository {
 class MockDashboardRepository implements DashboardRepository {
   final ApiClient _apiClient;
 
-  MockDashboardRepository({required ApiClient apiClient}) : _apiClient = apiClient;
+  MockDashboardRepository({required ApiClient apiClient})
+      : _apiClient = apiClient;
 
   @override
   Future<DashboardData> getDashboard() async {

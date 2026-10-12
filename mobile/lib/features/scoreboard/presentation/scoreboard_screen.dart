@@ -136,9 +136,10 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
     final entries = data.entries;
     final hasTopThree = entries.length >= 3;
 
-    final trackTabLabel = (user?.trackName != null && user!.trackName!.isNotEmpty)
-        ? '${user.trackName} Track'
-        : 'Industry Track';
+    final trackTabLabel =
+        (user?.trackName != null && user!.trackName!.isNotEmpty)
+            ? '${user.trackName} Track'
+            : 'Industry Track';
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -239,9 +240,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
             const SizedBox(height: AppSpacing.sm),
 
             // Remaining Cohort List
-            ...entries
-                .skip(hasTopThree ? 3 : 0)
-                .map(_buildLeaderboardTile),
+            ...entries.skip(hasTopThree ? 3 : 0).map(_buildLeaderboardTile),
           ],
         ],
       ),
@@ -250,11 +249,11 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
 
   Widget _buildStandingBanner(LeaderboardEntry me, int totalEntries) {
     final percentile = totalEntries > 0
-        ? math.max(1, ((me.rank / math.max(totalEntries, me.rank)) * 100).ceil())
+        ? math.max(
+            1, ((me.rank / math.max(totalEntries, me.rank)) * 100).ceil())
         : 1;
-    final cohortContext = me.rank == 1
-        ? 'Top 1% · Leader'
-        : 'Top $percentile% Cohort';
+    final cohortContext =
+        me.rank == 1 ? 'Top 1% · Leader' : 'Top $percentile% Cohort';
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -729,9 +728,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
             : AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
-          color: entry.isCurrentUser
-              ? AppColors.accentGreen
-              : AppColors.border,
+          color: entry.isCurrentUser ? AppColors.accentGreen : AppColors.border,
           width: entry.isCurrentUser ? 1.5 : 1,
         ),
         boxShadow: [
@@ -766,9 +763,8 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
             child: Text(
               initial,
               style: AppTypography.textTheme.labelSmall?.copyWith(
-                color: entry.isCurrentUser
-                    ? Colors.white
-                    : AppColors.primaryNavy,
+                color:
+                    entry.isCurrentUser ? Colors.white : AppColors.primaryNavy,
                 fontWeight: FontWeight.w800,
               ),
             ),

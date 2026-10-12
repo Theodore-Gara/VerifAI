@@ -224,7 +224,8 @@ class FirebaseAuthRepository implements AuthRepository {
       // onboarding is never a dead end.
       final token = await _secureStorage.getAuthToken() ?? '';
       _authStateController.add(
-        AuthState.authenticated(user: current.copyWith(hasCompletedOnboarding: true), token: token),
+        AuthState.authenticated(
+            user: current.copyWith(hasCompletedOnboarding: true), token: token),
       );
     }
   }

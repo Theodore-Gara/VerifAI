@@ -23,7 +23,8 @@ class DashboardData with _$DashboardData {
       fromJson: _dailyTaskListFromJson,
       toJson: _dailyTaskListToJson,
     )
-    @Default([]) List<DailyTask> tasks,
+    @Default([])
+    List<DailyTask> tasks,
   }) = _DashboardData;
 
   factory DashboardData.fromJson(Map<String, dynamic> json) =>

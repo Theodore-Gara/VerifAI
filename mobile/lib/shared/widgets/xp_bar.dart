@@ -20,7 +20,8 @@ class XPBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = (currentXP / (nextLevelXP > 0 ? nextLevelXP : 1)).clamp(0.0, 1.0);
+    final progress =
+        (currentXP / (nextLevelXP > 0 ? nextLevelXP : 1)).clamp(0.0, 1.0);
 
     if (compact) {
       return Row(
@@ -99,7 +100,8 @@ class XPBar extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3.5),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [AppColors.xpPurple, Color(0xFF6D28D9)],

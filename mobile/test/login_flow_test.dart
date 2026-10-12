@@ -22,7 +22,8 @@ class _FailingAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<AuthResult> register(String email, String password, String name) async {
+  Future<AuthResult> register(
+      String email, String password, String name) async {
     throw Exception('firebase_auth/email-already-in-use');
   }
 

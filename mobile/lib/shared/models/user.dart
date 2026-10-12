@@ -25,5 +25,6 @@ class AuthResult with _$AuthResult {
     required String token,
   }) = _AuthResult;
 
-  factory AuthResult.fromJson(Map<String, dynamic> json) => _$AuthResultFromJson(json);
+  factory AuthResult.fromJson(Map<String, dynamic> json) =>
+      _$AuthResultFromJson(json);
 }

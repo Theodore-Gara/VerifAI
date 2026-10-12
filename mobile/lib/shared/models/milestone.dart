@@ -17,7 +17,8 @@ class Milestone {
     required this.achieved,
   });
 
-  double get progress => target <= 0 ? 0 : (current / target).clamp(0, 1).toDouble();
+  double get progress =>
+      target <= 0 ? 0 : (current / target).clamp(0, 1).toDouble();
 
   factory Milestone.fromJson(Map<String, dynamic> json) => Milestone(
         code: json['code'] as String? ?? '',

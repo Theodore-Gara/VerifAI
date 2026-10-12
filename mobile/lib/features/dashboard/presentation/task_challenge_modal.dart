@@ -150,211 +150,215 @@ class _TaskChallengeModalState extends ConsumerState<TaskChallengeModal> {
       child: Container(
         height: media.size.height * 0.88 - bottomInset,
         decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(AppRadius.xxxl),
-          topRight: Radius.circular(AppRadius.xxxl),
+          color: AppColors.surface,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(AppRadius.xxxl),
+            topRight: Radius.circular(AppRadius.xxxl),
+          ),
         ),
-      ),
-      child: Column(
-        children: [
-          // Drag handle
-          Container(
-            margin: const EdgeInsets.only(top: 12, bottom: 8),
-            width: 44,
-            height: 5,
-            decoration: BoxDecoration(
-              color: AppColors.border,
-              borderRadius: BorderRadius.circular(3),
+        child: Column(
+          children: [
+            // Drag handle
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 44,
+              height: 5,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(3),
+              ),
             ),
-          ),
 
-          // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenPadding, vertical: AppSpacing.sm),
-            child: Row(
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.accentLight,
-                    borderRadius: BorderRadius.circular(AppRadius.badge),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.sports_esports_rounded,
-                          size: 16, color: AppColors.accentGreen),
-                      const SizedBox(width: 4),
-                      Text(
-                        widget.task.dimension.toUpperCase(),
-                        style: AppTypography.textTheme.labelSmall?.copyWith(
-                          color: AppColors.accentGreen,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 10,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded,
-                      color: AppColors.textSecondary),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-          ),
-
-          Expanded(
-            child: SingleChildScrollView(
+            // Header
+            Padding(
               padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screenPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                  horizontal: AppSpacing.screenPadding,
+                  vertical: AppSpacing.sm),
+              child: Row(
                 children: [
-                  Text(
-                    widget.task.title,
-                    style: AppTypography.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentLight,
+                      borderRadius: BorderRadius.circular(AppRadius.badge),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.sports_esports_rounded,
+                            size: 16, color: AppColors.accentGreen),
+                        const SizedBox(width: 4),
+                        Text(
+                          widget.task.dimension.toUpperCase(),
+                          style: AppTypography.textTheme.labelSmall?.copyWith(
+                            color: AppColors.accentGreen,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 10,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
-
-                  // Scenario Card
-                  if (widget.task.scenario != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(AppRadius.card),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.psychology_rounded,
-                                  size: 18, color: AppColors.primaryNavy),
-                              const SizedBox(width: 6),
-                              Text(
-                                'AI SCENARIO OUTPUT',
-                                style: AppTypography.textTheme.labelSmall
-                                    ?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.primaryNavy,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                          Text(
-                            widget.task.scenario!,
-                            style: AppTypography.textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textPrimary,
-                              height: 1.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                  ],
-
-                  if (widget.task.embeddedFlaw?.isNotEmpty == true) ...[
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: AppColors.goldLight,
-                        borderRadius: BorderRadius.circular(AppRadius.card),
-                        border: Border.all(
-                            color: AppColors.gold.withValues(alpha: 0.45)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'ISSUE TO INVESTIGATE',
-                            style: AppTypography.textTheme.labelSmall?.copyWith(
-                              color: AppColors.goldDark,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            widget.task.embeddedFlaw!,
-                            style: AppTypography.textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textPrimary,
-                              height: 1.45,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
-
-                  OutlinedButton.icon(
-                    onPressed: () =>
-                        context.push('/assistant', extra: widget.task),
-                    icon: const Icon(Icons.support_agent_rounded),
-                    label: const Text('Ask the Learning Assistant'),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded,
+                        color: AppColors.textSecondary),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  Text(
-                    widget.task.format == 'line_text'
-                        ? 'Select the flawed line(s), then enter a correction and reason.'
-                        : widget.practice
-                            ? 'Practice: choose the best response'
-                            : 'What would you do with this output?',
-                    style: AppTypography.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-
-                  if (widget.task.format == 'line_text')
-                    _buildLineTextAnswer()
-                  else if (widget.task.format == 'choice' &&
-                      widget.task.options.isNotEmpty)
-                    ...widget.task.options.map(_buildOption)
-                  else
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                      child: Text(
-                        'This task does not include supported answer content. Refresh your task list and try again.',
-                      ),
-                    ),
-                  const SizedBox(height: AppSpacing.xxl),
                 ],
               ),
             ),
-          ),
 
-          // Bottom Action
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.screenPadding),
-            child: VerifAIButton(
-              label: widget.practice ? 'Submit Practice' : 'Submit Answer',
-              variant: VerifAIButtonVariant.verification,
-              isLoading: _isSubmitting,
-              onPressed: _canSubmit ? _handleSubmit : null,
-              leadingIcon: Icons.check_circle_rounded,
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.task.title,
+                      style: AppTypography.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    // Scenario Card
+                    if (widget.task.scenario != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.psychology_rounded,
+                                    size: 18, color: AppColors.primaryNavy),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'AI SCENARIO OUTPUT',
+                                  style: AppTypography.textTheme.labelSmall
+                                      ?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.primaryNavy,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            Text(
+                              widget.task.scenario!,
+                              style:
+                                  AppTypography.textTheme.bodyMedium?.copyWith(
+                                color: AppColors.textPrimary,
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                    ],
+
+                    if (widget.task.embeddedFlaw?.isNotEmpty == true) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: AppColors.goldLight,
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                          border: Border.all(
+                              color: AppColors.gold.withValues(alpha: 0.45)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'ISSUE TO INVESTIGATE',
+                              style:
+                                  AppTypography.textTheme.labelSmall?.copyWith(
+                                color: AppColors.goldDark,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              widget.task.embeddedFlaw!,
+                              style:
+                                  AppTypography.textTheme.bodyMedium?.copyWith(
+                                color: AppColors.textPrimary,
+                                height: 1.45,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
+
+                    OutlinedButton.icon(
+                      onPressed: () =>
+                          context.push('/assistant', extra: widget.task),
+                      icon: const Icon(Icons.support_agent_rounded),
+                      label: const Text('Ask the Learning Assistant'),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    Text(
+                      widget.task.format == 'line_text'
+                          ? 'Select the flawed line(s), then enter a correction and reason.'
+                          : widget.practice
+                              ? 'Practice: choose the best response'
+                              : 'What would you do with this output?',
+                      style: AppTypography.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    if (widget.task.format == 'line_text')
+                      _buildLineTextAnswer()
+                    else if (widget.task.format == 'choice' &&
+                        widget.task.options.isNotEmpty)
+                      ...widget.task.options.map(_buildOption)
+                    else
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                        child: Text(
+                          'This task does not include supported answer content. Refresh your task list and try again.',
+                        ),
+                      ),
+                    const SizedBox(height: AppSpacing.xxl),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ],
-      ),
+
+            // Bottom Action
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.screenPadding),
+              child: VerifAIButton(
+                label: widget.practice ? 'Submit Practice' : 'Submit Answer',
+                variant: VerifAIButtonVariant.verification,
+                isLoading: _isSubmitting,
+                onPressed: _canSubmit ? _handleSubmit : null,
+                leadingIcon: Icons.check_circle_rounded,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

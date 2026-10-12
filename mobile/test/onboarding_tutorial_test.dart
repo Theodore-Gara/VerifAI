@@ -17,14 +17,16 @@ void main() {
         ),
         GoRoute(
           path: '/dashboard',
-          builder: (_, __) => const Scaffold(body: Text('Dashboard destination')),
+          builder: (_, __) =>
+              const Scaffold(body: Text('Dashboard destination')),
         ),
       ],
     );
     return MaterialApp.router(routerConfig: router);
   }
 
-  testWidgets('tutorial has a visible skip action and navigates to dashboard', (tester) async {
+  testWidgets('tutorial has a visible skip action and navigates to dashboard',
+      (tester) async {
     await tester.pumpWidget(testApp());
     await tester.pumpAndSettle();
 
@@ -35,10 +37,12 @@ void main() {
 
     expect(find.text('Dashboard destination'), findsOneWidget);
     final preferences = await SharedPreferences.getInstance();
-    expect(preferences.getBool('verifai_welcome_tutorial_completed_v1'), isTrue);
+    expect(
+        preferences.getBool('verifai_welcome_tutorial_completed_v1'), isTrue);
   });
 
-  testWidgets('tutorial can be completed through all five steps', (tester) async {
+  testWidgets('tutorial can be completed through all five steps',
+      (tester) async {
     await tester.pumpWidget(testApp());
     await tester.pumpAndSettle();
 

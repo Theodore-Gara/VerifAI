@@ -7,7 +7,8 @@ import 'package:verifai/shared/models.dart';
 final trackRepositoryProvider = Provider<TrackRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   final secureStorage = ref.watch(secureStorageProvider);
-  return MockTrackRepository(apiClient: apiClient, secureStorage: secureStorage);
+  return MockTrackRepository(
+      apiClient: apiClient, secureStorage: secureStorage);
 });
 
 final tracksProvider = FutureProvider<List<IndustryTrack>>((ref) async {
@@ -17,7 +18,8 @@ final tracksProvider = FutureProvider<List<IndustryTrack>>((ref) async {
 
 final selectedTrackProvider = StateProvider<int?>((ref) => null);
 
-final selectTrackProvider = FutureProvider.family<void, int>((ref, trackId) async {
+final selectTrackProvider =
+    FutureProvider.family<void, int>((ref, trackId) async {
   final repository = ref.watch(trackRepositoryProvider);
   await repository.selectTrack(trackId);
   ref.read(selectedTrackProvider.notifier).state = trackId;

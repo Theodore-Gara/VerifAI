@@ -26,7 +26,8 @@ class StreakBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.goldLight,
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.35), width: 1.2),
+        border: Border.all(
+            color: AppColors.gold.withValues(alpha: 0.35), width: 1.2),
         boxShadow: [
           BoxShadow(
             color: AppColors.gold.withValues(alpha: 0.15),
@@ -86,7 +87,8 @@ class StreakBadgeLarge extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.25), width: 1.2),
+        border: Border.all(
+            color: AppColors.gold.withValues(alpha: 0.25), width: 1.2),
         boxShadow: [
           BoxShadow(
             color: AppColors.gold.withValues(alpha: 0.08),
@@ -158,7 +160,10 @@ class StreakBadgeLarge extends StatelessWidget {
                   ],
                 ),
                 Text(
-                  label ?? (days >= 7 ? '🔥 Unstoppable Momentum!' : '⚡ Complete today to keep burning'),
+                  label ??
+                      (days >= 7
+                          ? '🔥 Unstoppable Momentum!'
+                          : '⚡ Complete today to keep burning'),
                   style: AppTypography.textTheme.bodySmall?.copyWith(
                     color: AppColors.goldDark,
                     fontWeight: FontWeight.w700,

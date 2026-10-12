@@ -130,8 +130,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   label: 'Sign In',
                   variant: VerifAIButtonVariant.primary,
                   isLoading: _pending == _PendingAction.email,
-                  onPressed:
-                      _pending == null ? _handleLogin : null,
+                  onPressed: _pending == null ? _handleLogin : null,
                   leadingIcon: Icons.login_rounded,
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -158,8 +157,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   variant: VerifAIButtonVariant.secondary,
                   leadingIcon: Icons.g_mobiledata,
                   isLoading: _pending == _PendingAction.google,
-                  onPressed:
-                      _pending == null ? _handleGoogleSignIn : null,
+                  onPressed: _pending == null ? _handleGoogleSignIn : null,
                 ),
               ],
             ),

@@ -186,10 +186,46 @@ class MockApiClient implements ApiClient {
       isCurrentUser: true,
     );
     const others = [
-      LeaderboardEntry(rank: 1, userId: 21, name: 'Elena Rostova', level: 12, xp: 4850, streak: 24, readinessScore: 92, tier: 'Advanced', isCurrentUser: false),
-      LeaderboardEntry(rank: 2, userId: 22, name: 'Marcus Chen', level: 11, xp: 4210, streak: 18, readinessScore: 88, tier: 'Advanced', isCurrentUser: false),
-      LeaderboardEntry(rank: 3, userId: 23, name: 'Sarah Jenkins', level: 10, xp: 3980, streak: 14, readinessScore: 85, tier: 'Advanced', isCurrentUser: false),
-      LeaderboardEntry(rank: 4, userId: 24, name: 'David Kim', level: 9, xp: 3450, streak: 11, readinessScore: 78, tier: 'Proficient', isCurrentUser: false),
+      LeaderboardEntry(
+          rank: 1,
+          userId: 21,
+          name: 'Elena Rostova',
+          level: 12,
+          xp: 4850,
+          streak: 24,
+          readinessScore: 92,
+          tier: 'Advanced',
+          isCurrentUser: false),
+      LeaderboardEntry(
+          rank: 2,
+          userId: 22,
+          name: 'Marcus Chen',
+          level: 11,
+          xp: 4210,
+          streak: 18,
+          readinessScore: 88,
+          tier: 'Advanced',
+          isCurrentUser: false),
+      LeaderboardEntry(
+          rank: 3,
+          userId: 23,
+          name: 'Sarah Jenkins',
+          level: 10,
+          xp: 3980,
+          streak: 14,
+          readinessScore: 85,
+          tier: 'Advanced',
+          isCurrentUser: false),
+      LeaderboardEntry(
+          rank: 4,
+          userId: 24,
+          name: 'David Kim',
+          level: 9,
+          xp: 3450,
+          streak: 11,
+          readinessScore: 78,
+          tier: 'Proficient',
+          isCurrentUser: false),
     ];
     return LeaderboardData(
       trackId: trackId,
@@ -225,12 +261,48 @@ class MockApiClient implements ApiClient {
   Future<List<Milestone>> getMilestones({int? trackId}) async {
     await _delay();
     return const [
-      Milestone(code: 'first_task', name: 'First Steps', description: 'Complete your first task', target: 1, current: 1, achieved: true),
-      Milestone(code: 'track_master', name: 'Track Master', description: 'Complete every task in the track (15)', target: 15, current: 6, achieved: false),
-      Milestone(code: 'xp_250', name: 'Committed', description: 'Earn 250 XP', target: 250, current: 2450, achieved: true),
-      Milestone(code: 'xp_1000', name: 'Dedicated', description: 'Earn 1000 XP', target: 1000, current: 2450, achieved: true),
-      Milestone(code: 'streak_7', name: 'On Fire', description: 'Reach a 7-day streak', target: 7, current: 7, achieved: true),
-      Milestone(code: 'level_5', name: 'Seasoned', description: 'Reach level 5', target: 5, current: 5, achieved: true),
+      Milestone(
+          code: 'first_task',
+          name: 'First Steps',
+          description: 'Complete your first task',
+          target: 1,
+          current: 1,
+          achieved: true),
+      Milestone(
+          code: 'track_master',
+          name: 'Track Master',
+          description: 'Complete every task in the track (15)',
+          target: 15,
+          current: 6,
+          achieved: false),
+      Milestone(
+          code: 'xp_250',
+          name: 'Committed',
+          description: 'Earn 250 XP',
+          target: 250,
+          current: 2450,
+          achieved: true),
+      Milestone(
+          code: 'xp_1000',
+          name: 'Dedicated',
+          description: 'Earn 1000 XP',
+          target: 1000,
+          current: 2450,
+          achieved: true),
+      Milestone(
+          code: 'streak_7',
+          name: 'On Fire',
+          description: 'Reach a 7-day streak',
+          target: 7,
+          current: 7,
+          achieved: true),
+      Milestone(
+          code: 'level_5',
+          name: 'Seasoned',
+          description: 'Reach level 5',
+          target: 5,
+          current: 5,
+          achieved: true),
     ];
   }
 

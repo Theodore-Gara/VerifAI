@@ -103,7 +103,8 @@ class _VerifAIButtonState extends State<VerifAIButton> {
             ),
           )
         : Row(
-            mainAxisSize: widget.isFullWidth ? MainAxisSize.max : MainAxisSize.min,
+            mainAxisSize:
+                widget.isFullWidth ? MainAxisSize.max : MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (widget.leadingIcon != null) ...[

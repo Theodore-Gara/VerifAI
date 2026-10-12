@@ -115,8 +115,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/forgot-email',
         name: 'forgot-email',
-        builder: (context, state) =>
-            const RecoveryScreen(forgotEmail: true),
+        builder: (context, state) => const RecoveryScreen(forgotEmail: true),
       ),
       GoRoute(
         path: '/register',
@@ -236,8 +235,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                       practice: true,
                       replace: true,
                     ),
-            onContinue: () =>
-                _continueToNextTask(context, ref, result.task),
+            onContinue: () => _continueToNextTask(context, ref, result.task),
           );
         },
       ),

@@ -61,10 +61,11 @@ class ShimmerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: margin ?? const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 8,
-      ),
+      padding: margin ??
+          const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
       child: Shimmer.fromColors(
         baseColor: AppColors.border,
         highlightColor: AppColors.background,

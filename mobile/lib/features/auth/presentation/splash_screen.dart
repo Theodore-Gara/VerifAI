@@ -165,8 +165,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 child: Text(
                   'AI assists. Humans verify.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color:
-                            AppColors.primaryNavy.withValues(alpha: 0.82),
+                        color: AppColors.primaryNavy.withValues(alpha: 0.82),
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.2,
                       ),

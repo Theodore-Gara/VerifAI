@@ -88,8 +88,8 @@ class ProgressScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildContent(
-      WidgetRef ref, DashboardData data, AsyncValue<ActivityData> activityAsync) {
+  Widget _buildContent(WidgetRef ref, DashboardData data,
+      AsyncValue<ActivityData> activityAsync) {
     // Mirrors the backend's rising level curve (each level costs +60 more XP).
     final nextLevelXP = _xpForLevel(data.level + 1);
 

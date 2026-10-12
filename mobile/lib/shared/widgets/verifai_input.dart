@@ -54,7 +54,8 @@ class _VerifAIInputState extends State<VerifAIInput> {
   @override
   void initState() {
     super.initState();
-    _controller = widget.controller ?? TextEditingController(text: widget.initialValue);
+    _controller =
+        widget.controller ?? TextEditingController(text: widget.initialValue);
     _focusNode = widget.focusNode ?? FocusNode();
     _focusNode.addListener(_onFocusChange);
     _obscureText = widget.type == VerifAIInputType.password;
@@ -111,11 +112,13 @@ class _VerifAIInputState extends State<VerifAIInput> {
                       color: AppColors.textSecondary,
                       size: 20,
                     ),
-                    onPressed: () => setState(() => _obscureText = !_obscureText),
+                    onPressed: () =>
+                        setState(() => _obscureText = !_obscureText),
                   )
                 : null,
             filled: true,
-            fillColor: widget.enabled ? AppColors.surface : AppColors.background,
+            fillColor:
+                widget.enabled ? AppColors.surface : AppColors.background,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.lg,
               vertical: AppSpacing.md,
@@ -133,7 +136,8 @@ class _VerifAIInputState extends State<VerifAIInput> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.input),
-              borderSide: const BorderSide(color: AppColors.primaryNavy, width: 2),
+              borderSide:
+                  const BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.input),

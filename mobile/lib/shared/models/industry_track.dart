@@ -11,5 +11,6 @@ class IndustryTrack with _$IndustryTrack {
     String? description,
   }) = _IndustryTrack;
 
-  factory IndustryTrack.fromJson(Map<String, dynamic> json) => _$IndustryTrackFromJson(json);
+  factory IndustryTrack.fromJson(Map<String, dynamic> json) =>
+      _$IndustryTrackFromJson(json);
 }

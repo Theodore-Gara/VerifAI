@@ -73,8 +73,7 @@ class TrackRoadmapScreen extends ConsumerWidget {
 
   Widget _buildContent(String trackName, List<Milestone> milestones) {
     final achieved = milestones.where((m) => m.achieved).length;
-    final progress =
-        milestones.isEmpty ? 0.0 : achieved / milestones.length;
+    final progress = milestones.isEmpty ? 0.0 : achieved / milestones.length;
 
     // First not-yet-achieved milestone is the active one; the rest are locked.
     final activeIndex = milestones.indexWhere((m) => !m.achieved);

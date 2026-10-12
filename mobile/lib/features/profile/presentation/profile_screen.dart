@@ -202,10 +202,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                             fontWeight: FontWeight.w800,
                                           ),
                                         )
-: null,
-                                  ),
+                                      : null,
                                 ),
                               ),
+                            ),
                             Container(
                               padding: const EdgeInsets.all(5),
                               decoration: BoxDecoration(

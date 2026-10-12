@@ -22,7 +22,8 @@ class SecureStorageService {
       return await _storage.read(key: _keyAuthToken);
     } catch (e) {
       if (_isDecryptionError(e)) {
-        debugPrint('Secure storage decryption failed, clearing corrupted data: $e');
+        debugPrint(
+            'Secure storage decryption failed, clearing corrupted data: $e');
         await _handleCorruptedStorage();
       }
       return null;
@@ -47,8 +48,11 @@ class SecureStorageService {
       _storage.write(key: _keyUserEmail, value: email),
       if (name != null) _storage.write(key: _keyUserName, value: name),
       if (trackId != null) _storage.write(key: _keyTrackId, value: trackId),
-      if (trackName != null) _storage.write(key: _keyTrackName, value: trackName),
-      _storage.write(key: _keyHasCompletedOnboarding, value: hasCompletedOnboarding.toString()),
+      if (trackName != null)
+        _storage.write(key: _keyTrackName, value: trackName),
+      _storage.write(
+          key: _keyHasCompletedOnboarding,
+          value: hasCompletedOnboarding.toString()),
     ]);
   }
 
@@ -63,11 +67,13 @@ class SecureStorageService {
         name: await _storage.read(key: _keyUserName),
         trackId: await _storage.read(key: _keyTrackId),
         trackName: await _storage.read(key: _keyTrackName),
-        hasCompletedOnboarding: (await _storage.read(key: _keyHasCompletedOnboarding)) == 'true',
+        hasCompletedOnboarding:
+            (await _storage.read(key: _keyHasCompletedOnboarding)) == 'true',
       );
     } catch (e) {
       if (_isDecryptionError(e)) {
-        debugPrint('Secure storage decryption failed in getUserData, clearing: $e');
+        debugPrint(
+            'Secure storage decryption failed in getUserData, clearing: $e');
         await _handleCorruptedStorage();
       }
       return null;
@@ -90,10 +96,10 @@ class SecureStorageService {
   bool _isDecryptionError(Object error) {
     final errorStr = error.toString().toLowerCase();
     return errorStr.contains('badpadding') ||
-           errorStr.contains('bad_padding') ||
-           errorStr.contains('bad decrypt') ||
-           errorStr.contains('cipher') ||
-           errorStr.contains('decrypt');
+        errorStr.contains('bad_padding') ||
+        errorStr.contains('bad decrypt') ||
+        errorStr.contains('cipher') ||
+        errorStr.contains('decrypt');
   }
 
   Future<void> _handleCorruptedStorage() async {
