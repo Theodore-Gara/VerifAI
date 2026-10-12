@@ -18,6 +18,16 @@ class DailyTaskCard extends StatelessWidget {
     this.isLoading = false,
   });
 
+  // ponytail: mirrors backend DIFFICULTY_MAX_XP (scoringService.js) so the
+  // card shows the real earning ceiling per difficulty; if budgets change,
+  // update both sides or surface maxXp from the tasks API.
+  static int _maxXp(String? difficulty) => switch (difficulty?.toLowerCase()) {
+        'easy' => 50,
+        'medium' => 70,
+        'hard' => 100,
+        _ => 50,
+      };
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -117,7 +127,7 @@ class DailyTaskCard extends StatelessWidget {
                   )
                 else
                   Text(
-                    '+50 XP',
+                    '+${_maxXp(task.difficulty)} XP',
                     style: AppTypography.textTheme.labelSmall?.copyWith(
                       color: AppColors.textSecondary,
                       fontWeight: FontWeight.w800,
