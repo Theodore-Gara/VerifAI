@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:verifai/core/theme/app_colors.dart';
+import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 
 class RecoveryScreen extends StatefulWidget {
   const RecoveryScreen({super.key, this.forgotEmail = false});
@@ -100,15 +101,16 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
             if (_sent)
               const Padding(
                   padding: EdgeInsets.only(top: 14),
-                  child: Text(
-                      'If the address is registered, a reset email should arrive shortly. Check spam or junk too.',
-                      style: TextStyle(
-                          color: AppColors.accentGreen, height: 1.4))),
+                  child: FeedbackBanner(
+                    kind: FeedbackKind.success,
+                    message:
+                        'If the address is registered, a reset email should arrive shortly. Check spam or junk too.',
+                  )),
             if (_error != null)
               Padding(
                   padding: const EdgeInsets.only(top: 12),
-                  child: Text(_error!,
-                      style: const TextStyle(color: AppColors.error))),
+                  child: FeedbackBanner(
+                      kind: FeedbackKind.error, message: _error!)),
           ],
           const SizedBox(height: 20),
           TextButton(

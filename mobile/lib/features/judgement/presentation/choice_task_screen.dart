@@ -13,6 +13,7 @@ import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
 import 'package:verifai/features/profile/providers.dart';
 import 'package:verifai/shared/models.dart';
+import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
 import 'package:verifai/shared/widgets/verifai_button.dart';
@@ -86,12 +87,10 @@ class _ChoiceTaskScreenState extends ConsumerState<ChoiceTaskScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Could not submit. ${classifyError(e).message}'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-          behavior: SnackBarBehavior.floating,
-        ),
+      showFeedback(
+        context,
+        FeedbackKind.error,
+        'Could not submit. ${classifyError(e).message}',
       );
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -244,7 +243,6 @@ class _ChoiceTaskScreenState extends ConsumerState<ChoiceTaskScreen> {
             variant: VerifAIButtonVariant.verification,
             isLoading: _submitting,
             onPressed: _canSubmit ? () => _submit(task) : null,
-            leadingIcon: Icons.check_circle_rounded,
           ),
         ],
       ),

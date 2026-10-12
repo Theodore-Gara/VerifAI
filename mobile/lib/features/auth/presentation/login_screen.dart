@@ -7,6 +7,7 @@ import 'package:verifai/features/auth/providers.dart';
 import 'auth_brand_header.dart';
 import 'auth_error_messages.dart';
 import 'package:verifai/shared/models.dart';
+import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 import 'package:verifai/shared/widgets.dart';
 
 enum _PendingAction { email, google }
@@ -37,21 +38,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     ref.listen<AsyncValue<AuthState>>(authNotifierProvider, (previous, next) {
       if (next.hasError && previous?.error != next.error) {
-        final messenger = ScaffoldMessenger.of(context);
-        messenger
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(humanizeAuthError(next.error!)),
-              backgroundColor: Theme.of(context).colorScheme.error,
-              behavior: SnackBarBehavior.floating,
-              action: SnackBarAction(
-                label: 'Dismiss',
-                textColor: Colors.white,
-                onPressed: messenger.hideCurrentSnackBar,
-              ),
-            ),
-          );
+        showFeedback(
+          context,
+          FeedbackKind.error,
+          humanizeAuthError(next.error!),
+          actionLabel: 'Dismiss',
+          onAction: (hide) => hide(),
+        );
       }
     });
 
@@ -109,20 +102,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   },
                 ),
                 Align(
-                  alignment: Alignment.centerRight,
-                  child: Wrap(
-                    alignment: WrapAlignment.end,
-                    spacing: 4,
-                    children: [
-                      TextButton(
-                        onPressed: () => context.go('/forgot-password'),
-                        child: const Text('Forgot password?'),
-                      ),
-                      TextButton(
-                        onPressed: () => context.go('/forgot-email'),
-                        child: const Text('Forgot email?'),
-                      ),
-                    ],
+                  alignment: Alignment.center,
+                  child: TextButton(
+                    onPressed: () => context.go('/forgot-password'),
+                    child: const Text('Forgot password?'),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
@@ -131,7 +114,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   variant: VerifAIButtonVariant.primary,
                   isLoading: _pending == _PendingAction.email,
                   onPressed: _pending == null ? _handleLogin : null,
-                  leadingIcon: Icons.login_rounded,
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 Row(
@@ -155,7 +137,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 VerifAIButton(
                   label: 'Continue with Google',
                   variant: VerifAIButtonVariant.secondary,
-                  leadingIcon: Icons.g_mobiledata,
                   isLoading: _pending == _PendingAction.google,
                   onPressed: _pending == null ? _handleGoogleSignIn : null,
                 ),
@@ -185,15 +166,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       await ref.read(authNotifierProvider.notifier).signInWithGoogle();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(humanizeAuthError(e)),
-            backgroundColor: Theme.of(context).colorScheme.error,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      if (!mounted) return;
+      showFeedback(
+        context,
+        FeedbackKind.error,
+        humanizeAuthError(e),
+        actionLabel: 'Dismiss',
+        onAction: (hide) => hide(),
+      );
     } finally {
       if (mounted) setState(() => _pending = null);
     }

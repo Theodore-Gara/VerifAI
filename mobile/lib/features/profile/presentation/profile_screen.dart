@@ -84,11 +84,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
         centerTitle: false,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout_rounded,
-                color: AppColors.error, size: 22),
-            tooltip: 'Sign Out',
+          TextButton(
             onPressed: () => _showLogoutDialog(context, ref),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.error,
+            ),
+            child: const Text('Sign Out'),
           ),
           const SizedBox(width: AppSpacing.sm),
         ],
@@ -313,11 +314,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     loading: () => const Row(
                       children: [
-                        Expanded(child: ShimmerLoader(height: 96)),
+                        Expanded(child: ShimmerLoader(height: 84)),
                         SizedBox(width: AppSpacing.md),
-                        Expanded(child: ShimmerLoader(height: 96)),
+                        Expanded(child: ShimmerLoader(height: 84)),
                         SizedBox(width: AppSpacing.md),
-                        Expanded(child: ShimmerLoader(height: 96)),
+                        Expanded(child: ShimmerLoader(height: 84)),
                       ],
                     ),
                     error: (error, _) => InlineErrorCard(
@@ -332,30 +333,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   const SizedBox(height: AppSpacing.xl),
 
                   Material(
-                    color: AppColors.primaryNavy,
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(AppRadius.card),
                     child: ListTile(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.card),
-                      ),
-                      leading: const Icon(
-                        Icons.swap_horiz_rounded,
-                        color: AppColors.accentGreen,
+                        side: const BorderSide(color: AppColors.border),
                       ),
                       title: const Text(
                         'Explore another industry',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.primaryNavy,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                       subtitle: const Text(
                         'Switch learning pathways without signing out.',
-                        style: TextStyle(color: Colors.white70),
+                        style: TextStyle(color: AppColors.textSecondary),
                       ),
                       trailing: const Icon(
-                        Icons.arrow_forward_rounded,
-                        color: AppColors.accentGreen,
+                        Icons.chevron_right_rounded,
+                        color: AppColors.textSecondary,
                       ),
                       onTap: () => context.go('/change-industry'),
                     ),
@@ -372,31 +370,78 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget _buildStatsRow(WidgetRef ref, int xp, int streak, int? leagueRank) {
     return Row(
       children: [
-        _buildBentoStat(
+        _statTile(
           label: 'TOTAL XP',
           value: _formatNumber(xp),
-          icon: Icons.bolt_rounded,
-          iconColor: AppColors.primaryNavy,
-          bgColor: AppColors.background,
         ),
         const SizedBox(width: AppSpacing.md),
-        _buildBentoStat(
+        _statTile(
           label: 'STREAK',
-          value: '$streak Days',
-          icon: Icons.local_fire_department_rounded,
-          iconColor: AppColors.primaryNavy,
-          bgColor: AppColors.background,
+          value: streak == 1 ? '1 Day' : '$streak Days',
         ),
         const SizedBox(width: AppSpacing.md),
-        _buildBentoStat(
+        _statTile(
           label: 'LEAGUE RANK',
           value: leagueRank == null ? '—' : '#$leagueRank',
-          icon: Icons.emoji_events_rounded,
-          iconColor: AppColors.primaryNavy,
-          bgColor: AppColors.background,
-          onTap: () => ref.context.push('/scoreboard'),
+          accent: leagueRank != null,
         ),
       ],
+    );
+  }
+
+  Widget _statTile({
+    required String label,
+    required String value,
+    bool accent = false,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: accent || label == 'LEAGUE RANK'
+            ? () => ref.context.push('/scoreboard')
+            : null,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            border: Border.all(
+              color: accent
+                  ? AppColors.accentGreen.withValues(alpha: 0.4)
+                  : AppColors.border,
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.shadow,
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Text(
+                value,
+                style: AppTypography.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: AppTypography.textTheme.labelSmall?.copyWith(
+                  color:
+                      accent ? AppColors.accentGreen : AppColors.textSecondary,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -488,68 +533,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
       itemCount: badges.length,
       itemBuilder: (context, index) => _buildModernBadgeTile(badges[index]),
-    );
-  }
-
-  Widget _buildBentoStat({
-    required String label,
-    required String value,
-    required IconData icon,
-    required Color iconColor,
-    required Color bgColor,
-    VoidCallback? onTap,
-  }) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-              vertical: AppSpacing.md, horizontal: AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            border: Border.all(color: AppColors.border),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.shadow,
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: bgColor,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: iconColor, size: 18),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                value,
-                style: AppTypography.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: AppTypography.textTheme.labelSmall?.copyWith(
-                  color: AppColors.textSecondary,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 

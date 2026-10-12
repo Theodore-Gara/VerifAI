@@ -7,6 +7,7 @@ import 'package:verifai/features/auth/providers.dart';
 import 'auth_brand_header.dart';
 import 'auth_error_messages.dart';
 import 'package:verifai/shared/models.dart';
+import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 import 'package:verifai/shared/widgets.dart';
 
 class _PasswordStrengthIndicator extends StatelessWidget {
@@ -125,21 +126,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget build(BuildContext context) {
     ref.listen<AsyncValue<AuthState>>(authNotifierProvider, (previous, next) {
       if (next.hasError && previous?.error != next.error) {
-        final messenger = ScaffoldMessenger.of(context);
-        messenger
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(humanizeAuthError(next.error!)),
-              backgroundColor: Theme.of(context).colorScheme.error,
-              behavior: SnackBarBehavior.floating,
-              action: SnackBarAction(
-                label: 'Dismiss',
-                textColor: Colors.white,
-                onPressed: messenger.hideCurrentSnackBar,
-              ),
-            ),
-          );
+        showFeedback(
+          context,
+          FeedbackKind.error,
+          humanizeAuthError(next.error!),
+          actionLabel: 'Dismiss',
+          onAction: (hide) => hide(),
+        );
       }
     });
 
@@ -247,7 +240,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   variant: VerifAIButtonVariant.primary,
                   isLoading: _pending == _PendingAction.email,
                   onPressed: _pending == null ? _handleRegister : null,
-                  leadingIcon: Icons.bolt_rounded,
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 VerifAIButton(
@@ -311,12 +303,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       await ref.read(authNotifierProvider.notifier).signInWithGoogle();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(humanizeAuthError(e)),
-          backgroundColor: Theme.of(context).colorScheme.error,
-          behavior: SnackBarBehavior.floating,
-        ),
+      showFeedback(
+        context,
+        FeedbackKind.error,
+        humanizeAuthError(e),
+        actionLabel: 'Dismiss',
+        onAction: (hide) => hide(),
       );
     } finally {
       if (mounted) setState(() => _pending = null);
