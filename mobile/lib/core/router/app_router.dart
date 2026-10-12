@@ -266,8 +266,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             onRetry: result.task == null
                 ? null
                 : () => _retryTask(context, ref, result.task!),
-            onContinue: () =>
-                _continueToNextTask(context, ref, result.task),
+            onContinue: () => _continueToNextTask(context, ref, result.task),
           );
         },
       ),
@@ -348,5 +347,6 @@ void _retryTask(BuildContext context, Ref ref, DailyTask task) {
     _returnToFeature(context);
     return;
   }
-  context.pushReplacement('/task-run', extra: TaskRunArgs(task, practice: true));
+  context.pushReplacement('/task-run',
+      extra: TaskRunArgs(task, practice: true));
 }

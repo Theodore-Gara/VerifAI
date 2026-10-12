@@ -51,7 +51,8 @@ class _ChoiceTaskScreenState extends ConsumerState<ChoiceTaskScreen> {
     super.dispose();
   }
 
-  bool get _canSubmit => _decisionId != null && _reasonId != null && !_submitting;
+  bool get _canSubmit =>
+      _decisionId != null && _reasonId != null && !_submitting;
 
   Future<void> _submit(DailyTask task) async {
     setState(() => _submitting = true);
@@ -145,8 +146,7 @@ class _ChoiceTaskScreenState extends ConsumerState<ChoiceTaskScreen> {
   }
 
   Widget _buildTask(DailyTask task) {
-    final decisions =
-        task.options.where((o) => o.kind == 'decision').toList();
+    final decisions = task.options.where((o) => o.kind == 'decision').toList();
     final reasons = task.options.where((o) => o.kind == 'reason').toList();
 
     return SingleChildScrollView(
@@ -205,7 +205,6 @@ class _ChoiceTaskScreenState extends ConsumerState<ChoiceTaskScreen> {
             ),
           ],
           const SizedBox(height: AppSpacing.xl),
-
           _sectionTitle(widget.decisionPrompt),
           const SizedBox(height: AppSpacing.sm),
           ...decisions.map((o) => _choiceTile(
@@ -213,7 +212,6 @@ class _ChoiceTaskScreenState extends ConsumerState<ChoiceTaskScreen> {
                 selected: _decisionId == o.id,
                 onTap: () => setState(() => _decisionId = o.id),
               )),
-
           const SizedBox(height: AppSpacing.xl),
           _sectionTitle(widget.reasonPrompt),
           const SizedBox(height: AppSpacing.sm),
@@ -222,7 +220,6 @@ class _ChoiceTaskScreenState extends ConsumerState<ChoiceTaskScreen> {
                 selected: _reasonId == o.id,
                 onTap: () => setState(() => _reasonId = o.id),
               )),
-
           const SizedBox(height: AppSpacing.xl),
           Text(
             'Rationale (optional)',
@@ -241,7 +238,6 @@ class _ChoiceTaskScreenState extends ConsumerState<ChoiceTaskScreen> {
               border: OutlineInputBorder(),
             ),
           ),
-
           const SizedBox(height: AppSpacing.xl),
           VerifAIButton(
             label: _submitting ? 'Submitting…' : 'Submit',

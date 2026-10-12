@@ -292,8 +292,8 @@ class TrackRoadmapScreen extends ConsumerWidget {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Color(0x4410B981),
-                blurRadius: 8,
+                color: AppColors.shadow,
+                blurRadius: 6,
                 offset: Offset(0, 2),
               ),
             ],
@@ -305,23 +305,23 @@ class TrackRoadmapScreen extends ConsumerWidget {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.primaryNavy,
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.accentCyan, width: 3),
-            boxShadow: [
+            border: Border.all(color: AppColors.accentGreen, width: 2.5),
+            boxShadow: const [
               BoxShadow(
-                color: AppColors.accentCyan.withValues(alpha: 0.4),
-                blurRadius: 10,
-                spreadRadius: 2,
+                color: AppColors.shadow,
+                blurRadius: 6,
+                offset: Offset(0, 2),
               ),
             ],
           ),
           child: Center(
             child: Container(
-              width: 14,
-              height: 14,
+              width: 10,
+              height: 10,
               decoration: const BoxDecoration(
-                color: AppColors.accentCyan,
+                color: Colors.white,
                 shape: BoxShape.circle,
               ),
             ),
@@ -354,19 +354,15 @@ class TrackRoadmapScreen extends ConsumerWidget {
             : (isLocked ? AppColors.background : AppColors.surface),
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
-          color: isActive
-              ? AppColors.accentCyan
-              : (isLocked
-                  ? AppColors.border
-                  : AppColors.accentGreen.withValues(alpha: 0.3)),
-          width: isActive ? 2 : 1,
+          color: isActive ? AppColors.primaryNavy : AppColors.border,
+          width: isActive ? 1.5 : 1,
         ),
         boxShadow: isActive
             ? [
                 BoxShadow(
-                  color: AppColors.accentCyan.withValues(alpha: 0.15),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  color: AppColors.primaryNavy.withValues(alpha: 0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
                 ),
               ]
             : const [
@@ -419,17 +415,22 @@ class TrackRoadmapScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: milestone.achieved
                       ? AppColors.accentLight
-                      : AppColors.xpPurpleLight,
+                      : AppColors.background,
                   borderRadius: BorderRadius.circular(AppRadius.pill),
+                  border: Border.all(
+                    color: milestone.achieved
+                        ? AppColors.accentGreen.withValues(alpha: 0.3)
+                        : AppColors.border,
+                  ),
                 ),
                 child: Text(
                   '${milestone.current}/${milestone.target}',
                   style: AppTypography.textTheme.labelSmall?.copyWith(
                     color: milestone.achieved
                         ? AppColors.accentGreen
-                        : AppColors.xpPurple,
+                        : AppColors.textSecondary,
                     fontWeight: FontWeight.w800,
-                    fontSize: 9,
+                    fontSize: 9.5,
                   ),
                 ),
               ),

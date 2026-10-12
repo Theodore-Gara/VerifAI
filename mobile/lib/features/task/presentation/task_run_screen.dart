@@ -126,28 +126,12 @@ class _TaskRunScreenState extends ConsumerState<TaskRunScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.accentLight,
-            borderRadius: BorderRadius.circular(AppRadius.badge),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.sports_esports_rounded,
-                  size: 16, color: AppColors.accentGreen),
-              const SizedBox(width: 4),
-              Text(
-                widget.task.dimension.toUpperCase(),
-                style: AppTypography.textTheme.labelSmall?.copyWith(
-                  color: AppColors.accentGreen,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 10,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
+        title: Text(
+          _dimensionLabel(widget.task.dimension),
+          style: AppTypography.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.2,
+            color: AppColors.textPrimary,
           ),
         ),
         actions: [
@@ -178,17 +162,14 @@ class _TaskRunScreenState extends ConsumerState<TaskRunScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-
             if (widget.task.scenario != null) ...[
               _scenarioCard(),
               const SizedBox(height: AppSpacing.md),
             ],
-
             if (widget.task.embeddedFlaw?.isNotEmpty == true) ...[
               _flawCard(),
               const SizedBox(height: AppSpacing.lg),
             ],
-
             Text(
               widget.task.format == 'line_text'
                   ? 'Select the flawed line(s), then enter a correction and reason.'
@@ -201,7 +182,6 @@ class _TaskRunScreenState extends ConsumerState<TaskRunScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-
             if (widget.task.format == 'line_text')
               _buildLineTextAnswer()
             else if (widget.task.format == 'choice' &&
@@ -276,9 +256,16 @@ class _TaskRunScreenState extends ConsumerState<TaskRunScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.goldLight,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.45)),
+        border: Border.all(color: AppColors.border),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,7 +273,7 @@ class _TaskRunScreenState extends ConsumerState<TaskRunScreen> {
           Text(
             'ISSUE TO INVESTIGATE',
             style: AppTypography.textTheme.labelSmall?.copyWith(
-              color: AppColors.goldDark,
+              color: AppColors.primaryNavy,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.5,
             ),
@@ -310,37 +297,50 @@ class _TaskRunScreenState extends ConsumerState<TaskRunScreen> {
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: InkWell(
         onTap: () => setState(() => _selectedOptionId = option.id),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: isSelected
-                ? AppColors.accentLight.withValues(alpha: 0.7)
-                : AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.card),
             border: Border.all(
-              color: isSelected ? AppColors.accentGreen : AppColors.border,
-              width: isSelected ? 2 : 1,
+              color: isSelected ? AppColors.primaryNavy : AppColors.border,
+              width: isSelected ? 1.5 : 1,
             ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primaryNavy.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : const [
+                    BoxShadow(
+                      color: AppColors.shadow,
+                      blurRadius: 4,
+                      offset: Offset(0, 1),
+                    ),
+                  ],
           ),
           child: Row(
             children: [
               Container(
-                width: 26,
-                height: 26,
+                width: 24,
+                height: 24,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color:
-                      isSelected ? AppColors.accentGreen : Colors.transparent,
+                      isSelected ? AppColors.primaryNavy : Colors.transparent,
                   border: Border.all(
                     color:
-                        isSelected ? AppColors.accentGreen : AppColors.border,
+                        isSelected ? AppColors.primaryNavy : AppColors.border,
                     width: 1.5,
                   ),
                 ),
                 child: isSelected
-                    ? const Icon(Icons.check, size: 16, color: Colors.white)
+                    ? const Icon(Icons.check, size: 14, color: Colors.white)
                     : null,
               ),
               const SizedBox(width: AppSpacing.md),
@@ -419,5 +419,23 @@ class _TaskRunScreenState extends ConsumerState<TaskRunScreen> {
         ),
       ],
     );
+  }
+
+  String _dimensionLabel(String key) {
+    const labels = {
+      'verification': 'Verification',
+      'judgement': 'AI Judgement',
+      'ai_judgement': 'AI Judgement',
+      'prompt_design': 'Prompt Design',
+      'risk_governance': 'Risk & Governance',
+      'human_ai_collab': 'Human-AI Collaboration',
+    };
+    return labels[key] ??
+        key
+            .replaceAll('_', ' ')
+            .split(' ')
+            .map(
+                (w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+            .join(' ');
   }
 }

@@ -312,7 +312,8 @@ class MockApiClient implements ApiClient {
     return const [
       InterviewQuestion(
         id: 1,
-        question: 'Walk me through how you verify an AI-generated legal citation.',
+        question:
+            'Walk me through how you verify an AI-generated legal citation.',
         sampleAnswer:
             'I find the case myself on SAFLII or Juta using the exact citation, and read the paragraph the proposition comes from.',
         whatEmployersTest: 'A repeatable verification workflow.',

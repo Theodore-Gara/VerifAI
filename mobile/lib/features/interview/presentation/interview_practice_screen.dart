@@ -94,8 +94,8 @@ class _InterviewPracticeScreenState
         ),
         const SizedBox(height: AppSpacing.sm),
         Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: 8),
           decoration: BoxDecoration(
             color: AppColors.accentLight,
             borderRadius: BorderRadius.circular(AppRadius.card),
@@ -139,7 +139,9 @@ class _InterviewPracticeScreenState
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.card),
-        onTap: () => expanded ? setState(() => _expanded.remove(question.id)) : _reveal(question),
+        onTap: () => expanded
+            ? setState(() => _expanded.remove(question.id))
+            : _reveal(question),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
@@ -177,7 +179,8 @@ class _InterviewPracticeScreenState
                 const SizedBox(height: AppSpacing.md),
                 _block('SAMPLE ANSWER', question.sampleAnswer),
                 const SizedBox(height: AppSpacing.sm),
-                _block("WHAT EMPLOYERS ARE TESTING", question.whatEmployersTest),
+                _block(
+                    "WHAT EMPLOYERS ARE TESTING", question.whatEmployersTest),
               ],
             ],
           ),

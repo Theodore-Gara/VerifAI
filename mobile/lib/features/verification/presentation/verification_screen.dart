@@ -26,7 +26,8 @@ class VerificationScreen extends ConsumerStatefulWidget {
 class _VerificationScreenState extends ConsumerState<VerificationScreen> {
   void _startTask(DailyTask task) {
     HapticFeedback.mediumImpact();
-    context.push('/task-run', extra: TaskRunArgs(task, practice: task.isRepeat));
+    context.push('/task-run',
+        extra: TaskRunArgs(task, practice: task.isRepeat));
   }
 
   @override

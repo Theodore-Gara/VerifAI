@@ -10,7 +10,7 @@ import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/progress/providers.dart';
 import 'package:verifai/features/scoreboard/providers.dart';
 import 'package:verifai/shared/models.dart';
-import 'package:verifai/shared/widgets/dimension_bar.dart';
+import 'package:verifai/shared/widgets/dimension_index_card.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
 import 'package:verifai/shared/widgets/xp_bar.dart';
@@ -282,24 +282,7 @@ class ProgressScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          if (data.dimensionScores.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
-              child: Text(
-                'Complete a task to start building your readiness profile.',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-            )
-          else
-            ...data.dimensionScores.entries.map((entry) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: DimensionBar(
-                  label: _dimensionLabel(entry.key),
-                  value: entry.value,
-                ),
-              );
-            }),
+          DimensionIndexCard(scores: data.dimensionScores),
         ],
       ),
     );
@@ -470,25 +453,5 @@ class ProgressScreen extends ConsumerWidget {
         ShimmerLoader(height: 16),
       ],
     );
-  }
-
-  /// Backend dimension keys are lowercase snake_case; give the well-known ones
-  /// friendly labels and title-case anything else.
-  String _dimensionLabel(String key) {
-    const labels = {
-      'verification': 'Verification',
-      'judgement': 'AI Judgement',
-      'ai_judgement': 'AI Judgement',
-      'prompt_design': 'Prompt Design',
-      'risk_governance': 'Risk & Governance',
-      'human_ai_collab': 'Human-AI Collaboration',
-    };
-    return labels[key] ??
-        key
-            .replaceAll('_', ' ')
-            .split(' ')
-            .map(
-                (w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
-            .join(' ');
   }
 }

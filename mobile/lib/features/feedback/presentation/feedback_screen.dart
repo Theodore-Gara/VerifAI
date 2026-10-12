@@ -8,7 +8,7 @@ import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/shared/models.dart';
-import 'package:verifai/shared/widgets/dimension_bar.dart';
+import 'package:verifai/shared/widgets/dimension_index_card.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/score_ring.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
@@ -106,190 +106,217 @@ class FeedbackScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Hero Result Bento Card
+                  // Hero Result Bento Card (Asymmetric 2-column)
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(AppRadius.card),
                       border: Border.all(color: AppColors.border),
-                      boxShadow: [
+                      boxShadow: const [
                         BoxShadow(
-                          color: AppColors.primaryNavy.withValues(alpha: 0.05),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                        const BoxShadow(
                           color: AppColors.shadow,
-                          blurRadius: 4,
-                          offset: Offset(0, 1),
+                          blurRadius: 10,
+                          offset: Offset(0, 2),
                         ),
                       ],
                     ),
-                    child: Column(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: _didPass
-                                ? AppColors.accentLight
-                                : AppColors.error.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                        // Left column (~35% width): ScoreRing, status pill, clean XP pill
+                        SizedBox(
+                          width: 106,
+                          child: Column(
                             children: [
-                              Icon(
-                                _didPass
-                                    ? Icons.check_circle_rounded
-                                    : Icons.cancel_rounded,
-                                size: 12,
-                                color: _didPass
-                                    ? AppColors.accentGreen
-                                    : AppColors.error,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                _didPass ? 'CORRECT' : 'INCORRECT',
-                                style: AppTypography.textTheme.labelSmall
-                                    ?.copyWith(
+                              ScoreRing(score: score, size: 92, strokeWidth: 9),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
                                   color: _didPass
-                                      ? AppColors.accentGreen
-                                      : AppColors.error,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 9.5,
-                                  letterSpacing: 0.5,
+                                      ? AppColors.accentLight
+                                      : AppColors.error.withValues(alpha: 0.12),
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.pill),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      _didPass
+                                          ? Icons.check_circle_rounded
+                                          : Icons.cancel_rounded,
+                                      size: 11,
+                                      color: _didPass
+                                          ? AppColors.accentGreen
+                                          : AppColors.error,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _didPass ? 'CORRECT' : 'INCORRECT',
+                                      style: AppTypography.textTheme.labelSmall
+                                          ?.copyWith(
+                                        color: _didPass
+                                            ? AppColors.accentGreen
+                                            : AppColors.error,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 9,
+                                        letterSpacing: 0.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: AppColors.background,
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.pill),
+                                  border: Border.all(color: AppColors.border),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.bolt_rounded,
+                                      color: AppColors.primaryNavy,
+                                      size: 13,
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      '+$xpEarned XP',
+                                      style: AppTypography.textTheme.labelSmall
+                                          ?.copyWith(
+                                        color: AppColors.primaryNavy,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 10,
+                                        fontFeatures: const [
+                                          FontFeature.tabularFigures()
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.md),
-                        ScoreRing(score: score, size: 132, strokeWidth: 12),
-                        const SizedBox(height: AppSpacing.md),
-                        Text(
-                          _headline,
-                          style: AppTypography.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                            height: 1.35,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        if (feedback.isNotEmpty) ...[
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            feedback,
-                            style: AppTypography.textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textSecondary,
-                              height: 1.4,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                        if (!_didPass && correctAnswer?.isNotEmpty == true) ...[
-                          const SizedBox(height: AppSpacing.md),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            decoration: BoxDecoration(
-                              color: AppColors.accentLight,
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.card),
-                              border: Border.all(
-                                color: AppColors.accentGreen
-                                    .withValues(alpha: 0.4),
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'A STRONGER RESPONSE',
-                                  style: AppTypography.textTheme.labelSmall
-                                      ?.copyWith(
-                                    color: AppColors.accentGreen,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.5,
-                                  ),
+                        const SizedBox(width: AppSpacing.md),
+
+                        // Right column (~65% width): crucial feedback details
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _headline,
+                                style: AppTypography.textTheme.titleSmall
+                                    ?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textPrimary,
+                                  height: 1.3,
+                                  letterSpacing: -0.2,
                                 ),
-                                const SizedBox(height: AppSpacing.xs),
+                              ),
+                              if (feedback.isNotEmpty) ...[
+                                const SizedBox(height: 6),
                                 Text(
-                                  correctAnswer!,
-                                  style: AppTypography.textTheme.bodyMedium
+                                  feedback,
+                                  style: AppTypography.textTheme.bodySmall
                                       ?.copyWith(
-                                    color: AppColors.textPrimary,
-                                    height: 1.45,
+                                    color: AppColors.textSecondary,
+                                    height: 1.4,
                                   ),
                                 ),
                               ],
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: AppSpacing.md),
-                        // XP Reward Row
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.md, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: AppColors.xpPurpleLight,
-                            borderRadius: BorderRadius.circular(AppRadius.card),
-                            border: Border.all(
-                                color:
-                                    AppColors.xpPurple.withValues(alpha: 0.3)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.bolt_rounded,
-                                  color: AppColors.xpPurple, size: 18),
-                              const SizedBox(width: 4),
-                              Text(
-                                '+$xpEarned XP',
-                                style: AppTypography.textTheme.labelLarge
-                                    ?.copyWith(
-                                  color: AppColors.xpPurple,
-                                  fontWeight: FontWeight.w800,
+                              if (!_didPass &&
+                                  correctAnswer?.isNotEmpty == true) ...[
+                                const SizedBox(height: AppSpacing.sm),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(AppSpacing.sm),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.background,
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.md),
+                                    border: Border.all(color: AppColors.border),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'A STRONGER RESPONSE',
+                                        style: AppTypography
+                                            .textTheme.labelSmall
+                                            ?.copyWith(
+                                          color: AppColors.textSecondary,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.5,
+                                          fontSize: 9,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        correctAnswer!,
+                                        style: AppTypography.textTheme.bodySmall
+                                            ?.copyWith(
+                                          color: AppColors.textPrimary,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Newly earned achievements
-                        if (newlyEarnedAchievements.isNotEmpty) ...[
-                          const SizedBox(height: AppSpacing.md),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            decoration: BoxDecoration(
-                              color: AppColors.accentLight,
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.card),
-                              border: Border.all(
-                                  color: AppColors.accentGreen
-                                      .withValues(alpha: 0.4)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.workspace_premium_rounded,
-                                    color: AppColors.accentGreen, size: 20),
-                                const SizedBox(width: AppSpacing.sm),
-                                Expanded(
-                                  child: Text(
-                                    'New achievement: ${newlyEarnedAchievements.map((a) => a.name).join(', ')}',
-                                    style: AppTypography.textTheme.labelMedium
-                                        ?.copyWith(
-                                      color: AppColors.accentGreen,
-                                      fontWeight: FontWeight.w800,
+                              ],
+                              if (newlyEarnedAchievements.isNotEmpty) ...[
+                                const SizedBox(height: AppSpacing.sm),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.accentLight,
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.md),
+                                    border: Border.all(
+                                      color: AppColors.accentGreen
+                                          .withValues(alpha: 0.3),
                                     ),
                                   ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.workspace_premium_rounded,
+                                        color: AppColors.accentGreen,
+                                        size: 15,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          'New achievement: ${newlyEarnedAchievements.map((a) => a.name).join(', ')}',
+                                          style: AppTypography
+                                              .textTheme.labelSmall
+                                              ?.copyWith(
+                                            color: AppColors.accentGreen,
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 9.5,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
-                            ),
+                            ],
                           ),
-                        ],
+                        ),
                       ],
                     ),
                   ),
@@ -331,26 +358,14 @@ class FeedbackScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   if (dimensionScores.isNotEmpty)
-                    ..._dimensionBars(dimensionScores)
+                    DimensionIndexCard(scores: dimensionScores)
                   else
                     ...dashboardAsync.when(
-                      data: (data) => data.dimensionScores.isEmpty
-                          ? [
-                              Text(
-                                'Your readiness skills will appear once a task has been scored.',
-                                style: AppTypography.textTheme.bodyMedium
-                                    ?.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ]
-                          : _dimensionBars(data.dimensionScores),
+                      data: (data) => [
+                        DimensionIndexCard(scores: data.dimensionScores),
+                      ],
                       loading: () => const <Widget>[
-                        ShimmerLoader(height: 16),
-                        SizedBox(height: AppSpacing.sm),
-                        ShimmerLoader(height: 16),
-                        SizedBox(height: AppSpacing.sm),
-                        ShimmerLoader(height: 16),
+                        ShimmerLoader(height: 120),
                       ],
                       error: (error, _) => <Widget>[
                         InlineErrorCard(
@@ -402,36 +417,6 @@ class FeedbackScreen extends ConsumerWidget {
           : null,
     );
   }
-
-  List<Widget> _dimensionBars(Map<String, int> dimensions) {
-    return dimensions.entries
-        .map((entry) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: DimensionBar(
-                label: _dimensionLabel(entry.key),
-                value: entry.value,
-              ),
-            ))
-        .toList();
-  }
-
-  String _dimensionLabel(String key) {
-    const labels = {
-      'verification': 'Verification',
-      'judgement': 'AI Judgement',
-      'ai_judgement': 'AI Judgement',
-      'prompt_design': 'Prompt Design',
-      'risk_governance': 'Risk & Governance',
-      'human_ai_collab': 'Human-AI Collaboration',
-    };
-    return labels[key] ??
-        key
-            .replaceAll('_', ' ')
-            .split(' ')
-            .map(
-                (w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
-            .join(' ');
-  }
 }
 
 class _ConceptChip extends StatelessWidget {
@@ -442,29 +427,33 @@ class _ConceptChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = matched ? AppColors.accentGreen : AppColors.goldDark;
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: matched ? AppColors.accentLight : AppColors.goldLight,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            matched ? Icons.check_circle_rounded : Icons.remove_circle_outline,
-            size: 14,
-            color: color,
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: matched
+                  ? AppColors.accentGreen
+                  : AppColors.textSecondary.withValues(alpha: 0.5),
+            ),
           ),
           const SizedBox(width: 6),
           Text(
             label,
             style: AppTypography.textTheme.labelSmall?.copyWith(
-              color: color,
+              color: matched ? AppColors.textPrimary : AppColors.textSecondary,
               fontWeight: FontWeight.w700,
+              fontSize: 11,
             ),
           ),
         ],

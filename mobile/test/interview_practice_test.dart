@@ -24,7 +24,8 @@ void main() {
 
     // The sample answer is hidden until the question is tapped.
     expect(find.text('SAMPLE ANSWER'), findsNothing);
-    await tester.tap(find.textContaining('verify an AI-generated legal citation'));
+    await tester
+        .tap(find.textContaining('verify an AI-generated legal citation'));
     await tester.pumpAndSettle();
     expect(find.text('SAMPLE ANSWER'), findsOneWidget);
     expect(find.text('WHAT EMPLOYERS ARE TESTING'), findsOneWidget);

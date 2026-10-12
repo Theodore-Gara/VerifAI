@@ -328,6 +328,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   const SizedBox(height: AppSpacing.xl),
 
+                  _buildAchievements(ref, achievementsAsync),
+                  const SizedBox(height: AppSpacing.xl),
+
                   Material(
                     color: AppColors.primaryNavy,
                     borderRadius: BorderRadius.circular(AppRadius.card),
@@ -357,9 +360,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       onTap: () => context.go('/change-industry'),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xl),
-
-                  _buildAchievements(ref, achievementsAsync),
                 ],
               ),
             ),
@@ -376,8 +376,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           label: 'TOTAL XP',
           value: _formatNumber(xp),
           icon: Icons.bolt_rounded,
-          iconColor: AppColors.xpPurple,
-          bgColor: AppColors.xpPurpleLight.withValues(alpha: 0.5),
+          iconColor: AppColors.primaryNavy,
+          bgColor: AppColors.background,
         ),
         const SizedBox(width: AppSpacing.md),
         _buildBentoStat(
@@ -392,8 +392,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           label: 'LEAGUE RANK',
           value: leagueRank == null ? '—' : '#$leagueRank',
           icon: Icons.emoji_events_rounded,
-          iconColor: AppColors.accentGreen,
-          bgColor: AppColors.accentLight,
+          iconColor: AppColors.primaryNavy,
+          bgColor: AppColors.background,
           onTap: () => ref.context.push('/scoreboard'),
         ),
       ],
@@ -423,34 +423,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Text(
-                  'Achievements',
-                  style: AppTypography.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.4,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.xpPurpleLight,
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                  ),
-                  child: Text(
-                    'TROPHIES',
-                    style: AppTypography.textTheme.labelSmall?.copyWith(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.xpPurple,
-                    ),
-                  ),
-                ),
-              ],
+            Text(
+              'Achievements',
+              style: AppTypography.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.4,
+                color: AppColors.textPrimary,
+              ),
             ),
             if (achievementsAsync.hasValue)
               Container(
