@@ -21,7 +21,6 @@ import 'package:verifai/features/risk_governance/presentation/risk_governance_sc
 import 'package:verifai/features/interview/presentation/interview_practice_screen.dart';
 import 'package:verifai/features/progress/presentation/progress_screen.dart';
 import 'package:verifai/shared/models.dart';
-import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refreshNotifier = GoRouterRefreshNotifier();
@@ -302,6 +301,7 @@ Future<void> _continueToNextTask(
     return;
   }
 
+  final messenger = ScaffoldMessenger.of(context);
   try {
     final next = await ref.read(apiClientProvider).getNextTask(
           feature: task.feature,
@@ -309,21 +309,22 @@ Future<void> _continueToNextTask(
         );
     if (!context.mounted) return;
     if (next == null) {
-      showFeedback(
-        context,
-        FeedbackKind.info,
-        'No more tasks at this difficulty yet.',
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('No more tasks at this difficulty yet.'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }
     context.pushReplacement('/task-run',
         extra: TaskRunArgs(next, practice: next.isRepeat));
   } catch (_) {
-    if (!context.mounted) return;
-    showFeedback(
-      context,
-      FeedbackKind.error,
-      'Could not load the next task. Please try again.',
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Could not load the next task. Please try again.'),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 }

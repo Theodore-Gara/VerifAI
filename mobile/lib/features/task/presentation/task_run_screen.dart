@@ -13,7 +13,6 @@ import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
 import 'package:verifai/features/profile/providers.dart';
 import 'package:verifai/shared/models/daily_task.dart';
-import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 import 'package:verifai/shared/widgets/verifai_button.dart';
 
 /// Carries a task into the full-screen runner via the route `extra`.
@@ -109,10 +108,13 @@ class _TaskRunScreenState extends ConsumerState<TaskRunScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
-      showFeedback(
-        context,
-        FeedbackKind.error,
-        'Could not submit your answer. ${classifyError(e).message}',
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text('Could not submit your answer. ${classifyError(e).message}'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
   }
@@ -203,6 +205,7 @@ class _TaskRunScreenState extends ConsumerState<TaskRunScreen> {
             variant: VerifAIButtonVariant.verification,
             isLoading: _isSubmitting,
             onPressed: _canSubmit ? _handleSubmit : null,
+            leadingIcon: Icons.check_circle_rounded,
           ),
         ),
       ),

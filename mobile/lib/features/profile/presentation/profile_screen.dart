@@ -14,7 +14,6 @@ import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/profile/providers.dart';
 import 'package:verifai/features/scoreboard/providers.dart';
 import 'package:verifai/shared/models.dart';
-import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
 
@@ -39,23 +38,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final bytes = await image.readAsBytes();
       if (!mounted) return;
       setState(() => _localProfileImage = bytes);
-      showFeedback(
-        context,
-        FeedbackKind.info,
-        'Photo preview updated on this device. Profile storage is not connected.',
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Photo preview updated on this device. Profile storage is not connected.',
+          ),
+        ),
       );
     } catch (_) {
       if (!mounted) return;
-      showFeedback(
-        context,
-        FeedbackKind.error,
-        'Could not open your photo gallery. Try again.',
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open your photo gallery. Try again.'),
+        ),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final ref = this.ref;
     final user = ref.watch(currentUserProvider).valueOrNull;
     final dashboardAsync = ref.watch(dashboardProvider);
     // Achievements earned by this user (GET /api/achievements/me). The full
@@ -82,201 +84,287 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
         centerTitle: false,
         actions: [
-          TextButton(
+          IconButton(
+            icon: const Icon(Icons.logout_rounded,
+                color: AppColors.error, size: 22),
+            tooltip: 'Sign Out',
             onPressed: () => _showLogoutDialog(context, ref),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.error,
-            ),
-            child: const Text('Sign Out'),
           ),
           const SizedBox(width: AppSpacing.sm),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(dashboardProvider);
-          ref.invalidate(achievementsProvider);
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screenPadding,
-            AppSpacing.sm,
-            AppSpacing.screenPadding,
-            100, // accommodate floating navigation dock
+      body: Stack(
+        children: [
+          // Ambient Mesh Glows
+          Positioned(
+            top: -50,
+            right: -30,
+            child: Container(
+              width: 220,
+              height: 220,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.ambientCyan,
+              ),
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Hero Player Card — calm navy
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryNavy,
-                  borderRadius: BorderRadius.circular(AppRadius.card),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primaryNavy.withValues(alpha: 0.12),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    GestureDetector(
-                      onTap: _chooseProfileImage,
-                      child: Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.accentGreen.withValues(alpha: 0.6),
-                            width: 2,
-                          ),
+          Positioned(
+            top: 280,
+            left: -60,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.ambientGreen,
+              ),
+            ),
+          ),
+          RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(dashboardProvider);
+              ref.invalidate(achievementsProvider);
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPadding,
+                AppSpacing.sm,
+                AppSpacing.screenPadding,
+                100, // accommodate floating navigation dock
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Modern Hero Player Bento Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppSpacing.xl),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryNavy,
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(color: AppColors.border),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primaryNavy.withValues(alpha: 0.04),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
                         ),
-                        child: CircleAvatar(
-                          radius: 42,
-                          backgroundColor: AppColors.primaryDark,
-                          backgroundImage: _localProfileImage == null
-                              ? null
-                              : MemoryImage(_localProfileImage!),
-                          child: _localProfileImage == null
-                              ? Text(
-                                  initial,
-                                  style: AppTypography.textTheme.displaySmall
-                                      ?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                )
-                              : null,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    TextButton(
-                      onPressed: _chooseProfileImage,
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.accentGreen,
-                        textStyle: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      child: const Text('Change photo'),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    if (user == null) ...[
-                      // Profile still loading: placeholders instead of
-                      // made-up identity text.
-                      ShimmerLoader(
-                        width: 160,
-                        height: 26,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      const SizedBox(height: 6),
-                      ShimmerLoader(
-                        width: 200,
-                        height: 14,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                    ] else ...[
-                      Text(
-                        displayName,
-                        style: AppTypography.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.4,
-                          color: Colors.white,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      if (userName != null && user.email.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          user.email,
-                          style: AppTypography.textTheme.bodySmall?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.75),
-                            fontWeight: FontWeight.w500,
-                          ),
+                        const BoxShadow(
+                          color: AppColors.shadow,
+                          blurRadius: 4,
+                          offset: Offset(0, 1),
                         ),
                       ],
-                    ],
-                    if (trackName != null && trackName.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.md),
-                      Text(
-                        trackName.toUpperCase(),
-                        style: AppTypography.textTheme.labelSmall?.copyWith(
-                          color: AppColors.accentGreen,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.2,
-                          fontSize: 10,
+                    ),
+                    child: Column(
+                      children: [
+                        // Avatar with glowing gradient halo
+                        Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    AppColors.primaryNavy,
+                                    AppColors.accentGreen
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.accentCyan
+                                        .withValues(alpha: 0.35),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: GestureDetector(
+                                onTap: _chooseProfileImage,
+                                child: CircleAvatar(
+                                  radius: 42,
+                                  backgroundColor: AppColors.primaryNavy,
+                                  backgroundImage: _localProfileImage == null
+                                      ? null
+                                      : MemoryImage(_localProfileImage!),
+                                  child: _localProfileImage == null
+                                      ? Text(
+                                          initial,
+                                          style: AppTypography
+                                              .textTheme.displaySmall
+                                              ?.copyWith(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        )
+                                      : null,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                color: AppColors.accentGreen,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                    color: AppColors.surface, width: 2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.accentGreen
+                                        .withValues(alpha: 0.4),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(Icons.camera_alt_rounded,
+                                  size: 14, color: Colors.white),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Stat metrics row
-              dashboardAsync.when(
-                data: (progress) => _buildStatsRow(
-                  ref,
-                  progress.currentXp,
-                  progress.streakDays,
-                  leagueAsync.valueOrNull?.me.rank,
-                ),
-                loading: () => const Row(
-                  children: [
-                    Expanded(child: ShimmerLoader(height: 84)),
-                    SizedBox(width: AppSpacing.md),
-                    Expanded(child: ShimmerLoader(height: 84)),
-                    SizedBox(width: AppSpacing.md),
-                    Expanded(child: ShimmerLoader(height: 84)),
-                  ],
-                ),
-                error: (error, _) => InlineErrorCard(
-                  error: error,
-                  fallbackMessage: 'We could not load your stats.',
-                  onRetry: () => reconnectApp(ref),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-
-              _buildAchievements(ref, achievementsAsync, userName),
-              const SizedBox(height: AppSpacing.xl),
-
-              Material(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppRadius.card),
-                child: ListTile(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                    side: const BorderSide(color: AppColors.border),
-                  ),
-                  title: const Text(
-                    'Explore another industry',
-                    style: TextStyle(
-                      color: AppColors.primaryNavy,
-                      fontWeight: FontWeight.w800,
+                        const SizedBox(height: AppSpacing.md),
+                        if (user == null) ...[
+                          // Profile still loading: placeholders instead of
+                          // made-up identity text.
+                          ShimmerLoader(
+                            width: 160,
+                            height: 26,
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                          const SizedBox(height: 6),
+                          ShimmerLoader(
+                            width: 200,
+                            height: 14,
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                        ] else ...[
+                          Text(
+                            displayName,
+                            style: AppTypography.textTheme.headlineMedium
+                                ?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.4,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          if (userName != null && user.email.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              user.email,
+                              style:
+                                  AppTypography.textTheme.bodySmall?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.75),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ],
+                        if (trackName != null && trackName.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.md),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 6),
+                            decoration: BoxDecoration(
+                              color:
+                                  AppColors.accentGreen.withValues(alpha: 0.12),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.pill),
+                              border: Border.all(
+                                  color: AppColors.accentGreen
+                                      .withValues(alpha: 0.45)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.workspace_premium_rounded,
+                                    size: 14, color: AppColors.accentGreen),
+                                const SizedBox(width: 6),
+                                Text(
+                                  trackName,
+                                  style: AppTypography.textTheme.labelSmall
+                                      ?.copyWith(
+                                    color: AppColors.accentGreen,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  subtitle: const Text(
-                    'Switch learning pathways without signing out.',
-                    style: TextStyle(color: AppColors.textSecondary),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Bento Stat Metrics Row
+                  dashboardAsync.when(
+                    data: (progress) => _buildStatsRow(
+                      ref,
+                      progress.currentXp,
+                      progress.streakDays,
+                      leagueAsync.valueOrNull?.me.rank,
+                    ),
+                    loading: () => const Row(
+                      children: [
+                        Expanded(child: ShimmerLoader(height: 96)),
+                        SizedBox(width: AppSpacing.md),
+                        Expanded(child: ShimmerLoader(height: 96)),
+                        SizedBox(width: AppSpacing.md),
+                        Expanded(child: ShimmerLoader(height: 96)),
+                      ],
+                    ),
+                    error: (error, _) => InlineErrorCard(
+                      error: error,
+                      fallbackMessage: 'We could not load your stats.',
+                      onRetry: () => reconnectApp(ref),
+                    ),
                   ),
-                  trailing: const Icon(
-                    Icons.chevron_right_rounded,
-                    color: AppColors.textSecondary,
+                  const SizedBox(height: AppSpacing.xl),
+
+                  _buildAchievements(ref, achievementsAsync),
+                  const SizedBox(height: AppSpacing.xl),
+
+                  Material(
+                    color: AppColors.primaryNavy,
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    child: ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                      ),
+                      leading: const Icon(
+                        Icons.swap_horiz_rounded,
+                        color: AppColors.accentGreen,
+                      ),
+                      title: const Text(
+                        'Explore another industry',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      subtitle: const Text(
+                        'Switch learning pathways without signing out.',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                      trailing: const Icon(
+                        Icons.arrow_forward_rounded,
+                        color: AppColors.accentGreen,
+                      ),
+                      onTap: () => context.go('/change-industry'),
+                    ),
                   ),
-                  onTap: () => context.go('/change-industry'),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -284,83 +372,36 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget _buildStatsRow(WidgetRef ref, int xp, int streak, int? leagueRank) {
     return Row(
       children: [
-        _statTile(
+        _buildBentoStat(
           label: 'TOTAL XP',
           value: _formatNumber(xp),
+          icon: Icons.bolt_rounded,
+          iconColor: AppColors.primaryNavy,
+          bgColor: AppColors.background,
         ),
         const SizedBox(width: AppSpacing.md),
-        _statTile(
+        _buildBentoStat(
           label: 'STREAK',
-          value: streak == 1 ? '1 Day' : '$streak Days',
+          value: '$streak Days',
+          icon: Icons.local_fire_department_rounded,
+          iconColor: AppColors.primaryNavy,
+          bgColor: AppColors.background,
         ),
         const SizedBox(width: AppSpacing.md),
-        _statTile(
+        _buildBentoStat(
           label: 'LEAGUE RANK',
           value: leagueRank == null ? '—' : '#$leagueRank',
-          accent: leagueRank != null,
+          icon: Icons.emoji_events_rounded,
+          iconColor: AppColors.primaryNavy,
+          bgColor: AppColors.background,
+          onTap: () => ref.context.push('/scoreboard'),
         ),
       ],
     );
   }
 
-  Widget _statTile({
-    required String label,
-    required String value,
-    bool accent = false,
-  }) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: accent || label == 'LEAGUE RANK'
-            ? () => ref.context.push('/scoreboard')
-            : null,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            border: Border.all(
-              color: accent
-                  ? AppColors.accentGreen.withValues(alpha: 0.4)
-                  : AppColors.border,
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.shadow,
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Text(
-                value,
-                style: AppTypography.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: AppTypography.textTheme.labelSmall?.copyWith(
-                  color:
-                      accent ? AppColors.accentGreen : AppColors.textSecondary,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAchievements(WidgetRef ref,
-      AsyncValue<List<Achievement>> achievementsAsync, String? userName) {
+  Widget _buildAchievements(
+      WidgetRef ref, AsyncValue<List<Achievement>> achievementsAsync) {
     final earnedCodes = (achievementsAsync.valueOrNull ?? const <Achievement>[])
         .map((a) => a.code)
         .toSet();
@@ -369,6 +410,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               title: spec.name,
               description: spec.description,
               isUnlocked: earnedCodes.contains(spec.code),
+              icon: spec.icon,
               color: spec.color,
             ))
         .toList();
@@ -377,36 +419,40 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Badges & Achievements Header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               'Achievements',
-              style: AppTypography.textTheme.headlineMedium?.copyWith(
+              style: AppTypography.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.4,
                 color: AppColors.textPrimary,
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Text(
-                '$unlockedCount / ${_badgeCatalog.length} Unlocked',
-                style: AppTypography.textTheme.labelSmall?.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w700,
+            if (achievementsAsync.hasValue)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Text(
+                  '$unlockedCount / ${_badgeCatalog.length} Unlocked',
+                  style: AppTypography.textTheme.labelSmall?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-            ),
           ],
         ),
         const SizedBox(height: AppSpacing.md),
         achievementsAsync.when(
+          // Grid of modern Bento Badges
           data: (_) => _buildBadgeGrid(badges),
           loading: () => GridView.builder(
             shrinkWrap: true,
@@ -415,7 +461,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               crossAxisCount: 2,
               crossAxisSpacing: AppSpacing.md,
               mainAxisSpacing: AppSpacing.md,
-              mainAxisExtent: 110,
+              mainAxisExtent: 136,
             ),
             itemCount: 4,
             itemBuilder: (context, index) => const ShimmerLoader.card(),
@@ -438,34 +484,95 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         crossAxisCount: 2,
         crossAxisSpacing: AppSpacing.md,
         mainAxisSpacing: AppSpacing.md,
-        mainAxisExtent: 110,
+        mainAxisExtent: 136,
       ),
       itemCount: badges.length,
-      itemBuilder: (context, index) => _badgeTile(badges[index]),
+      itemBuilder: (context, index) => _buildModernBadgeTile(badges[index]),
     );
   }
 
-  Widget _badgeTile(_Badge badge) {
+  Widget _buildBentoStat({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color iconColor,
+    required Color bgColor,
+    VoidCallback? onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+              vertical: AppSpacing.md, horizontal: AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            border: Border.all(color: AppColors.border),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.shadow,
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: iconColor, size: 18),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                value,
+                style: AppTypography.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: AppTypography.textTheme.labelSmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernBadgeTile(_Badge badge) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: badge.isUnlocked
             ? AppColors.surface
-            : AppColors.background.withValues(alpha: 0.7),
+            : const Color(0xFFF1F5F9).withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
           color: badge.isUnlocked
-              ? badge.color.withValues(alpha: 0.45)
-              : AppColors.border,
+              ? badge.color.withValues(alpha: 0.35)
+              : AppColors.border.withValues(alpha: 0.8),
           width: badge.isUnlocked ? 1.5 : 1,
-          style: BorderStyle.solid,
         ),
         boxShadow: badge.isUnlocked
             ? [
-                const BoxShadow(
-                  color: AppColors.shadow,
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
+                BoxShadow(
+                  color: badge.color.withValues(alpha: 0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
                 ),
               ]
             : null,
@@ -476,42 +583,56 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         children: [
           Row(
             children: [
-              Expanded(
-                child: Text(
-                  badge.title,
-                  style: AppTypography.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: badge.isUnlocked
-                        ? AppColors.textPrimary
-                        : AppColors.textSecondary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
               Container(
-                width: 9,
-                height: 9,
+                padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
+                  color: badge.isUnlocked
+                      ? badge.color.withValues(alpha: 0.12)
+                      : Colors.black.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Icon(
+                  badge.isUnlocked ? badge.icon : Icons.lock_outline_rounded,
+                  size: 18,
                   color: badge.isUnlocked
                       ? badge.color
-                      : AppColors.border.withValues(alpha: 0.8),
+                      : AppColors.textSecondary.withValues(alpha: 0.6),
                 ),
               ),
+              const Spacer(),
+              if (badge.isUnlocked)
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                    color: AppColors.accentLight,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check_rounded,
+                      size: 12, color: AppColors.accentGreen),
+                ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            badge.title,
+            style: AppTypography.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: badge.isUnlocked
+                  ? AppColors.textPrimary
+                  : AppColors.textSecondary.withValues(alpha: 0.7),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
           Text(
             badge.description,
             style: AppTypography.textTheme.bodySmall?.copyWith(
-              color: badge.isUnlocked
-                  ? AppColors.textSecondary
-                  : AppColors.textSecondary.withValues(alpha: 0.65),
+              color: AppColors.textSecondary.withValues(alpha: 0.8),
               fontSize: 10.5,
-              height: 1.3,
+              height: 1.2,
             ),
-            maxLines: 3,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
         ],
@@ -560,12 +681,14 @@ class _Badge {
   final String title;
   final String description;
   final bool isUnlocked;
+  final IconData icon;
   final Color color;
 
   _Badge({
     required this.title,
     required this.description,
     required this.isUnlocked,
+    required this.icon,
     required this.color,
   });
 }
@@ -577,19 +700,38 @@ class _BadgeSpec {
   final String code;
   final String name;
   final String description;
+  final IconData icon;
   final Color color;
 
-  const _BadgeSpec(this.code, this.name, this.description, this.color);
+  const _BadgeSpec(
+      this.code, this.name, this.description, this.icon, this.color);
 }
 
 const List<_BadgeSpec> _badgeCatalog = [
-  _BadgeSpec('first-task', 'First Assessment',
-      'Complete your first workplace readiness task.', AppColors.accentGreen),
-  _BadgeSpec('five-tasks', 'Five in the Bag',
-      'Complete five workplace readiness tasks.', AppColors.accentCyan),
-  _BadgeSpec('ten-tasks', 'Consistent Practitioner',
-      'Complete ten workplace readiness tasks.', AppColors.xpPurple),
-  _BadgeSpec('xp-500', '500 XP', 'Earn at least 500 XP.', AppColors.gold),
-  _BadgeSpec('dimension-80', 'Strong Skill',
-      'Reach a score of at least 80 in one readiness skill.', AppColors.info),
+  _BadgeSpec(
+      'first-task',
+      'First Assessment',
+      'Complete your first workplace readiness task.',
+      Icons.flag_rounded,
+      AppColors.accentGreen),
+  _BadgeSpec(
+      'five-tasks',
+      'Five in the Bag',
+      'Complete five workplace readiness tasks.',
+      Icons.checklist_rounded,
+      AppColors.accentCyan),
+  _BadgeSpec(
+      'ten-tasks',
+      'Consistent Practitioner',
+      'Complete ten workplace readiness tasks.',
+      Icons.military_tech_rounded,
+      AppColors.xpPurple),
+  _BadgeSpec('xp-500', '500 XP', 'Earn at least 500 XP.', Icons.bolt_rounded,
+      AppColors.gold),
+  _BadgeSpec(
+      'dimension-80',
+      'Strong Skill',
+      'Reach a score of at least 80 in one readiness skill.',
+      Icons.workspace_premium_rounded,
+      AppColors.info),
 ];

@@ -11,7 +11,6 @@ import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/onboarding/providers.dart';
 import 'package:verifai/shared/models.dart';
-import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 import 'package:verifai/shared/widgets.dart';
 
 class IndustrySelectScreen extends ConsumerStatefulWidget {
@@ -50,6 +49,32 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
                 onPressed: () => context.go('/profile'),
               )
             : null,
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: AppSpacing.screenPadding),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.accentLight,
+              borderRadius: BorderRadius.circular(AppRadius.xxl),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.flash_on_rounded,
+                    size: 14, color: AppColors.accentGreen),
+                const SizedBox(width: 4),
+                Text(
+                  'STEP 1 OF 1',
+                  style: AppTypography.textTheme.labelSmall?.copyWith(
+                    color: AppColors.accentGreen,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
       body: tracksAsync.when(
         data: (tracks) => tracks.isEmpty
@@ -146,11 +171,6 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
         _submitError =
             'We could not save your industry. ${classifyError(e).message}';
       });
-      showFeedback(
-        context,
-        FeedbackKind.error,
-        _submitError!,
-      );
     }
   }
 
@@ -174,17 +194,7 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
               color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'STEP 1 OF 1',
-            style: AppTypography.textTheme.labelSmall?.copyWith(
-              color: AppColors.accentGreen,
-              fontWeight: FontWeight.w800,
-              fontSize: 10,
-              letterSpacing: 0.8,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.xl),
           Expanded(
             child: GridView.builder(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -271,20 +281,28 @@ class _TrackCard extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.accentLight.withValues(alpha: 0.55)
+              ? AppColors.accentLight.withValues(alpha: 0.6)
               : AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.card),
           border: Border.all(
             color: isSelected ? AppColors.accentGreen : AppColors.border,
-            width: isSelected ? 1.5 : 1,
+            width: isSelected ? 2.5 : 1,
           ),
-          boxShadow: const [
-            BoxShadow(
-              color: AppColors.shadow,
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            ),
-          ],
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.accentGreen.withValues(alpha: 0.25),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : const [
+                  BoxShadow(
+                    color: AppColors.shadow,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
         ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
@@ -292,27 +310,41 @@ class _TrackCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 50,
-                height: 50,
+                width: 54,
+                height: 54,
                 decoration: BoxDecoration(
+                  gradient: isSelected
+                      ? const LinearGradient(
+                          colors: [AppColors.accentGreen, AppColors.accentCyan],
+                        )
+                      : null,
                   color: isSelected
-                      ? AppColors.primaryNavy
-                      : AppColors.primaryNavy.withValues(alpha: 0.06),
+                      ? null
+                      : AppColors.primaryNavy.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppColors.accentGreen.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Icon(
                   _getTrackIcon(track.name),
-                  size: 24,
-                  color: isSelected
-                      ? AppColors.accentGreen
-                      : AppColors.primaryNavy,
+                  size: 26,
+                  color: isSelected ? Colors.white : AppColors.primaryNavy,
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 track.name,
                 style: AppTypography.textTheme.titleMedium?.copyWith(
-                  color: AppColors.textPrimary,
+                  color: isSelected
+                      ? AppColors.accentGreen
+                      : AppColors.textPrimary,
                   fontWeight: FontWeight.w800,
                 ),
                 textAlign: TextAlign.center,
@@ -331,17 +363,31 @@ class _TrackCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: AppSpacing.sm),
-              Text(
-                perk,
-                style: AppTypography.textTheme.labelSmall?.copyWith(
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
                   color: isSelected
                       ? AppColors.accentGreen
-                      : AppColors.textSecondary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 10,
+                      : AppColors.border.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
                 ),
-                textAlign: TextAlign.center,
+                child: Text(
+                  perk,
+                  style: AppTypography.textTheme.labelSmall?.copyWith(
+                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 9,
+                  ),
+                ),
               ),
+              if (isSelected) ...[
+                const SizedBox(height: 6),
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: AppColors.accentGreen,
+                  size: 18,
+                ),
+              ],
             ],
           ),
         ),

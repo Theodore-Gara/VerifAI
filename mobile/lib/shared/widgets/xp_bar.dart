@@ -32,6 +32,13 @@ class XPBar extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.xpPurple,
               borderRadius: BorderRadius.circular(AppRadius.pill),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.xpPurple.withValues(alpha: 0.3),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
             ),
             child: Text(
               'LVL $level',
@@ -54,7 +61,13 @@ class XPBar extends StatelessWidget {
                   Container(color: AppColors.xpPurpleLight),
                   FractionallySizedBox(
                     widthFactor: progress,
-                    child: Container(color: AppColors.xpPurple),
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [AppColors.xpPurple, AppColors.accentCyan],
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -82,25 +95,47 @@ class XPBar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                decoration: BoxDecoration(
-                  color: AppColors.xpPurple,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                ),
-                child: Text(
-                  'LVL $level',
-                  style: AppTypography.textTheme.labelSmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 10,
-                    letterSpacing: 0.6,
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3.5),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppColors.xpPurple, Color(0xFF6D28D9)],
+                      ),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.xpPurple.withValues(alpha: 0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      'LVL $level',
+                      style: AppTypography.textTheme.labelSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 10,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    'AI Practitioner',
+                    style: AppTypography.textTheme.labelMedium?.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.1,
+                    ),
+                  ),
+                ],
               ),
-              const Spacer(),
               Text(
                 '$currentXP / $nextLevelXP XP',
                 style: AppTypography.textTheme.labelSmall?.copyWith(
@@ -121,7 +156,13 @@ class XPBar extends StatelessWidget {
                 children: [
                   FractionallySizedBox(
                     widthFactor: progress,
-                    child: Container(color: AppColors.xpPurple),
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [AppColors.xpPurple, AppColors.accentCyan],
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
