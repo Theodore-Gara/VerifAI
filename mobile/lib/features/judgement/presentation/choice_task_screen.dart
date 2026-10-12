@@ -100,6 +100,7 @@ class _ChoiceTaskScreenState extends ConsumerState<ChoiceTaskScreen> {
   @override
   Widget build(BuildContext context) {
     final taskAsync = ref.watch(widget.taskProvider);
+    final task = taskAsync.valueOrNull;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -114,6 +115,16 @@ class _ChoiceTaskScreenState extends ConsumerState<ChoiceTaskScreen> {
             color: AppColors.textPrimary,
           ),
         ),
+        actions: [
+          if (task != null)
+            IconButton(
+              tooltip: 'Ask the Learning Assistant',
+              icon: const Icon(Icons.support_agent_rounded,
+                  color: AppColors.primaryNavy),
+              onPressed: () => context.push('/assistant', extra: task),
+            ),
+          const SizedBox(width: AppSpacing.sm),
+        ],
       ),
       body: taskAsync.when(
         loading: () => _shimmer(),

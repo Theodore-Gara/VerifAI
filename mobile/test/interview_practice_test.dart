@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:verifai/core/services/mock_api_client.dart';
 import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/features/interview/presentation/interview_practice_screen.dart';
-import 'package:verifai/features/interview/providers.dart';
 
 void main() {
   testWidgets('interview screen lists questions and reveals the sample answer',

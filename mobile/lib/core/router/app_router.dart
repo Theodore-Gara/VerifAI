@@ -6,7 +6,7 @@ import 'package:verifai/features/auth/presentation.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/assistant/presentation/learning_assistant_screen.dart';
 import 'package:verifai/core/providers/app_providers.dart';
-import 'package:verifai/features/dashboard/presentation/task_challenge_modal.dart';
+import 'package:verifai/features/task/presentation/task_run_screen.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
 import 'package:verifai/features/navigation/main_nav_shell.dart';
@@ -162,6 +162,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const InterviewPracticeScreen(),
       ),
       GoRoute(
+        path: '/task-run',
+        name: 'task-run',
+        builder: (context, state) {
+          final args = state.extra;
+          if (args is TaskRunArgs) {
+            return TaskRunScreen(task: args.task, practice: args.practice);
+          }
+          return const Scaffold(
+            body: Center(child: Text('Open a task to start.')),
+          );
+        },
+      ),
+      GoRoute(
         path: '/assistant',
         name: 'assistant',
         builder: (context, state) {
@@ -251,13 +264,8 @@ Future<void> _continueToNextTask(
       );
       return;
     }
-    TaskChallengeModal.show(
-      context,
-      next,
-      () => ref.invalidate(dashboardProvider),
-      practice: next.isRepeat,
-      replace: true,
-    );
+    context.pushReplacement('/task-run',
+        extra: TaskRunArgs(next, practice: next.isRepeat));
   } catch (_) {
     messenger.showSnackBar(
       const SnackBar(
@@ -286,11 +294,5 @@ void _retryTask(BuildContext context, Ref ref, DailyTask task) {
     _returnToFeature(context);
     return;
   }
-  TaskChallengeModal.show(
-    context,
-    task,
-    () => ref.invalidate(dashboardProvider),
-    practice: true,
-    replace: true,
-  );
+  context.pushReplacement('/task-run', extra: TaskRunArgs(task, practice: true));
 }

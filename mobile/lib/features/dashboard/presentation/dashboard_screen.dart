@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:verifai/core/providers/app_reconnect.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
-import 'package:verifai/features/dashboard/presentation/task_challenge_modal.dart';
+import 'package:verifai/features/task/presentation/task_run_screen.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets.dart';
@@ -403,8 +404,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _playTask(DailyTask task) {
-    TaskChallengeModal.show(context, task, () {
-      ref.invalidate(dashboardProvider);
-    }, practice: task.isRepeat);
+    context.push('/task-run', extra: TaskRunArgs(task, practice: task.isRepeat));
   }
 }
