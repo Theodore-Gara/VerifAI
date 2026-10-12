@@ -340,7 +340,7 @@ async function submitAttempt(req, res, next) {
     let newlyEarned = [];
 
     if (!practice) {
-      skillScore = await updateSkillScore(client, user.id, FEATURE_DIMENSION[task.feature], scored.score);
+      skillScore = await updateSkillScore(client, user.id, task.feature, task.track_id);
       progress = await updateProgress(client, user, xpEarned, passed);
       await refreshReadiness(client, user.id, user.industry_track_id);
       newlyEarned = await awardAchievements(client, user.id);
@@ -492,13 +492,33 @@ function scoreByFeature(feature, content, body) {
   };
 }
 
-async function updateSkillScore(client, userId, dimension, score) {
+// The skill score is the share of that skill's track tasks the user has passed:
+// passed non-practice tasks / total tasks in this skill for the track, as a %.
+// A skill with 4 tasks fills 25% per passed task (25 -> 50 -> 75 -> 100).
+async function updateSkillScore(client, userId, feature, trackId) {
+  const dimension = FEATURE_DIMENSION[feature];
+  const fill = await client.query(
+    `SELECT
+       (SELECT COUNT(DISTINCT ta.task_id)::int
+          FROM task_attempts ta
+          JOIN tasks t ON t.id = ta.task_id
+         WHERE ta.user_id = $1 AND ta.practice = FALSE AND ta.passed
+           AND t.feature = $2 AND t.track_id = $3) AS passed,
+       (SELECT COUNT(*)::int
+          FROM tasks t
+         WHERE t.feature = $2 AND t.track_id = $3) AS total`,
+    [userId, feature, trackId]
+  );
+  const passed = Number(fill.rows[0]?.passed) || 0;
+  const total = Number(fill.rows[0]?.total) || 0;
+  const score = total > 0 ? Math.round((100 * passed) / total) : 0;
+
   const result = await client.query(
     `INSERT INTO skill_scores (user_id, dimension, score, attempts_count, updated_at)
      VALUES ($1, $2, $3, 1, CURRENT_TIMESTAMP)
      ON CONFLICT (user_id, dimension)
      DO UPDATE SET
-       score = ROUND(((skill_scores.score * skill_scores.attempts_count) + EXCLUDED.score)::numeric / (skill_scores.attempts_count + 1)),
+       score = EXCLUDED.score,
        attempts_count = skill_scores.attempts_count + 1,
        updated_at = CURRENT_TIMESTAMP
      RETURNING dimension, score, attempts_count`,
