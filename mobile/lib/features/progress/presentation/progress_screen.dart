@@ -13,7 +13,6 @@ import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/dimension_bar.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
-import 'package:verifai/shared/widgets/streak_badge.dart';
 import 'package:verifai/shared/widgets/xp_bar.dart';
 
 class ProgressScreen extends ConsumerWidget {
@@ -123,18 +122,54 @@ class ProgressScreen extends ConsumerWidget {
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(AppRadius.card),
                     border: Border.all(
-                        color: AppColors.gold.withValues(alpha: 0.3)),
-                    boxShadow: [
+                      color: AppColors.border,
+                    ),
+                    boxShadow: const [
                       BoxShadow(
-                        color: AppColors.gold.withValues(alpha: 0.08),
+                        color: AppColors.shadow,
                         blurRadius: 12,
-                        offset: const Offset(0, 3),
+                        offset: Offset(0, 3),
                       ),
                     ],
                   ),
                   child: Row(
                     children: [
-                      StreakBadge(days: data.streakDays),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: AppColors.background,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.local_fire_department_rounded,
+                          color: AppColors.primaryNavy,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${data.streakDays} Days',
+                              style:
+                                  AppTypography.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.4,
+                              ),
+                            ),
+                            Text(
+                              'Streak Active',
+                              style:
+                                  AppTypography.textTheme.bodySmall?.copyWith(
+                                color: AppColors.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),

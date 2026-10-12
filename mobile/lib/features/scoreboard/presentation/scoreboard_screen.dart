@@ -306,37 +306,14 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      'YOUR BENCHMARK',
-                      style: AppTypography.textTheme.labelSmall?.copyWith(
-                        color: AppColors.accentCyan,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 9.5,
-                        letterSpacing: 0.6,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 1.5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.accentGreen.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                      ),
-                      child: Text(
-                        cohortContext,
-                        style: AppTypography.textTheme.labelSmall?.copyWith(
-                          color: AppColors.accentCyan,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ],
+                Text(
+                  'YOUR BENCHMARK',
+                  style: AppTypography.textTheme.labelSmall?.copyWith(
+                    color: AppColors.accentCyan,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 9.5,
+                    letterSpacing: 0.6,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
@@ -357,9 +334,12 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
               ],
             ),
           ),
-          const SizedBox(width: AppSpacing.xs),
+          const SizedBox(width: AppSpacing.sm),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 5,
+            ),
             decoration: BoxDecoration(
               color: AppColors.accentGreen.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -367,25 +347,14 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
                 color: AppColors.accentGreen.withValues(alpha: 0.35),
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.verified_rounded,
-                  size: 11,
-                  color: AppColors.accentCyan,
-                ),
-                const SizedBox(width: 3),
-                Text(
-                  'READY',
-                  style: AppTypography.textTheme.labelSmall?.copyWith(
-                    color: AppColors.accentCyan,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 9,
-                    letterSpacing: 0.4,
-                  ),
-                ),
-              ],
+            child: Text(
+              cohortContext,
+              style: AppTypography.textTheme.labelSmall?.copyWith(
+                color: AppColors.accentCyan,
+                fontSize: 9.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.2,
+              ),
             ),
           ),
         ],
@@ -404,24 +373,14 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.auto_awesome_rounded,
-                  size: 14,
-                  color: AppColors.accentGreen,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'TOP PERFORMERS',
-                  style: AppTypography.textTheme.labelSmall?.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.6,
-                    fontSize: 10.5,
-                  ),
-                ),
-              ],
+            Text(
+              'TOP PERFORMERS',
+              style: AppTypography.textTheme.labelSmall?.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.6,
+                fontSize: 10.5,
+              ),
             ),
             Text(
               'Verified Readiness',
@@ -826,12 +785,12 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
                     const Icon(
                       Icons.local_fire_department_rounded,
                       size: 13,
-                      color: AppColors.goldDark,
+                      color: AppColors.primaryNavy,
                     ),
                     Text(
                       '${entry.streak}d',
                       style: AppTypography.textTheme.labelSmall?.copyWith(
-                        color: AppColors.goldDark,
+                        color: AppColors.primaryNavy,
                         fontWeight: FontWeight.w700,
                         fontSize: 11,
                       ),

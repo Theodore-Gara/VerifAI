@@ -8,13 +8,17 @@ import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/assistant/presentation/learning_assistant_screen.dart';
 import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/features/product_hub/presentation/product_hub_screen.dart';
-import 'package:verifai/features/dashboard/presentation/task_challenge_modal.dart';
+import 'package:verifai/features/task/presentation/task_run_screen.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
 import 'package:verifai/features/navigation/main_nav_shell.dart';
 import 'package:verifai/features/onboarding/presentation.dart';
 import 'package:verifai/features/scoreboard/presentation/scoreboard_screen.dart';
 import 'package:verifai/features/task/presentation/task_screen.dart';
+import 'package:verifai/features/verification/presentation/verification_screen.dart';
+import 'package:verifai/features/judgement/presentation/judgement_screen.dart';
+import 'package:verifai/features/risk_governance/presentation/risk_governance_screen.dart';
+import 'package:verifai/features/interview/presentation/interview_practice_screen.dart';
 import 'package:verifai/features/progress/presentation/progress_screen.dart';
 import 'package:verifai/shared/models.dart';
 
@@ -164,6 +168,39 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const TaskScreen(),
       ),
       GoRoute(
+        path: '/verification',
+        name: 'verification',
+        builder: (context, state) => const VerificationScreen(),
+      ),
+      GoRoute(
+        path: '/judgement',
+        name: 'judgement',
+        builder: (context, state) => const JudgementScreen(),
+      ),
+      GoRoute(
+        path: '/risk-governance',
+        name: 'risk-governance',
+        builder: (context, state) => const RiskGovernanceScreen(),
+      ),
+      GoRoute(
+        path: '/interview',
+        name: 'interview',
+        builder: (context, state) => const InterviewPracticeScreen(),
+      ),
+      GoRoute(
+        path: '/task-run',
+        name: 'task-run',
+        builder: (context, state) {
+          final args = state.extra;
+          if (args is TaskRunArgs) {
+            return TaskRunScreen(task: args.task, practice: args.practice);
+          }
+          return const Scaffold(
+            body: Center(child: Text('Open a task to start.')),
+          );
+        },
+      ),
+      GoRoute(
         path: '/assistant',
         name: 'assistant',
         builder: (context, state) {
@@ -228,14 +265,9 @@ final routerProvider = Provider<GoRouter>((ref) {
             newlyEarnedAchievements: result.newlyEarnedAchievements,
             onRetry: result.task == null
                 ? null
-                : () => TaskChallengeModal.show(
-                      context,
-                      result.task!,
-                      () => ref.invalidate(dashboardProvider),
-                      practice: true,
-                      replace: true,
-                    ),
-            onContinue: () => _continueToNextTask(context, ref, result.task),
+                : () => _retryTask(context, ref, result.task!),
+            onContinue: () =>
+                _continueToNextTask(context, ref, result.task),
           );
         },
       ),
@@ -259,11 +291,14 @@ Future<void> _continueToNextTask(
   DailyTask? task,
 ) async {
   if (task == null) {
-    if (context.canPop()) {
-      context.pop();
-    } else {
-      context.go('/dashboard');
-    }
+    _returnToFeature(context);
+    return;
+  }
+
+  // Judgement / Risk & Governance run as full-screen flows; "Continue" returns
+  // to that screen (which reloads the next task) rather than reopening a sheet.
+  if (_isChoiceFeature(task)) {
+    _returnToFeature(context);
     return;
   }
 
@@ -283,13 +318,8 @@ Future<void> _continueToNextTask(
       );
       return;
     }
-    TaskChallengeModal.show(
-      context,
-      next,
-      () => ref.invalidate(dashboardProvider),
-      practice: next.isRepeat,
-      replace: true,
-    );
+    context.pushReplacement('/task-run',
+        extra: TaskRunArgs(next, practice: next.isRepeat));
   } catch (_) {
     messenger.showSnackBar(
       const SnackBar(
@@ -298,4 +328,25 @@ Future<void> _continueToNextTask(
       ),
     );
   }
+}
+
+bool _isChoiceFeature(DailyTask task) =>
+    task.feature == 'judgement' || task.feature == 'risk_governance';
+
+/// Return to the full-screen feature flow (which reloads the next task), or the
+/// dashboard when there is nothing to pop.
+void _returnToFeature(BuildContext context) {
+  if (context.canPop()) {
+    context.pop();
+  } else {
+    context.go('/dashboard');
+  }
+}
+
+void _retryTask(BuildContext context, Ref ref, DailyTask task) {
+  if (_isChoiceFeature(task)) {
+    _returnToFeature(context);
+    return;
+  }
+  context.pushReplacement('/task-run', extra: TaskRunArgs(task, practice: true));
 }

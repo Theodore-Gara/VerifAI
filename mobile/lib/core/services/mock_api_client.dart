@@ -307,6 +307,36 @@ class MockApiClient implements ApiClient {
   }
 
   @override
+  Future<List<InterviewQuestion>> getInterviewQuestions() async {
+    await _delay();
+    return const [
+      InterviewQuestion(
+        id: 1,
+        question: 'Walk me through how you verify an AI-generated legal citation.',
+        sampleAnswer:
+            'I find the case myself on SAFLII or Juta using the exact citation, and read the paragraph the proposition comes from.',
+        whatEmployersTest: 'A repeatable verification workflow.',
+        practiced: true,
+        sortOrder: 1,
+      ),
+      InterviewQuestion(
+        id: 2,
+        question: 'When would you refuse to let AI draft an affidavit?',
+        sampleAnswer:
+            'When the content is sensitive or sworn evidence must be the witness or client own account.',
+        whatEmployersTest: 'Judgement beyond drafting accuracy.',
+        practiced: false,
+        sortOrder: 2,
+      ),
+    ];
+  }
+
+  @override
+  Future<void> markInterviewPracticed(int questionId) async {
+    await _delay();
+  }
+
+  @override
   Future<TaskSubmissionResponse> submitTask(
       TaskSubmissionRequest request) async {
     await _delay();

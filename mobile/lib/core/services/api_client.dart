@@ -11,6 +11,8 @@ abstract class ApiClient {
   Future<LeaderboardData> getLeaderboard({int? trackId, int limit = 20});
   Future<ActivityData> getActivity({int days = 7});
   Future<List<Milestone>> getMilestones({int? trackId});
+  Future<List<InterviewQuestion>> getInterviewQuestions();
+  Future<void> markInterviewPracticed(int questionId);
   Future<TaskSubmissionResponse> submitTask(TaskSubmissionRequest request);
   Future<String> sendAssistantMessage({
     required int taskId,
@@ -38,6 +40,9 @@ class TaskSubmissionRequest {
   final int taskId;
   final String? answer;
   final int? answerOptionId;
+  final int? decisionOptionId;
+  final int? reasonOptionId;
+  final String? rationale;
   final String? explanation;
   final List<int>? selectedLines;
   final String? fix;
@@ -48,6 +53,9 @@ class TaskSubmissionRequest {
     required this.taskId,
     this.answer,
     this.answerOptionId,
+    this.decisionOptionId,
+    this.reasonOptionId,
+    this.rationale,
     this.explanation,
     this.selectedLines,
     this.fix,
@@ -58,6 +66,9 @@ class TaskSubmissionRequest {
   Map<String, dynamic> toJson() => {
         if (answer != null) 'answer': answer,
         if (answerOptionId != null) 'answer_option_id': answerOptionId,
+        if (decisionOptionId != null) 'decision_option_id': decisionOptionId,
+        if (reasonOptionId != null) 'reason_option_id': reasonOptionId,
+        if (rationale != null) 'rationale': rationale,
         if (explanation != null) 'explanation': explanation,
         if (selectedLines != null) 'selected_lines': selectedLines,
         if (fix != null) 'fix': fix,

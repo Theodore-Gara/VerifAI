@@ -7,3 +7,4 @@ export 'models/achievement.dart';
 export 'models/leaderboard.dart';
 export 'models/activity.dart';
 export 'models/milestone.dart';
+export 'models/interview_question.dart';

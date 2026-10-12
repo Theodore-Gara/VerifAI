@@ -104,7 +104,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               height: 220,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.ambientGold,
+                color: AppColors.ambientCyan,
               ),
             ),
           ),
@@ -116,7 +116,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               height: 200,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.ambientCyan,
+                color: AppColors.ambientGreen,
               ),
             ),
           ),

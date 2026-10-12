@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/core/services/mock_api_client.dart';
-import 'package:verifai/features/dashboard/presentation/task_challenge_modal.dart';
+import 'package:verifai/features/task/presentation/task_run_screen.dart';
 import 'package:verifai/shared/models/daily_task.dart';
 
 void main() {
@@ -21,16 +21,11 @@ void main() {
     );
 
     await tester.pumpWidget(_taskHarness(task));
-    await tester.tap(find.text('Open task'));
     await tester.pumpAndSettle();
 
     expect(find.text('It uses an outdated comparison period.'), findsOneWidget);
     expect(find.text('Check the underlying records.'), findsOneWidget);
     expect(find.text('Approve the forecast immediately.'), findsOneWidget);
-    expect(
-      find.text('Flag critical error & provide corrective prompt'),
-      findsNothing,
-    );
   });
 
   testWidgets('line-text task renders selectable AI output lines',
@@ -47,7 +42,6 @@ void main() {
     );
 
     await tester.pumpWidget(_taskHarness(task));
-    await tester.tap(find.text('Open task'));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Revenue increased by 15%.'), findsOneWidget);
@@ -61,17 +55,6 @@ void main() {
 Widget _taskHarness(DailyTask task) {
   return ProviderScope(
     overrides: [apiClientProvider.overrideWithValue(MockApiClient())],
-    child: MaterialApp(
-      home: Scaffold(
-        body: Builder(
-          builder: (context) => Center(
-            child: ElevatedButton(
-              onPressed: () => TaskChallengeModal.show(context, task, () {}),
-              child: const Text('Open task'),
-            ),
-          ),
-        ),
-      ),
-    ),
+    child: MaterialApp(home: TaskRunScreen(task: task)),
   );
 }

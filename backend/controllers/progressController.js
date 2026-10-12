@@ -17,7 +17,7 @@ async function getProgress(req, res, next) {
                   'attempts_count', ss.attempts_count
                 ) ORDER BY ss.dimension) FROM skill_scores ss WHERE ss.user_id = u.id), '[]'::json) AS skill_scores,
               COALESCE((SELECT COUNT(DISTINCT ta.task_id)::int FROM task_attempts ta
-                        WHERE ta.user_id = u.id AND ta.passed AND ta.practice = FALSE), 0) AS completed_tasks
+                        WHERE ta.user_id = u.id AND ta.practice = FALSE), 0) AS completed_tasks
        FROM users u
        LEFT JOIN user_progress p ON p.user_id = u.id
        WHERE u.firebase_uid = $1`,

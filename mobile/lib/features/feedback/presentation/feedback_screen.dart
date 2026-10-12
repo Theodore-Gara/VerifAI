@@ -410,7 +410,6 @@ class FeedbackScreen extends ConsumerWidget {
               child: DimensionBar(
                 label: _dimensionLabel(entry.key),
                 value: entry.value,
-                icon: Icons.insights_rounded,
               ),
             ))
         .toList();

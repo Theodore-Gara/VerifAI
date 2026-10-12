@@ -219,13 +219,39 @@ async function getNextTask(req, res, next) {
          LIMIT 1`,
         [feature, user.industry_track_id, user.id]
       );
-      task = result.rows[0];
-      if (task) {
+      let row = result.rows[0];
+      let isRepeat = false;
+      // No unseen tasks left: rotate the track's tasks (least-recently attempted
+      // first) so the card keeps working as practice.
+      if (!row) {
+        const rotateResult = await pool.query(
+          `SELECT t.id, t.feature, f.title, f.scenario,
+                  COALESCE(MAX(ta.submitted_at), to_timestamp(0)) AS last_submitted
+           FROM tasks t
+           JOIN ${table} f ON f.task_id = t.id
+           LEFT JOIN task_attempts ta ON ta.task_id = t.id AND ta.user_id = $3
+           WHERE t.feature = $1 AND t.track_id = $2
+           GROUP BY t.id, t.feature, f.title, f.scenario
+           ORDER BY last_submitted ASC, t.id ASC
+           LIMIT 1`,
+          [feature, user.industry_track_id, user.id]
+        );
+        row = rotateResult.rows[0] || null;
+        isRepeat = !!row;
+      }
+      if (row) {
         const options = await pool.query(
           `SELECT id, kind, label FROM task_options WHERE task_id = $1 ORDER BY kind, sort_order`,
-          [task.id]
+          [row.id]
         );
-        task.options = options.rows;
+        task = {
+          id: row.id,
+          feature: row.feature,
+          title: row.title,
+          scenario: row.scenario,
+          options: options.rows,
+        };
+        if (isRepeat) task.is_repeat = true;
       }
     }
 
@@ -314,7 +340,7 @@ async function submitAttempt(req, res, next) {
     let newlyEarned = [];
 
     if (!practice) {
-      skillScore = await updateSkillScore(client, user.id, FEATURE_DIMENSION[task.feature], scored.score);
+      skillScore = await updateSkillScore(client, user.id, task.feature, task.track_id);
       progress = await updateProgress(client, user, xpEarned, passed);
       await refreshReadiness(client, user.id, user.industry_track_id);
       newlyEarned = await awardAchievements(client, user.id);
@@ -452,7 +478,9 @@ function scoreByFeature(feature, content, body) {
   const reason = content.reasons.find((o) => o.id === reasonId);
   if (!decision) throw new Error('Selected decision does not belong to this task.');
   if (!reason) throw new Error('Selected reason does not belong to this task.');
-  const rationale = body.rationale == null ? null : requiredString(body.rationale, 'rationale', 5000);
+    // Optional: an omitted or blank rationale is stored as NULL.
+    const rationaleRaw = body.rationale == null ? '' : String(body.rationale).trim();
+    const rationale = rationaleRaw.length ? rationaleRaw.slice(0, 5000) : null;
   return {
     score: scoreOptions([decision.score, reason.score]),
     decisionOptionId: decisionId,
@@ -464,13 +492,33 @@ function scoreByFeature(feature, content, body) {
   };
 }
 
-async function updateSkillScore(client, userId, dimension, score) {
+// The skill score is the share of that skill's track tasks the user has passed:
+// passed non-practice tasks / total tasks in this skill for the track, as a %.
+// A skill with 4 tasks fills 25% per passed task (25 -> 50 -> 75 -> 100).
+async function updateSkillScore(client, userId, feature, trackId) {
+  const dimension = FEATURE_DIMENSION[feature];
+  const fill = await client.query(
+    `SELECT
+       (SELECT COUNT(DISTINCT ta.task_id)::int
+          FROM task_attempts ta
+          JOIN tasks t ON t.id = ta.task_id
+         WHERE ta.user_id = $1 AND ta.practice = FALSE AND ta.passed
+           AND t.feature = $2 AND t.track_id = $3) AS passed,
+       (SELECT COUNT(*)::int
+          FROM tasks t
+         WHERE t.feature = $2 AND t.track_id = $3) AS total`,
+    [userId, feature, trackId]
+  );
+  const passed = Number(fill.rows[0]?.passed) || 0;
+  const total = Number(fill.rows[0]?.total) || 0;
+  const score = total > 0 ? Math.round((100 * passed) / total) : 0;
+
   const result = await client.query(
     `INSERT INTO skill_scores (user_id, dimension, score, attempts_count, updated_at)
      VALUES ($1, $2, $3, 1, CURRENT_TIMESTAMP)
      ON CONFLICT (user_id, dimension)
      DO UPDATE SET
-       score = ROUND(((skill_scores.score * skill_scores.attempts_count) + EXCLUDED.score)::numeric / (skill_scores.attempts_count + 1)),
+       score = EXCLUDED.score,
        attempts_count = skill_scores.attempts_count + 1,
        updated_at = CURRENT_TIMESTAMP
      RETURNING dimension, score, attempts_count`,

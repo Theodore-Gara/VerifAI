@@ -135,6 +135,7 @@ const fakeClient = {
     if (s.includes('INSERT INTO task_attempts')) {
       return { rows: [{ id: 1, task_id: 5, score: 100, passed: true, practice: false, xp_earned: 70, submitted_at: '2026-10-08T00:00:00.000Z' }] };
     }
+    if (s.includes('AS passed') && s.includes('AS total')) return { rows: [{ passed: 1, total: 4 }] };
     if (s.includes('INSERT INTO skill_scores')) return { rows: [{ dimension: 'AI Judgement', score: 100, attempts_count: 1 }] };
     if (s.includes('INSERT INTO user_progress')) {
       return { rows: [{ id: 1, xp: 0, level: 1, streak: 0, last_activity_date: null, tier: 'Novice', tier_tasks_completed: 0 }] };
