@@ -219,13 +219,39 @@ async function getNextTask(req, res, next) {
          LIMIT 1`,
         [feature, user.industry_track_id, user.id]
       );
-      task = result.rows[0];
-      if (task) {
+      let row = result.rows[0];
+      let isRepeat = false;
+      // No unseen tasks left: rotate the track's tasks (least-recently attempted
+      // first) so the card keeps working as practice.
+      if (!row) {
+        const rotateResult = await pool.query(
+          `SELECT t.id, t.feature, f.title, f.scenario,
+                  COALESCE(MAX(ta.submitted_at), to_timestamp(0)) AS last_submitted
+           FROM tasks t
+           JOIN ${table} f ON f.task_id = t.id
+           LEFT JOIN task_attempts ta ON ta.task_id = t.id AND ta.user_id = $3
+           WHERE t.feature = $1 AND t.track_id = $2
+           GROUP BY t.id, t.feature, f.title, f.scenario
+           ORDER BY last_submitted ASC, t.id ASC
+           LIMIT 1`,
+          [feature, user.industry_track_id, user.id]
+        );
+        row = rotateResult.rows[0] || null;
+        isRepeat = !!row;
+      }
+      if (row) {
         const options = await pool.query(
           `SELECT id, kind, label FROM task_options WHERE task_id = $1 ORDER BY kind, sort_order`,
-          [task.id]
+          [row.id]
         );
-        task.options = options.rows;
+        task = {
+          id: row.id,
+          feature: row.feature,
+          title: row.title,
+          scenario: row.scenario,
+          options: options.rows,
+        };
+        if (isRepeat) task.is_repeat = true;
       }
     }
 

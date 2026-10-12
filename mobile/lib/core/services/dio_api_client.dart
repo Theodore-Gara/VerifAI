@@ -182,6 +182,29 @@ class DioApiClient implements ApiClient {
   }
 
   @override
+  Future<List<InterviewQuestion>> getInterviewQuestions() async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>(
+      'interview/questions',
+      options: Options(headers: _authHeaders(token)),
+    );
+    final list = response.data?['questions'] as List<dynamic>? ?? const [];
+    return list
+        .map((e) =>
+            InterviewQuestion.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+
+  @override
+  Future<void> markInterviewPracticed(int questionId) async {
+    final token = await _idToken();
+    await _dio.post<Map<String, dynamic>>(
+      'interview/questions/$questionId/practice',
+      options: Options(headers: _authHeaders(token)),
+    );
+  }
+
+  @override
   Future<TaskSubmissionResponse> submitTask(
       TaskSubmissionRequest request) async {
     final token = await _idToken();

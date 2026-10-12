@@ -13,6 +13,10 @@ import 'package:verifai/features/navigation/main_nav_shell.dart';
 import 'package:verifai/features/onboarding/presentation.dart';
 import 'package:verifai/features/scoreboard/presentation/scoreboard_screen.dart';
 import 'package:verifai/features/task/presentation/task_screen.dart';
+import 'package:verifai/features/verification/presentation/verification_screen.dart';
+import 'package:verifai/features/judgement/presentation/judgement_screen.dart';
+import 'package:verifai/features/risk_governance/presentation/risk_governance_screen.dart';
+import 'package:verifai/features/interview/presentation/interview_practice_screen.dart';
 import 'package:verifai/features/progress/presentation/progress_screen.dart';
 import 'package:verifai/shared/models.dart';
 
@@ -136,6 +140,26 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/tasks',
         name: 'tasks',
         builder: (context, state) => const TaskScreen(),
+      ),
+      GoRoute(
+        path: '/verification',
+        name: 'verification',
+        builder: (context, state) => const VerificationScreen(),
+      ),
+      GoRoute(
+        path: '/judgement',
+        name: 'judgement',
+        builder: (context, state) => const JudgementScreen(),
+      ),
+      GoRoute(
+        path: '/risk-governance',
+        name: 'risk-governance',
+        builder: (context, state) => const RiskGovernanceScreen(),
+      ),
+      GoRoute(
+        path: '/interview',
+        name: 'interview',
+        builder: (context, state) => const InterviewPracticeScreen(),
       ),
       GoRoute(
         path: '/assistant',
