@@ -226,11 +226,11 @@ class _ProductHubScreenState extends State<ProductHubScreen> {
         ),
       ),
       const SizedBox(height: 15), const Text('Choose your industry', style: TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 8),
-      DropdownButtonFormField<String>(value: _industry, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)), items: const ['Legal','Finance','Software Engineering','Business'].map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(), onChanged:(v)=>setState(()=>_industry=v ?? _industry)),
+      DropdownButtonFormField<String>(initialValue: _industry, decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)), items: const ['Legal','Finance','Software Engineering','Business'].map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(), onChanged:(v)=>setState(()=>_industry=v ?? _industry)),
       const SizedBox(height: 15), const Text('Quick starters', style: TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 9),
       Wrap(spacing: 7, runSpacing: 7, children: [
         ('💡 Give me a hint','Give me a hint without revealing the answer'), ('🔎 Verify a claim','How can I verify this claim?'), ('🛡️ Spot risks','What risks should I consider?'),
-      ].map((item)=>ActionChip(label: Text(item.$1), onPressed: ()=>setState(()=>_message.text=item.$2), backgroundColor: Colors.white, side: BorderSide(color: AppColors.border))).toList()),
+      ].map((item)=>ActionChip(label: Text(item.$1), onPressed: ()=>setState(()=>_message.text=item.$2), backgroundColor: Colors.white, side: const BorderSide(color: AppColors.border))).toList()),
       const SizedBox(height: 14), TextField(controller:_message, maxLines:2, decoration: InputDecoration(hintText:'Ask your question…', filled:true, fillColor:AppColors.background, border:OutlineInputBorder(borderRadius:BorderRadius.circular(16),borderSide:BorderSide.none), prefixIcon: const Icon(Icons.chat_bubble_outline_rounded))),
       const SizedBox(height: 10), _button('Send to VerifAI', _askAssistant, icon:Icons.send_rounded),
     ])),
@@ -238,7 +238,7 @@ class _ProductHubScreenState extends State<ProductHubScreen> {
       const Row(children: [Icon(Icons.auto_awesome_rounded,color:AppColors.accentGreen), SizedBox(width:8), Text('Your conversation',style:TextStyle(fontWeight:FontWeight.w900))]), const SizedBox(height:12),
       _chatBubble(text:_message.text.trim().isEmpty ? 'Can you help me think this through?' : _message.text.trim(), assistant:false),
       _chatBubble(text:_reply, assistant:true),
-      Row(children:[const Icon(Icons.info_outline_rounded,size:15,color:AppColors.textSecondary),const SizedBox(width:6),const Expanded(child:Text('Demo guidance only — this chat is not yet connected to the live GPT service.',style:TextStyle(fontSize:11,color:AppColors.textSecondary)))]),
+      const Row(children:[Icon(Icons.info_outline_rounded,size:15,color:AppColors.textSecondary),SizedBox(width:6),Expanded(child:Text('Demo guidance only — this chat is not yet connected to the live GPT service.',style:TextStyle(fontSize:11,color:AppColors.textSecondary)))]),
     ])),
   ]);
 
@@ -405,7 +405,7 @@ class _ProductHubScreenState extends State<ProductHubScreen> {
   Widget _rewardTile({required String image, required String title, required String subtitle, required String cost, required List<Color> colors, required String note}) => Container(
     margin: const EdgeInsets.only(bottom:12), padding: const EdgeInsets.all(15),
     decoration: BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(22),border:Border.all(color:AppColors.border),boxShadow:[BoxShadow(color:colors.first.withValues(alpha:.10),blurRadius:16,offset:const Offset(0,5))]),
-    child: Row(children:[Container(width:88,height:92,decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topLeft,end:Alignment.bottomRight,colors:colors),borderRadius:BorderRadius.circular(18)),child:ClipRRect(borderRadius:BorderRadius.circular(18),child:Image.asset('assets/images/' + image + '.png',fit:BoxFit.cover,width:88,height:92))),const SizedBox(width:14),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:15,color:AppColors.primaryNavy)),const SizedBox(height:4),Text(subtitle,style:const TextStyle(fontSize:12,height:1.4,color:AppColors.textSecondary)),const SizedBox(height:9),Row(children:[_pill(cost,color:AppColors.accentGreen),const SizedBox(width:7),Flexible(child:Text(note,style:const TextStyle(fontSize:10,color:AppColors.textSecondary)))])]))]),
+    child: Row(children:[Container(width:88,height:92,decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topLeft,end:Alignment.bottomRight,colors:colors),borderRadius:BorderRadius.circular(18)),child:ClipRRect(borderRadius:BorderRadius.circular(18),child:Image.asset('assets/images/$image.png',fit:BoxFit.cover,width:88,height:92))),const SizedBox(width:14),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:15,color:AppColors.primaryNavy)),const SizedBox(height:4),Text(subtitle,style:const TextStyle(fontSize:12,height:1.4,color:AppColors.textSecondary)),const SizedBox(height:9),Row(children:[_pill(cost,color:AppColors.accentGreen),const SizedBox(width:7),Flexible(child:Text(note,style:const TextStyle(fontSize:10,color:AppColors.textSecondary)))])]))]),
   );
 
   Widget _rewards()=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[

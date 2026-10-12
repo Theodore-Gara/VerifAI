@@ -220,7 +220,7 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
                               ),
                             ),
                             const SizedBox(height: 24),
-                            Text(item.eyebrow, style: TextStyle(color: AppColors.accentGreen, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.4)),
+                            Text(item.eyebrow, style: const TextStyle(color: AppColors.accentGreen, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.4)),
                             const SizedBox(height: 12),
                             Text(item.title, style: const TextStyle(color: AppColors.primaryNavy, fontSize: 31, height: 1.1, fontWeight: FontWeight.w900, letterSpacing: -.7)),
                             const SizedBox(height: 14),
@@ -229,7 +229,7 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
                             ...item.bullets.map((bullet) => Padding(
                               padding: const EdgeInsets.only(bottom: 12),
                               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Container(width: 23, height: 23, decoration: BoxDecoration(color: item.accent.withValues(alpha: .16), borderRadius: BorderRadius.circular(8)), child: Icon(Icons.check_rounded, size: 16, color: AppColors.primaryNavy)),
+                                Container(width: 23, height: 23, decoration: BoxDecoration(color: item.accent.withValues(alpha: .16), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.check_rounded, size: 16, color: AppColors.primaryNavy)),
                                 const SizedBox(width: 11),
                                 Expanded(child: Text(bullet, style: const TextStyle(color: AppColors.primaryNavy, fontWeight: FontWeight.w700, height: 1.35))),
                               ]),
