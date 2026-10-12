@@ -7,7 +7,6 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
-import 'package:verifai/features/dashboard/presentation/task_challenge_modal.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets.dart';
@@ -339,33 +338,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
           _buildQuickLaunches(context),
-          const SizedBox(height: AppSpacing.xl),
-
-          // Daily Mission Hero Bento Card
-          if (data.dailyTask != null) ...[
-            Text(
-              'Next verification',
-              style: AppTypography.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.4,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            DailyTaskCard(
-              task: data.dailyTask!,
-              onStart: () => _playTask(data.dailyTask!),
-            ),
-          ] else ...[
-            EmptyState(
-              icon: Icons.task_alt_rounded,
-              title: 'All caught up today!',
-              message:
-                  'Great work! Check back tomorrow for your next AI challenge.',
-              actionLabel: 'Refresh',
-              onAction: () => ref.invalidate(dashboardProvider),
-            ),
-          ],
         ],
       ),
     );
@@ -556,11 +528,5 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
       ],
     );
-  }
-
-  void _playTask(DailyTask task) {
-    TaskChallengeModal.show(context, task, () {
-      ref.invalidate(dashboardProvider);
-    }, practice: task.isRepeat);
   }
 }

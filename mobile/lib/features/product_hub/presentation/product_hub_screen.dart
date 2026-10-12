@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:verifai/core/theme/app_colors.dart';
+import 'package:verifai/features/auth/providers.dart';
 
 /// Polished frontend-first product areas. These screens are safe demo surfaces:
 /// they do not claim to have verified real documents or submitted real donations.
 enum VerifAiHubMode { assistant, verify, lab, practice, rewards, history }
 
-class ProductHubScreen extends StatefulWidget {
+class ProductHubScreen extends ConsumerStatefulWidget {
   const ProductHubScreen({super.key, required this.mode});
   final VerifAiHubMode mode;
   @override
-  State<ProductHubScreen> createState() => _ProductHubScreenState();
+  ConsumerState<ProductHubScreen> createState() => _ProductHubScreenState();
 }
 
-class _ProductHubScreenState extends State<ProductHubScreen> {
+class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
   final _message = TextEditingController();
   final _documentName = TextEditingController();
   String _industry = 'Software Engineering';
@@ -27,10 +29,23 @@ class _ProductHubScreenState extends State<ProductHubScreen> {
   @override
   void initState() {
     super.initState();
+    final trackName = ref.read(currentUserProvider).valueOrNull?.trackName;
+    if (trackName != null && trackName.isNotEmpty) {
+      _industry = _canonicalIndustry(trackName);
+    }
     if (widget.mode == VerifAiHubMode.lab) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _speakLabWelcome());
     }
   }
+
+  static String _canonicalIndustry(String trackName) =>
+      switch (trackName.toLowerCase()) {
+        'legal' => 'Legal',
+        'finance' => 'Finance',
+        'it / software' => 'Software Engineering',
+        'business consulting' => 'Business',
+        _ => 'Software Engineering'
+      };
 
   Future<void> _speakLabWelcome() async {
     try {
@@ -102,29 +117,19 @@ class _ProductHubScreenState extends State<ProductHubScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
-        title: Row(children: [
-          Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                      colors: [AppColors.accentGreen, AppColors.accentCyan]),
-                  borderRadius: BorderRadius.circular(11)),
-              child: const Icon(Icons.verified_rounded,
-                  color: AppColors.primaryNavy, size: 21)),
-          const SizedBox(width: 10),
-          Expanded(
-              child: Text(details.title,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primaryNavy))),
-        ]),
+        title: Text(details.title,
+            style: const TextStyle(
+                fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
       ),
       body: SafeArea(
           child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
               children: [
-            _hero(details),
+            _hero(
+                details,
+                widget.mode == VerifAiHubMode.practice
+                    ? 'Explore realistic scenarios across $_industry.'
+                    : null),
             const SizedBox(height: 22),
             if (widget.mode == VerifAiHubMode.assistant) _assistant(),
             if (widget.mode == VerifAiHubMode.verify) _verification(),
@@ -140,7 +145,7 @@ class _ProductHubScreenState extends State<ProductHubScreen> {
     );
   }
 
-  Widget _hero(_HubDetails d) => Container(
+  Widget _hero(_HubDetails d, [String? subtitle]) => Container(
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
             gradient: const LinearGradient(
@@ -184,7 +189,7 @@ class _ProductHubScreenState extends State<ProductHubScreen> {
                     fontWeight: FontWeight.w900,
                     letterSpacing: -.5)),
             const SizedBox(height: 9),
-            Text(d.subtitle,
+            Text(subtitle ?? d.subtitle,
                 style: TextStyle(
                     color: Colors.white.withValues(alpha: .78),
                     fontSize: 13,
@@ -321,18 +326,8 @@ class _ProductHubScreenState extends State<ProductHubScreen> {
         _card(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                        colors: [AppColors.accentGreen, AppColors.accentCyan]),
-                    borderRadius: BorderRadius.circular(16)),
-                child: const Icon(Icons.auto_awesome_rounded,
-                    size: 27, color: AppColors.primaryNavy)),
-            const SizedBox(width: 12),
-            const Expanded(
+          const Row(children: [
+            Expanded(
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -362,7 +357,7 @@ class _ProductHubScreenState extends State<ProductHubScreen> {
               children: [
                 const Expanded(
                   child: Text(
-                    'Hey! 👋 Bring me a claim, an AI answer, or a tricky idea. I’ll help you reason through it—without making the decision for you.',
+                    'Hey! 👋 Bring me a claim, an AI answer, or a tricky idea. I’ll help you reason through it, without making the decision for you.',
                     style: TextStyle(fontSize: 13, height: 1.5),
                   ),
                 ),
@@ -375,23 +370,6 @@ class _ProductHubScreenState extends State<ProductHubScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 15),
-          const Text('Choose your industry',
-              style: TextStyle(fontWeight: FontWeight.w800)),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-              initialValue: _industry,
-              decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-              items: const [
-                'Legal',
-                'Finance',
-                'Software Engineering',
-                'Business'
-              ].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-              onChanged: (v) => setState(() => _industry = v ?? _industry)),
           const SizedBox(height: 15),
           const Text('Quick starters',
               style: TextStyle(fontWeight: FontWeight.w800)),
@@ -453,7 +431,7 @@ class _ProductHubScreenState extends State<ProductHubScreen> {
                   SizedBox(width: 6),
                   Expanded(
                       child: Text(
-                          'Demo guidance only — this chat is not yet connected to the live GPT service.',
+                          'Demo guidance only: this chat is not yet connected to the live GPT service.',
                           style: TextStyle(
                               fontSize: 11, color: AppColors.textSecondary)))
                 ]),
@@ -767,30 +745,6 @@ class _ProductHubScreenState extends State<ProductHubScreen> {
             'Practice across four industries',
             'Choose a pathway. Each scenario asks you to make a decision and explain why.',
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: AppColors.border),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _industry,
-                isExpanded: true,
-                items: const [
-                  'Legal',
-                  'Finance',
-                  'Software Engineering',
-                  'Business',
-                ]
-                    .map((v) => DropdownMenuItem(value: v, child: Text(v)))
-                    .toList(),
-                onChanged: (v) => setState(() => _industry = v!),
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
           _card(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1012,16 +966,6 @@ class _ProductHubScreenState extends State<ProductHubScreen> {
                     colors: [AppColors.primaryNavy, Color(0xFF176B68)]),
                 borderRadius: BorderRadius.circular(26)),
             child: Row(children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: .12),
-                    borderRadius: BorderRadius.circular(20)),
-                child: const Center(
-                    child: Text('⚡', style: TextStyle(fontSize: 34))),
-              ),
-              const SizedBox(width: 14),
               Expanded(
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1218,14 +1162,6 @@ class _ProductHubScreenState extends State<ProductHubScreen> {
           )
         ].map((h) => _card(
                 child: Row(children: [
-              Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                      color: h.$5.withValues(alpha: .12),
-                      borderRadius: BorderRadius.circular(13)),
-                  child: Icon(Icons.assignment_turned_in_rounded, color: h.$5)),
-              const SizedBox(width: 11),
               Expanded(
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1271,7 +1207,7 @@ _HubDetails _details(VerifAiHubMode m) => switch (m) {
           'Verification Studio',
           'Evidence before confidence',
           'Make every claim earn your trust',
-          'Review documents, claims, AI responses and sources—with uncertainty made visible.',
+          'Review documents, claims, AI responses and sources, with uncertainty made visible.',
           Icons.fact_check_rounded),
       VerifAiHubMode.lab => const _HubDetails(
           'AI Lab',
@@ -1289,7 +1225,7 @@ _HubDetails _details(VerifAiHubMode m) => switch (m) {
           'Rewards',
           'Progress with purpose',
           'Every practice session counts',
-          'Earn XP, unlock milestones and build skills you can explain—not just collect badges.',
+          'Earn XP, unlock milestones and build skills you can explain, not just collect badges.',
           Icons.workspace_premium_rounded),
       VerifAiHubMode.history => const _HubDetails(
           'Task History',
