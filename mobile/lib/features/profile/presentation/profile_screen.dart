@@ -65,7 +65,7 @@ class ProfileScreen extends ConsumerWidget {
               height: 220,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.ambientGold,
+                color: AppColors.ambientCyan,
               ),
             ),
           ),
@@ -77,7 +77,7 @@ class ProfileScreen extends ConsumerWidget {
               height: 200,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.ambientCyan,
+                color: AppColors.ambientGreen,
               ),
             ),
           ),

@@ -175,37 +175,30 @@ class _CategoryCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: category.color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              child: Icon(category.icon, size: 24, color: category.color),
-            ),
-            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     category.title,
-                    style: AppTypography.textTheme.titleMedium?.copyWith(
+                    style: AppTypography.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Text(
                     category.subtitle,
-                    style: AppTypography.textTheme.bodySmall?.copyWith(
+                    style: AppTypography.textTheme.bodyMedium?.copyWith(
                       color: AppColors.textSecondary,
-                      height: 1.3,
+                      height: 1.35,
                     ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: AppSpacing.md),
             const Icon(Icons.chevron_right_rounded,
                 color: AppColors.textSecondary),
           ],
