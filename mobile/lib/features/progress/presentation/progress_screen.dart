@@ -120,9 +120,8 @@ class ProgressScreen extends ConsumerWidget {
               ),
               const SizedBox(width: AppSpacing.md),
               _statTile(
-                value: '${data.completedTasks}',
+                value: '${data.completedTasks} Tasks',
                 label: 'Completed',
-                accent: true,
               ),
             ],
           ),
@@ -179,13 +178,13 @@ class ProgressScreen extends ConsumerWidget {
   Widget _leaderboardCard(WidgetRef ref, AsyncValue<LeaderboardData> async) {
     final rank = async.valueOrNull?.me.rank;
     final subtitle = (rank != null && rank > 0)
-        ? 'You\'re ranked #$rank. Open the scoreboard.'
+        ? 'You\'re ranked $rank. Open the scoreboard.'
         : 'Check how you rank against your peers.';
     return Material(
       color: AppColors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.card),
-        side: BorderSide(color: AppColors.accentGreen.withValues(alpha: 0.35)),
+        side: const BorderSide(color: AppColors.border),
       ),
       elevation: 1,
       shadowColor: AppColors.shadow,
@@ -199,11 +198,11 @@ class ProgressScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: const BoxDecoration(
-                  color: AppColors.accentLight,
+                  color: Color(0xFFF1F5F9),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.emoji_events_rounded,
-                    color: AppColors.accentGreen, size: 22),
+                    color: AppColors.primaryNavy, size: 22),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(

@@ -258,7 +258,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  'Rank #${me.rank} · ${me.tier}',
+                  'Rank ${me.rank} · ${me.tier}',
                   style: AppTypography.textTheme.titleSmall?.copyWith(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.w800,
@@ -371,7 +371,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            '#$rank',
+            '$rank',
             style: AppTypography.textTheme.titleMedium?.copyWith(
               color: rankColor,
               fontWeight: FontWeight.w900,
@@ -457,7 +457,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
           SizedBox(
             width: 32,
             child: Text(
-              '#${entry.rank}',
+              '${entry.rank}',
               style: AppTypography.textTheme.labelMedium?.copyWith(
                 color: entry.isCurrentUser
                     ? AppColors.accentGreen

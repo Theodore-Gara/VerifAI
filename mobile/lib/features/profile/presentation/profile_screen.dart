@@ -268,34 +268,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ],
                         if (trackName != null && trackName.isNotEmpty) ...[
                           const SizedBox(height: AppSpacing.md),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 6),
-                            decoration: BoxDecoration(
-                              color:
-                                  AppColors.accentGreen.withValues(alpha: 0.12),
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.pill),
-                              border: Border.all(
-                                  color: AppColors.accentGreen
-                                      .withValues(alpha: 0.45)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.workspace_premium_rounded,
-                                    size: 14, color: AppColors.accentGreen),
-                                const SizedBox(width: 6),
-                                Text(
-                                  trackName,
-                                  style: AppTypography.textTheme.labelSmall
-                                      ?.copyWith(
-                                    color: AppColors.accentGreen,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                              ],
+                          Text(
+                            trackName,
+                            textAlign: TextAlign.center,
+                            style:
+                                AppTypography.textTheme.labelMedium?.copyWith(
+                              color: Colors.white.withValues(alpha: 0.85),
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.2,
                             ),
                           ),
                         ],
@@ -382,8 +362,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         const SizedBox(width: AppSpacing.md),
         _statTile(
           label: 'LEAGUE RANK',
-          value: leagueRank == null ? '—' : '#$leagueRank',
-          accent: leagueRank != null,
+          value: leagueRank == null ? '—' : '$leagueRank',
         ),
       ],
     );

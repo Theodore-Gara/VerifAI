@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
+import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
@@ -176,15 +177,6 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
                       : AppColors.primaryNavy,
               fontWeight: FontWeight.w800,
               fontSize: 10.5)));
-
-  Widget _xpPill(int amount) => Text(
-        '+$amount XP',
-        style: AppTypography.textTheme.labelSmall?.copyWith(
-          color: AppColors.accentGreen,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.2,
-        ),
-      );
 
   Widget _button(String text, VoidCallback onPressed) => ElevatedButton(
       onPressed: onPressed,
@@ -663,20 +655,17 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            children: [
-              Text(
-                'Verification Report Preview',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 15,
-                  color: AppColors.primaryNavy,
-                ),
-              ),
-              Spacer(),
-              _HubNoticePill('HUMAN REVIEW REQUIRED'),
-            ],
+          const Text(
+            'Verification Report Preview',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 15,
+              color: AppColors.primaryNavy,
+            ),
           ),
+          const SizedBox(height: 10),
+          const Center(child: _HubNoticePill('HUMAN REVIEW REQUIRED')),
           const SizedBox(height: 14),
           Container(
             padding: const EdgeInsets.all(12),
@@ -1056,15 +1045,66 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
     required String cost,
     required String note,
   }) =>
-      PrefRow(
-        title: title,
-        subtitle: '$subtitle · $note',
-        trailing: cost,
+      Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            border: Border.all(color: AppColors.border),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.shadow,
+                blurRadius: 10,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.primaryNavy,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '$subtitle · $note',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Text(
+                cost,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primaryNavy,
+                ),
+              ),
+            ],
+          ),
+        ),
       );
 
   Widget _rewards() =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _sectionTitle('Make your XP mean something',
+        _sectionTitle('Make your tokens count',
             'Milestones and reward concepts to celebrate consistent verification practice.'),
         _card(
             child:
@@ -1076,16 +1116,17 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
                   fontSize: 10,
                   letterSpacing: 1.2)),
           const SizedBox(height: 6),
-          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text('$_xp XP',
-                style: const TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.primaryNavy,
-                    letterSpacing: -0.5)),
-            const Spacer(),
-            _pill('LEVEL 2 · VERIFICATION EXPLORER'),
-          ]),
+          Center(
+            child: Text(
+              '$_xp Tokens',
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w900,
+                color: AppColors.primaryNavy,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ),
           const SizedBox(height: 10),
           ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -1105,7 +1146,7 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Level 3 unlocks at 300 XP',
+            'Level 3 unlocks at 300 Tokens',
             style: AppTypography.textTheme.labelSmall?.copyWith(
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w600,
@@ -1121,7 +1162,7 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
           title: 'Coffee break',
           subtitle:
               'A coffee reward concept for celebrating a learning streak.',
-          cost: '500 XP',
+          cost: '500 Tokens',
           note: 'Illustrative mock-up',
         ),
         _rewardTile(
@@ -1129,7 +1170,7 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
           title: 'Paws for a cause',
           subtitle:
               'Support an animal rescue or shelter once a verified partner is available.',
-          cost: '800 XP',
+          cost: '800 Tokens',
           note: 'No donation made',
         ),
         _rewardTile(
@@ -1137,7 +1178,7 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
           title: 'Game night',
           subtitle:
               'A gaming reward concept inspired by cozy sandbox adventures.',
-          cost: '650 XP',
+          cost: '650 Tokens',
           note: 'No game code included',
         ),
         _rewardTile(
@@ -1145,7 +1186,7 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
           title: 'Community impact',
           subtitle:
               'Support a vetted non-profit organisation, subject to partner approval.',
-          cost: '1,000 XP',
+          cost: '1,000 Tokens',
           note: 'Partner needed',
         ),
         _rewardTile(
@@ -1153,14 +1194,14 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
           title: 'Everyday essentials',
           subtitle:
               'Illustrative voucher concept for a future verified rewards partner.',
-          cost: '1,400 XP',
+          cost: '1,400 Tokens',
           note: 'Partner required',
         ),
         _rewardTile(
           image: 'reward_fuel',
           title: 'Fuel your next move',
           subtitle: 'A voucher concept for celebrating consistent practice.',
-          cost: '1,800 XP',
+          cost: '1,800 Tokens',
           note: 'Partner required',
         ),
         _rewardTile(
@@ -1168,14 +1209,14 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
           title: 'Microsoft 365 boost',
           subtitle:
               'A productivity voucher or subscription concept for future learners.',
-          cost: '2,400 XP',
+          cost: '2,400 Tokens',
           note: 'Availability varies',
         ),
         _rewardTile(
           image: 'reward_workshop',
           title: 'Workshop pass',
           subtitle: 'A future ticket to an AI, software, or career workshop.',
-          cost: '2,000 XP',
+          cost: '2,000 Tokens',
           note: 'Workshop partner needed',
         ),
         _rewardTile(
@@ -1183,18 +1224,18 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
           title: 'Game store credit',
           subtitle:
               'A digital gaming credit concept for reaching a learning milestone.',
-          cost: '2,200 XP',
+          cost: '2,200 Tokens',
           note: 'No code included',
         ),
         const SizedBox(height: 8),
         _sectionTitle(
             'Milestones unlocked', 'Keep learning to unlock new badges.'),
         ...[
-          ('Starter', '100 XP', 'Your first steps count', true),
-          ('Verifier', '300 XP', 'Build evidence-first habits', _xp >= 300),
+          ('Starter', '100 Tokens', 'Your first steps count', true),
+          ('Verifier', '300 Tokens', 'Build evidence-first habits', _xp >= 300),
           (
             'Critical Thinker',
-            '600 XP',
+            '600 Tokens',
             'Complete an AI Lab milestone',
             _xp >= 600
           ),
@@ -1237,13 +1278,20 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
                                   color: AppColors.textSecondary)),
                         ]),
                   ),
-                  _xpPill(-1), // placeholder swapped below
+                  Text(
+                    '+${r.$2}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11,
+                      color: AppColors.primaryNavy,
+                    ),
+                  ),
                 ],
               ),
             )),
         const SampleDataBanner(
             message:
-                'Demo notice: XP has no cash value. Rewards, game offers and donations are concepts only. Real redemption requires an approved partner, funding, clear terms and backend validation.'),
+                'Demo notice: Tokens have no cash value. Rewards, game offers and donations are concepts only. Real redemption requires an approved partner, funding, clear terms and backend validation.'),
       ]);
 
   // ---------------------------------------------------------------------------
