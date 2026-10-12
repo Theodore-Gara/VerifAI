@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:verifai/core/theme/app_colors.dart';
+import 'package:verifai/core/theme/app_radius.dart';
+import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
 
 /// Polished frontend-first product areas. These screens are safe demo surfaces:
@@ -18,11 +20,22 @@ class ProductHubScreen extends ConsumerStatefulWidget {
 
 class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
   final _message = TextEditingController();
-  final _documentName = TextEditingController();
+  final _documentName =
+      TextEditingController(text: 'quarterly_financial_report_v2.pdf');
+  final _claimController = TextEditingController(
+      text:
+          '73% of enterprises reduced operating risk using LLM verification gates.');
+  final _aiResponseController = TextEditingController(
+      text:
+          'Based on Section 4.2, the board approved a 15% dividend payout scheduled for Q3 2025.');
+  final _sourceController = TextEditingController(
+      text:
+          'https://sec.gov/edgar/data/0001018724/quarterly-filing-2025-q2.pdf');
   String _industry = 'Software Engineering';
   String _reply = '';
   int _xp = 240;
-  int _selected = -1;
+  int _selected = 0;
+  int _practiceSelected = 0;
   bool _showReport = false;
   final FlutterTts _tts = FlutterTts();
 
@@ -105,6 +118,9 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
   void dispose() {
     _message.dispose();
     _documentName.dispose();
+    _claimController.dispose();
+    _aiResponseController.dispose();
+    _sourceController.dispose();
     _tts.stop();
     super.dispose();
   }
@@ -116,10 +132,15 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
+        elevation: 0,
         surfaceTintColor: Colors.transparent,
-        title: Text(details.title,
-            style: const TextStyle(
-                fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+        title: Text(
+          details.title,
+          style: AppTypography.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: AppColors.primaryNavy,
+          ),
+        ),
       ),
       body: SafeArea(
           child: ListView(
@@ -130,7 +151,7 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
                 widget.mode == VerifAiHubMode.practice
                     ? 'Explore realistic scenarios across $_industry.'
                     : null),
-            const SizedBox(height: 22),
+            const SizedBox(height: 20),
             if (widget.mode == VerifAiHubMode.assistant) _assistant(),
             if (widget.mode == VerifAiHubMode.verify) _verification(),
             if (widget.mode == VerifAiHubMode.lab) ...[
@@ -151,8 +172,8 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
             gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [AppColors.primaryNavy, Color(0xFF123A43)]),
-            borderRadius: BorderRadius.circular(26),
+                colors: [AppColors.primaryNavy, Color(0xFF0F2B38)]),
+            borderRadius: BorderRadius.circular(AppRadius.card),
             boxShadow: [
               BoxShadow(
                   color: AppColors.primaryNavy.withValues(alpha: .15),
@@ -164,36 +185,36 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
               right: -15,
               top: -20,
               child: Icon(d.icon,
-                  size: 130, color: Colors.white.withValues(alpha: .055))),
+                  size: 130, color: Colors.white.withValues(alpha: .045))),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                     color: AppColors.accentGreen.withValues(alpha: .16),
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
                     border: Border.all(
                         color: AppColors.accentGreen.withValues(alpha: .35))),
                 child: Text(d.kicker.toUpperCase(),
                     style: const TextStyle(
                         color: AppColors.accentCyan,
                         fontSize: 10,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w800,
                         letterSpacing: 1.2))),
-            const SizedBox(height: 15),
+            const SizedBox(height: 14),
             Text(d.headline,
                 style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 25,
-                    height: 1.12,
+                    fontSize: 24,
+                    height: 1.15,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -.5)),
-            const SizedBox(height: 9),
+            const SizedBox(height: 8),
             Text(subtitle ?? d.subtitle,
                 style: TextStyle(
-                    color: Colors.white.withValues(alpha: .78),
+                    color: Colors.white.withValues(alpha: .8),
                     fontSize: 13,
-                    height: 1.5)),
+                    height: 1.45)),
           ]),
         ]),
       );
@@ -203,40 +224,45 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(title,
             style: const TextStyle(
-                fontSize: 18,
+                fontSize: 17,
                 fontWeight: FontWeight.w900,
                 color: AppColors.primaryNavy)),
-        const SizedBox(height: 4),
+        const SizedBox(height: 3),
         Text(subtitle,
             style: const TextStyle(
                 color: AppColors.textSecondary, fontSize: 12, height: 1.4))
       ]));
+
   Widget _card({required Widget child}) => Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(17),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadius.card),
           border: Border.all(color: AppColors.border),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
-                color: AppColors.primaryNavy.withValues(alpha: .035),
-                blurRadius: 16,
-                offset: const Offset(0, 5))
+                color: AppColors.shadow, blurRadius: 10, offset: Offset(0, 3))
           ]),
       child: child);
+
   Widget _pill(String text, {Color color = AppColors.accentGreen}) => Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
       decoration: BoxDecoration(
-          color: color.withValues(alpha: .11),
-          borderRadius: BorderRadius.circular(30)),
+          color: color == AppColors.accentGreen
+              ? AppColors.accentLight
+              : color.withValues(alpha: .12),
+          borderRadius: BorderRadius.circular(AppRadius.pill)),
       child: Text(text,
           style: TextStyle(
               color: color == AppColors.warning
                   ? AppColors.goldDark
-                  : AppColors.primaryNavy,
+                  : color == AppColors.accentGreen
+                      ? AppColors.accentGreen
+                      : AppColors.primaryNavy,
               fontWeight: FontWeight.w800,
-              fontSize: 11)));
+              fontSize: 10.5)));
+
   Widget _button(String text, VoidCallback onPressed,
           {IconData icon = Icons.arrow_forward_rounded}) =>
       SizedBox(
@@ -244,13 +270,15 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
           child: ElevatedButton.icon(
               onPressed: onPressed,
               icon: Icon(icon, size: 18),
-              label: Text(text),
+              label: Text(text,
+                  style: const TextStyle(fontWeight: FontWeight.w700)),
               style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryNavy,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)))));
+                      borderRadius: BorderRadius.circular(AppRadius.lg)))));
 
   Widget _chatBubble({required String text, required bool assistant}) => Align(
         alignment: assistant ? Alignment.centerLeft : Alignment.centerRight,
@@ -261,17 +289,15 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
           decoration: BoxDecoration(
             color: assistant ? Colors.white : AppColors.primaryNavy,
             borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(18),
-              topRight: const Radius.circular(18),
-              bottomLeft: Radius.circular(assistant ? 5 : 18),
-              bottomRight: Radius.circular(assistant ? 18 : 5),
+              topLeft: const Radius.circular(16),
+              topRight: const Radius.circular(16),
+              bottomLeft: Radius.circular(assistant ? 4 : 16),
+              bottomRight: Radius.circular(assistant ? 16 : 4),
             ),
             border: assistant ? Border.all(color: AppColors.border) : null,
-            boxShadow: [
+            boxShadow: const [
               BoxShadow(
-                  color: AppColors.primaryNavy.withValues(alpha: .04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3))
+                  color: AppColors.shadow, blurRadius: 8, offset: Offset(0, 2))
             ],
           ),
           child: Text(text,
@@ -326,84 +352,131 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
         _card(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Row(children: [
-            Expanded(
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryNavy.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: AppColors.primaryNavy,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
                 child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  Text('VerifAI is here ✨',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                  Text('Curious, careful, evidence-first.',
-                      style: TextStyle(
-                          fontSize: 12, color: AppColors.textSecondary))
-                ]))
-          ]),
-          const SizedBox(height: 16),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('VerifAI is here ✨',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
+                            color: AppColors.primaryNavy)),
+                    Text('Curious, careful, evidence-first.',
+                        style: TextStyle(
+                            fontSize: 12, color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Listen to welcome',
+                onPressed: _replayAssistantWelcome,
+                icon: const Icon(Icons.volume_up_rounded,
+                    color: AppColors.primaryNavy),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFF0FDF8), Color(0xFFE8F7FF)],
-              ),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                  color: AppColors.accentGreen.withValues(alpha: .2)),
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: AppColors.border),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Hey! 👋 Bring me a claim, an AI answer, or a tricky idea. I’ll help you reason through it, without making the decision for you.',
-                    style: TextStyle(fontSize: 13, height: 1.5),
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Listen to welcome',
-                  onPressed: _replayAssistantWelcome,
-                  icon: const Icon(Icons.volume_up_rounded,
-                      color: AppColors.primaryNavy),
-                ),
-              ],
+            child: const Text(
+              'Hey! Bring me a claim, an AI answer, or a tricky idea. I’ll help you reason through it, without making the decision for you.',
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.5,
+                color: AppColors.primaryNavy,
+              ),
             ),
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 16),
           const Text('Quick starters',
-              style: TextStyle(fontWeight: FontWeight.w800)),
-          const SizedBox(height: 9),
+              style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                  color: AppColors.primaryNavy)),
+          const SizedBox(height: 8),
           Wrap(
-              spacing: 7,
-              runSpacing: 7,
-              children: [
-                (
-                  '💡 Give me a hint',
-                  'Give me a hint without revealing the answer'
-                ),
-                ('🔎 Verify a claim', 'How can I verify this claim?'),
-                ('🛡️ Spot risks', 'What risks should I consider?'),
-              ]
-                  .map((item) => ActionChip(
-                      label: Text(item.$1),
-                      onPressed: () => setState(() => _message.text = item.$2),
-                      backgroundColor: Colors.white,
-                      side: const BorderSide(color: AppColors.border)))
-                  .toList()),
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              (
+                '💡 Give me a hint',
+                'Give me a hint without revealing the answer'
+              ),
+              ('🔎 Verify a claim', 'How can I verify this claim?'),
+              ('🛡️ Spot risks', 'What risks should I consider?'),
+            ]
+                .map(
+                  (item) => ActionChip(
+                    label: Text(
+                      item.$1,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryNavy,
+                      ),
+                    ),
+                    onPressed: () => setState(() => _message.text = item.$2),
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(color: AppColors.border),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
           const SizedBox(height: 14),
           TextField(
-              controller: _message,
-              maxLines: 2,
-              decoration: InputDecoration(
-                  hintText: 'Ask your question…',
-                  filled: true,
-                  fillColor: AppColors.background,
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none),
-                  prefixIcon: const Icon(Icons.chat_bubble_outline_rounded))),
-          const SizedBox(height: 10),
+            controller: _message,
+            maxLines: 2,
+            style: const TextStyle(fontSize: 13, color: AppColors.primaryNavy),
+            decoration: InputDecoration(
+              hintText: 'Ask your question…',
+              hintStyle: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+              ),
+              filled: true,
+              fillColor: AppColors.background,
+              contentPadding: const EdgeInsets.all(12),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                borderSide:
+                    const BorderSide(color: AppColors.primaryNavy, width: 1.5),
+              ),
+              prefixIcon: const Icon(
+                Icons.chat_bubble_outline_rounded,
+                color: AppColors.textSecondary,
+                size: 20,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
           _button('Send to VerifAI', _askAssistant, icon: Icons.send_rounded),
         ])),
         if (_reply.isNotEmpty)
@@ -413,10 +486,13 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
                   children: [
                 const Row(children: [
                   Icon(Icons.auto_awesome_rounded,
-                      color: AppColors.accentGreen),
+                      color: AppColors.primaryNavy, size: 18),
                   SizedBox(width: 8),
                   Text('Your conversation',
-                      style: TextStyle(fontWeight: FontWeight.w900))
+                      style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                          color: AppColors.primaryNavy))
                 ]),
                 const SizedBox(height: 12),
                 _chatBubble(
@@ -425,9 +501,10 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
                         : _message.text.trim(),
                     assistant: false),
                 _chatBubble(text: _reply, assistant: true),
+                const SizedBox(height: 4),
                 const Row(children: [
                   Icon(Icons.info_outline_rounded,
-                      size: 15, color: AppColors.textSecondary),
+                      size: 14, color: AppColors.textSecondary),
                   SizedBox(width: 6),
                   Expanded(
                       child: Text(
@@ -441,119 +518,576 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
   Widget _verification() =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _sectionTitle('Choose what to verify',
-            'A clear report should show evidence, uncertainty and what needs a human check.'),
-        ...[
-          (
-            'Document',
-            'Review a PDF or report for statements that need checking.',
-            Icons.picture_as_pdf_rounded
-          ),
-          (
-            'Claim',
-            'Break a claim into verifiable parts and identify evidence needed.',
-            Icons.fact_check_rounded
-          ),
-          (
-            'AI response',
-            'Inspect an AI answer for unsupported claims, gaps and risky advice.',
-            Icons.psychology_alt_rounded
-          ),
-          (
-            'Source',
-            'Assess source authority, date, context and relevance.',
-            Icons.travel_explore_rounded
-          )
-        ].map((v) => _card(
-            child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                        color: AppColors.accentGreen.withValues(alpha: .12),
-                        borderRadius: BorderRadius.circular(14)),
-                    child: Icon(v.$3, color: AppColors.primaryNavy)),
-                title: Text(v.$1,
-                    style: const TextStyle(fontWeight: FontWeight.w900)),
-                subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 5),
-                    child: Text(v.$2,
-                        style: const TextStyle(fontSize: 12, height: 1.4))),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => setState(() => _selected = v.$1 == 'Document'
-                    ? 0
-                    : v.$1 == 'Claim'
-                        ? 1
-                        : v.$1 == 'AI response'
-                            ? 2
-                            : 3)))),
-        if (_selected >= 0)
-          _card(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                Text(
-                    [
-                      'Document assessment',
-                      'Claim check',
-                      'AI response review',
-                      'Source assessment'
-                    ][_selected],
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w900, fontSize: 16)),
-                const SizedBox(height: 8),
-                if (_selected == 0)
-                  TextField(
-                      controller: _documentName,
-                      decoration: const InputDecoration(
-                          labelText: 'Document name',
-                          hintText: 'e.g. quarterly-report.pdf',
-                          border: OutlineInputBorder())),
-                const SizedBox(height: 8),
-                const Text(
-                    'Frontend demo: analysis must be connected to the verification backend before results can be trusted.',
-                    style: TextStyle(
-                        height: 1.45,
-                        color: AppColors.textSecondary,
-                        fontSize: 12)),
-                const SizedBox(height: 12),
-                _button('Preview report format',
-                    () => setState(() => _showReport = true),
-                    icon: Icons.description_rounded)
-              ])),
-        if (_showReport)
-          _card(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                const Row(children: [
-                  Icon(Icons.assignment_turned_in_rounded,
-                      color: AppColors.accentGreen),
-                  SizedBox(width: 8),
-                  Text('Verification report preview',
-                      style: TextStyle(fontWeight: FontWeight.w900))
-                ]),
-                const SizedBox(height: 12),
-                _reportLine('Items requiring review', '3', AppColors.warning),
-                _reportLine('Sources independently confirmed',
-                    'Not yet checked', AppColors.info),
-                _reportLine('Overall status', 'Human review required',
-                    AppColors.warning),
-                const SizedBox(height: 8),
-                const Text(
-                    'No document has been analysed. This is a sample report layout, not a real assessment.',
-                    style:
-                        TextStyle(fontSize: 11, color: AppColors.textSecondary))
-              ]))
+            'Select an artifact type to configure verification parameters and run evidence checks.'),
+        _buildVerificationSelectorGrid(),
+        const SizedBox(height: 14),
+        _buildVerificationWorkspace(),
+        if (_showReport) ...[
+          const SizedBox(height: 14),
+          _buildVerificationReport(),
+        ],
       ]);
-  Widget _reportLine(String a, String b, Color c) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(children: [
-        Expanded(child: Text(a, style: const TextStyle(fontSize: 12))),
-        Text(b,
-            style:
-                TextStyle(fontWeight: FontWeight.w800, color: c, fontSize: 12))
-      ]));
+
+  Widget _buildVerificationSelectorGrid() {
+    final items = [
+      (
+        title: 'Document',
+        desc: 'Audit PDF, doc, or policy text for unsupported assertions',
+        icon: Icons.description_rounded,
+      ),
+      (
+        title: 'Claim',
+        desc: 'Decompose assertions into checkable factual units',
+        icon: Icons.fact_check_rounded,
+      ),
+      (
+        title: 'AI Response',
+        desc: 'Inspect model output for hallucinations & bias',
+        icon: Icons.psychology_alt_rounded,
+      ),
+      (
+        title: 'Source',
+        desc: 'Verify domain authority, date, and citations',
+        icon: Icons.travel_explore_rounded,
+      ),
+    ];
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(child: _verificationSelectorCard(0, items[0])),
+            const SizedBox(width: 10),
+            Expanded(child: _verificationSelectorCard(1, items[1])),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(child: _verificationSelectorCard(2, items[2])),
+            const SizedBox(width: 10),
+            Expanded(child: _verificationSelectorCard(3, items[3])),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _verificationSelectorCard(
+    int index,
+    ({String title, String desc, IconData icon}) item,
+  ) {
+    final isSelected = _selected == index;
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        onTap: () => setState(() {
+          _selected = index;
+          _showReport = false;
+        }),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            border: Border.all(
+              color: isSelected ? AppColors.primaryNavy : AppColors.border,
+              width: isSelected ? 2.0 : 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isSelected
+                    ? AppColors.primaryNavy.withValues(alpha: 0.08)
+                    : AppColors.primaryNavy.withValues(alpha: 0.02),
+                blurRadius: isSelected ? 12 : 6,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.primaryNavy.withValues(alpha: 0.08)
+                          : AppColors.background,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.primaryNavy.withValues(alpha: 0.15)
+                            : AppColors.border,
+                      ),
+                    ),
+                    child: Icon(
+                      item.icon,
+                      size: 18,
+                      color: isSelected
+                          ? AppColors.primaryNavy
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                  // Radio selector indicator (clean circle, ZERO chevrons)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 18,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.primaryNavy
+                          : Colors.transparent,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.primaryNavy
+                            : AppColors.border,
+                        width: isSelected ? 2.0 : 1.5,
+                      ),
+                    ),
+                    child: isSelected
+                        ? const Icon(
+                            Icons.check_rounded,
+                            size: 12,
+                            color: Colors.white,
+                          )
+                        : null,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                item.title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13.5,
+                  color: AppColors.primaryNavy,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                item.desc,
+                style: const TextStyle(
+                  fontSize: 11,
+                  height: 1.35,
+                  color: AppColors.textSecondary,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVerificationWorkspace() {
+    final meta = [
+      (
+        badge: 'DOCUMENT AUDIT',
+        title: 'Document Assessment Parameters',
+        hint:
+            'Review document contents, citation density, and unsupported factual assertions.',
+        label: 'Document name or reference',
+        controller: _documentName,
+        maxLines: 1,
+        placeholder: 'e.g. quarterly_financial_report_v2.pdf',
+        extraHint:
+            'PDF / DOCX document attached (1.4 MB) • 8 pages indexed for audit.',
+      ),
+      (
+        badge: 'CLAIM DECOMPOSITION',
+        title: 'Claim Decomposition & Check',
+        hint:
+            'Isolate verifiable claims and test against authoritative ground truth sources.',
+        label: 'Proposition or claim statement',
+        controller: _claimController,
+        maxLines: 2,
+        placeholder:
+            'e.g. 73% of enterprises reduced operating risk using LLM verification gates.',
+        extraHint:
+            'Breakdown: 1 quantitative metric, 1 causal proposition to verify.',
+      ),
+      (
+        badge: 'AI OUTPUT AUDIT',
+        title: 'AI Response Review & Bias Scan',
+        hint:
+            'Inspect generated text for fabricated facts, hallucinations, and confidence gaps.',
+        label: 'AI-generated response text',
+        controller: _aiResponseController,
+        maxLines: 3,
+        placeholder: 'Paste the model output to audit…',
+        extraHint:
+            'Audit scope: hallucination detection, hallucinated references, policy safety.',
+      ),
+      (
+        badge: 'SOURCE CREDIBILITY',
+        title: 'Source Authority & Freshness Check',
+        hint:
+            'Evaluate publisher credibility, publication date, peer-review status, and primary citations.',
+        label: 'Source URL, DOI, or publication citation',
+        controller: _sourceController,
+        maxLines: 2,
+        placeholder: 'https://… or journal citation',
+        extraHint:
+            'Checks: domain reputation, date freshness, author credentials, primary vs secondary.',
+      ),
+    ][_selected.clamp(0, 3)];
+
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                decoration: BoxDecoration(
+                  color: AppColors.accentLight,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+                child: Text(
+                  meta.badge,
+                  style: const TextStyle(
+                    color: AppColors.accentGreen,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 9.5,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.tune_rounded,
+                        size: 12, color: AppColors.textSecondary),
+                    SizedBox(width: 4),
+                    Text(
+                      'ACTIVE CONFIG',
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textSecondary,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            meta.title,
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+              color: AppColors.primaryNavy,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            meta.hint,
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.4,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            meta.label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+              color: AppColors.primaryNavy,
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: meta.controller,
+            maxLines: meta.maxLines,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppColors.primaryNavy,
+            ),
+            decoration: InputDecoration(
+              hintText: meta.placeholder,
+              hintStyle: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+              ),
+              filled: true,
+              fillColor: AppColors.background,
+              contentPadding: const EdgeInsets.all(12),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                borderSide:
+                    const BorderSide(color: AppColors.primaryNavy, width: 1.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.info_outline_rounded,
+                  size: 14,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    meta.extraHint,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          _button(
+            'Preview verification report',
+            () => setState(() => _showReport = true),
+            icon: Icons.analytics_outlined,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVerificationReport() {
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(
+                children: [
+                  Icon(
+                    Icons.assignment_turned_in_rounded,
+                    color: AppColors.primaryNavy,
+                    size: 20,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Verification Report Preview',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
+                      color: AppColors.primaryNavy,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                decoration: BoxDecoration(
+                  color: AppColors.goldLight,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  border:
+                      Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+                ),
+                child: const Text(
+                  'HUMAN REVIEW REQUIRED',
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.goldDark,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          // Micro-metric row with 3 columns
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child:
+                      _microMetric('Items to Review', '3', AppColors.goldDark),
+                ),
+                Container(width: 1, height: 28, color: AppColors.border),
+                Expanded(
+                  child: _microMetric(
+                      'Sources Verified', '1 / 4', AppColors.primaryNavy),
+                ),
+                Container(width: 1, height: 28, color: AppColors.border),
+                Expanded(
+                  child: _microMetric(
+                      'Certainty Score', '68%', AppColors.goldDark),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          _reportTelemetryRow(
+            'Factual Claims',
+            '4 claims extracted • 1 unsupported metric detected',
+            AppColors.warning,
+          ),
+          _reportTelemetryRow(
+            'Source Provenance',
+            'Primary filing verified • Secondary citation expired',
+            AppColors.warning,
+          ),
+          _reportTelemetryRow(
+            'Temporal Freshness',
+            'Data timestamped Q2 2023 used for Q3 2025 projection',
+            AppColors.info,
+          ),
+          _reportTelemetryRow(
+            'Human-in-the-Loop Gate',
+            'Requires domain expert sign-off before downstream usage',
+            AppColors.accentGreen,
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: const Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  size: 14,
+                  color: AppColors.textSecondary,
+                ),
+                SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Sample report layout. Connect backend verification pipeline to execute live LLM inference & automated checks.',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: AppColors.textSecondary,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _microMetric(String label, String value, Color valueColor) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+            color: valueColor,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _reportTelemetryRow(String title, String detail, Color statusColor) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 9),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 5),
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: statusColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryNavy,
+                  ),
+                ),
+                Text(
+                  detail,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _lab() =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -594,23 +1128,26 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
                 child: Column(children: [
               Row(children: [
                 Container(
-                    width: 44,
-                    height: 44,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                        color: AppColors.accentGreen.withValues(alpha: .12),
-                        borderRadius: BorderRadius.circular(13)),
-                    child: Icon(l.$4, color: AppColors.primaryNavy)),
+                        color: AppColors.primaryNavy.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(AppRadius.md)),
+                    child: Icon(l.$4, color: AppColors.primaryNavy, size: 20)),
                 const SizedBox(width: 12),
                 Expanded(
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                       Text(l.$1,
-                          style: const TextStyle(fontWeight: FontWeight.w900)),
-                      const SizedBox(height: 4),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                              color: AppColors.primaryNavy)),
+                      const SizedBox(height: 3),
                       Text(l.$2,
                           style: const TextStyle(
-                              fontSize: 12,
+                              fontSize: 11.5,
                               color: AppColors.textSecondary,
                               height: 1.35))
                     ])),
@@ -621,27 +1158,29 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
                   icon: Icons.play_arrow_rounded)
             ]))),
       ]);
+
   Widget _labCoach() => _card(
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Container(
-              width: 46,
-              height: 46,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                      colors: [AppColors.accentGreen, AppColors.accentCyan]),
-                  borderRadius: BorderRadius.circular(15)),
+                  color: AppColors.primaryNavy.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(AppRadius.md)),
               child: const Icon(Icons.forum_rounded,
-                  color: AppColors.primaryNavy, size: 25)),
-          const SizedBox(width: 11),
+                  color: AppColors.primaryNavy, size: 20)),
+          const SizedBox(width: 12),
           const Expanded(
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                 Text('Ask the Lab Coach',
-                    style:
-                        TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 15,
+                        color: AppColors.primaryNavy)),
                 Text('Your workshop sidekick',
                     style:
                         TextStyle(color: AppColors.textSecondary, fontSize: 12))
@@ -660,13 +1199,21 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
         TextField(
             controller: _message,
             maxLines: 2,
+            style: const TextStyle(fontSize: 13, color: AppColors.primaryNavy),
             decoration: InputDecoration(
                 hintText: 'Ask about this lesson…',
+                hintStyle: const TextStyle(
+                    color: AppColors.textSecondary, fontSize: 12),
                 filled: true,
                 fillColor: AppColors.background,
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide: BorderSide.none))),
+                contentPadding: const EdgeInsets.all(12),
+                enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    borderSide: const BorderSide(color: AppColors.border)),
+                focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    borderSide: const BorderSide(
+                        color: AppColors.primaryNavy, width: 1.5)))),
         const SizedBox(height: 10),
         _button('Ask the Lab Coach', _askAssistant,
             icon: Icons.auto_awesome_rounded),
@@ -687,7 +1234,7 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-          padding: const EdgeInsets.fromLTRB(22, 22, 22, 32),
+          padding: const EdgeInsets.fromLTRB(22, 16, 22, 32),
           decoration: const BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
@@ -695,34 +1242,49 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                    width: 42,
-                    height: 4,
-                    decoration: BoxDecoration(
-                        color: AppColors.border,
-                        borderRadius: BorderRadius.circular(4))),
-                const SizedBox(height: 20),
+                Center(
+                  child: Container(
+                      width: 38,
+                      height: 4,
+                      decoration: BoxDecoration(
+                          color: AppColors.border,
+                          borderRadius: BorderRadius.circular(4))),
+                ),
+                const SizedBox(height: 18),
                 _pill('AI LAB • INTERACTIVE LESSON'),
                 const SizedBox(height: 12),
                 Text(title,
                     style: const TextStyle(
-                        fontSize: 23,
+                        fontSize: 22,
                         fontWeight: FontWeight.w900,
                         color: AppColors.primaryNavy)),
-                const SizedBox(height: 10),
-                Text(description, style: const TextStyle(height: 1.5)),
-                const SizedBox(height: 14),
+                const SizedBox(height: 8),
+                Text(description,
+                    style: const TextStyle(
+                        fontSize: 13,
+                        height: 1.5,
+                        color: AppColors.textSecondary)),
+                const SizedBox(height: 16),
                 const Text(
                     'Quick check: What should you do before relying on an AI-generated claim?',
-                    style: TextStyle(fontWeight: FontWeight.w800)),
-                const SizedBox(height: 8),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                        color: AppColors.primaryNavy)),
+                const SizedBox(height: 10),
                 ...[
                   'Check an authoritative source and supporting evidence',
                   'Assume confident wording means it is correct',
                   'Share it immediately'
                 ].map((a) => Padding(
-                    padding: const EdgeInsets.only(bottom: 7),
+                    padding: const EdgeInsets.only(bottom: 8),
                     child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppColors.border),
+                            shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.lg)),
+                            padding: const EdgeInsets.all(13)),
                         onPressed: () {
                           Navigator.pop(ctx);
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -735,7 +1297,12 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
                           if (a.startsWith('Check')) setState(() => _xp += 10);
                         },
                         child: Align(
-                            alignment: Alignment.centerLeft, child: Text(a)))))
+                            alignment: Alignment.centerLeft,
+                            child: Text(a,
+                                style: const TextStyle(
+                                    fontSize: 12.5,
+                                    color: AppColors.primaryNavy,
+                                    fontWeight: FontWeight.w600))))))
               ])));
 
   Widget _practice() => Column(
@@ -755,80 +1322,110 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
                   _scenarioTitle(),
                   style: const TextStyle(
                     fontWeight: FontWeight.w900,
-                    fontSize: 18,
+                    fontSize: 17,
                     color: AppColors.primaryNavy,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
                   _scenarioBody(),
                   style: const TextStyle(
-                    height: 1.5,
+                    height: 1.45,
+                    fontSize: 12.5,
                     color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 16),
                 const Text(
                   'What is the most responsible next step?',
-                  style: TextStyle(fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                    color: AppColors.primaryNavy,
+                  ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 ..._options().asMap().entries.map(
-                      (e) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: InkWell(
-                          onTap: () => setState(() => _selected = e.key),
-                          borderRadius: BorderRadius.circular(13),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: _selected == e.key
-                                  ? AppColors.accentGreen.withValues(alpha: .1)
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(13),
-                              border: Border.all(
-                                color: _selected == e.key
-                                    ? AppColors.accentGreen
-                                    : AppColors.border,
-                              ),
+                  (e) {
+                    final isSelected = _practiceSelected == e.key;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: InkWell(
+                        onTap: () => setState(() => _practiceSelected = e.key),
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.all(13),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(AppRadius.lg),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primaryNavy
+                                  : AppColors.border,
+                              width: isSelected ? 2.0 : 1.0,
                             ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _selected == e.key
-                                      ? Icons.radio_button_checked
-                                      : Icons.radio_button_off,
-                                  color: _selected == e.key
-                                      ? AppColors.accentGreen
-                                      : AppColors.textSecondary,
-                                ),
-                                const SizedBox(width: 9),
-                                Expanded(
-                                  child: Text(
-                                    e.value,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      height: 1.4,
-                                    ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: isSelected
+                                    ? AppColors.primaryNavy
+                                        .withValues(alpha: .06)
+                                    : AppColors.primaryNavy
+                                        .withValues(alpha: .02),
+                                blurRadius: isSelected ? 8 : 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                isSelected
+                                    ? Icons.radio_button_checked
+                                    : Icons.radio_button_off,
+                                color: isSelected
+                                    ? AppColors.primaryNavy
+                                    : AppColors.textSecondary
+                                        .withValues(alpha: 0.6),
+                                size: 20,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  e.value,
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                    color: AppColors.primaryNavy,
+                                    height: 1.4,
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 6),
                 _button(
                   'Check my reasoning',
                   () {
-                    final correct = _selected == 0;
+                    final correct = _practiceSelected == 0;
                     setState(() => _xp += correct ? 20 : 0);
                     showDialog(
                       context: context,
                       builder: (ctx) => AlertDialog(
-                        title: Text(correct
-                            ? 'Good judgement'
-                            : 'Pause and reconsider'),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                        ),
+                        title: Text(
+                          correct ? 'Good Judgement' : 'Pause and Reconsider',
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
                         content: Text(
                           correct
                               ? 'You chose the evidence-first response. Verify with a trustworthy source, document uncertainty and follow your professional obligations. +20 XP (demo).'
@@ -895,35 +1492,35 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
           required String title,
           required String subtitle,
           required String cost,
-          required List<Color> colors,
           required String note}) =>
       Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(15),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(AppRadius.card),
             border: Border.all(color: AppColors.border),
-            boxShadow: [
+            boxShadow: const [
               BoxShadow(
-                  color: colors.first.withValues(alpha: .10),
-                  blurRadius: 16,
-                  offset: const Offset(0, 5))
+                  color: AppColors.shadow, blurRadius: 10, offset: Offset(0, 3))
             ]),
         child: Row(children: [
           Container(
-              width: 88,
-              height: 92,
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: colors),
-                  borderRadius: BorderRadius.circular(18)),
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  border: Border.all(color: AppColors.border)),
               child: ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(AppRadius.lg - 1),
                   child: Image.asset('assets/images/$image.png',
-                      fit: BoxFit.cover, width: 88, height: 92))),
+                      fit: BoxFit.cover,
+                      width: 80,
+                      height: 80,
+                      errorBuilder: (_, __, ___) => const Icon(
+                          Icons.card_giftcard_rounded,
+                          color: AppColors.textSecondary)))),
           const SizedBox(width: 14),
           Expanded(
               child: Column(
@@ -931,19 +1528,19 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
                   children: [
                 Text(title,
                     style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14.5,
                         color: AppColors.primaryNavy)),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(subtitle,
                     style: const TextStyle(
-                        fontSize: 12,
-                        height: 1.4,
+                        fontSize: 11.5,
+                        height: 1.35,
                         color: AppColors.textSecondary)),
-                const SizedBox(height: 9),
+                const SizedBox(height: 8),
                 Row(children: [
                   _pill(cost, color: AppColors.accentGreen),
-                  const SizedBox(width: 7),
+                  const SizedBox(width: 8),
                   Flexible(
                       child: Text(note,
                           style: const TextStyle(
@@ -955,16 +1552,22 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
 
   Widget _rewards() =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _sectionTitle('Make your XP mean something ✨',
-            'A little motivation for every milestone. These reward concepts are demo-only and do not represent real redemption.'),
+        _sectionTitle('Make your XP mean something',
+            'Milestones and reward concepts to celebrate consistent verification practice.'),
         Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
                 gradient: const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [AppColors.primaryNavy, Color(0xFF176B68)]),
-                borderRadius: BorderRadius.circular(26)),
+                    colors: [AppColors.primaryNavy, Color(0xFF0F2B38)]),
+                borderRadius: BorderRadius.circular(AppRadius.card),
+                boxShadow: [
+                  BoxShadow(
+                      color: AppColors.primaryNavy.withValues(alpha: .15),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6))
+                ]),
             child: Row(children: [
               Expanded(
                   child: Column(
@@ -973,17 +1576,31 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
                     const Text('YOUR LEARNING WALLET',
                         style: TextStyle(
                             color: AppColors.accentCyan,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w800,
                             fontSize: 10,
-                            letterSpacing: 1.4)),
+                            letterSpacing: 1.2)),
+                    const SizedBox(height: 4),
                     Text('$_xp XP',
                         style: const TextStyle(
                             fontSize: 30,
                             fontWeight: FontWeight.w900,
                             color: Colors.white)),
+                    const SizedBox(height: 2),
                     const Text('Level 2 · Verification Explorer',
                         style: TextStyle(color: Colors.white70, fontSize: 12))
-                  ]))
+                  ])),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.stars_rounded,
+                  color: AppColors.accentCyan,
+                  size: 26,
+                ),
+              ),
             ])),
         const SizedBox(height: 20),
         _sectionTitle('Choose your feel-good goal',
@@ -992,75 +1609,64 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
             image: 'reward_coffee',
             title: 'Coffee break',
             subtitle:
-                'A Starbucks-style coffee reward concept for celebrating a learning streak.',
+                'A coffee reward concept for celebrating a learning streak.',
             cost: '500 XP',
-            colors: const [Color(0xFFE8F3E9), Color(0xFFB8DCC7)],
             note: 'Illustrative mock-up'),
         _rewardTile(
             image: 'reward_paws',
             title: 'Paws for a cause',
             subtitle:
-                'A demo concept for supporting an animal rescue or shelter once a verified partner is available.',
+                'Support an animal rescue or shelter once a verified partner is available.',
             cost: '800 XP',
-            colors: const [Color(0xFFFFE7C9), Color(0xFFFFC8A6)],
             note: 'No donation made'),
         _rewardTile(
             image: 'reward_game',
             title: 'Game night',
             subtitle:
-                'A gaming reward concept inspired by cozy sandbox adventures and indie games.',
+                'A gaming reward concept inspired by cozy sandbox adventures.',
             cost: '650 XP',
-            colors: const [Color(0xFFE7DFFF), Color(0xFFC9D7FF)],
             note: 'No game code included'),
         _rewardTile(
             image: 'reward_impact',
             title: 'Community impact',
             subtitle:
-                'Future option to support a vetted organisation such as Gift of the Givers, subject to an approved partnership and transparent funding.',
+                'Support a vetted non-profit organisation, subject to partner approval.',
             cost: '1,000 XP',
-            colors: const [Color(0xFFD7F7E9), Color(0xFFB6E5E8)],
             note: 'Partner needed'),
         _rewardTile(
             image: 'reward_grocery',
             title: 'Everyday essentials',
             subtitle:
-                'Illustrative grocery voucher concept for a future verified rewards partner.',
+                'Illustrative voucher concept for a future verified rewards partner.',
             cost: '1,400 XP',
-            colors: const [Color(0xFFE2F8E8), Color(0xFFB6E7CB)],
             note: 'Partner required'),
         _rewardTile(
             image: 'reward_fuel',
             title: 'Fuel your next move',
-            subtitle:
-                'A petrol voucher concept for celebrating consistent practice and progress.',
+            subtitle: 'A voucher concept for celebrating consistent practice.',
             cost: '1,800 XP',
-            colors: const [Color(0xFFFFE8C2), Color(0xFFFFC98F)],
             note: 'Partner required'),
         _rewardTile(
             image: 'reward_m365',
             title: 'Microsoft 365 boost',
             subtitle:
-                'A productivity-software voucher or subscription concept for future learners.',
+                'A productivity voucher or subscription concept for future learners.',
             cost: '2,400 XP',
-            colors: const [Color(0xFFDDEBFF), Color(0xFFB7D0FF)],
             note: 'Availability varies'),
         _rewardTile(
             image: 'reward_workshop',
             title: 'Workshop pass',
-            subtitle:
-                'A future ticket to an AI, software, career or professional-skills workshop.',
+            subtitle: 'A future ticket to an AI, software, or career workshop.',
             cost: '2,000 XP',
-            colors: const [Color(0xFFEDE3FF), Color(0xFFD6C2FF)],
             note: 'Workshop partner needed'),
         _rewardTile(
             image: 'reward_gamecredit',
             title: 'Game store credit',
             subtitle:
-                'A digital gaming credit concept for reaching a higher learning milestone.',
+                'A digital gaming credit concept for reaching a learning milestone.',
             cost: '2,200 XP',
-            colors: const [Color(0xFFFFE1EE), Color(0xFFFFC0D9)],
             note: 'No code included'),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         _sectionTitle(
             'Milestones unlocked', 'Keep learning to unlock new badges.'),
         ...[
@@ -1088,14 +1694,15 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
         ].map((r) => _card(
                 child: Row(children: [
               Container(
-                  width: 46,
-                  height: 46,
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
                       color: r.$5
-                          ? AppColors.accentGreen.withValues(alpha: .15)
+                          ? AppColors.primaryNavy.withValues(alpha: 0.08)
                           : AppColors.background,
-                      borderRadius: BorderRadius.circular(15)),
+                      borderRadius: BorderRadius.circular(AppRadius.md)),
                   child: Icon(r.$4,
+                      size: 20,
                       color: r.$5 ? AppColors.primaryNavy : AppColors.silver)),
               const SizedBox(width: 12),
               Expanded(
@@ -1103,22 +1710,27 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                     Text(r.$1,
-                        style: const TextStyle(fontWeight: FontWeight.w900)),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                            color: AppColors.primaryNavy)),
                     Text(r.$3,
                         style: const TextStyle(
-                            fontSize: 12, color: AppColors.textSecondary)),
-                    const SizedBox(height: 6),
+                            fontSize: 11.5, color: AppColors.textSecondary)),
+                    const SizedBox(height: 5),
                     _pill(r.$2,
                         color: r.$5 ? AppColors.accentGreen : AppColors.silver)
                   ])),
               if (r.$5)
-                const Icon(Icons.check_circle, color: AppColors.accentGreen)
+                const Icon(Icons.check_circle_rounded,
+                    color: AppColors.accentGreen, size: 20)
             ]))),
         Container(
             padding: const EdgeInsets.all(13),
             decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: .08),
-                borderRadius: BorderRadius.circular(15)),
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: AppColors.border)),
             child: const Text(
                 'Demo notice: XP has no cash value. Rewards, game offers and donations are concepts only. Real redemption requires an approved partner, funding, clear terms and backend validation.',
                 style: TextStyle(
@@ -1168,13 +1780,59 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
                       children: [
                     Text(h.$1,
                         style: const TextStyle(
-                            fontWeight: FontWeight.w800, fontSize: 13)),
-                    const SizedBox(height: 4),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13.5,
+                            color: AppColors.primaryNavy)),
+                    const SizedBox(height: 3),
                     Text(h.$2,
                         style: const TextStyle(
                             fontSize: 11, color: AppColors.textSecondary)),
-                    const SizedBox(height: 6),
-                    _pill(h.$4, color: h.$5)
+                    const SizedBox(height: 7),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: h.$4 == 'Passed'
+                            ? AppColors.accentLight
+                            : h.$4 == 'Review recommended'
+                                ? AppColors.goldLight
+                                : AppColors.background,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        border: Border.all(
+                          color: h.$4 == 'Passed'
+                              ? AppColors.accentGreen.withValues(alpha: 0.2)
+                              : h.$4 == 'Review recommended'
+                                  ? AppColors.gold.withValues(alpha: 0.25)
+                                  : AppColors.border,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: h.$5,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            h.$4,
+                            style: TextStyle(
+                              color: h.$4 == 'Passed'
+                                  ? AppColors.accentGreen
+                                  : h.$4 == 'Review recommended'
+                                      ? AppColors.goldDark
+                                      : AppColors.textSecondary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ])),
               Text(h.$3,
                   style: const TextStyle(
