@@ -9,6 +9,7 @@ import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/shared/models.dart';
+import 'package:verifai/shared/widgets/pref_row.dart';
 import 'package:verifai/shared/widgets.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -78,48 +79,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          // Modern Ambient Background Glows
-          Positioned(
-            top: -60,
-            right: -40,
-            child: Container(
-              width: 220,
-              height: 220,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.ambientCyan,
-              ),
-            ),
+      body: RefreshIndicator(
+        onRefresh: () async => ref.invalidate(dashboardProvider),
+        child: dashboardAsync.when(
+          data: (data) => _buildDashboard(data, user),
+          loading: () => _buildShimmer(),
+          error: (error, stackTrace) => AsyncErrorView(
+            error: error,
+            fallbackMessage: 'Failed to load dashboard. Pull to refresh.',
+            onRetry: () => reconnectApp(ref),
           ),
-          Positioned(
-            top: 240,
-            left: -80,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.ambientGreen,
-              ),
-            ),
-          ),
-
-          // Main Scrollable Content
-          RefreshIndicator(
-            onRefresh: () async => ref.invalidate(dashboardProvider),
-            child: dashboardAsync.when(
-              data: (data) => _buildDashboard(data, user),
-              loading: () => _buildShimmer(),
-              error: (error, stackTrace) => AsyncErrorView(
-                error: error,
-                fallbackMessage: 'Failed to load dashboard. Pull to refresh.',
-                onRetry: () => reconnectApp(ref),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -136,7 +106,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Hero Score Bento Card
+          // Hero Score Card — calm, typography-led
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(AppSpacing.lg),
@@ -144,16 +114,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.card),
               border: Border.all(color: AppColors.border),
-              boxShadow: [
+              boxShadow: const [
                 BoxShadow(
-                  color: AppColors.primaryNavy.withValues(alpha: 0.05),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-                const BoxShadow(
                   color: AppColors.shadow,
-                  blurRadius: 4,
-                  offset: Offset(0, 1),
+                  blurRadius: 10,
+                  offset: Offset(0, 3),
                 ),
               ],
             ),
@@ -170,33 +135,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.accentLight,
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.pill,
-                              ),
-                            ),
-                            child: Text(
-                              'READINESS',
-                              style:
-                                  AppTypography.textTheme.labelSmall?.copyWith(
-                                color: AppColors.accentGreen,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
-                                fontSize: 9.5,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
                       Text(
                         'AI readiness score',
                         style: AppTypography.textTheme.titleMedium?.copyWith(
@@ -221,123 +159,75 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // Duo Metric Bento Row
+          // Duo Metric Row — quiet stat tiles, no icons
           Row(
             children: [
-              // Bento 1: Day Streak
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(
-                      color: AppColors.border,
-                    ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: AppColors.shadow,
-                        blurRadius: 12,
-                        offset: Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: AppColors.background,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.local_fire_department_rounded,
-                          color: AppColors.primaryNavy,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${data.streakDays} Days',
-                              style:
-                                  AppTypography.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.4,
-                              ),
-                            ),
-                            Text(
-                              'Streak Active',
-                              style:
-                                  AppTypography.textTheme.labelSmall?.copyWith(
-                                color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                child: _statTile(
+                  value: '${data.streakDays} Days',
+                  label: 'Streak Active',
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
-
-              // Rank and league are not exposed by the backend yet.
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(
-                      color: AppColors.accentCyan.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.task_alt_rounded,
-                        color: AppColors.accentGreen,
-                        size: 26,
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${data.completedTasks} Tasks',
-                              style:
-                                  AppTypography.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.4,
-                              ),
-                            ),
-                            Text(
-                              'Completed',
-                              style:
-                                  AppTypography.textTheme.labelSmall?.copyWith(
-                                color: AppColors.accentGreen,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                child: _statTile(
+                  value: '${data.completedTasks} Tasks',
+                  label: 'Completed',
+                  accent: true,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.xl),
+
           _buildQuickLaunches(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _statTile({
+    required String value,
+    required String label,
+    bool accent = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(
+          color: accent
+              ? AppColors.accentGreen.withValues(alpha: 0.4)
+              : AppColors.border,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: AppTypography.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.4,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: AppTypography.textTheme.labelSmall?.copyWith(
+              color: accent ? AppColors.accentGreen : AppColors.textSecondary,
+              fontWeight: FontWeight.w700,
+              fontSize: 10,
+            ),
+          ),
         ],
       ),
     );
@@ -352,7 +242,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           borderRadius: BorderRadius.circular(AppRadius.card),
         ),
         const SizedBox(height: AppSpacing.md),
-        const ShimmerLoader.card(height: 120),
+        const ShimmerLoader.card(height: 160),
         const SizedBox(height: AppSpacing.md),
         Row(
           children: [
@@ -372,51 +262,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
         const SizedBox(height: AppSpacing.xl),
-        const ShimmerLoader.card(height: 200),
+        const ShimmerLoader.card(height: 300),
       ],
     );
   }
 
   Widget _buildQuickLaunches(BuildContext context) {
-    final gridItems =
-        <({String title, String subtitle, IconData icon, String route})>[
-      (
-        title: 'AI Assistant',
-        subtitle: 'Thinking partner',
-        icon: Icons.auto_awesome_rounded,
-        route: '/assistant',
-      ),
-      (
-        title: 'AI Lab',
-        subtitle: 'Learn by doing',
-        icon: Icons.science_rounded,
-        route: '/ai-lab',
-      ),
-      (
-        title: 'Practice',
-        subtitle: 'Real scenarios',
-        icon: Icons.psychology_alt_rounded,
-        route: '/industry-practice',
-      ),
-      (
-        title: 'Rewards',
-        subtitle: 'XP & milestones',
-        icon: Icons.workspace_premium_rounded,
-        route: '/rewards',
-      ),
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Explore VerifAI',
-          style: AppTypography.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w900,
-            color: AppColors.primaryNavy,
+          style: AppTypography.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.4,
+            color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 3),
         Text(
           'Build confidence. Verify before you rely.',
           style: AppTypography.textTheme.bodySmall
@@ -424,309 +287,61 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         const SizedBox(height: AppSpacing.md),
 
-        // Featured Hero Bento Card: Verification Studio
-        Material(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(AppRadius.card),
+        // Core studio row
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.md),
+          child: PrefRow(
+            title: 'Verification Studio',
+            subtitle:
+                'Inspect documents, claims, AI output and sources, with uncertainty made visible.',
+            showChevron: true,
+            accentBorder: true,
             onTap: () => context.push('/verification-studio'),
-            child: Container(
-              padding: const EdgeInsets.all(AppSpacing.md + 2),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.card),
-                border: Border.all(
-                  color: AppColors.primaryNavy.withValues(alpha: 0.18),
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: AppColors.shadow,
-                    blurRadius: 10,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.accentLight,
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                        ),
-                        child: Text(
-                          'CORE STUDIO',
-                          style: AppTypography.textTheme.labelSmall?.copyWith(
-                            color: AppColors.accentGreen,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 9.5,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: const BoxDecoration(
-                          color: AppColors.primaryNavy,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.arrow_forward_rounded,
-                          size: 13,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(9),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryNavy.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.fact_check_rounded,
-                          color: AppColors.primaryNavy,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Verification Studio',
-                              style:
-                                  AppTypography.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.primaryNavy,
-                                letterSpacing: -0.2,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Interactive sandbox to inspect documents, claims, AI output & sources.',
-                              style:
-                                  AppTypography.textTheme.bodySmall?.copyWith(
-                                color: AppColors.textSecondary,
-                                fontSize: 11.5,
-                                height: 1.35,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Supported artifact chips
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      'Document',
-                      'Claim',
-                      'AI Output',
-                      'Sources',
-                    ].map((tag) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.background,
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Text(
-                          tag,
-                          style: AppTypography.textTheme.labelSmall?.copyWith(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 9.5,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
           ),
         ),
-        const SizedBox(height: 11),
 
-        // 2x2 Bento Grid for Secondary Tools
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: gridItems.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 11,
-            mainAxisSpacing: 11,
-            childAspectRatio: 1.45,
+        // Secondary tools
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.md),
+          child: PrefRow(
+            title: 'AI Assistant',
+            subtitle: 'Your thinking partner for tricky claims',
+            showChevron: true,
+            onTap: () => context.push('/assistant'),
           ),
-          itemBuilder: (context, index) {
-            final item = gridItems[index];
-            return Material(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.card),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(AppRadius.card),
-                onTap: () => context.push(item.route),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(color: AppColors.border),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: AppColors.shadow,
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(7),
-                            decoration: BoxDecoration(
-                              color: AppColors.background,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              item.icon,
-                              color: AppColors.primaryNavy,
-                              size: 18,
-                            ),
-                          ),
-                          const Icon(
-                            Icons.arrow_outward_rounded,
-                            size: 14,
-                            color: AppColors.textSecondary,
-                          ),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.title,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 13,
-                              color: AppColors.primaryNavy,
-                            ),
-                          ),
-                          const SizedBox(height: 1),
-                          Text(
-                            item.subtitle,
-                            style: const TextStyle(
-                              fontSize: 10.5,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
         ),
-        const SizedBox(height: 11),
-
-        // Task History Strip
-        Material(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            onTap: () => context.push('/task-history'),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: 12,
-              ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.card),
-                border: Border.all(color: AppColors.border),
-                boxShadow: const [
-                  BoxShadow(
-                    color: AppColors.shadow,
-                    blurRadius: 6,
-                    offset: Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(7),
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.history_rounded,
-                      size: 18,
-                      color: AppColors.primaryNavy,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Task History',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
-                            color: AppColors.primaryNavy,
-                          ),
-                        ),
-                        const SizedBox(height: 1),
-                        Text(
-                          'Review past attempts and track your consistency',
-                          style: AppTypography.textTheme.bodySmall?.copyWith(
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 15,
-                    color: AppColors.primaryNavy,
-                  ),
-                ],
-              ),
-            ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.md),
+          child: PrefRow(
+            title: 'AI Lab',
+            subtitle: 'Short interactive workshops on responsible AI',
+            showChevron: true,
+            onTap: () => context.push('/ai-lab'),
           ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.md),
+          child: PrefRow(
+            title: 'Practice',
+            subtitle: 'Real-world scenarios across your industry',
+            showChevron: true,
+            onTap: () => context.push('/industry-practice'),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.md),
+          child: PrefRow(
+            title: 'Rewards',
+            subtitle: 'XP, milestones and feel-good goals',
+            showChevron: true,
+            onTap: () => context.push('/rewards'),
+          ),
+        ),
+        PrefRow(
+          title: 'Task History',
+          subtitle: 'Review past attempts and track your consistency',
+          showChevron: true,
+          onTap: () => context.push('/task-history'),
         ),
       ],
     );
