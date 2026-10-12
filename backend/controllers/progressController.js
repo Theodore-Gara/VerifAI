@@ -7,6 +7,7 @@ async function getProgress(req, res, next) {
               COALESCE(p.xp, 0)::int AS xp,
               COALESCE(p.level, 1)::int AS level,
               COALESCE(p.streak, 0)::int AS streak,
+              COALESCE(p.tokens, 0)::int AS tokens,
               p.last_activity_date,
               COALESCE(p.readiness_score, 0)::int AS readiness_score,
               COALESCE(p.tier, 'Novice') AS tier,

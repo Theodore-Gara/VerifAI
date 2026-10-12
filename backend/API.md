@@ -102,7 +102,7 @@ Protected. Code-defined track milestones with live progress. Optional `?track=<i
 Response: `{ track_id, milestones: [{ code, name, description, target, current, achieved }] }`. Milestones cover task completion (first task, all tasks in the track), XP (250, 1000), streak (7 days) and level (5). `achieved` flips as soon as `current >= target`.
 
 ### POST /api/assistant/chat
-Protected. Sends up to eight conversation messages to the NVIDIA-hosted Learning Assistant, scoped to a task belonging to the authenticated user's selected track. The assistant receives task title/scenario only, not the answer key. Requests are limited to 8 per user per minute; each message is limited to 1,200 characters.
+Protected. Sends up to eight conversation messages to the AI assistant. `task_id` is **optional**: with it the assistant is scoped to a task belonging to the authenticated user's selected track; without it this is a general, track-aware assistant. Requests are limited to 8 per user per minute; each message is limited to 1,200 characters.
 
 Request:
 
@@ -113,7 +113,68 @@ Request:
 }
 ```
 
-Requires `NVIDIA_API_KEY` in the backend environment. `NVIDIA_MODEL` optionally overrides the default model.
+Pass `?stream=1` (or `"stream": true`) to receive a Server-Sent Events stream: each `data:` frame is `{"delta":"..."}`, terminated by `data: [DONE]`, or `{"error":"..."}` on failure.
+
+Requires `NVIDIA_API_KEY` in the backend environment. Model routing is per use case: `NVIDIA_MODEL_CHAT` (default `nvidia/nemotron-3.5-lightning-30b-a3b`) for the assistant, coach and general surfaces, with a retryable failure falling back to `NVIDIA_MODEL_FALLBACK`.
+
+### POST /api/verification/analyze
+Protected. Assesses a `document`, `claim`, `ai_response` or `source` and returns a structured report. **The submitted content is never stored** — only metadata and the report are persisted, so confidential material does not persist.
+
+Request: `{ "kind": "document", "content": "...", "document_name": "q3.pdf" }` (`content` ≤ 60,000 characters).
+
+Response: `{ "analysis": { id, kind, document_name, overall_status, items_requiring_review, sources_confirmed, summary, report, created_at } }`, where `overall_status` is one of `appears_sound`, `human_review_required`, `insufficient_evidence`. Uses the analysis model (`NVIDIA_MODEL_ANALYSIS`, default `nvidia/nemotron-3-super-120b-a12b`) with reasoning enabled, and is rate-limited.
+
+### GET /api/verification/analyses
+Protected. The user's recent analyses (metadata + report), newest first. Optional `?limit=<1..50>` (default 20).
+
+### GET /api/lab/lessons
+Protected. The AI Lab lesson catalog available to the user's track (plus global lessons), each with section/activity/question counts and the user's progress.
+
+### GET /api/lab/lessons/:code
+Protected. One lesson with its textbook `sections`, practical `activities` and assessment `questions`, plus the user's progress. **Answer keys are withheld** (`correct_index`/`explanation` are not returned here).
+
+### POST /api/lab/lessons/:code/progress
+Protected. Body `{ "sections_completed": 3, "activities_completed": 1 }`. Counts are monotonic (never decrease) and completion is recomputed.
+
+### POST /api/lab/lessons/:code/assessment
+Protected. Body `{ "answers": [1, 0, 2] }` (one index per question). Graded **server-side** against the stored answer key. Returns `{ result: { score, passed, correct_count, total }, questions: [{ question_id, answered, correct, correct_index, explanation }] }`. Passing threshold is 60.
+
+### POST /api/lab/coach
+Protected. Body `{ "lesson_code": "ai-ethics-and-bias", "messages": [...] }` → a Socratic tutor reply. `?stream=1` streams SSE as above. Rate-limited.
+
+### GET /api/workshop/posts
+Protected. Track-scoped community threads, newest first. Optional `?lesson=<code>`, `?limit=<1..50>`, `?offset=<n>`. Each post carries `author_name`, `reply_count`, `reaction_count`, `reacted` and `is_mine`.
+
+### GET /api/workshop/posts/:id/replies
+Protected. Replies to a thread, oldest first.
+
+### POST /api/workshop/posts
+Protected. Body `{ "body": "...", "lesson_code": "optional", "parent_id": "optional reply target" }`. `body` ≤ 2,000 characters. The post is scoped to the user's industry track.
+
+### POST /api/workshop/posts/:id/react
+Protected. Toggles the caller's upvote; returns `{ reacted, reaction_count }`.
+
+### POST /api/workshop/posts/:id/report
+Protected. Body `{ "reason": "spam" | "abuse" | "off_topic" | "other" }`. Idempotent per user. A post is auto-hidden once 3 distinct users report it. You cannot report your own post.
+
+### DELETE /api/workshop/posts/:id
+Protected. Deletes the caller's own post (and its replies). `403` for another user's post.
+
+### GET /api/rewards
+Protected. The active rewards catalog, each with `can_afford`, plus the wallet `{ xp, level, tokens, next_level_xp }`.
+
+### GET /api/rewards/tokens
+Protected. Ledger of token grants and spends, newest first. Optional `?limit=<1..100>` (default 20). Also returns the wallet.
+
+### POST /api/rewards/:code/redeem
+Protected. Redeems a reward by spending **tokens** (XP and level are never touched). `409` with `{ tokens, cost_tokens }` when the balance is short; `404` for an unknown reward. The balance row is locked so concurrent redemptions cannot both pass.
+
+### POST /api/users/avatar
+Protected. Body `{ "image_base64": "...", "mime": "image/png" }` (`image/png`, `image/jpeg` or `image/webp`; ≤ 2 MB). A `data:` URI prefix is tolerated. Stored inline as `bytea`.
+
+### GET /api/users/avatar
+Protected. Returns the caller's avatar image, or `404` when none is set.
+
 
 ## Scoring
 
@@ -132,7 +193,14 @@ XP:
 Level:
 
 - level 1 starts at 0 XP
-- each 250 XP increases the level by 1
+- cumulative XP to reach a level: `250·k + 30·k·(k−1)` where `k = level − 1` (250, 560, 930, …)
+
+Reward tokens:
+
+- XP is a permanent progression metric and is **never spent**. Reward tokens are a separate, spendable currency earned from milestones.
+- Each level gained grants `TOKENS_PER_LEVEL` tokens (default 10); each achievement earned grants `TOKENS_PER_ACHIEVEMENT` tokens (default 5).
+- Grants are recorded in an append-only ledger (`reward_token_events`) whose `UNIQUE(user_id, reason, ref)` constraint makes them idempotent, so a retried submission cannot double-credit.
+- Redemptions (`POST /api/rewards/:code/redeem`) deduct tokens only; XP, level and readiness are untouched.
 
 Readiness:
 
@@ -160,9 +228,13 @@ Errors use:
 
 For a new database run:
 
-1. `db/schema.sql`
-2. `db/seed.sql`
+1. `npm run db:setup` — applies `db/schema.sql`, then `db/seed.sql` and every `db/seed/*.sql` content file (AI Lab lessons, rewards catalog), then baselines migrations.
 
-For the original prototype database, back it up and review `db/migrate_d4.sql` before running it once.
+For an existing database:
+
+- `npm run db:migrate` — applies any pending `db/migrations/NNN_*.sql` (e.g. `007_product_hub.sql`).
+- `npm run db:seed` — re-applies seed data only.
+
+For the original prototype database, back it up and review `db/migrations/001_prototype_to_d4.sql` before running it once.
 
 See `USER_MANUAL.md` for beginner setup and GitHub/Railway instructions.

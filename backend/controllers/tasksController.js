@@ -9,6 +9,7 @@ const {
   calculateXp,
   calculateLevel,
 } = require('../services/scoringService');
+const { grantTokens, levelGrants, achievementGrants } = require('../services/rewardTokens');
 
 // feature key -> skill_scores.dimension (display name)
 const FEATURE_DIMENSION = {
@@ -556,6 +557,10 @@ async function updateProgress(client, user, xpEarned, passed) {
   const newXp = Number(progress.xp) + xpEarned;
   const newLevel = calculateLevel(newXp);
 
+  // Reward tokens are earned per level gained (never from spending XP). The
+  // ledger's unique constraint makes this safe to run on every attempt.
+  await grantTokens(client, user.id, levelGrants(Number(progress.level) || 1, newLevel));
+
   let tier = progress.tier || 'Novice';
   let tierCount = progress.tier_tasks_completed || 0;
   if (passed) {
@@ -573,7 +578,7 @@ async function updateProgress(client, user, xpEarned, passed) {
          last_activity_date = (NOW() AT TIME ZONE $7)::date,
          tier = $4, tier_tasks_completed = $5, updated_at = CURRENT_TIMESTAMP
      WHERE user_id = $6
-     RETURNING xp, level, streak, last_activity_date, tier, tier_tasks_completed, readiness_score`,
+     RETURNING xp, level, streak, last_activity_date, tier, tier_tasks_completed, readiness_score, tokens`,
     [newXp, newLevel, newStreak, tier, tierCount, user.id, STREAK_TIMEZONE]
   );
   return updated.rows[0];
@@ -656,6 +661,10 @@ async function awardAchievements(client, userId) {
       [userId, achievement.id]
     );
     if (inserted.rows.length) newlyEarned.push(achievement);
+  }
+  // Each achievement also carries a small token bonus.
+  if (newlyEarned.length) {
+    await grantTokens(client, userId, achievementGrants(newlyEarned));
   }
   return newlyEarned;
 }
