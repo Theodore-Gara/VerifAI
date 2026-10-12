@@ -69,6 +69,11 @@ void main() {
     expect(find.text('Skip tutorial'), findsOneWidget);
     await tester.tap(find.text('Skip tutorial'));
     await tester.pumpAndSettle();
+    // Flush the dashboard's mock fetch (MockApiClient delays 300-800ms
+    // randomly); pumpAndSettle alone can finish before the timer fires,
+    // leaving a pending timer that fails the test.
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
 
     expect(find.text('Home').first, findsOneWidget);
     expect(find.text('Choose Specialization'), findsNothing);
