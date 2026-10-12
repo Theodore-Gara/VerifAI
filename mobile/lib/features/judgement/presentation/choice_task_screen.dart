@@ -61,7 +61,9 @@ class _ChoiceTaskScreenState extends ConsumerState<ChoiceTaskScreen> {
               taskId: task.id,
               decisionOptionId: _decisionId,
               reasonOptionId: _reasonId,
-              rationale: _rationaleController.text.trim(),
+              rationale: _rationaleController.text.trim().isEmpty
+                  ? null
+                  : _rationaleController.text.trim(),
               practice: task.isRepeat,
             ),
           );

@@ -478,7 +478,9 @@ function scoreByFeature(feature, content, body) {
   const reason = content.reasons.find((o) => o.id === reasonId);
   if (!decision) throw new Error('Selected decision does not belong to this task.');
   if (!reason) throw new Error('Selected reason does not belong to this task.');
-  const rationale = body.rationale == null ? null : requiredString(body.rationale, 'rationale', 5000);
+    // Optional: an omitted or blank rationale is stored as NULL.
+    const rationaleRaw = body.rationale == null ? '' : String(body.rationale).trim();
+    const rationale = rationaleRaw.length ? rationaleRaw.slice(0, 5000) : null;
   return {
     score: scoreOptions([decision.score, reason.score]),
     decisionOptionId: decisionId,

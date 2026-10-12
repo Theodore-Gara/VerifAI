@@ -198,13 +198,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             newlyEarnedAchievements: result.newlyEarnedAchievements,
             onRetry: result.task == null
                 ? null
-                : () => TaskChallengeModal.show(
-                      context,
-                      result.task!,
-                      () => ref.invalidate(dashboardProvider),
-                      practice: true,
-                      replace: true,
-                    ),
+                : () => _retryTask(context, ref, result.task!),
             onContinue: () =>
                 _continueToNextTask(context, ref, result.task),
           );
@@ -230,11 +224,14 @@ Future<void> _continueToNextTask(
   DailyTask? task,
 ) async {
   if (task == null) {
-    if (context.canPop()) {
-      context.pop();
-    } else {
-      context.go('/dashboard');
-    }
+    _returnToFeature(context);
+    return;
+  }
+
+  // Judgement / Risk & Governance run as full-screen flows; "Continue" returns
+  // to that screen (which reloads the next task) rather than reopening a sheet.
+  if (_isChoiceFeature(task)) {
+    _returnToFeature(context);
     return;
   }
 
@@ -269,4 +266,31 @@ Future<void> _continueToNextTask(
       ),
     );
   }
+}
+
+bool _isChoiceFeature(DailyTask task) =>
+    task.feature == 'judgement' || task.feature == 'risk_governance';
+
+/// Return to the full-screen feature flow (which reloads the next task), or the
+/// dashboard when there is nothing to pop.
+void _returnToFeature(BuildContext context) {
+  if (context.canPop()) {
+    context.pop();
+  } else {
+    context.go('/dashboard');
+  }
+}
+
+void _retryTask(BuildContext context, Ref ref, DailyTask task) {
+  if (_isChoiceFeature(task)) {
+    _returnToFeature(context);
+    return;
+  }
+  TaskChallengeModal.show(
+    context,
+    task,
+    () => ref.invalidate(dashboardProvider),
+    practice: true,
+    replace: true,
+  );
 }

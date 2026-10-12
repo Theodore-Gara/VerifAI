@@ -141,19 +141,10 @@ class _ModernScoreRingPainter extends CustomPainter {
 
     canvas.drawArc(rect, startAngle, sweepAngle, false, glowPaint);
 
-    // Modern Sweep Gradient Arc
-    final gradient = SweepGradient(
-      startAngle: startAngle,
-      endAngle: startAngle + sweepAngle,
-      colors: [
-        AppColors.accentCyan,
-        color,
-      ],
-      tileMode: TileMode.clamp,
-    );
-
+    // Solid progress arc — a single colour, so the ring never blends a stray
+    // cyan/green into a low-score (warning/error) indicator.
     final progressPaint = Paint()
-      ..shader = gradient.createShader(rect)
+      ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
