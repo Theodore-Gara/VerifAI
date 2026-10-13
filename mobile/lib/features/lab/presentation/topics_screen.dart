@@ -24,6 +24,10 @@ class LabTopicsScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/ai-lab'),
+        ),
         title: Text('Topics',
             style: AppTypography.textTheme.titleLarge
                 ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),

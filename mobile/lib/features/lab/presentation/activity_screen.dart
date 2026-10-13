@@ -7,6 +7,7 @@ import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
+import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/shared/models.dart';
 
 class ActivityArgs {
@@ -95,6 +96,7 @@ class _LabActivityScreenState extends ConsumerState<LabActivityScreen> {
           .submitActivity(_activity.id, response: _buildResponse());
       if (!mounted) return;
       setState(() => _result = result);
+      ref.invalidate(dashboardProvider);
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

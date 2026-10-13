@@ -7,6 +7,7 @@ import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/lab/providers.dart';
+import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
 
@@ -74,11 +75,17 @@ class _LabTopicReaderScreenState extends ConsumerState<LabTopicReaderScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/ai-lab'),
+        ),
         title: Text('Topic ${widget.index + 1}',
             style: AppTypography.textTheme.titleMedium
                 ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
         actions: [
-          TextButton(onPressed: () => context.go('/ai-lab/lessons/${widget.code}'), child: const Text('Topics')),
+          TextButton(
+              onPressed: () => context.canPop() ? context.pop() : context.go('/ai-lab/lessons/${widget.code}'),
+              child: const Text('Topics')),
         ],
       ),
       body: detailAsync.when(
@@ -131,7 +138,7 @@ class _LabTopicReaderScreenState extends ConsumerState<LabTopicReaderScreen> {
                     ),
                   ),
                 ),
-                _navBar(context, pages.length, isLastTopic),
+                _navBar(context, pages.length, isLastTopic, detail.progress),
               ],
             ),
           );
@@ -140,7 +147,23 @@ class _LabTopicReaderScreenState extends ConsumerState<LabTopicReaderScreen> {
     );
   }
 
-  Widget _navBar(BuildContext context, int pageCount, bool isLastTopic) {
+  Future<void> _markReadAndAdvance(LabProgress progress, bool isLastTopic) async {
+    final sectionsRead =
+        progress.sectionsCompleted > widget.index + 1 ? progress.sectionsCompleted : widget.index + 1;
+    await _recordRead(sectionsRead, progress.activitiesCompleted);
+    if (!mounted) return;
+    if (isLastTopic) {
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/ai-lab/lessons/${widget.code}');
+      }
+    } else {
+      context.pushReplacement('/ai-lab/lessons/${widget.code}/topic/${widget.index + 1}');
+    }
+  }
+
+  Widget _navBar(BuildContext context, int pageCount, bool isLastTopic, LabProgress progress) {
     final onLastPage = _page == pageCount - 1;
     return Container(
       padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.md),
@@ -159,11 +182,17 @@ class _LabTopicReaderScreenState extends ConsumerState<LabTopicReaderScreen> {
           Text('${_page + 1} / $pageCount', style: AppTypography.textTheme.labelMedium),
           const Spacer(),
           FilledButton.icon(
-            onPressed: !onLastPage
-                ? () => _pageController.nextPage(duration: const Duration(milliseconds: 260), curve: Curves.easeOut)
-                : () => context.go(isLastTopic ? '/ai-lab/lessons' : '/ai-lab/lessons/${widget.code}/topic/${widget.index + 1}'),
-            icon: Icon(isLastTopic && onLastPage ? Icons.done_all_rounded : Icons.arrow_forward_rounded, size: 17),
-            label: Text(!onLastPage ? 'Next' : (isLastTopic ? 'Finish' : 'Next topic')),
+            onPressed: () {
+              if (!onLastPage) {
+                _pageController.nextPage(duration: const Duration(milliseconds: 260), curve: Curves.easeOut);
+              } else {
+                _markReadAndAdvance(progress, isLastTopic);
+              }
+            },
+            icon: Icon(onLastPage ? Icons.check_circle_outline_rounded : Icons.arrow_forward_rounded, size: 17),
+            label: Text(onLastPage
+                ? (isLastTopic ? 'Mark as read & finish' : 'Mark as read & next topic')
+                : 'Next'),
           ),
         ],
       ),

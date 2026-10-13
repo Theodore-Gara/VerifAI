@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/core/services/api_client.dart';
@@ -23,16 +24,44 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _input = TextEditingController();
   final _scroll = ScrollController();
+  final FlutterTts _tts = FlutterTts();
   final List<AssistantMessage> _messages = [];
   int? _sessionId;
   bool _sending = false;
   bool _webSearch = false;
+  bool _greeted = false;
   String _streaming = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeGreet());
+  }
+
+  // Vera greets out loud on a new/empty chat.
+  void _maybeGreet() {
+    if (_greeted || !mounted) return;
+    _greeted = true;
+    _speakGreeting();
+  }
+
+  Future<void> _speakGreeting() async {
+    try {
+      await _tts.stop();
+      await _tts.setLanguage('en-GB');
+      await _tts.setSpeechRate(0.47);
+      await _tts.setPitch(1.0);
+      await _tts.speak("Hi I'm Vera, your AI assistant. What are we doing today.");
+    } catch (_) {
+      // Device speech is unavailable; the written greeting still shows.
+    }
+  }
 
   @override
   void dispose() {
     _input.dispose();
     _scroll.dispose();
+    _tts.stop();
     super.dispose();
   }
 
@@ -42,6 +71,8 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
       _sessionId = null;
       _streaming = '';
     });
+    _greeted = false;
+    _maybeGreet();
     if (_scaffoldKey.currentState?.isEndDrawerOpen ?? false) {
       Navigator.of(context).pop();
     }
@@ -322,54 +353,83 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
           AppSpacing.screenPadding, AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.sm),
-      child: Column(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Row(
-            children: [
-              FilterChip(
-                selected: _webSearch,
-                onSelected: (v) => setState(() => _webSearch = v),
-                avatar: const Icon(Icons.travel_explore_rounded, size: 16),
-                label: const Text('Search the web'),
+          Expanded(
+            child: TextField(
+              controller: _input,
+              minLines: 1,
+              maxLines: 4,
+              textCapitalization: TextCapitalization.sentences,
+              onSubmitted: (_) => _send(),
+              decoration: InputDecoration(
+                hintText: 'Ask Vera…',
+                filled: true,
+                fillColor: AppColors.surface,
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md, vertical: AppSpacing.md),
+                suffixIcon: _WebSearchButton(
+                    active: _webSearch, onTap: () => setState(() => _webSearch = !_webSearch)),
+                suffixIconConstraints: const BoxConstraints(minWidth: 52, minHeight: 48),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    borderSide: const BorderSide(color: AppColors.border)),
+                enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    borderSide: const BorderSide(color: AppColors.border)),
+                focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    borderSide: BorderSide(
+                        color: _webSearch ? AppColors.electricMint : AppColors.borderFocus)),
               ),
-            ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _input,
-                  minLines: 1,
-                  maxLines: 4,
-                  textCapitalization: TextCapitalization.sentences,
-                  onSubmitted: (_) => _send(),
-                  decoration: InputDecoration(
-                    hintText: 'Ask Vera…',
-                    filled: true,
-                    fillColor: AppColors.surface,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.card),
-                        borderSide: const BorderSide(color: AppColors.border)),
-                    enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.card),
-                        borderSide: const BorderSide(color: AppColors.border)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              IconButton.filled(
-                onPressed: _sending ? null : () => _send(),
-                icon: const Icon(Icons.send_rounded),
-                style: IconButton.styleFrom(
-                    backgroundColor: AppColors.primaryNavy, foregroundColor: Colors.white),
-              ),
-            ],
+          const SizedBox(width: AppSpacing.sm),
+          IconButton.filled(
+            onPressed: _sending ? null : () => _send(),
+            icon: const Icon(Icons.send_rounded),
+            style: IconButton.styleFrom(
+                backgroundColor: AppColors.primaryNavy, foregroundColor: Colors.white),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Circular web-search toggle that sits on the right of the input, beside send.
+class _WebSearchButton extends StatelessWidget {
+  const _WebSearchButton({required this.active, required this.onTap});
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: Align(
+        alignment: Alignment.center,
+        child: Tooltip(
+          message: active ? 'Web search on' : 'Search the web',
+          child: InkWell(
+            onTap: onTap,
+            customBorder: const CircleBorder(),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: active ? AppColors.electricMint.withValues(alpha: .12) : Colors.transparent,
+                border: Border.all(
+                    color: active ? AppColors.electricMint : AppColors.border,
+                    width: active ? 1.8 : 1.2),
+              ),
+              child: Icon(Icons.travel_explore_rounded,
+                  size: 18, color: active ? AppColors.electricMint : AppColors.textSecondary),
+            ),
+          ),
+        ),
       ),
     );
   }

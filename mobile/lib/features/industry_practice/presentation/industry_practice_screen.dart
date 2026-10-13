@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/core/theme/app_colors.dart';
@@ -148,8 +149,16 @@ class _IndustryCaseDetailScreenState extends ConsumerState<IndustryCaseDetailScr
               const SizedBox(height: AppSpacing.lg),
               Text('Source: ${c.sourceTitle}',
                   style: AppTypography.textTheme.labelSmall?.copyWith(color: AppColors.textSecondary)),
-              if (c.sourceUrl != null)
-                Text(c.sourceUrl!, style: AppTypography.textTheme.labelSmall?.copyWith(color: AppColors.info)),
+              if (c.sourceUrl != null && c.sourceUrl!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: InkWell(
+                    onTap: () => _openUrl(context, c.sourceUrl!),
+                    child: Text(c.sourceUrl!,
+                        style: AppTypography.textTheme.labelSmall
+                            ?.copyWith(color: AppColors.info, decoration: TextDecoration.underline)),
+                  ),
+                ),
             ],
           ],
         ),
@@ -176,4 +185,17 @@ class _IndustryCaseDetailScreenState extends ConsumerState<IndustryCaseDetailScr
           ],
         ),
       );
+}
+
+Future<void> _openUrl(BuildContext context, String url) async {
+  final uri = Uri.tryParse(url);
+  if (uri == null) return;
+  try {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Could not open the link.')));
+    }
+  }
 }

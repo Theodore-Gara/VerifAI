@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
@@ -113,8 +114,17 @@ class VerificationResultScreen extends StatelessWidget {
             for (final s in result.sources)
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
-                child: Text('• ${s.title}\n  ${s.url}',
-                    style: AppTypography.textTheme.bodySmall?.copyWith(height: 1.4)),
+                child: InkWell(
+                  onTap: () {
+                    final uri = Uri.tryParse(s.url);
+                    if (uri != null) {
+                      launchUrl(uri, mode: LaunchMode.externalApplication).catchError((_) => false);
+                    }
+                  },
+                  child: Text('• ${s.title}\n  ${s.url}',
+                      style: AppTypography.textTheme.bodySmall?.copyWith(
+                          height: 1.4, color: AppColors.info, decoration: TextDecoration.underline)),
+                ),
               ),
           ],
         ],
