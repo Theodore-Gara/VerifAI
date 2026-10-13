@@ -194,7 +194,7 @@ test('POST /api/assistant/chat works without a task_id (general assistant)', asy
   });
   assert.equal(response.status, 200);
   assert.equal(response.body.reply, 'Here is a helpful hint.');
-  assert.equal(fetchLog[0].model, 'nvidia/nemotron-3.5-lightning-30b-a3b');
+  assert.equal(fetchLog[0].model, 'nvidia/nemotron-3-super-120b-a12b');
   assert.equal(fetchLog[0].messages[0].content.includes('verification analyst'), false);
 });
 

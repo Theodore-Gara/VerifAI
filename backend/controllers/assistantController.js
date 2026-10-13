@@ -20,11 +20,14 @@ async function sendMessage(req, res, next) {
   try {
     const messages = validateMessages(req.body.messages);
 
+    // Validate the optional task id before touching the provider, so a bad
+    // request fails 400 rather than depending on whether the AI is configured.
+    const hasTaskId = req.body.task_id !== undefined && req.body.task_id !== null;
+    const taskId = hasTaskId ? positiveIntegerParam(req.body.task_id, 'task_id') : null;
+
     if (!process.env.NVIDIA_API_KEY) {
       return res.status(503).json({ error: 'Learning Assistant is not configured.', request_id: req.requestId });
     }
-
-    const hasTaskId = req.body.task_id !== undefined && req.body.task_id !== null;
 
     const userResult = await pool.query(
       `SELECT u.id, u.industry_track_id, t.name AS track_name
@@ -40,7 +43,6 @@ async function sendMessage(req, res, next) {
 
     let task = null;
     if (hasTaskId) {
-      const taskId = positiveIntegerParam(req.body.task_id, 'task_id');
       if (!user.industry_track_id) {
         return res.status(400).json({ error: 'Select an industry track before using the assistant.', request_id: req.requestId });
       }

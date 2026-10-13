@@ -1,11 +1,11 @@
 // Per-use-case model routing. Locked from the live model evaluation
-// (see the eval findings): the strong reasoning model is reserved for
-// analysis, where quality matters and calls are infrequent; the fast model
-// serves the latency-sensitive conversational surfaces. Every choice is
-// env-overridable and falls back to a proven model on failure.
+// (see the eval findings): the strong reasoning model serves both analysis and
+// the conversational surfaces, having matched the smaller model on latency while
+// clearly winning on quality. Every choice is env-overridable and falls back to
+// a proven model on failure.
 const MODELS = {
   analysis: process.env.NVIDIA_MODEL_ANALYSIS || 'nvidia/nemotron-3-super-120b-a12b',
-  chat: process.env.NVIDIA_MODEL_CHAT || 'nvidia/nemotron-3.5-lightning-30b-a3b',
+  chat: process.env.NVIDIA_MODEL_CHAT || 'nvidia/nemotron-3-super-120b-a12b',
   fallback: process.env.NVIDIA_MODEL_FALLBACK || process.env.NVIDIA_MODEL || 'openai/gpt-oss-20b',
 };
 
