@@ -36,17 +36,6 @@ FROM lab_lessons l, (VALUES
 ) AS v(heading, body, sort_order)
 WHERE l.code = 'ai-fundamentals';
 
-DELETE FROM lab_activities WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'ai-fundamentals');
-INSERT INTO lab_activities (lesson_id, kind, title, instructions, sort_order)
-SELECT l.id, v.kind, v.title, v.instructions, v.sort_order
-FROM lab_lessons l, (VALUES
-  ('reflection', 'Spot the fluent-but-wrong answer',
-   'Ask an AI a question with a definite answer (e.g. a date or a statistic). Note how confidently it answers, then verify it against a primary source. Write one sentence on what surprised you.', 1),
-  ('guided_practice', 'Match tasks to the tool',
-   'List three tasks from your work. For each, decide whether "draft, summarise, rephrase" or "verify against a source" is the right approach, and say why.', 2)
-) AS v(kind, title, instructions, sort_order)
-WHERE l.code = 'ai-fundamentals';
-
 DELETE FROM lab_questions WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'ai-fundamentals');
 INSERT INTO lab_questions (lesson_id, prompt, options, correct_index, explanation, sort_order)
 SELECT l.id, v.prompt, v.options::jsonb, v.correct_index, v.explanation, v.sort_order
@@ -79,17 +68,6 @@ FROM lab_lessons l, (VALUES
 ) AS v(heading, body, sort_order)
 WHERE l.code = 'fact-checking-with-ai';
 
-DELETE FROM lab_activities WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'fact-checking-with-ai');
-INSERT INTO lab_activities (lesson_id, kind, title, instructions, sort_order)
-SELECT l.id, v.kind, v.title, v.instructions, v.sort_order
-FROM lab_lessons l, (VALUES
-  ('guided_practice', 'Break a claim into parts',
-   'Take a short AI-written paragraph. Split it into individual checkable claims and label each confirmed, refuted or unverified. Bring one to the Workshop to discuss.', 1),
-  ('artifact', 'Source log',
-   'For one claim, record the exact source you checked, its date, and whether it supports the claim in the same context.', 2)
-) AS v(kind, title, instructions, sort_order)
-WHERE l.code = 'fact-checking-with-ai';
-
 DELETE FROM lab_questions WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'fact-checking-with-ai');
 INSERT INTO lab_questions (lesson_id, prompt, options, correct_index, explanation, sort_order)
 SELECT l.id, v.prompt, v.options::jsonb, v.correct_index, v.explanation, v.sort_order
@@ -117,17 +95,6 @@ FROM lab_lessons l, (VALUES
   ('Fairness needs a human decision',
    'A model can score, rank and suggest, but the decision to act on it belongs to an accountable person. Document who decides, on what evidence, and how you would detect harm.', 3)
 ) AS v(heading, body, sort_order)
-WHERE l.code = 'ai-ethics-and-bias';
-
-DELETE FROM lab_activities WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'ai-ethics-and-bias');
-INSERT INTO lab_activities (lesson_id, kind, title, instructions, sort_order)
-SELECT l.id, v.kind, v.title, v.instructions, v.sort_order
-FROM lab_lessons l, (VALUES
-  ('reflection', 'Affected-people map',
-   'For an AI use case in your field, list who could be affected and how. Identify one group who might be disadvantaged and one check that would catch it.', 1),
-  ('guided_practice', 'Data-handling decision',
-   'Given a document, decide whether it is safe to send to (a) an approved tool, (b) an unapproved free tool. Justify with the confidentiality and privacy rules you might be bound by.', 2)
-) AS v(kind, title, instructions, sort_order)
 WHERE l.code = 'ai-ethics-and-bias';
 
 DELETE FROM lab_questions WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'ai-ethics-and-bias');
