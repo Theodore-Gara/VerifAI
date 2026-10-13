@@ -92,14 +92,30 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
   @override
   void initState() {
     super.initState();
+    // The page indicator is driven by the controller's real position, not by
+    // onPageChanged alone. With NeverScrollableScrollPhysics the page
+    // animation can settle without onPageChanged firing, which used to leave
+    // the state stuck on page 1 and made Next unable to advance (bug).
+    _pageController.addListener(_syncPageIndex);
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 550),
     )..forward();
   }
 
+  void _syncPageIndex() {
+    if (!_pageController.hasClients) return;
+    final page = _pageController.page;
+    if (page == null) return;
+    final rounded = page.round();
+    if (rounded != _page && mounted) {
+      setState(() => _page = rounded);
+    }
+  }
+
   @override
   void dispose() {
+    _pageController.removeListener(_syncPageIndex);
     _pageController.dispose();
     _animationController.dispose();
     super.dispose();
@@ -119,23 +135,30 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
   }
 
   void _next() {
-    if (_page == _steps.length - 1) {
+    if (_saving) return;
+    if (!_pageController.hasClients) return;
+    if (_page >= _steps.length - 1) {
       _finish();
       return;
     }
-    _pageController.nextPage(
+    // Always target the real position + 1 so repeated taps mid-animation
+    // cannot wedge the pager on the same page.
+    _pageController.animateToPage(
+      _page + 1,
       duration: const Duration(milliseconds: 330),
       curve: Curves.easeOutCubic,
     );
   }
 
   void _previous() {
-    if (_page > 0) {
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeOutCubic,
-      );
-    }
+    if (_saving) return;
+    if (!_pageController.hasClients) return;
+    if (_page <= 0) return;
+    _pageController.animateToPage(
+      _page - 1,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
@@ -146,35 +169,34 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(22, 16, 18, 8),
-              child: Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.accentGreen, AppColors.accentCyan],
-                      ),
-                      borderRadius: BorderRadius.circular(13),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: SizedBox(
+                height: 40,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('${_page + 1} of ${_steps.length}',
+                          style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w700)),
                     ),
-                    child: const Icon(Icons.verified_rounded,
-                        color: AppColors.primaryNavy, size: 23),
-                  ),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text('VerifAI',
+                    const Text('VerifAI',
                         style: TextStyle(
                           color: AppColors.primaryNavy,
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
                         )),
-                  ),
-                  TextButton(
-                    onPressed: _saving ? null : () => _finish(),
-                    child: const Text('Skip tutorial'),
-                  ),
-                ],
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _saving ? null : () => _finish(),
+                        child: const Text('Skip tutorial'),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             Padding(
@@ -225,39 +247,52 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Center(
-                              child: Container(
-                                width: 206,
-                                height: 206,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(colors: [
-                                    item.accent.withValues(alpha: .22),
-                                    item.accent.withValues(alpha: .035)
-                                  ]),
-                                ),
-                                child: Center(
-                                  child: Container(
-                                    width: 142,
-                                    height: 142,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(42),
-                                      boxShadow: [
-                                        BoxShadow(
-                                            color: item.accent
-                                                .withValues(alpha: .17),
-                                            blurRadius: 32,
-                                            offset: const Offset(0, 12))
-                                      ],
-                                      border: Border.all(
-                                          color: item.accent
-                                              .withValues(alpha: .22)),
+                              child: index == 0
+                                  ? Image.asset(
+                                      'assets/images/logoalldarktrans.png',
+                                      height: 140,
+                                      errorBuilder:
+                                          (context, error, stackTrace) => Icon(
+                                        item.icon,
+                                        size: 96,
+                                        color: AppColors.primaryNavy,
+                                      ),
+                                    )
+                                  : Container(
+                                      width: 206,
+                                      height: 206,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: RadialGradient(colors: [
+                                          item.accent.withValues(alpha: .22),
+                                          item.accent.withValues(alpha: .035)
+                                        ]),
+                                      ),
+                                      child: Center(
+                                        child: Container(
+                                          width: 142,
+                                          height: 142,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(42),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                  color: item.accent
+                                                      .withValues(alpha: .17),
+                                                  blurRadius: 32,
+                                                  offset: const Offset(0, 12))
+                                            ],
+                                            border: Border.all(
+                                                color: item.accent
+                                                    .withValues(alpha: .22)),
+                                          ),
+                                          child: Icon(item.icon,
+                                              size: 70,
+                                              color: AppColors.primaryNavy),
+                                        ),
+                                      ),
                                     ),
-                                    child: Icon(item.icon,
-                                        size: 70, color: AppColors.primaryNavy),
-                                  ),
-                                ),
-                              ),
                             ),
                             const SizedBox(height: 24),
                             Text(item.eyebrow,
@@ -322,27 +357,23 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
               decoration: const BoxDecoration(
                   color: Colors.white,
                   border: Border(top: BorderSide(color: AppColors.border))),
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (_page > 0)
-                    OutlinedButton.icon(
-                      onPressed: _saving ? null : _previous,
-                      icon: const Icon(Icons.arrow_back_rounded, size: 17),
-                      label: const Text('Back'),
-                      style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primaryNavy,
-                          side: const BorderSide(color: AppColors.border),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 15, vertical: 15)),
-                    )
-                  else
-                    Text('${_page + 1} of ${_steps.length}',
-                        style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w700)),
-                  const SizedBox(width: 12),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        onPressed: _saving ? null : _previous,
+                        style: TextButton.styleFrom(
+                            foregroundColor: AppColors.textSecondary,
+                            padding: const EdgeInsets.symmetric(horizontal: 0),
+                            minimumSize: const Size(0, 44)),
+                        child: const Text('Back'),
+                      ),
+                    ),
                   SizedBox(
-                    width: 176,
                     height: 50,
                     child: ElevatedButton.icon(
                       onPressed: _saving ? null : _next,

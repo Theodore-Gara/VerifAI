@@ -111,130 +111,17 @@ class ProgressScreen extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // Duo Metric Bento Row
+          // Duo metric quiet stat tiles
           Row(
             children: [
-              // Streak Card
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(
-                      color: AppColors.border,
-                    ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: AppColors.shadow,
-                        blurRadius: 12,
-                        offset: Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: AppColors.background,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.local_fire_department_rounded,
-                          color: AppColors.primaryNavy,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${data.streakDays} Days',
-                              style:
-                                  AppTypography.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.4,
-                              ),
-                            ),
-                            Text(
-                              'Streak Active',
-                              style:
-                                  AppTypography.textTheme.bodySmall?.copyWith(
-                                color: AppColors.textSecondary,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              _statTile(
+                value: '${data.streakDays} Days',
+                label: 'Streak Active',
               ),
               const SizedBox(width: AppSpacing.md),
-
-              // Completed Tasks Card
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(
-                        color: AppColors.accentGreen.withValues(alpha: 0.3)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.accentGreen.withValues(alpha: 0.08),
-                        blurRadius: 12,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: AppColors.accentLight,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.task_alt_rounded,
-                          color: AppColors.accentGreen,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${data.completedTasks}',
-                              style:
-                                  AppTypography.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.4,
-                              ),
-                            ),
-                            Text(
-                              'Completed',
-                              style:
-                                  AppTypography.textTheme.labelSmall?.copyWith(
-                                color: AppColors.accentGreen,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              _statTile(
+                value: '${data.completedTasks} Tasks',
+                label: 'Completed',
               ),
             ],
           ),
@@ -291,13 +178,13 @@ class ProgressScreen extends ConsumerWidget {
   Widget _leaderboardCard(WidgetRef ref, AsyncValue<LeaderboardData> async) {
     final rank = async.valueOrNull?.me.rank;
     final subtitle = (rank != null && rank > 0)
-        ? 'You\'re ranked #$rank. Open the scoreboard.'
+        ? 'You\'re ranked $rank. Open the scoreboard.'
         : 'Check how you rank against your peers.';
     return Material(
       color: AppColors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.card),
-        side: BorderSide(color: AppColors.accentGreen.withValues(alpha: 0.35)),
+        side: const BorderSide(color: AppColors.border),
       ),
       elevation: 1,
       shadowColor: AppColors.shadow,
@@ -311,11 +198,11 @@ class ProgressScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: const BoxDecoration(
-                  color: AppColors.accentLight,
+                  color: Color(0xFFF1F5F9),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.emoji_events_rounded,
-                    color: AppColors.accentGreen, size: 22),
+                    color: AppColors.primaryNavy, size: 22),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
@@ -388,7 +275,7 @@ class ProgressScreen extends ConsumerWidget {
             child: Column(
               children: [
                 Text(
-                  '$xp',
+                  xp == 0 ? '' : '$xp',
                   style: AppTypography.textTheme.labelSmall?.copyWith(
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w700,
@@ -400,11 +287,11 @@ class ProgressScreen extends ConsumerWidget {
                   width: 16,
                   height: height,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.accentGreen, AppColors.accentCyan],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: ratio > 0
+                        ? (entry.value.key == today
+                            ? AppColors.accentGreen
+                            : AppColors.primaryNavy)
+                        : AppColors.border.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(AppRadius.pill),
                   ),
                 ),
@@ -421,6 +308,55 @@ class ProgressScreen extends ConsumerWidget {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  Widget _statTile({
+    required String value,
+    required String label,
+    bool accent = false,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          border: Border.all(
+            color: accent
+                ? AppColors.accentGreen.withValues(alpha: 0.4)
+                : AppColors.border,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: AppTypography.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.4,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: AppTypography.textTheme.labelSmall?.copyWith(
+                color: accent ? AppColors.accentGreen : AppColors.textSecondary,
+                fontWeight: FontWeight.w700,
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

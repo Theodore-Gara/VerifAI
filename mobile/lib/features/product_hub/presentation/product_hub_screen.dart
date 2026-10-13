@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_tts/flutter_tts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:verifai/core/theme/app_colors.dart';
+import 'package:verifai/core/theme/app_radius.dart';
+import 'package:verifai/core/theme/app_spacing.dart';
+import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
+import 'package:verifai/shared/widgets/app_feedback_banner.dart';
+import 'package:verifai/shared/widgets/pref_row.dart';
+import 'package:verifai/shared/widgets/sample_data_banner.dart';
 
 /// Polished frontend-first product areas. These screens are safe demo surfaces:
 /// they do not claim to have verified real documents or submitted real donations.
@@ -18,13 +22,23 @@ class ProductHubScreen extends ConsumerStatefulWidget {
 
 class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
   final _message = TextEditingController();
-  final _documentName = TextEditingController();
+  final _documentName =
+      TextEditingController(text: 'quarterly_financial_report_v2.pdf');
+  final _claimController = TextEditingController(
+      text:
+          '73% of enterprises reduced operating risk using LLM verification gates.');
+  final _aiResponseController = TextEditingController(
+      text:
+          'Based on Section 4.2, the board approved a 15% dividend payout scheduled for Q3 2025.');
+  final _sourceController = TextEditingController(
+      text:
+          'https://sec.gov/edgar/data/0001018724/quarterly-filing-2025-q2.pdf');
   String _industry = 'Software Engineering';
   String _reply = '';
   int _xp = 240;
-  int _selected = -1;
+  int _selected = 0;
+  int _practiceSelected = 0;
   bool _showReport = false;
-  final FlutterTts _tts = FlutterTts();
 
   @override
   void initState() {
@@ -32,9 +46,6 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
     final trackName = ref.read(currentUserProvider).valueOrNull?.trackName;
     if (trackName != null && trackName.isNotEmpty) {
       _industry = _canonicalIndustry(trackName);
-    }
-    if (widget.mode == VerifAiHubMode.lab) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _speakLabWelcome());
     }
   }
 
@@ -47,65 +58,13 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
         _ => 'Software Engineering'
       };
 
-  Future<void> _speakLabWelcome() async {
-    try {
-      final preferences = await SharedPreferences.getInstance();
-      final alreadyWelcomed =
-          preferences.getBool('verifai_ai_lab_voice_welcomed_v1') ?? false;
-      if (alreadyWelcomed || !mounted) return;
-      await _tts.setLanguage('en-ZA');
-      await _tts.setSpeechRate(0.48);
-      await _tts.setPitch(1);
-      await _tts.awaitSpeakCompletion(true);
-      await _tts.speak(
-        'Welcome to the VerifAI A I Lab. Explore the lesson, ask the Lab Coach for help, and remember: AI assists. Humans verify.',
-      );
-      await preferences.setBool('verifai_ai_lab_voice_welcomed_v1', true);
-    } catch (_) {
-      // The written lesson content remains available if device speech is unavailable.
-    }
-  }
-
-  Future<void> _replayLabWelcome() async {
-    try {
-      await _tts.setLanguage('en-ZA');
-      await _tts.setSpeechRate(0.48);
-      await _tts.speak(
-        'Welcome to the VerifAI A I Lab. Explore the lesson, ask the Lab Coach for help, and remember: AI assists. Humans verify.',
-      );
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Speech is unavailable on this device.')),
-        );
-      }
-    }
-  }
-
-  Future<void> _replayAssistantWelcome() async {
-    try {
-      await _tts.setLanguage('en-ZA');
-      await _tts.setSpeechRate(0.47);
-      await _tts.setPitch(1);
-      await _tts.speak(
-        'Hi there, welcome to VerifAI. Bring me a claim, an AI answer, or a tricky idea. I will help you reason through it. AI assists. Humans verify.',
-      );
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Speech is unavailable on this device.')),
-        );
-      }
-    }
-  }
-
   @override
   void dispose() {
     _message.dispose();
     _documentName.dispose();
-    _tts.stop();
+    _claimController.dispose();
+    _aiResponseController.dispose();
+    _sourceController.dispose();
     super.dispose();
   }
 
@@ -116,86 +75,62 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
+        elevation: 0,
         surfaceTintColor: Colors.transparent,
-        title: Text(details.title,
-            style: const TextStyle(
-                fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+        title: Text(
+          details.title,
+          style: AppTypography.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: AppColors.primaryNavy,
+            letterSpacing: -0.4,
+          ),
+        ),
       ),
       body: SafeArea(
-          child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-              children: [
-            _hero(
-                details,
-                widget.mode == VerifAiHubMode.practice
-                    ? 'Explore realistic scenarios across $_industry.'
-                    : null),
-            const SizedBox(height: 22),
-            if (widget.mode == VerifAiHubMode.assistant) _assistant(),
-            if (widget.mode == VerifAiHubMode.verify) _verification(),
-            if (widget.mode == VerifAiHubMode.lab) ...[
-              _lab(),
-              const SizedBox(height: 2),
-              _labCoach()
-            ],
-            if (widget.mode == VerifAiHubMode.practice) _practice(),
-            if (widget.mode == VerifAiHubMode.rewards) _rewards(),
-            if (widget.mode == VerifAiHubMode.history) _history(),
-          ])),
+          child: FeedbackOverlay(
+        child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+            children: [
+              _heroText(details),
+              const SizedBox(height: 20),
+              if (widget.mode == VerifAiHubMode.assistant) _assistant(),
+              if (widget.mode == VerifAiHubMode.verify) _verification(),
+              if (widget.mode == VerifAiHubMode.lab) _lab(),
+              if (widget.mode == VerifAiHubMode.practice) _practice(),
+              if (widget.mode == VerifAiHubMode.rewards) _rewards(),
+              if (widget.mode == VerifAiHubMode.history) _history(),
+            ]),
+      )),
     );
   }
 
-  Widget _hero(_HubDetails d, [String? subtitle]) => Container(
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-            gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppColors.primaryNavy, Color(0xFF123A43)]),
-            borderRadius: BorderRadius.circular(26),
-            boxShadow: [
-              BoxShadow(
-                  color: AppColors.primaryNavy.withValues(alpha: .15),
-                  blurRadius: 24,
-                  offset: const Offset(0, 10))
-            ]),
-        child: Stack(children: [
-          Positioned(
-              right: -15,
-              top: -20,
-              child: Icon(d.icon,
-                  size: 130, color: Colors.white.withValues(alpha: .055))),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-                decoration: BoxDecoration(
-                    color: AppColors.accentGreen.withValues(alpha: .16),
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(
-                        color: AppColors.accentGreen.withValues(alpha: .35))),
-                child: Text(d.kicker.toUpperCase(),
-                    style: const TextStyle(
-                        color: AppColors.accentCyan,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2))),
-            const SizedBox(height: 15),
-            Text(d.headline,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 25,
-                    height: 1.12,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -.5)),
-            const SizedBox(height: 9),
-            Text(subtitle ?? d.subtitle,
-                style: TextStyle(
-                    color: Colors.white.withValues(alpha: .78),
-                    fontSize: 13,
-                    height: 1.5)),
-          ]),
-        ]),
+  // ---------------------------------------------------------------------------
+  // Shared building blocks (text-led, minimal, on-brand)
+  // ---------------------------------------------------------------------------
+
+  Widget _heroText(_HubDetails d) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(d.kicker.toUpperCase(),
+              style: AppTypography.textTheme.labelSmall?.copyWith(
+                color: AppColors.accentGreen,
+                fontWeight: FontWeight.w800,
+                fontSize: 10,
+                letterSpacing: 0.8,
+              )),
+          const SizedBox(height: 6),
+          Text(d.headline,
+              style: const TextStyle(
+                  color: AppColors.primaryNavy,
+                  fontSize: 24,
+                  height: 1.15,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5)),
+          const SizedBox(height: 8),
+          Text(d.subtitle,
+              style: const TextStyle(
+                  color: AppColors.textSecondary, fontSize: 13, height: 1.45)),
+        ],
       );
 
   Widget _sectionTitle(String title, String subtitle) => Padding(
@@ -203,54 +138,59 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(title,
             style: const TextStyle(
-                fontSize: 18,
+                fontSize: 17,
                 fontWeight: FontWeight.w900,
-                color: AppColors.primaryNavy)),
-        const SizedBox(height: 4),
+                color: AppColors.primaryNavy,
+                letterSpacing: -0.2)),
+        const SizedBox(height: 3),
         Text(subtitle,
             style: const TextStyle(
                 color: AppColors.textSecondary, fontSize: 12, height: 1.4))
       ]));
+
   Widget _card({required Widget child}) => Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(17),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadius.card),
           border: Border.all(color: AppColors.border),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
-                color: AppColors.primaryNavy.withValues(alpha: .035),
-                blurRadius: 16,
-                offset: const Offset(0, 5))
+                color: AppColors.shadow, blurRadius: 10, offset: Offset(0, 3))
           ]),
       child: child);
+
   Widget _pill(String text, {Color color = AppColors.accentGreen}) => Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
       decoration: BoxDecoration(
-          color: color.withValues(alpha: .11),
-          borderRadius: BorderRadius.circular(30)),
+          color: color == AppColors.accentGreen
+              ? AppColors.accentLight
+              : color.withValues(alpha: .12),
+          borderRadius: BorderRadius.circular(AppRadius.pill)),
       child: Text(text,
           style: TextStyle(
               color: color == AppColors.warning
                   ? AppColors.goldDark
-                  : AppColors.primaryNavy,
+                  : color == AppColors.accentGreen
+                      ? AppColors.accentGreen
+                      : AppColors.primaryNavy,
               fontWeight: FontWeight.w800,
-              fontSize: 11)));
-  Widget _button(String text, VoidCallback onPressed,
-          {IconData icon = Icons.arrow_forward_rounded}) =>
-      SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-              onPressed: onPressed,
-              icon: Icon(icon, size: 18),
-              label: Text(text),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryNavy,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)))));
+              fontSize: 10.5)));
+
+  Widget _button(String text, VoidCallback onPressed) => ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primaryNavy,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 48),
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg))),
+      child: Text(text,
+          style: const TextStyle(
+              fontWeight: FontWeight.w700, letterSpacing: 0.2)));
 
   Widget _chatBubble({required String text, required bool assistant}) => Align(
         alignment: assistant ? Alignment.centerLeft : Alignment.centerRight,
@@ -261,17 +201,15 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
           decoration: BoxDecoration(
             color: assistant ? Colors.white : AppColors.primaryNavy,
             borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(18),
-              topRight: const Radius.circular(18),
-              bottomLeft: Radius.circular(assistant ? 5 : 18),
-              bottomRight: Radius.circular(assistant ? 18 : 5),
+              topLeft: const Radius.circular(16),
+              topRight: const Radius.circular(16),
+              bottomLeft: Radius.circular(assistant ? 4 : 16),
+              bottomRight: Radius.circular(assistant ? 16 : 4),
             ),
             border: assistant ? Border.all(color: AppColors.border) : null,
-            boxShadow: [
+            boxShadow: const [
               BoxShadow(
-                  color: AppColors.primaryNavy.withValues(alpha: .04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3))
+                  color: AppColors.shadow, blurRadius: 8, offset: Offset(0, 2))
             ],
           ),
           child: Text(text,
@@ -281,6 +219,10 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
                   height: 1.5)),
         ),
       );
+
+  // ---------------------------------------------------------------------------
+  // Assistant mode
+  // ---------------------------------------------------------------------------
 
   void _askAssistant() {
     final prompt = _message.text.trim();
@@ -326,98 +268,104 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
         _card(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Row(children: [
-            Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  Text('VerifAI is here ✨',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                  Text('Curious, careful, evidence-first.',
-                      style: TextStyle(
-                          fontSize: 12, color: AppColors.textSecondary))
-                ]))
-          ]),
-          const SizedBox(height: 16),
+          const Text('VerifAI is here',
+              style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                  color: AppColors.primaryNavy)),
+          const SizedBox(height: 3),
+          const Text('Curious, careful, evidence-first.',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          const SizedBox(height: 14),
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFF0FDF8), Color(0xFFE8F7FF)],
-              ),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                  color: AppColors.accentGreen.withValues(alpha: .2)),
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: AppColors.border),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Hey! 👋 Bring me a claim, an AI answer, or a tricky idea. I’ll help you reason through it, without making the decision for you.',
-                    style: TextStyle(fontSize: 13, height: 1.5),
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Listen to welcome',
-                  onPressed: _replayAssistantWelcome,
-                  icon: const Icon(Icons.volume_up_rounded,
-                      color: AppColors.primaryNavy),
-                ),
-              ],
+            child: const Text(
+              'Bring me a claim, an AI answer, or a tricky idea. I’ll help you reason through it, without making the decision for you.',
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.5,
+                color: AppColors.primaryNavy,
+              ),
             ),
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 16),
           const Text('Quick starters',
-              style: TextStyle(fontWeight: FontWeight.w800)),
-          const SizedBox(height: 9),
+              style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                  color: AppColors.primaryNavy)),
+          const SizedBox(height: 8),
           Wrap(
-              spacing: 7,
-              runSpacing: 7,
-              children: [
-                (
-                  '💡 Give me a hint',
-                  'Give me a hint without revealing the answer'
-                ),
-                ('🔎 Verify a claim', 'How can I verify this claim?'),
-                ('🛡️ Spot risks', 'What risks should I consider?'),
-              ]
-                  .map((item) => ActionChip(
-                      label: Text(item.$1),
-                      onPressed: () => setState(() => _message.text = item.$2),
-                      backgroundColor: Colors.white,
-                      side: const BorderSide(color: AppColors.border)))
-                  .toList()),
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              'Give me a hint without revealing the answer',
+              'How can I verify this claim?',
+              'What risks should I consider?',
+            ]
+                .map(
+                  (prompt) => ActionChip(
+                    label: Text(
+                      prompt,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryNavy,
+                      ),
+                    ),
+                    onPressed: () => setState(() => _message.text = prompt),
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(color: AppColors.border),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
           const SizedBox(height: 14),
           TextField(
-              controller: _message,
-              maxLines: 2,
-              decoration: InputDecoration(
-                  hintText: 'Ask your question…',
-                  filled: true,
-                  fillColor: AppColors.background,
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none),
-                  prefixIcon: const Icon(Icons.chat_bubble_outline_rounded))),
-          const SizedBox(height: 10),
-          _button('Send to VerifAI', _askAssistant, icon: Icons.send_rounded),
+            controller: _message,
+            maxLines: 2,
+            style: const TextStyle(fontSize: 13, color: AppColors.primaryNavy),
+            decoration: InputDecoration(
+              hintText: 'Ask your question…',
+              hintStyle: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+              ),
+              filled: true,
+              fillColor: AppColors.background,
+              contentPadding: const EdgeInsets.all(12),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                borderSide:
+                    const BorderSide(color: AppColors.primaryNavy, width: 1.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _button('Send to VerifAI', _askAssistant),
         ])),
         if (_reply.isNotEmpty)
           _card(
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                const Row(children: [
-                  Icon(Icons.auto_awesome_rounded,
-                      color: AppColors.accentGreen),
-                  SizedBox(width: 8),
-                  Text('Your conversation',
-                      style: TextStyle(fontWeight: FontWeight.w900))
-                ]),
+                const Text('Your conversation',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14,
+                        color: AppColors.primaryNavy)),
                 const SizedBox(height: 12),
                 _chatBubble(
                     text: _message.text.trim().isEmpty
@@ -425,318 +373,500 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
                         : _message.text.trim(),
                     assistant: false),
                 _chatBubble(text: _reply, assistant: true),
-                const Row(children: [
-                  Icon(Icons.info_outline_rounded,
-                      size: 15, color: AppColors.textSecondary),
-                  SizedBox(width: 6),
-                  Expanded(
-                      child: Text(
-                          'Demo guidance only: this chat is not yet connected to the live GPT service.',
-                          style: TextStyle(
-                              fontSize: 11, color: AppColors.textSecondary)))
-                ]),
+                const SizedBox(height: 4),
+                const SampleDataBanner(
+                    message:
+                        'Demo guidance only: this chat is not yet connected to the live GPT service.'),
               ])),
       ]);
+
+  // ---------------------------------------------------------------------------
+  // Verification Studio mode
+  // ---------------------------------------------------------------------------
 
   Widget _verification() =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _sectionTitle('Choose what to verify',
-            'A clear report should show evidence, uncertainty and what needs a human check.'),
-        ...[
-          (
-            'Document',
-            'Review a PDF or report for statements that need checking.',
-            Icons.picture_as_pdf_rounded
-          ),
-          (
-            'Claim',
-            'Break a claim into verifiable parts and identify evidence needed.',
-            Icons.fact_check_rounded
-          ),
-          (
-            'AI response',
-            'Inspect an AI answer for unsupported claims, gaps and risky advice.',
-            Icons.psychology_alt_rounded
-          ),
-          (
-            'Source',
-            'Assess source authority, date, context and relevance.',
-            Icons.travel_explore_rounded
-          )
-        ].map((v) => _card(
-            child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                        color: AppColors.accentGreen.withValues(alpha: .12),
-                        borderRadius: BorderRadius.circular(14)),
-                    child: Icon(v.$3, color: AppColors.primaryNavy)),
-                title: Text(v.$1,
-                    style: const TextStyle(fontWeight: FontWeight.w900)),
-                subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 5),
-                    child: Text(v.$2,
-                        style: const TextStyle(fontSize: 12, height: 1.4))),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => setState(() => _selected = v.$1 == 'Document'
-                    ? 0
-                    : v.$1 == 'Claim'
-                        ? 1
-                        : v.$1 == 'AI response'
-                            ? 2
-                            : 3)))),
-        if (_selected >= 0)
-          _card(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                Text(
-                    [
-                      'Document assessment',
-                      'Claim check',
-                      'AI response review',
-                      'Source assessment'
-                    ][_selected],
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w900, fontSize: 16)),
-                const SizedBox(height: 8),
-                if (_selected == 0)
-                  TextField(
-                      controller: _documentName,
-                      decoration: const InputDecoration(
-                          labelText: 'Document name',
-                          hintText: 'e.g. quarterly-report.pdf',
-                          border: OutlineInputBorder())),
-                const SizedBox(height: 8),
-                const Text(
-                    'Frontend demo: analysis must be connected to the verification backend before results can be trusted.',
-                    style: TextStyle(
-                        height: 1.45,
-                        color: AppColors.textSecondary,
-                        fontSize: 12)),
-                const SizedBox(height: 12),
-                _button('Preview report format',
-                    () => setState(() => _showReport = true),
-                    icon: Icons.description_rounded)
-              ])),
-        if (_showReport)
-          _card(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                const Row(children: [
-                  Icon(Icons.assignment_turned_in_rounded,
-                      color: AppColors.accentGreen),
-                  SizedBox(width: 8),
-                  Text('Verification report preview',
-                      style: TextStyle(fontWeight: FontWeight.w900))
-                ]),
-                const SizedBox(height: 12),
-                _reportLine('Items requiring review', '3', AppColors.warning),
-                _reportLine('Sources independently confirmed',
-                    'Not yet checked', AppColors.info),
-                _reportLine('Overall status', 'Human review required',
-                    AppColors.warning),
-                const SizedBox(height: 8),
-                const Text(
-                    'No document has been analysed. This is a sample report layout, not a real assessment.',
-                    style:
-                        TextStyle(fontSize: 11, color: AppColors.textSecondary))
-              ]))
+            'Select an artifact type to configure verification parameters and run evidence checks.'),
+        _artifactRows(),
+        const SizedBox(height: 14),
+        _buildVerificationWorkspace(),
+        if (_showReport) ...[
+          const SizedBox(height: 14),
+          _buildVerificationReport(),
+        ],
       ]);
-  Widget _reportLine(String a, String b, Color c) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(children: [
-        Expanded(child: Text(a, style: const TextStyle(fontSize: 12))),
-        Text(b,
-            style:
-                TextStyle(fontWeight: FontWeight.w800, color: c, fontSize: 12))
-      ]));
+
+  List<({String title, String desc})> get _artifactItems => [
+        (
+          title: 'Document',
+          desc: 'Audit PDF, doc, or policy text for unsupported assertions',
+        ),
+        (
+          title: 'Claim',
+          desc: 'Decompose assertions into checkable factual units',
+        ),
+        (
+          title: 'AI Response',
+          desc: 'Inspect model output for hallucinations & bias',
+        ),
+        (
+          title: 'Source',
+          desc: 'Verify domain authority, date, and citations',
+        ),
+      ];
+
+  Widget _artifactRows() {
+    final items = _artifactItems;
+    return Column(
+      children: [
+        for (var i = 0; i < items.length; i++) ...[
+          Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AppRadius.card),
+              onTap: () => setState(() {
+                _selected = i;
+                _showReport = false;
+              }),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  border: Border.all(
+                    color: _selected == i
+                        ? AppColors.primaryNavy
+                        : AppColors.border,
+                    width: _selected == i ? 1.5 : 1.0,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(items[i].title,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14,
+                                  color: AppColors.primaryNavy)),
+                          const SizedBox(height: 2),
+                          Text(items[i].desc,
+                              style: const TextStyle(
+                                  fontSize: 11.5,
+                                  height: 1.35,
+                                  color: AppColors.textSecondary)),
+                        ],
+                      ),
+                    ),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: 18,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: _selected == i
+                            ? AppColors.primaryNavy
+                            : Colors.transparent,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _selected == i
+                              ? AppColors.primaryNavy
+                              : AppColors.border,
+                          width: _selected == i ? 2.0 : 1.5,
+                        ),
+                      ),
+                      child: _selected == i
+                          ? const Icon(Icons.check_rounded,
+                              size: 12, color: Colors.white)
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildVerificationWorkspace() {
+    final meta = [
+      (
+        badge: 'DOCUMENT AUDIT',
+        title: 'Document Assessment Parameters',
+        hint:
+            'Review document contents, citation density, and unsupported factual assertions.',
+        label: 'Document name or reference',
+        controller: _documentName,
+        maxLines: 1,
+        placeholder: 'e.g. quarterly_financial_report_v2.pdf',
+        extraHint:
+            'PDF / DOCX document attached (1.4 MB) • 8 pages indexed for audit.',
+      ),
+      (
+        badge: 'CLAIM DECOMPOSITION',
+        title: 'Claim Decomposition & Check',
+        hint:
+            'Isolate verifiable claims and test against authoritative ground truth sources.',
+        label: 'Proposition or claim statement',
+        controller: _claimController,
+        maxLines: 2,
+        placeholder:
+            'e.g. 73% of enterprises reduced operating risk using LLM verification gates.',
+        extraHint:
+            'Breakdown: 1 quantitative metric, 1 causal proposition to verify.',
+      ),
+      (
+        badge: 'AI OUTPUT AUDIT',
+        title: 'AI Response Review & Bias Scan',
+        hint:
+            'Inspect generated text for fabricated facts, hallucinations, and confidence gaps.',
+        label: 'AI-generated response text',
+        controller: _aiResponseController,
+        maxLines: 3,
+        placeholder: 'Paste the model output to audit…',
+        extraHint:
+            'Audit scope: hallucination detection, hallucinated references, policy safety.',
+      ),
+      (
+        badge: 'SOURCE CREDIBILITY',
+        title: 'Source Authority & Freshness Check',
+        hint:
+            'Evaluate publisher credibility, publication date, peer-review status, and primary citations.',
+        label: 'Source URL, DOI, or publication citation',
+        controller: _sourceController,
+        maxLines: 2,
+        placeholder: 'https://… or journal citation',
+        extraHint:
+            'Checks: domain reputation, date freshness, author credentials, primary vs secondary.',
+      ),
+    ][_selected.clamp(0, 3)];
+
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            meta.title,
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+              color: AppColors.primaryNavy,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            meta.hint,
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.4,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            meta.label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+              color: AppColors.primaryNavy,
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: meta.controller,
+            maxLines: meta.maxLines,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppColors.primaryNavy,
+            ),
+            decoration: InputDecoration(
+              hintText: meta.placeholder,
+              hintStyle: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+              ),
+              filled: true,
+              fillColor: AppColors.background,
+              contentPadding: const EdgeInsets.all(12),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                borderSide:
+                    const BorderSide(color: AppColors.primaryNavy, width: 1.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: const BoxDecoration(
+                    color: AppColors.textSecondary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    meta.extraHint,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          _button(
+            'Preview verification report',
+            () => setState(() => _showReport = true),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVerificationReport() {
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Verification Report Preview',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 15,
+              color: AppColors.primaryNavy,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Center(child: _HubNoticePill('HUMAN REVIEW REQUIRED')),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child:
+                      _microMetric('Items to Review', '3', AppColors.goldDark),
+                ),
+                Container(width: 1, height: 28, color: AppColors.border),
+                Expanded(
+                  child: _microMetric(
+                      'Sources Verified', '1 / 4', AppColors.primaryNavy),
+                ),
+                Container(width: 1, height: 28, color: AppColors.border),
+                Expanded(
+                  child: _microMetric(
+                      'Certainty Score', '68%', AppColors.goldDark),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          _reportTelemetryRow(
+            'Factual Claims',
+            '4 claims extracted • 1 unsupported metric detected',
+            AppColors.warning,
+          ),
+          _reportTelemetryRow(
+            'Source Provenance',
+            'Primary filing verified • Secondary citation expired',
+            AppColors.warning,
+          ),
+          _reportTelemetryRow(
+            'Temporal Freshness',
+            'Data timestamped Q2 2023 used for Q3 2025 projection',
+            AppColors.info,
+          ),
+          _reportTelemetryRow(
+            'Human-in-the-Loop Gate',
+            'Requires domain expert sign-off before downstream usage',
+            AppColors.accentGreen,
+          ),
+          const SizedBox(height: 12),
+          const SampleDataBanner(
+              message:
+                  'Sample report layout. Connect backend verification pipeline to execute live LLM inference & automated checks.'),
+        ],
+      ),
+    );
+  }
+
+  Widget _microMetric(String label, String value, Color valueColor) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+            color: valueColor,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _reportTelemetryRow(String title, String detail, Color statusColor) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 9),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 5),
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: statusColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryNavy,
+                  ),
+                ),
+                Text(
+                  detail,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // AI Lab mode — full-screen lesson pages (no bottom sheet)
+  // ---------------------------------------------------------------------------
 
   Widget _lab() =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _sectionTitle('Small lessons. Real skills.',
             'Learn, try a scenario, then check your understanding.'),
-        ...[
-          (
-            'AI fundamentals',
-            'How language models generate answers.',
-            '8 min',
-            Icons.memory_rounded
-          ),
-          (
-            'Fact-checking with AI',
-            'Trace claims back to trustworthy sources.',
-            '6 min',
-            Icons.manage_search_rounded
-          ),
-          (
-            'AI ethics & bias',
-            'Recognise bias, privacy and fairness risks.',
-            '7 min',
-            Icons.balance_rounded
-          ),
-          (
-            'Research & productivity',
-            'Use AI to organise work without outsourcing judgement.',
-            '5 min',
-            Icons.bolt_rounded
-          ),
-          (
-            'Engineering & machine learning',
-            'Understand testing, data and model limitations.',
-            '10 min',
-            Icons.code_rounded
-          )
-        ].map((l) => _card(
-                child: Column(children: [
-              Row(children: [
-                Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                        color: AppColors.accentGreen.withValues(alpha: .12),
-                        borderRadius: BorderRadius.circular(13)),
-                    child: Icon(l.$4, color: AppColors.primaryNavy)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                      Text(l.$1,
-                          style: const TextStyle(fontWeight: FontWeight.w900)),
-                      const SizedBox(height: 4),
-                      Text(l.$2,
-                          style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                              height: 1.35))
-                    ])),
-                _pill(l.$3, color: AppColors.accentGreen)
-              ]),
-              const SizedBox(height: 14),
-              _button('Start mini-workshop', () => _showLesson(l.$1, l.$2),
-                  icon: Icons.play_arrow_rounded)
-            ]))),
+        ..._labLessons.asMap().entries.map(
+              (e) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: PrefRow(
+                  title: e.value.title,
+                  subtitle: e.value.summary,
+                  trailing: e.value.duration,
+                  trailingSubtle: true,
+                  showChevron: true,
+                  onTap: () => _openLesson(e.value),
+                ),
+              ),
+            ),
       ]);
-  Widget _labCoach() => _card(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                      colors: [AppColors.accentGreen, AppColors.accentCyan]),
-                  borderRadius: BorderRadius.circular(15)),
-              child: const Icon(Icons.forum_rounded,
-                  color: AppColors.primaryNavy, size: 25)),
-          const SizedBox(width: 11),
-          const Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                Text('Ask the Lab Coach',
-                    style:
-                        TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                Text('Your workshop sidekick',
-                    style:
-                        TextStyle(color: AppColors.textSecondary, fontSize: 12))
-              ])),
-          IconButton(
-              tooltip: 'Replay AI welcome',
-              onPressed: _replayLabWelcome,
-              icon: const Icon(Icons.volume_up_rounded,
-                  color: AppColors.primaryNavy))
-        ]),
-        const SizedBox(height: 12),
-        _chatBubble(
-            text:
-                'Stuck on a concept? 🧠 Ask me to explain it simply, give you a hint, or help you check your reasoning.',
-            assistant: true),
-        TextField(
-            controller: _message,
-            maxLines: 2,
-            decoration: InputDecoration(
-                hintText: 'Ask about this lesson…',
-                filled: true,
-                fillColor: AppColors.background,
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    borderSide: BorderSide.none))),
-        const SizedBox(height: 10),
-        _button('Ask the Lab Coach', _askAssistant,
-            icon: Icons.auto_awesome_rounded),
-        if (_reply.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          if (_message.text.trim().isNotEmpty)
-            _chatBubble(text: _message.text.trim(), assistant: false),
-          _chatBubble(text: _reply, assistant: true),
-          const Text(
-              'Workshop assistant preview: these guided replies are local demo responses. Live GPT conversations require the secure backend integration.',
-              style: TextStyle(
-                  fontSize: 11, color: AppColors.textSecondary, height: 1.4))
-        ],
-      ]));
 
-  void _showLesson(String title, String description) => showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-          padding: const EdgeInsets.fromLTRB(22, 22, 22, 32),
-          decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-          child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                    width: 42,
-                    height: 4,
-                    decoration: BoxDecoration(
-                        color: AppColors.border,
-                        borderRadius: BorderRadius.circular(4))),
-                const SizedBox(height: 20),
-                _pill('AI LAB • INTERACTIVE LESSON'),
-                const SizedBox(height: 12),
-                Text(title,
-                    style: const TextStyle(
-                        fontSize: 23,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.primaryNavy)),
-                const SizedBox(height: 10),
-                Text(description, style: const TextStyle(height: 1.5)),
-                const SizedBox(height: 14),
-                const Text(
-                    'Quick check: What should you do before relying on an AI-generated claim?',
-                    style: TextStyle(fontWeight: FontWeight.w800)),
-                const SizedBox(height: 8),
-                ...[
-                  'Check an authoritative source and supporting evidence',
-                  'Assume confident wording means it is correct',
-                  'Share it immediately'
-                ].map((a) => Padding(
-                    padding: const EdgeInsets.only(bottom: 7),
-                    child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text(a.startsWith('Check')
-                                  ? 'Correct principle! Evidence matters more than confidence.'
-                                  : 'Not quite. AI output still needs independent checking.'),
-                              backgroundColor: a.startsWith('Check')
-                                  ? AppColors.accentGreen
-                                  : AppColors.warning));
-                          if (a.startsWith('Check')) setState(() => _xp += 10);
-                        },
-                        child: Align(
-                            alignment: Alignment.centerLeft, child: Text(a)))))
-              ])));
+  static const _labLessons = <_Lesson>[
+    _Lesson(
+      title: 'AI fundamentals',
+      summary: 'How language models generate answers.',
+      body:
+          'Language models predict likely next words based on patterns in training data. That is why fluent output can still be wrong: the model optimises for plausibility, not truth. Treat every specific claim in the output as something that needs checking against an independent source.',
+      duration: '8 min',
+    ),
+    _Lesson(
+      title: 'Fact-checking with AI',
+      summary: 'Trace claims back to trustworthy sources.',
+      body:
+          'Break the AI output into individual factual claims. For each claim, find an authoritative primary source and confirm it supports the same wording, time period, and context. Label anything you cannot confirm as unverified instead of guessing.',
+      duration: '6 min',
+    ),
+    _Lesson(
+      title: 'AI ethics & bias',
+      summary: 'Recognise bias, privacy and fairness risks.',
+      body:
+          'Bias enters through unrepresentative data, proxy variables and historical patterns. Ask who could be harmed, whether groups are represented in the data, and whether a decision has a disparate impact. Never paste personal, confidential, or regulated data into an unapproved AI tool.',
+      duration: '7 min',
+    ),
+    _Lesson(
+      title: 'Research & productivity',
+      summary: 'Use AI to organise work without outsourcing judgement.',
+      body:
+          'AI is excellent at summarising, restructuring and drafting — and poor at deciding what is true or important for your context. Use it to accelerate the research grind, then verify key claims and make the judgement calls yourself.',
+      duration: '5 min',
+    ),
+    _Lesson(
+      title: 'Engineering & machine learning',
+      summary: 'Understand testing, data and model limitations.',
+      body:
+          'A model’s training data defines what it can and cannot know. Generated code is a proposal: read it, check the official documentation, inspect security-sensitive paths, and run unit and edge-case tests before accepting it.',
+      duration: '10 min',
+    ),
+  ];
+
+  void _openLesson(_Lesson lesson) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 220),
+        pageBuilder: (_, __, ___) => _LessonScreen(lesson: lesson),
+        transitionsBuilder: (_, animation, __, child) =>
+            FadeTransition(opacity: animation, child: child),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Practice mode
+  // ---------------------------------------------------------------------------
 
   Widget _practice() => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -749,107 +879,119 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _pill('REAL-WORLD SCENARIO'),
+                _pill('REAL-WORLD SCENARIO • $_industry'),
                 const SizedBox(height: 12),
                 Text(
                   _scenarioTitle(),
                   style: const TextStyle(
                     fontWeight: FontWeight.w900,
-                    fontSize: 18,
+                    fontSize: 17,
                     color: AppColors.primaryNavy,
+                    letterSpacing: -0.2,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
                   _scenarioBody(),
                   style: const TextStyle(
-                    height: 1.5,
+                    height: 1.45,
+                    fontSize: 12.5,
                     color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 16),
                 const Text(
                   'What is the most responsible next step?',
-                  style: TextStyle(fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                    color: AppColors.primaryNavy,
+                  ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 ..._options().asMap().entries.map(
-                      (e) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: InkWell(
-                          onTap: () => setState(() => _selected = e.key),
-                          borderRadius: BorderRadius.circular(13),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: _selected == e.key
-                                  ? AppColors.accentGreen.withValues(alpha: .1)
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(13),
-                              border: Border.all(
-                                color: _selected == e.key
-                                    ? AppColors.accentGreen
-                                    : AppColors.border,
-                              ),
+                  (e) {
+                    final isSelected = _practiceSelected == e.key;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: InkWell(
+                        onTap: () => setState(() => _practiceSelected = e.key),
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.all(13),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(AppRadius.lg),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primaryNavy
+                                  : AppColors.border,
+                              width: isSelected ? 1.5 : 1.0,
                             ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _selected == e.key
-                                      ? Icons.radio_button_checked
-                                      : Icons.radio_button_off,
-                                  color: _selected == e.key
-                                      ? AppColors.accentGreen
-                                      : AppColors.textSecondary,
-                                ),
-                                const SizedBox(width: 9),
-                                Expanded(
-                                  child: Text(
-                                    e.value,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      height: 1.4,
-                                    ),
+                          ),
+                          child: Row(
+                            children: [
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 150),
+                                width: 18,
+                                height: 18,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? AppColors.primaryNavy
+                                      : Colors.transparent,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? AppColors.primaryNavy
+                                        : AppColors.border,
+                                    width: isSelected ? 2.0 : 1.5,
                                   ),
                                 ),
-                              ],
-                            ),
+                                child: isSelected
+                                    ? const Icon(Icons.check_rounded,
+                                        size: 12, color: Colors.white)
+                                    : null,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  e.value,
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                    color: AppColors.primaryNavy,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ),
-                _button(
-                  'Check my reasoning',
-                  () {
-                    final correct = _selected == 0;
-                    setState(() => _xp += correct ? 20 : 0);
-                    showDialog(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: Text(correct
-                            ? 'Good judgement'
-                            : 'Pause and reconsider'),
-                        content: Text(
-                          correct
-                              ? 'You chose the evidence-first response. Verify with a trustworthy source, document uncertainty and follow your professional obligations. +20 XP (demo).'
-                              : 'Consider evidence, safety and professional responsibility before acting. Review the scenario and try again.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            child: const Text('Continue'),
-                          ),
-                        ],
                       ),
                     );
                   },
-                  icon: Icons.check_circle_outline_rounded,
                 ),
+                const SizedBox(height: 6),
+                _button('Check my reasoning', () {
+                  final correct = _practiceSelected == 0;
+                  if (correct) setState(() => _xp += 20);
+                  showFeedback(
+                    context,
+                    correct ? FeedbackKind.success : FeedbackKind.error,
+                    correct
+                        ? 'Good judgement — evidence-first. +20 XP (demo).'
+                        : 'Not quite. Consider evidence, safety and professional responsibility before acting, then try again.',
+                  );
+                }),
               ],
             ),
           ),
         ],
       );
+
   String _scenarioTitle() => switch (_industry) {
         'Legal' => 'An AI cites a case you cannot locate',
         'Finance' => 'An AI summary reports an unusually high return',
@@ -857,6 +999,7 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
           'AI suggests a library method you do not recognise',
         _ => 'AI recommends a market decision using unclear sources'
       };
+
   String _scenarioBody() => switch (_industry) {
         'Legal' =>
           'A draft legal memo includes a confident case citation. The deadline is close, but you have not confirmed the case exists or whether it supports the argument.',
@@ -867,6 +1010,7 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
         _ =>
           'An AI-generated market report recommends entering a new region, but its figures have no clear source or date.'
       };
+
   List<String> _options() => switch (_industry) {
         'Legal' => [
             'Verify the case in an authoritative legal database and check the relevant passage',
@@ -890,242 +1034,269 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
           ]
       };
 
-  Widget _rewardTile(
-          {required String image,
-          required String title,
-          required String subtitle,
-          required String cost,
-          required List<Color> colors,
-          required String note}) =>
-      Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
+  // ---------------------------------------------------------------------------
+  // Rewards mode
+  // ---------------------------------------------------------------------------
+
+  Widget _rewardTile({
+    required String image,
+    required String title,
+    required String subtitle,
+    required String cost,
+    required String note,
+  }) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(AppRadius.card),
             border: Border.all(color: AppColors.border),
-            boxShadow: [
+            boxShadow: const [
               BoxShadow(
-                  color: colors.first.withValues(alpha: .10),
-                  blurRadius: 16,
-                  offset: const Offset(0, 5))
-            ]),
-        child: Row(children: [
-          Container(
-              width: 88,
-              height: 92,
-              decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: colors),
-                  borderRadius: BorderRadius.circular(18)),
-              child: ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: Image.asset('assets/images/$image.png',
-                      fit: BoxFit.cover, width: 88, height: 92))),
-          const SizedBox(width: 14),
-          Expanded(
-              child: Column(
+                color: AppColors.shadow,
+                blurRadius: 10,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                Text(title,
-                    style: const TextStyle(
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 17,
                         fontWeight: FontWeight.w900,
-                        fontSize: 15,
-                        color: AppColors.primaryNavy)),
-                const SizedBox(height: 4),
-                Text(subtitle,
-                    style: const TextStyle(
-                        fontSize: 12,
-                        height: 1.4,
-                        color: AppColors.textSecondary)),
-                const SizedBox(height: 9),
-                Row(children: [
-                  _pill(cost, color: AppColors.accentGreen),
-                  const SizedBox(width: 7),
-                  Flexible(
-                      child: Text(note,
-                          style: const TextStyle(
-                              fontSize: 10, color: AppColors.textSecondary)))
-                ])
-              ]))
-        ]),
+                        color: AppColors.primaryNavy,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '$subtitle · $note',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Text(
+                cost,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primaryNavy,
+                ),
+              ),
+            ],
+          ),
+        ),
       );
 
   Widget _rewards() =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _sectionTitle('Make your XP mean something ✨',
-            'A little motivation for every milestone. These reward concepts are demo-only and do not represent real redemption.'),
-        Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.primaryNavy, Color(0xFF176B68)]),
-                borderRadius: BorderRadius.circular(26)),
-            child: Row(children: [
-              Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                    const Text('YOUR LEARNING WALLET',
-                        style: TextStyle(
-                            color: AppColors.accentCyan,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 10,
-                            letterSpacing: 1.4)),
-                    Text('$_xp XP',
-                        style: const TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white)),
-                    const Text('Level 2 · Verification Explorer',
-                        style: TextStyle(color: Colors.white70, fontSize: 12))
-                  ]))
-            ])),
-        const SizedBox(height: 20),
+        _sectionTitle('Make your tokens count',
+            'Milestones and reward concepts to celebrate consistent verification practice.'),
+        _card(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('YOUR LEARNING WALLET',
+              style: AppTypography.textTheme.labelSmall?.copyWith(
+                  color: AppColors.accentGreen,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 10,
+                  letterSpacing: 1.2)),
+          const SizedBox(height: 6),
+          Center(
+            child: Text(
+              '$_xp Tokens',
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w900,
+                color: AppColors.primaryNavy,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            child: Container(
+              height: 7,
+              color: AppColors.border.withValues(alpha: 0.6),
+              child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: (_xp / 300).clamp(0.0, 1.0),
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: AppColors.accentGreen,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Level 3 unlocks at 300 Tokens',
+            style: AppTypography.textTheme.labelSmall?.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+              fontSize: 10.5,
+            ),
+          ),
+        ])),
+        const SizedBox(height: 12),
         _sectionTitle('Choose your feel-good goal',
             'Collect ideas for rewards, play, or giving back.'),
         _rewardTile(
-            image: 'reward_coffee',
-            title: 'Coffee break',
-            subtitle:
-                'A Starbucks-style coffee reward concept for celebrating a learning streak.',
-            cost: '500 XP',
-            colors: const [Color(0xFFE8F3E9), Color(0xFFB8DCC7)],
-            note: 'Illustrative mock-up'),
+          image: 'reward_coffee',
+          title: 'Coffee break',
+          subtitle:
+              'A coffee reward concept for celebrating a learning streak.',
+          cost: '500 Tokens',
+          note: 'Illustrative mock-up',
+        ),
         _rewardTile(
-            image: 'reward_paws',
-            title: 'Paws for a cause',
-            subtitle:
-                'A demo concept for supporting an animal rescue or shelter once a verified partner is available.',
-            cost: '800 XP',
-            colors: const [Color(0xFFFFE7C9), Color(0xFFFFC8A6)],
-            note: 'No donation made'),
+          image: 'reward_paws',
+          title: 'Paws for a cause',
+          subtitle:
+              'Support an animal rescue or shelter once a verified partner is available.',
+          cost: '800 Tokens',
+          note: 'No donation made',
+        ),
         _rewardTile(
-            image: 'reward_game',
-            title: 'Game night',
-            subtitle:
-                'A gaming reward concept inspired by cozy sandbox adventures and indie games.',
-            cost: '650 XP',
-            colors: const [Color(0xFFE7DFFF), Color(0xFFC9D7FF)],
-            note: 'No game code included'),
+          image: 'reward_game',
+          title: 'Game night',
+          subtitle:
+              'A gaming reward concept inspired by cozy sandbox adventures.',
+          cost: '650 Tokens',
+          note: 'No game code included',
+        ),
         _rewardTile(
-            image: 'reward_impact',
-            title: 'Community impact',
-            subtitle:
-                'Future option to support a vetted organisation such as Gift of the Givers, subject to an approved partnership and transparent funding.',
-            cost: '1,000 XP',
-            colors: const [Color(0xFFD7F7E9), Color(0xFFB6E5E8)],
-            note: 'Partner needed'),
+          image: 'reward_impact',
+          title: 'Community impact',
+          subtitle:
+              'Support a vetted non-profit organisation, subject to partner approval.',
+          cost: '1,000 Tokens',
+          note: 'Partner needed',
+        ),
         _rewardTile(
-            image: 'reward_grocery',
-            title: 'Everyday essentials',
-            subtitle:
-                'Illustrative grocery voucher concept for a future verified rewards partner.',
-            cost: '1,400 XP',
-            colors: const [Color(0xFFE2F8E8), Color(0xFFB6E7CB)],
-            note: 'Partner required'),
+          image: 'reward_grocery',
+          title: 'Everyday essentials',
+          subtitle:
+              'Illustrative voucher concept for a future verified rewards partner.',
+          cost: '1,400 Tokens',
+          note: 'Partner required',
+        ),
         _rewardTile(
-            image: 'reward_fuel',
-            title: 'Fuel your next move',
-            subtitle:
-                'A petrol voucher concept for celebrating consistent practice and progress.',
-            cost: '1,800 XP',
-            colors: const [Color(0xFFFFE8C2), Color(0xFFFFC98F)],
-            note: 'Partner required'),
+          image: 'reward_fuel',
+          title: 'Fuel your next move',
+          subtitle: 'A voucher concept for celebrating consistent practice.',
+          cost: '1,800 Tokens',
+          note: 'Partner required',
+        ),
         _rewardTile(
-            image: 'reward_m365',
-            title: 'Microsoft 365 boost',
-            subtitle:
-                'A productivity-software voucher or subscription concept for future learners.',
-            cost: '2,400 XP',
-            colors: const [Color(0xFFDDEBFF), Color(0xFFB7D0FF)],
-            note: 'Availability varies'),
+          image: 'reward_m365',
+          title: 'Microsoft 365 boost',
+          subtitle:
+              'A productivity voucher or subscription concept for future learners.',
+          cost: '2,400 Tokens',
+          note: 'Availability varies',
+        ),
         _rewardTile(
-            image: 'reward_workshop',
-            title: 'Workshop pass',
-            subtitle:
-                'A future ticket to an AI, software, career or professional-skills workshop.',
-            cost: '2,000 XP',
-            colors: const [Color(0xFFEDE3FF), Color(0xFFD6C2FF)],
-            note: 'Workshop partner needed'),
+          image: 'reward_workshop',
+          title: 'Workshop pass',
+          subtitle: 'A future ticket to an AI, software, or career workshop.',
+          cost: '2,000 Tokens',
+          note: 'Workshop partner needed',
+        ),
         _rewardTile(
-            image: 'reward_gamecredit',
-            title: 'Game store credit',
-            subtitle:
-                'A digital gaming credit concept for reaching a higher learning milestone.',
-            cost: '2,200 XP',
-            colors: const [Color(0xFFFFE1EE), Color(0xFFFFC0D9)],
-            note: 'No code included'),
-        const SizedBox(height: 4),
+          image: 'reward_gamecredit',
+          title: 'Game store credit',
+          subtitle:
+              'A digital gaming credit concept for reaching a learning milestone.',
+          cost: '2,200 Tokens',
+          note: 'No code included',
+        ),
+        const SizedBox(height: 8),
         _sectionTitle(
             'Milestones unlocked', 'Keep learning to unlock new badges.'),
         ...[
-          (
-            'Starter',
-            '100 XP',
-            'Your first steps count',
-            Icons.flag_rounded,
-            true
-          ),
-          (
-            'Verifier',
-            '300 XP',
-            'Build evidence-first habits',
-            Icons.verified_rounded,
-            _xp >= 300
-          ),
+          ('Starter', '100 Tokens', 'Your first steps count', true),
+          ('Verifier', '300 Tokens', 'Build evidence-first habits', _xp >= 300),
           (
             'Critical Thinker',
-            '600 XP',
+            '600 Tokens',
             'Complete an AI Lab milestone',
-            Icons.psychology_rounded,
             _xp >= 600
-          )
-        ].map((r) => _card(
-                child: Row(children: [
-              Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                      color: r.$5
-                          ? AppColors.accentGreen.withValues(alpha: .15)
-                          : AppColors.background,
-                      borderRadius: BorderRadius.circular(15)),
-                  child: Icon(r.$4,
-                      color: r.$5 ? AppColors.primaryNavy : AppColors.silver)),
-              const SizedBox(width: 12),
-              Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                    Text(r.$1,
-                        style: const TextStyle(fontWeight: FontWeight.w900)),
-                    Text(r.$3,
-                        style: const TextStyle(
-                            fontSize: 12, color: AppColors.textSecondary)),
-                    const SizedBox(height: 6),
-                    _pill(r.$2,
-                        color: r.$5 ? AppColors.accentGreen : AppColors.silver)
-                  ])),
-              if (r.$5)
-                const Icon(Icons.check_circle, color: AppColors.accentGreen)
-            ]))),
-        Container(
-            padding: const EdgeInsets.all(13),
-            decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: .08),
-                borderRadius: BorderRadius.circular(15)),
-            child: const Text(
-                'Demo notice: XP has no cash value. Rewards, game offers and donations are concepts only. Real redemption requires an approved partner, funding, clear terms and backend validation.',
-                style: TextStyle(
-                    fontSize: 11,
-                    height: 1.45,
-                    color: AppColors.textSecondary))),
+          ),
+        ].map((r) => Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppRadius.card),
+                border: Border.all(
+                  color: r.$4
+                      ? AppColors.accentGreen.withValues(alpha: 0.4)
+                      : AppColors.border,
+                  width: r.$4 ? 1.5 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: r.$4 ? AppColors.accentGreen : AppColors.silver,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(r.$1,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14,
+                                  color: AppColors.textPrimary)),
+                          Text(r.$3,
+                              style: const TextStyle(
+                                  fontSize: 11.5,
+                                  color: AppColors.textSecondary)),
+                        ]),
+                  ),
+                  Text(
+                    '+${r.$2}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11,
+                      color: AppColors.primaryNavy,
+                    ),
+                  ),
+                ],
+              ),
+            )),
+        const SampleDataBanner(
+            message:
+                'Demo notice: Tokens have no cash value. Rewards, game offers and donations are concepts only. Real redemption requires an approved partner, funding, clear terms and backend validation.'),
       ]);
+
+  // ---------------------------------------------------------------------------
+  // History mode
+  // ---------------------------------------------------------------------------
 
   Widget _history() =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1168,13 +1339,40 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
                       children: [
                     Text(h.$1,
                         style: const TextStyle(
-                            fontWeight: FontWeight.w800, fontSize: 13)),
-                    const SizedBox(height: 4),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13.5,
+                            color: AppColors.primaryNavy)),
+                    const SizedBox(height: 3),
                     Text(h.$2,
                         style: const TextStyle(
                             fontSize: 11, color: AppColors.textSecondary)),
-                    const SizedBox(height: 6),
-                    _pill(h.$4, color: h.$5)
+                    const SizedBox(height: 7),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: h.$5,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          h.$4,
+                          style: TextStyle(
+                            color: h.$4 == 'Passed'
+                                ? AppColors.accentGreen
+                                : h.$4 == 'Review recommended'
+                                    ? AppColors.goldDark
+                                    : AppColors.textSecondary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
                   ])),
               Text(h.$3,
                   style: const TextStyle(
@@ -1182,18 +1380,244 @@ class _ProductHubScreenState extends ConsumerState<ProductHubScreen> {
                       fontSize: 16,
                       color: AppColors.primaryNavy))
             ]))),
-        const Text(
-            'Sample history for layout preview. Connect this screen to the real attempt-history endpoint to display a user’s actual records.',
-            style: TextStyle(
-                fontSize: 11, color: AppColors.textSecondary, height: 1.4))
+        const SampleDataBanner(
+            message:
+                'Sample history for layout preview. Connect this screen to the real attempt-history endpoint to display a user’s actual records.'),
       ]);
 }
 
+/// Full-screen lesson detail — replaces the old modal bottom sheet so lesson
+/// tasks get the whole screen and the user's full focus.
+class _LessonScreen extends StatefulWidget {
+  const _LessonScreen({required this.lesson});
+
+  final _Lesson lesson;
+
+  @override
+  State<_LessonScreen> createState() => _LessonScreenState();
+}
+
+class _LessonScreenState extends State<_LessonScreen> {
+  int _answer = -1;
+
+  @override
+  Widget build(BuildContext context) {
+    final lesson = widget.lesson;
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        title: Text(
+          lesson.title,
+          style: AppTypography.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: AppColors.primaryNavy,
+            letterSpacing: -0.4,
+          ),
+        ),
+      ),
+      body: SafeArea(
+        child: FeedbackOverlay(
+          child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                      color: AppColors.accentLight,
+                      borderRadius: BorderRadius.circular(AppRadius.pill)),
+                  child: Text(
+                    'AI LAB • INTERACTIVE LESSON • ${lesson.duration.toUpperCase()}',
+                    style: const TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.accentGreen,
+                        letterSpacing: 0.6),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(lesson.summary,
+                    style: const TextStyle(
+                        fontSize: 13,
+                        height: 1.5,
+                        color: AppColors.textSecondary)),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(color: AppColors.border),
+                      boxShadow: const [
+                        BoxShadow(
+                            color: AppColors.shadow,
+                            blurRadius: 10,
+                            offset: Offset(0, 3))
+                      ]),
+                  child: Text(lesson.body,
+                      style: const TextStyle(
+                          fontSize: 13.5,
+                          height: 1.55,
+                          color: AppColors.primaryNavy)),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                    'Quick check: What should you do before relying on an AI-generated claim?',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                        color: AppColors.primaryNavy,
+                        height: 1.4)),
+                const SizedBox(height: 12),
+                ...[
+                  'Check an authoritative source and supporting evidence',
+                  'Assume confident wording means it is correct',
+                  'Share it immediately',
+                ].asMap().entries.map(
+                      (e) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: InkWell(
+                          onTap: () => setState(() => _answer = e.key),
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            padding: const EdgeInsets.all(13),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(AppRadius.lg),
+                              border: Border.all(
+                                color: _answer == e.key
+                                    ? AppColors.primaryNavy
+                                    : AppColors.border,
+                                width: _answer == e.key ? 1.5 : 1.0,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  width: 18,
+                                  height: 18,
+                                  decoration: BoxDecoration(
+                                    color: _answer == e.key
+                                        ? AppColors.primaryNavy
+                                        : Colors.transparent,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: _answer == e.key
+                                          ? AppColors.primaryNavy
+                                          : AppColors.border,
+                                      width: _answer == e.key ? 2.0 : 1.5,
+                                    ),
+                                  ),
+                                  child: _answer == e.key
+                                      ? const Icon(Icons.check_rounded,
+                                          size: 12, color: Colors.white)
+                                      : null,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(e.value,
+                                      style: const TextStyle(
+                                          fontSize: 12.5,
+                                          color: AppColors.primaryNavy,
+                                          fontWeight: FontWeight.w600,
+                                          height: 1.4)),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                const SizedBox(height: 6),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _answer == -1
+                        ? null
+                        : () {
+                            final correct = _answer == 0;
+                            showFeedback(
+                              context,
+                              correct
+                                  ? FeedbackKind.success
+                                  : FeedbackKind.error,
+                              correct
+                                  ? 'Correct principle! Evidence matters more than confidence. +10 XP (demo).'
+                                  : 'Not quite. AI output still needs independent checking before you rely on it.',
+                            );
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryNavy,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor:
+                          AppColors.primaryNavy.withValues(alpha: 0.4),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.lg)),
+                    ),
+                    child: const Text('Check my answer',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700, letterSpacing: 0.2)),
+                  ),
+                ),
+              ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _Lesson {
+  const _Lesson({
+    required this.title,
+    required this.summary,
+    required this.body,
+    required this.duration,
+  });
+
+  final String title;
+  final String summary;
+  final String body;
+  final String duration;
+}
+
+class _HubNoticePill extends StatelessWidget {
+  const _HubNoticePill(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+      decoration: BoxDecoration(
+        color: AppColors.goldLight,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 9.5,
+          fontWeight: FontWeight.w800,
+          color: AppColors.goldDark,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
 class _HubDetails {
-  const _HubDetails(
-      this.title, this.kicker, this.headline, this.subtitle, this.icon);
+  const _HubDetails(this.title, this.kicker, this.headline, this.subtitle);
+
   final String title, kicker, headline, subtitle;
-  final IconData icon;
 }
 
 _HubDetails _details(VerifAiHubMode m) => switch (m) {
@@ -1202,35 +1626,35 @@ _HubDetails _details(VerifAiHubMode m) => switch (m) {
           'Think clearly with AI',
           'Your AI thinking partner',
           'Explore ideas, challenge assumptions and learn how to verify what matters.',
-          Icons.auto_awesome_rounded),
+        ),
       VerifAiHubMode.verify => const _HubDetails(
           'Verification Studio',
           'Evidence before confidence',
           'Make every claim earn your trust',
           'Review documents, claims, AI responses and sources, with uncertainty made visible.',
-          Icons.fact_check_rounded),
+        ),
       VerifAiHubMode.lab => const _HubDetails(
           'AI Lab',
           'Learn by doing',
           'Build practical AI judgement',
           'Short interactive workshops in responsible AI, machine learning, research and fact-checking.',
-          Icons.science_rounded),
+        ),
       VerifAiHubMode.practice => const _HubDetails(
           'Industry Practice',
           'Real work. Better judgement.',
           'Practice decisions that matter',
           'Explore realistic scenarios across Legal, Finance, Software Engineering and Business.',
-          Icons.psychology_alt_rounded),
+        ),
       VerifAiHubMode.rewards => const _HubDetails(
           'Rewards',
           'Progress with purpose',
           'Every practice session counts',
           'Earn XP, unlock milestones and build skills you can explain, not just collect badges.',
-          Icons.workspace_premium_rounded),
+        ),
       VerifAiHubMode.history => const _HubDetails(
           'Task History',
           'Your learning, in context',
           'See how your judgement grows',
           'Review attempts, identify patterns and choose what to practise next.',
-          Icons.history_rounded)
+        ),
     };
