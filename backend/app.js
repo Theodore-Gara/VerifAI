@@ -19,6 +19,7 @@ const labRoutes = require('./routes/lab');
 const workshopRoutes = require('./routes/workshop');
 const rewardsRoutes = require('./routes/rewards');
 const veraRoutes = require('./routes/vera');
+const industryPracticeRoutes = require('./routes/industryPractice');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -130,6 +131,7 @@ app.use('/api/lab', labRoutes);
 app.use('/api/workshop', workshopRoutes);
 app.use('/api/rewards', rewardsRoutes);
 app.use('/api/vera', veraRoutes);
+app.use('/api/industry-practice', industryPracticeRoutes);
 
 app.get('/api/docs', (req, res) => {
   res.json({
@@ -189,6 +191,9 @@ app.get('/api/docs', (req, res) => {
       'DELETE /api/vera/memory/:id',
       'GET /api/vera/tips',
       'POST /api/lab/assessments/:code/attempts/:id/ai-mark',
+      'GET /api/industry-practice/cases',
+      'GET /api/industry-practice/cases/:id',
+      'POST /api/industry-practice/cases/:id/read',
     ],
   });
 });

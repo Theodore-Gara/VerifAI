@@ -110,4 +110,72 @@ function buildTips(ctx) {
   return tips.slice(0, 4);
 }
 
-module.exports = { buildUserContext, describeContext, buildTips };
+// App-wide knowledge: what tasks, lessons, capstones and rewards exist, so Vera
+// can answer "which reward should I go for?" and point the learner at content.
+async function buildAppKnowledge(executor, userId, trackId) {
+  const rewards = await executor.query(
+    `SELECT title, cost_tokens FROM rewards WHERE active = TRUE ORDER BY sort_order`,
+  );
+  const features = await executor.query(
+    `SELECT feature, COUNT(*)::int AS n FROM tasks WHERE track_id = $1 GROUP BY feature ORDER BY feature`,
+    [trackId],
+  );
+  const lessons = await executor.query(
+    `SELECT title FROM lab_lessons WHERE track_id IS NULL OR track_id = $1 ORDER BY sort_order`,
+    [trackId],
+  );
+  const capstones = await executor.query(
+    `SELECT title, pass_score, max_attempts FROM lab_capstone_assessments
+     WHERE active = TRUE AND (track_id IS NULL OR track_id = $1) ORDER BY sort_order`,
+    [trackId],
+  );
+  const tokensResult = await executor.query(
+    `SELECT COALESCE(tokens, 0)::int AS tokens FROM user_progress WHERE user_id = $1`,
+    [userId],
+  );
+  const tokens = tokensResult.rows[0]?.tokens ?? 0;
+
+  const lines = [];
+  if (rewards.rows.length) {
+    lines.push(`Rewards (token cost): ${rewards.rows.map((r) => `${r.title} ${r.cost_tokens}`).join(', ')}. Learner has ${tokens} tokens.`);
+  }
+  if (features.rows.length) {
+    lines.push(`Task types in this module: ${features.rows.map((f) => `${f.feature} (${f.n})`).join(', ')}.`);
+  }
+  if (lessons.rows.length) lines.push(`Lessons: ${lessons.rows.map((l) => l.title).join('; ')}.`);
+  if (capstones.rows.length) {
+    lines.push(`Capstones: ${capstones.rows.map((c) => `${c.title} (pass ${c.pass_score}, ${c.max_attempts} attempts)`).join('; ')}.`);
+  }
+  return lines.join('\n');
+}
+
+// The learner's own attempts, WITH the correct answers, so the general
+// assistant can tell them the answer if they ask. The task-scoped tutor and
+// coach stay gated; this is only for Vera.
+async function buildAttemptAnswers(executor, userId) {
+  const result = await executor.query(
+    `SELECT ta.task_title AS title, t.feature, ta.score, ta.passed, ta.feedback, v.expected_answer,
+            (SELECT string_agg(o.label, ' | ') FROM task_options o
+              WHERE o.task_id = t.id AND o.kind = 'decision'
+                AND o.score = (SELECT MAX(o2.score) FROM task_options o2 WHERE o2.task_id = t.id AND o2.kind = 'decision')) AS best_decision,
+            (SELECT string_agg(o.label, ' | ') FROM task_options o
+              WHERE o.task_id = t.id AND o.kind = 'reason'
+                AND o.score = (SELECT MAX(o2.score) FROM task_options o2 WHERE o2.task_id = t.id AND o2.kind = 'reason')) AS best_reason
+     FROM task_attempts ta
+     JOIN tasks t ON t.id = ta.task_id
+     LEFT JOIN verification_tasks v ON v.task_id = t.id
+     WHERE ta.user_id = $1 AND ta.practice = FALSE
+     ORDER BY ta.submitted_at DESC, ta.id DESC
+     LIMIT 5`,
+    [userId],
+  );
+  return result.rows.map((row) => {
+    const answer = row.expected_answer
+      || [row.best_decision, row.best_reason].filter(Boolean).join(' / ')
+      || '(see feedback)';
+    return `- [${row.feature}] "${row.title}" scored ${row.score} (${row.passed ? 'passed' : 'failed'}). Correct answer: ${answer}`;
+  });
+}
+
+module.exports = { buildUserContext, describeContext, buildTips, buildAppKnowledge, buildAttemptAnswers };
+

@@ -124,12 +124,12 @@ async function analyzeContent({ kind, content, fetchImpl }) {
 }
 
 // --- Vera: personalised assistant with memory --------------------------------
-async function getVeraReply({ userName, contextText, memories, contextName, messages, fetchImpl }) {
+async function getVeraReply({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers, messages, fetchImpl }) {
   const { content } = await chatWithFallback(
     {
       ...resolveProfile('vera'),
       messages: [
-        { role: 'system', content: veraSystem({ userName, contextText, memories, contextName }) },
+        { role: 'system', content: veraSystem({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers }) },
         ...messages,
       ],
     },
@@ -139,12 +139,12 @@ async function getVeraReply({ userName, contextText, memories, contextName, mess
   return content;
 }
 
-async function* streamVeraReply({ userName, contextText, memories, contextName, messages, fetchImpl }) {
+async function* streamVeraReply({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers, messages, fetchImpl }) {
   yield* streamWithFallback(
     {
       ...resolveProfile('vera'),
       messages: [
-        { role: 'system', content: veraSystem({ userName, contextText, memories, contextName }) },
+        { role: 'system', content: veraSystem({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers }) },
         ...messages,
       ],
     },

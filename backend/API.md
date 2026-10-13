@@ -220,7 +220,7 @@ Protected. Returns the caller's avatar image, or `404` when none is set.
 Vera is the app-wide, friendly professional assistant. She keeps track of the learner's progress (skill scores, task outcomes, lab and capstone results), remembers durable observations, and personalises coaching. Sessions and messages are stored per user.
 
 ### POST /api/vera/chat
-Protected. Body `{ session_id?, messages, context? }` where `messages` is the running history (1–20 messages, each ≤ 2,000 chars, last from the user) and `context` is one of `assistant`, `coach`, `lab`, `verification`, `general`. Creates a session when `session_id` is omitted. Builds the learner profile + memories into Vera's system prompt, stores the turn, extracts durable memories from the exchange, and returns `{ session_id, reply }`. `?stream=1` streams SSE. Rate-limited (8/min).
+Protected. Body `{ session_id?, messages, context? }` where `messages` is the running history (1–20 messages, each ≤ 2,000 chars, last from the user) and `context` is one of `assistant`, `coach`, `lab`, `verification`, `general`. Creates a session when `session_id` is omitted. Vera's system prompt is built from the learner profile, stored memories, **app-wide knowledge** (task types, lessons, capstones and the rewards catalogue with the learner's token balance) and the learner's own recent attempts **including the correct answers**, so she can recommend what to do or which reward to save for, and is **not gated** — she will state the correct answer to a task or assessment the learner attempted if asked. The turn is stored and durable memories are extracted from the exchange. Returns `{ session_id, reply }`. `?stream=1` streams SSE. Rate-limited (8/min).
 
 ### GET /api/vera/sessions
 Protected. The user's recent chat sessions.
@@ -239,6 +239,19 @@ Protected. Removes one of the user's memories.
 
 ### GET /api/vera/tips
 Protected. Deterministic, cost-free coaching tips derived from the learner profile (weak areas, recent misses, strengths, unfinished lessons, capstones awaiting marking), plus a `summary` of the profile.
+
+## Industry Practice
+
+Informational real-world case studies (scenario → cause → solution), like Interview Practice. Cases are sourced from real reporting.
+
+### GET /api/industry-practice/cases
+Protected. Cases for the user's track plus cross-industry ones, each with a `read` flag.
+
+### GET /api/industry-practice/cases/:id
+Protected. The full case (`scenario`, `cause`, `solution`, `source_title`, `source_url`). Reading it marks it as read. `404` if not available for the track.
+
+### POST /api/industry-practice/cases/:id/read
+Protected. Marks a case as read (idempotent).
 
 ## Scoring
 

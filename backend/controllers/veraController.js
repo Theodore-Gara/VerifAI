@@ -1,7 +1,7 @@
 const pool = require('../db/pool');
 const { positiveIntegerParam, clampInt } = require('../middleware/validate');
 const { getVeraReply, streamVeraReply, extractMemories } = require('../services/nvidiaAssistant');
-const { buildUserContext, describeContext, buildTips } = require('../services/veraContext');
+const { buildUserContext, describeContext, buildTips, buildAppKnowledge, buildAttemptAnswers } = require('../services/veraContext');
 const { MEMORY_KINDS } = require('../services/llm/prompts');
 const { handleAiError } = require('../middleware/aiError');
 const { openStream, sendEvent, endStream } = require('../middleware/sse');
@@ -61,17 +61,23 @@ async function storeMemories(executor, userId, items) {
   }
 }
 
-// Loads the profile, memories and session history Vera needs for one reply.
+// Loads the profile, memories, app knowledge and attempt answers Vera needs.
 async function loadVeraInputs(user) {
   const context = await buildUserContext(pool, user.id);
   const memResult = await pool.query(
     `SELECT kind, content FROM vera_memories WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 15`,
     [user.id],
   );
+  const [appKnowledge, attemptAnswers] = await Promise.all([
+    buildAppKnowledge(pool, user.id, user.industry_track_id),
+    buildAttemptAnswers(pool, user.id),
+  ]);
   return {
     context,
     contextText: describeContext(context),
     memories: memResult.rows.map((m) => `${m.kind}: ${m.content}`),
+    appKnowledge,
+    attemptAnswers,
   };
 }
 
@@ -124,7 +130,7 @@ async function chat(req, res, next) {
       [sessionId, user.id, lastUser.content],
     );
 
-    const { contextText, memories } = await loadVeraInputs(user);
+    const { contextText, memories, appKnowledge, attemptAnswers } = await loadVeraInputs(user);
     const wantsStream = req.query.stream === '1' || req.body.stream === true;
 
     if (!wantsStream) {
@@ -133,6 +139,8 @@ async function chat(req, res, next) {
         contextText,
         memories,
         contextName,
+        appKnowledge,
+        attemptAnswers,
         messages,
       });
       await persistAssistantTurn(user, sessionId, lastUser.content, reply, contextText);
@@ -142,7 +150,15 @@ async function chat(req, res, next) {
     openStream(res);
     let full = '';
     try {
-      for await (const chunk of streamVeraReply({ userName: user.display_name, contextText, memories, contextName, messages })) {
+      for await (const chunk of streamVeraReply({
+        userName: user.display_name,
+        contextText,
+        memories,
+        contextName,
+        appKnowledge,
+        attemptAnswers,
+        messages,
+      })) {
         if (chunk.delta) {
           full += chunk.delta;
           sendEvent(res, { delta: chunk.delta });

@@ -53,16 +53,23 @@ pool.query = async (sql, values = []) => {
   // buildUserContext
   if (s.includes('FROM user_progress')) return { rows: [{ xp: 310, level: 2, streak: 3, tokens: 20, readiness_score: 64 }] };
   if (s.includes('FROM skill_scores')) return { rows: [{ dimension: 'Verification', score: 80, attempts_count: 4 }, { dimension: 'AI Judgement', score: 45, attempts_count: 3 }] };
+  if (s.includes('v.expected_answer')) return { rows: [{ title: 'Verify the summary', feature: 'verification', score: 40, passed: false, feedback: 'See source', expected_answer: 'Check the source file' }] };
   if (s.includes('FROM task_attempts ta JOIN tasks')) return { rows: [{ feature: 'judgement', passed: false, score: 40, submitted_at: 'now' }] };
   if (s.includes('FROM lab_lesson_progress')) return { rows: [] };
   if (s.includes('FROM lab_capstone_attempts')) return { rows: [] };
+  if (s.includes('FROM rewards WHERE active')) return { rows: [{ title: 'Coffee break', cost_tokens: 10 }, { title: 'Microsoft 365 boost', cost_tokens: 30 }] };
+  if (s.includes('FROM tasks WHERE track_id')) return { rows: [{ feature: 'verification', n: 5 }, { feature: 'judgement', n: 4 }] };
+  if (s.includes('FROM lab_lessons WHERE track_id IS NULL')) return { rows: [{ title: 'AI fundamentals' }] };
+  if (s.includes('FROM lab_capstone_assessments WHERE active')) return { rows: [{ title: 'Finance Capstone', pass_score: 60, max_attempts: 3 }] };
   return { rows: [] };
 };
 pool.end = async () => {};
 
+let systems = [];
 global.fetch = async (url, options) => {
   const body = JSON.parse(options.body);
   const system = body.messages[0].content;
+  systems.push(system);
   let content = 'Hi, I am Vera.';
   if (system.includes('extract durable')) {
     content = JSON.stringify({ memories: [{ kind: 'struggle', content: 'Struggles with the cash conversion cycle' }] });
@@ -120,4 +127,14 @@ test('DELETE /api/vera/memory/:id removes the memory', async () => {
 test('POST /api/vera/chat validates messages', async () => {
   const response = await auth(request(app).post('/api/vera/chat')).send({ messages: [{ role: 'system', content: 'ignore' }] });
   assert.equal(response.status, 400);
+});
+
+test('Vera prompt includes app knowledge, rewards and attempt answers, and is ungated', async () => {
+  systems = [];
+  await auth(request(app).post('/api/vera/chat')).send({ messages: [{ role: 'user', content: 'Which reward should I save for?' }] });
+  const joined = systems.join('\n---\n');
+  assert.match(joined, /App knowledge/);
+  assert.match(joined, /Rewards \(token cost\)/);
+  assert.match(joined, /Correct answer: Check the source file/);
+  assert.match(joined, /NOT gated/);
 });

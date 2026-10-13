@@ -506,6 +506,32 @@ CREATE TABLE IF NOT EXISTS vera_memories (
 );
 
 -- ---------------------------------------------------------------------------
+-- Industry Practice — informational workplace blunder case studies
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS industry_cases (
+  id SERIAL PRIMARY KEY,
+  track_id INTEGER REFERENCES industry_tracks(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  scenario TEXT NOT NULL,
+  cause TEXT NOT NULL,
+  solution TEXT NOT NULL,
+  source_title VARCHAR(255),
+  source_url TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_industry_cases_title ON industry_cases(title);
+
+CREATE TABLE IF NOT EXISTS industry_case_reads (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  case_id INTEGER NOT NULL REFERENCES industry_cases(id) ON DELETE CASCADE,
+  read_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, case_id)
+);
+
+-- ---------------------------------------------------------------------------
 -- Indexes
 -- ---------------------------------------------------------------------------
 
@@ -536,6 +562,7 @@ CREATE INDEX IF NOT EXISTS idx_lab_capstone_attempts ON lab_capstone_attempts(us
 CREATE INDEX IF NOT EXISTS idx_vera_sessions_user ON vera_sessions(user_id, last_active_at DESC);
 CREATE INDEX IF NOT EXISTS idx_vera_messages_session ON vera_messages(session_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_vera_memories_user ON vera_memories(user_id, kind);
+CREATE INDEX IF NOT EXISTS idx_industry_cases_track ON industry_cases(track_id, sort_order);
 
 -- ---------------------------------------------------------------------------
 -- updated_at triggers
