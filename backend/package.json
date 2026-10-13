@@ -31,6 +31,7 @@
     "node": ">=22"
   },
   "overrides": {
+    "argparse": "2.0.1",
     "uuid": "$uuid"
   }
 }
