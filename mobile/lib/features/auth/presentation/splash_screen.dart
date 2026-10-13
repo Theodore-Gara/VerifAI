@@ -137,7 +137,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   opacity: _fadeAnimation,
                   child: Image.asset(
                     'assets/images/logoalldarktrans.png',
-                    height: 140,
+                    height: 100,
                     errorBuilder: (context, error, stackTrace) => const Icon(
                       Icons.verified_rounded,
                       size: 80,

@@ -355,7 +355,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
           color: isFirst
-              ? AppColors.accentGreen.withValues(alpha: 0.5)
+              ? AppColors.primaryNavy.withValues(alpha: 0.5)
               : AppColors.border,
           width: isFirst ? 1.5 : 1,
         ),

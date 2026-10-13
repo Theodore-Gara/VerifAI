@@ -170,47 +170,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.accentLight,
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.pill,
-                              ),
-                            ),
-                            child: Text(
-                              'READINESS',
-                              style:
-                                  AppTypography.textTheme.labelSmall?.copyWith(
-                                color: AppColors.accentGreen,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
-                                fontSize: 9.5,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
                       Text(
                         'AI readiness score',
                         style: AppTypography.textTheme.titleMedium?.copyWith(
+                          fontSize: 19,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.2,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(
                         'This score reflects how consistently you verify AI output across the assessed skills.',
                         style: AppTypography.textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                           height: 1.35,
-                          fontSize: 12,
+                          fontSize: 11,
                         ),
                       ),
                     ],
@@ -235,7 +209,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: _statTile(
                   value: '${data.completedTasks} Tasks',
                   label: 'Completed',
-                  accent: true,
                 ),
               ),
             ],
@@ -401,58 +374,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.accentLight,
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                        ),
-                        child: Text(
-                          'CORE STUDIO',
-                          style: AppTypography.textTheme.labelSmall?.copyWith(
-                            color: AppColors.accentGreen,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 9.5,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: const BoxDecoration(
-                          color: AppColors.primaryNavy,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.arrow_forward_rounded,
-                          size: 13,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(9),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryNavy.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.fact_check_rounded,
-                          color: AppColors.primaryNavy,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -461,6 +384,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               'Verification Studio',
                               style:
                                   AppTypography.textTheme.titleMedium?.copyWith(
+                                fontSize: 20,
                                 fontWeight: FontWeight.w900,
                                 color: AppColors.primaryNavy,
                                 letterSpacing: -0.2,
@@ -472,7 +396,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               style:
                                   AppTypography.textTheme.bodySmall?.copyWith(
                                 color: AppColors.textSecondary,
-                                fontSize: 11.5,
+                                fontSize: 11,
                                 height: 1.35,
                               ),
                             ),
@@ -534,7 +458,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           itemBuilder: (context, index) {
             final item = gridItems[index];
             return Material(
-              color: const Color(0xFFF5F7FA),
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.card),
               child: InkWell(
                 borderRadius: BorderRadius.circular(AppRadius.card),
@@ -543,9 +467,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(
-                      color: AppColors.border.withValues(alpha: 0.7),
-                    ),
+                    border: Border.all(color: AppColors.border),
                     boxShadow: const [
                       BoxShadow(
                         color: AppColors.shadow,
@@ -564,7 +486,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           Container(
                             padding: const EdgeInsets.all(7),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: AppColors.background,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(
