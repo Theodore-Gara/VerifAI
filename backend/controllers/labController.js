@@ -1,7 +1,7 @@
 const pool = require('../db/pool');
 const { optionalString, clampInt, positiveIntegerParam } = require('../middleware/validate');
 const { findUserByFirebaseUid } = require('../db/users');
-const { getCoachReply, streamCoachReply } = require('../services/nvidiaAssistant');
+const { getCoachReply, streamCoachReply, markRubric } = require('../services/nvidiaAssistant');
 const { gradeActivity } = require('../services/activityGrading');
 const { markQuestion, rubricAward } = require('../services/capstoneMarking');
 const { awardXp } = require('../services/xpService');
@@ -871,6 +871,83 @@ async function markCapstone(req, res, next) {
   }
 }
 
+// POST /api/lab/assessments/:code/attempts/:id/ai-mark
+// AI-assisted marking: produces a SUGGESTION for the rubric questions and
+// stores it, but does not finalise. A human confirms via the mark endpoint.
+async function aiMarkCapstone(req, res, next) {
+  try {
+    const user = await requireUser(res, req);
+    if (!user) return undefined;
+
+    const attemptId = positiveIntegerParam(req.params.id, 'attempt id');
+    const assessment = await findCapstone(pool, req.params.code, user.industry_track_id);
+    if (!assessment) {
+      return res.status(404).json({ error: 'Assessment not found for your selected track.', request_id: req.requestId });
+    }
+
+    const attemptResult = await pool.query(
+      `SELECT id, answers, auto_marks, status FROM lab_capstone_attempts WHERE id = $1 AND assessment_id = $2`,
+      [attemptId, assessment.id],
+    );
+    if (!attemptResult.rows.length) {
+      return res.status(404).json({ error: 'Attempt not found.', request_id: req.requestId });
+    }
+    const attempt = attemptResult.rows[0];
+    if (attempt.status !== 'pending_marking') {
+      return res.status(409).json({ error: 'This attempt is not awaiting marking.', request_id: req.requestId });
+    }
+
+    const questions = await pool.query(
+      `SELECT id, type, prompt, marks, marking, rubric, model_answer
+       FROM lab_capstone_questions WHERE assessment_id = $1`,
+      [assessment.id],
+    );
+    const rubricQuestions = questions.rows.filter((q) => q.marking === 'rubric' || q.type === 'extended_response');
+    if (!rubricQuestions.length) {
+      return res.status(400).json({ error: 'This assessment has no rubric questions.', request_id: req.requestId });
+    }
+
+    const answers = attempt.answers || {};
+    const suggestion = {};
+    let suggestedMarks = 0;
+    for (const question of rubricQuestions) {
+      const marked = await markRubric({ question, response: answers[String(question.id)] });
+      const summed = Array.isArray(marked.criteria)
+        ? marked.criteria.reduce((sum, c) => sum + (Number(c.marks_awarded) || 0), 0)
+        : Number(marked.total_awarded) || 0;
+      const total = Math.max(0, Math.min(Number(question.marks) || 0, Math.round(Number(marked.total_awarded) || summed)));
+      suggestion[String(question.id)] = { criteria: marked.criteria || [], total_awarded: total, feedback: marked.feedback || '' };
+      suggestedMarks += total;
+    }
+
+    const totalMarks = Number(assessment.total_marks) > 0
+      ? Number(assessment.total_marks)
+      : questions.rows.reduce((sum, q) => sum + Number(q.marks || 0), 0);
+    const autoMarks = Number(attempt.auto_marks) || 0;
+    const projectedScore = totalMarks > 0 ? Math.round((100 * (autoMarks + suggestedMarks)) / totalMarks) : 0;
+
+    // Store the suggestion under marking.ai without changing the status.
+    await pool.query(
+      `UPDATE lab_capstone_attempts
+       SET marking = COALESCE(marking, '{}'::jsonb) || jsonb_build_object('ai', $1::jsonb)
+       WHERE id = $2`,
+      [JSON.stringify(suggestion), attemptId],
+    );
+
+    return res.status(200).json({
+      ai_suggestion: suggestion,
+      suggested_marks: suggestedMarks,
+      auto_marks: autoMarks,
+      projected_score: projectedScore,
+      total_marks: totalMarks,
+      note: 'AI marking is a suggestion; confirm it via the mark endpoint after a human spot-check.',
+      request_id: req.requestId,
+    });
+  } catch (err) {
+    return handleAiError(err, req, res, next);
+  }
+}
+
 // GET /api/lab/sources — the "where our material comes from" catalogue.
 async function listSources(req, res, next) {
   try {
@@ -992,6 +1069,7 @@ module.exports = {
   submitCapstone,
   getAssessmentPaper,
   markCapstone,
+  aiMarkCapstone,
   listSources,
   getSource,
   getLibrary,

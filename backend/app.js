@@ -18,6 +18,7 @@ const verificationRoutes = require('./routes/verification');
 const labRoutes = require('./routes/lab');
 const workshopRoutes = require('./routes/workshop');
 const rewardsRoutes = require('./routes/rewards');
+const veraRoutes = require('./routes/vera');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -128,6 +129,7 @@ app.use('/api/verification', verificationRoutes);
 app.use('/api/lab', labRoutes);
 app.use('/api/workshop', workshopRoutes);
 app.use('/api/rewards', rewardsRoutes);
+app.use('/api/vera', veraRoutes);
 
 app.get('/api/docs', (req, res) => {
   res.json({
@@ -179,6 +181,14 @@ app.get('/api/docs', (req, res) => {
       'POST /api/rewards/:code/redeem',
       'POST /api/users/avatar',
       'GET /api/users/avatar',
+      'POST /api/vera/chat',
+      'GET /api/vera/sessions',
+      'GET /api/vera/sessions/:id',
+      'GET /api/vera/memory',
+      'POST /api/vera/memory',
+      'DELETE /api/vera/memory/:id',
+      'GET /api/vera/tips',
+      'POST /api/lab/assessments/:code/attempts/:id/ai-mark',
     ],
   });
 });

@@ -34,6 +34,15 @@ firebase.getFirebaseAuth = () => ({ verifyIdToken: async () => ({ uid: 'test-uid
 
 const pool = require('../db/pool');
 
+process.env.NVIDIA_API_KEY = 'test-key';
+global.fetch = async () => ({
+  ok: true,
+  json: async () => ({
+    choices: [{ message: { content: JSON.stringify({ criteria: [{ criterion: 'Clear recommendation', marks_awarded: 6, comment: 'ok' }], total_awarded: 6, feedback: 'Solid.' }) } }],
+    usage: {},
+  }),
+});
+
 const ASSESSMENT = {
   id: 1, code: 'cap-fin', title: 'Finance Capstone', summary: 'Scenario.',
   scenario: { title: 'Mokoena Print Studio', background: 'b', facts: ['f'] },
@@ -61,6 +70,10 @@ pool.query = async (sql) => {
   if (s.includes('FROM lab_capstone_assessments WHERE code')) return { rows: [ASSESSMENT] };
   if (s.includes('FROM lab_capstone_assessments c')) return { rows: [{ ...ASSESSMENT, question_count: 6, attempts_used: usedCount, best_score: priorPass ? 80 : null }] };
   if (s.includes('COUNT(*)::int AS used')) return { rows: [{ used: usedCount }] };
+  if (s.includes('SELECT id, answers, auto_marks, status FROM lab_capstone_attempts')) return { rows: [{ id: 5, answers: { 11: 'my answer' }, auto_marks: 17, status: 'pending_marking' }] };
+  if (s.includes('SELECT id, type, prompt, marks, marking, rubric, model_answer FROM lab_capstone_questions')) {
+    return { rows: [{ id: 11, type: 'extended_response', prompt: 'Write a note.', marks: 8, marking: 'rubric', rubric: [{ criterion: 'Clear recommendation', marks: 2 }], model_answer: 'Model.' }] };
+  }
   if (s.includes('SELECT a.id, a.auto_marks')) return { rows: [{ id: 5, auto_marks: 17, timed_out: false, status: 'pending_marking', user_id: 7, owner_track: 1 }] };
   if (s.includes('SELECT id, type, correct, explanation, marks, marking FROM lab_capstone_questions')) return { rows: gradedQuestions };
   if (s.includes('SELECT id, type, marks, marking FROM lab_capstone_questions')) return { rows: MARK_QUESTIONS };
@@ -185,4 +198,14 @@ test('a timed-out attempt fails and withholds rewards', async () => {
   assert.equal(response.body.result.timed_out, true);
   assert.equal(response.body.result.passed, false);
   assert.equal(response.body.xp_earned, 0);
+});
+
+test('POST ai-mark suggests rubric marks without finalising the attempt', async () => {
+  const response = await auth(request(app).post('/api/lab/assessments/cap-fin/attempts/5/ai-mark')).send({});
+  assert.equal(response.status, 200);
+  assert.equal(response.body.suggested_marks, 6);
+  assert.equal(response.body.auto_marks, 17);
+  assert.equal(response.body.projected_score, Math.round((100 * 23) / 25));
+  assert.equal(response.body.ai_suggestion['11'].total_awarded, 6);
+  assert.match(response.body.note, /human spot-check/);
 });

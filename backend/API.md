@@ -175,6 +175,9 @@ Protected. Body `{ attempt_id, answers: { "<question_id>": <response> } }`. Grad
 ### POST /api/lab/assessments/:code/attempts/:id/mark
 Reviewer/AI-marker endpoint. Body `{ marks: { "<question_id>": <total> | [<per-criterion>] }, marked_by }`. Finalises a `pending_marking` attempt: rubric marks are capped at the question marks, added to the auto marks, and the score, pass, rewards and readiness are applied (a human should spot-check any AI marking). `409` if the attempt is not awaiting marking.
 
+### POST /api/lab/assessments/:code/attempts/:id/ai-mark
+Protected. AI-assisted marking. Vera's marker model scores each rubric question against the rubric and stores a **suggestion** (`ai_suggestion`, plus `suggested_marks` and a `projected_score`) without finalising — the attempt stays `pending_marking` until a human confirms via the mark endpoint. `409` if not awaiting marking, `400` if there are no rubric questions.
+
 ### POST /api/lab/coach
 Protected. Body `{ "lesson_code": "ai-ethics-and-bias", "messages": [...] }` → a Socratic tutor reply. `?stream=1` streams SSE as above. Rate-limited.
 
@@ -211,6 +214,31 @@ Protected. Body `{ "image_base64": "...", "mime": "image/png" }` (`image/png`, `
 ### GET /api/users/avatar
 Protected. Returns the caller's avatar image, or `404` when none is set.
 
+
+## Vera — AI assistant with memory
+
+Vera is the app-wide, friendly professional assistant. She keeps track of the learner's progress (skill scores, task outcomes, lab and capstone results), remembers durable observations, and personalises coaching. Sessions and messages are stored per user.
+
+### POST /api/vera/chat
+Protected. Body `{ session_id?, messages, context? }` where `messages` is the running history (1–20 messages, each ≤ 2,000 chars, last from the user) and `context` is one of `assistant`, `coach`, `lab`, `verification`, `general`. Creates a session when `session_id` is omitted. Builds the learner profile + memories into Vera's system prompt, stores the turn, extracts durable memories from the exchange, and returns `{ session_id, reply }`. `?stream=1` streams SSE. Rate-limited (8/min).
+
+### GET /api/vera/sessions
+Protected. The user's recent chat sessions.
+
+### GET /api/vera/sessions/:id
+Protected. One session with its messages.
+
+### GET /api/vera/memory
+Protected. The learner's stored memories (kind + content).
+
+### POST /api/vera/memory
+Protected. Body `{ kind, content }`, `kind` ∈ `preference|struggle|strength|goal|fact`, `content` ≤ 300 chars. Idempotent per (user, kind, content).
+
+### DELETE /api/vera/memory/:id
+Protected. Removes one of the user's memories.
+
+### GET /api/vera/tips
+Protected. Deterministic, cost-free coaching tips derived from the learner profile (weak areas, recent misses, strengths, unfinished lessons, capstones awaiting marking), plus a `summary` of the profile.
 
 ## Scoring
 
