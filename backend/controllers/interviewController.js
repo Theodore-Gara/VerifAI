@@ -1,6 +1,6 @@
 const pool = require('../db/pool');
 const { positiveIntegerParam } = require('../middleware/validate');
-const { refreshReadiness } = require('./tasksController');
+const { refreshReadiness } = require('../services/readinessService');
 
 async function getCurrentUser(firebaseUid) {
   const result = await pool.query(

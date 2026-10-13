@@ -14,6 +14,12 @@ const achievementRoutes = require('./routes/achievements');
 const leaderboardRoutes = require('./routes/leaderboard');
 const interviewRoutes = require('./routes/interview');
 const assistantRoutes = require('./routes/assistant');
+const verificationRoutes = require('./routes/verification');
+const labRoutes = require('./routes/lab');
+const workshopRoutes = require('./routes/workshop');
+const rewardsRoutes = require('./routes/rewards');
+const veraRoutes = require('./routes/vera');
+const industryPracticeRoutes = require('./routes/industryPractice');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -47,6 +53,10 @@ app.use(cors({
   },
 }));
 
+// Path-scoped parsers run first so avatar images and long documents are not
+// capped by the small global limit; body-parser skips paths already parsed.
+app.use(['/api/users/avatar'], express.json({ limit: '3mb' }));
+app.use(['/api/verification/analyze'], express.json({ limit: '1mb' }));
 app.use(express.json({ limit: '32kb' }));
 app.use(express.urlencoded({ extended: false, limit: '16kb' }));
 
@@ -116,6 +126,12 @@ app.use('/api/achievements', achievementRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/interview', interviewRoutes);
 app.use('/api/assistant', assistantRoutes);
+app.use('/api/verification', verificationRoutes);
+app.use('/api/lab', labRoutes);
+app.use('/api/workshop', workshopRoutes);
+app.use('/api/rewards', rewardsRoutes);
+app.use('/api/vera', veraRoutes);
+app.use('/api/industry-practice', industryPracticeRoutes);
 
 app.get('/api/docs', (req, res) => {
   res.json({
@@ -139,6 +155,45 @@ app.get('/api/docs', (req, res) => {
       'GET /api/interview/questions',
       'POST /api/interview/questions/:id/practice',
       'POST /api/assistant/chat',
+      'POST /api/verification/analyze',
+      'GET /api/verification/analyses',
+      'GET /api/lab/lessons',
+      'GET /api/lab/lessons/next',
+      'GET /api/lab/lessons/:code',
+      'POST /api/lab/lessons/:code/progress',
+      'POST /api/lab/lessons/:code/assessment',
+      'POST /api/lab/activities/:id/attempt',
+      'GET /api/lab/assessments',
+      'GET /api/lab/assessments/:code',
+      'POST /api/lab/assessments/:code/start',
+      'POST /api/lab/assessments/:code/submit',
+      'POST /api/lab/assessments/:code/attempts/:id/mark',
+      'GET /api/lab/sources',
+      'GET /api/lab/sources/:id',
+      'GET /api/lab/library',
+      'POST /api/lab/coach',
+      'GET /api/workshop/posts',
+      'GET /api/workshop/posts/:id/replies',
+      'POST /api/workshop/posts',
+      'POST /api/workshop/posts/:id/react',
+      'POST /api/workshop/posts/:id/report',
+      'DELETE /api/workshop/posts/:id',
+      'GET /api/rewards',
+      'GET /api/rewards/tokens',
+      'POST /api/rewards/:code/redeem',
+      'POST /api/users/avatar',
+      'GET /api/users/avatar',
+      'POST /api/vera/chat',
+      'GET /api/vera/sessions',
+      'GET /api/vera/sessions/:id',
+      'GET /api/vera/memory',
+      'POST /api/vera/memory',
+      'DELETE /api/vera/memory/:id',
+      'GET /api/vera/tips',
+      'POST /api/lab/assessments/:code/attempts/:id/ai-mark',
+      'GET /api/industry-practice/cases',
+      'GET /api/industry-practice/cases/:id',
+      'POST /api/industry-practice/cases/:id/read',
     ],
   });
 });

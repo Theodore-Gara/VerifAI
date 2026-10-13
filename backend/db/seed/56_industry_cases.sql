@@ -1,0 +1,106 @@
+-- VerifAI Industry Practice — real-world workplace blunder case studies.
+-- Informational (scenario -> cause -> solution), sourced from real reporting.
+-- Cases gathered via Tavily search (2026-10-13). Idempotent: upsert by title.
+
+INSERT INTO industry_cases (track_id, title, scenario, cause, solution, source_title, source_url, sort_order)
+SELECT (SELECT id FROM industry_tracks WHERE name = v.track_name),
+       v.title, v.scenario, v.cause, v.solution, v.source_title, v.source_url, v.sort_order
+FROM (VALUES
+  -- Cross-industry (AI misuse / governance)
+  (NULL, 'Samsung staff leaked source code to a public AI chatbot',
+   'In 2023, engineers at Samsung pasted confidential source code and internal meeting notes into a public AI chatbot to debug and summarise it, exposing trade secrets outside the company.',
+   'There was no approved-tool policy and no training; staff assumed a public chatbot was a safe productivity tool.',
+   'Publish an approved-tool policy, train staff on data handling, and block unapproved AI services or route them through an enterprise gateway that does not train on your data.',
+   'HumanFirewall — A Case Study on Samsung''s ChatGPT Incident', 'https://humanfirewall.io/case-study-on-samsungs-chatgpt-incident', 10),
+  (NULL, 'Shadow AI forced a bank to disclose an undisclosed tool',
+   'A regional bank had to make a public disclosure after it emerged an employee was using an unauthorised AI tool for work, creating a risk the company had never assessed.',
+   'Shadow AI: there was no register of which AI tools were in use, so risks went unassessed and unreported.',
+   'Keep an AI use register, require approval and review before a new tool is adopted, and monitor for unsanctioned use.',
+   'Finrep — Understanding Shadow AI Risks: The CB Financial 8-K Case', 'https://www.finrep.ai/blog/shadow-ai-sec-disclosure-risks-the-cb-financial-8-k-explained', 20),
+  (NULL, 'A third-party AI tool opened the door to a workspace breach',
+   'An employee connected a third-party AI tool to a corporate workspace with broad access; the tool was compromised and the attacker used its tokens to reach company data.',
+   'No vendor vetting and excessive OAuth permissions granted to an unvetted integration.',
+   'Vet vendors before integrating, grant least-privilege scopes, and review connected apps regularly.',
+   'Strike — Vercel x Context.ai: when your AI tool becomes the attacker', 'https://strike.sh/blog/vercel-x-context-ai-case-study-when-your-ai-tool-becomes-the-attacker', 30),
+
+  -- Finance
+  ('Finance', 'Ricoh India: falsified accounts and hidden losses',
+   'Ricoh India reported a large loss after an investigation found falsified accounts and controls that had been overridden for years.',
+   'Weak internal controls and pressure to meet targets let accounting rules be bypassed without challenge.',
+   'Separate duties, require independent approvals, protect whistleblowers, and give the board real oversight of financial reporting.',
+   'Directors Institute — Corporate Governance Failures: Case Studies and Lessons Learned', 'https://www.directors-institute.com/post/corporate-governance-failures-case-studies-and-lessons-learned', 40),
+  ('Finance', 'A single manual keying error cost hundreds of millions',
+   'A data-entry mistake that flowed into an automated process caused losses reported at roughly $225 million within minutes.',
+   'Manual entry with no validation, no maker-checker, and no sanity limit on an automated process.',
+   'Add input validation and range checks, use maker-checker approval for high-value entries, and reconcile outputs before they are acted on.',
+   'TST Technology — Tiny Human Error in Business Leads $225 Million in Losses', 'https://tsttechnology.io/blog/tiny-human-error-in-business', 50),
+  ('Finance', 'A payroll error that snowballed',
+   'A payroll change was processed without review; the mistake repeated each cycle, damaging staff trust and cash flow.',
+   'No approval workflow for payroll changes and no reconciliation against the ledger.',
+   'Require review and approval of payroll changes, reconcile payroll to the general ledger, and keep an audit trail.',
+   'Vinali Group — Consequences of Payroll Errors: 7 Costly Business Disasters', 'https://vinaligroup.com/consequences-of-payroll-errors', 60),
+  ('Finance', 'A law firm lost $43,000 to embezzlement',
+   'A firm lost about $43,000 because poor fundamentals let one employee divert funds unnoticed.',
+   'The same person controlled payments and reconciliation, with no segregation of duties.',
+   'Segregate duties, reconcile bank accounts independently, and require dual authorisation for payments.',
+   'Case Study: Fundamental Errors Lead to a $43,000 Loss', 'https://www.linkedin.com/pulse/case-study-fundamental-errors-lead-43000-loss-terrence-pricher', 70),
+
+  -- Legal
+  ('Legal', 'Confidential email sent to the wrong recipient',
+   'A legal assistant used an unrelated work email and copied the wrong address, disclosing client information to a third party.',
+   'No check of recipients or confidentiality, and autocomplete was used without verification.',
+   'Verify recipients before sending, label confidential material, use data-loss-prevention tools, and train staff on their confidentiality duties.',
+   'Breach of confidentiality when a lawyer''s assistant emails the wrong person', 'https://www.justanswer.com/law/igbyi-breach-confidentiality-when-lawyer-s-assistant.html', 80),
+  ('Legal', 'A law firm data breach exposed client case files',
+   'A firm that advised clients on cybersecurity suffered a breach that exposed confidential client data across many files.',
+   'Weak baseline security and no tested incident-response plan.',
+   'Apply baseline controls and encryption, prepare and test an incident-response plan, and notify the Regulator and affected clients as required (POPIA section 22).',
+   'DeepStrike — Law Firm Data Breach Statistics', 'https://deepstrike.io/blog/law-firm-data-breach-statistics', 90),
+  ('Legal', 'A conflict of interest missed at intake',
+   'A firm acted against a former client on a related matter because the conflict was not caught when the matter was accepted.',
+   'An incomplete conflicts database and no documented conflicts check before intake.',
+   'Maintain a conflicts database, run a documented check before intake, and decline the matter or obtain informed consent where appropriate.',
+   'Harvard Law Review — Proving Breach of Former-Client Confidentiality', 'https://harvardlawreview.org/print/vol-131/proving-breach-of-former-client-confidentiality', 100),
+
+  -- IT / Software
+  ('IT / Software', 'Outage from an uncontrolled production change',
+   'A change was pushed straight to production without canary testing or a rollback plan and took a core service down.',
+   'Uncontrolled change, an unrealistic test environment, and no rollback path.',
+   'Use controlled releases with canaries, keep a tested rollback, and invest in observability so failures are caught early.',
+   'SQAExperts — 25 Major Software Failures and Root Cause Analysis', 'https://www.sqaexperts.com/case-study-25-major-software-failures-and-root-cause-analysis-20242026', 110),
+  ('IT / Software', 'A postmortem blamed human error; that was the real failure',
+   'A team closed an incident as "human error" and the same class of outage recurred because no systemic cause was fixed.',
+   'A blame-focused postmortem that stopped at the individual instead of the system.',
+   'Run blameless postmortems that fix systemic causes: guardrails, automation and safer defaults.',
+   'Our Postmortem Blamed Human Error. That Was the Failure', 'https://medium.com/@kakamber07/our-postmortem-blamed-human-error-that-was-the-real-failure-05510ba03892', 120),
+  ('IT / Software', 'SQL injection from string-built queries',
+   'A search endpoint built its SQL by joining strings; an attacker injected input and read arbitrary data.',
+   'Concatenated SQL and validation that lived only in the client.',
+   'Use parameterised queries, validate and authorise on the server, and review security-sensitive code before release.',
+   'OWASP Cheat Sheet Series', 'https://cheatsheetseries.owasp.org', 130),
+
+  -- Business Consulting
+  ('Business Consulting', 'A failed company integration programme',
+   'A manufacturer acquired two companies and the integration stalled amid culture clashes and unclear ownership.',
+   'No integration plan, underestimated cultural fit, and competing leadership agendas.',
+   'Write an integration plan with clear owners, align stakeholders early, and phase the work with measurable milestones.',
+   'LMA Consulting — Analyzing a Project Failure: Lessons Learned', 'https://www.lma-consultinggroup.com/case-study-of-a-project-failure', 140),
+  ('Business Consulting', 'One planning mistake sank a project',
+   'A project failed because a single unmanaged assumption about resources proved wrong and nothing had been sequenced around it.',
+   'No risk management and no contingency; the plan assumed the best case.',
+   'Keep a risk register, plan buffers and contingencies, and track assumptions explicitly.',
+   'Epicflow — Project Failure Examples: 4 Famous Cases & Lessons', 'https://www.epicflow.com/blog/4-lessons-learned-from-the-weirdest-cases-of-project-failure', 150),
+  ('Business Consulting', 'Stakeholder expectations were never aligned',
+   'A project delivered on time but was judged a failure because it solved the wrong problem for the sponsor.',
+   'Scope and success criteria were never agreed, and stakeholders were engaged late.',
+   'Agree a charter and success criteria up front, map stakeholders, and review expectations at each gate.',
+   'ProjectManagement.com — Lessons from a project failure', 'https://www.projectmanagement.com/discussion-topic/224991/what-is-the-single-most-valuable-lesson-you-ve-learned-from-a-project-failure--and-how-did-it-reshape-your-approach-to-future-projects-', 160)
+) AS v(track_name, title, scenario, cause, solution, source_title, source_url, sort_order)
+ON CONFLICT (title) DO UPDATE SET
+  track_id = EXCLUDED.track_id,
+  scenario = EXCLUDED.scenario,
+  cause = EXCLUDED.cause,
+  solution = EXCLUDED.solution,
+  source_title = EXCLUDED.source_title,
+  source_url = EXCLUDED.source_url,
+  sort_order = EXCLUDED.sort_order;

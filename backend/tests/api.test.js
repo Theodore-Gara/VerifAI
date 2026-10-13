@@ -346,9 +346,9 @@ test('assistant endpoint sends only the authenticated user task context to NVIDI
   process.env.NVIDIA_API_KEY = 'test-key';
   let providerRequest;
   pool.query = async (sql, params) => {
-    if (sql.includes('FROM users WHERE firebase_uid')) {
+    if (sql.includes('FROM users u') && sql.includes('track_name')) {
       assert.deepEqual(params, ['test-uid']);
-      return { rows: [{ id: 7, industry_track_id: 1 }] };
+      return { rows: [{ id: 7, industry_track_id: 1, track_name: 'Finance' }] };
     }
     if (sql.includes('FROM tasks t')) {
       assert.deepEqual(params, [42, 1]);

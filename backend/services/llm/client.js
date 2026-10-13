@@ -1,0 +1,165 @@
+// Low-level NVIDIA-hosted chat transport. Knows nothing about prompts or use
+// cases: callers pass a resolved profile (see profiles.js) and messages.
+//
+// Key behaviours discovered while evaluating the models:
+//  - `enable_thinking:true` makes a reasoning model spend the token budget on
+//    its trace first, so it must be paired with a generous `max_tokens` (and a
+//    `reasoning_budget` where supported) or `content` comes back empty.
+//  - Only some models accept `reasoning_budget`; profiles below only set it for
+//    the analysis model.
+//  - Upstream can be slow or flaky, so callers get a fallback model.
+const CHAT_URL =
+  process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1/chat/completions';
+
+const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+
+function llmError(status, message) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
+function requireApiKey() {
+  const key = process.env.NVIDIA_API_KEY;
+  if (!key) throw llmError(503, 'AI service is not configured.');
+  return key;
+}
+
+function buildBody({ model, messages, temperature, topP, maxTokens, thinking, reasoningBudget, stream }) {
+  const body = {
+    model,
+    messages,
+    temperature,
+    top_p: topP,
+    max_tokens: maxTokens,
+    stream: !!stream,
+  };
+  if (thinking !== undefined) body.chat_template_kwargs = { enable_thinking: !!thinking };
+  if (thinking && reasoningBudget) body.reasoning_budget = reasoningBudget;
+  return body;
+}
+
+function mapTransportError(cause) {
+  if (cause && cause.name === 'TimeoutError') {
+    return llmError(504, 'The AI service timed out or is unavailable.');
+  }
+  return llmError(502, 'The AI service is temporarily unavailable.');
+}
+
+function mapHttpError(status) {
+  return llmError(status === 429 ? 503 : 502, 'The AI service is temporarily unavailable.');
+}
+
+// Single buffered completion. Returns { content, reasoning, usage, finish }.
+async function chatCompletion(params, fetchImpl = fetch) {
+  const key = requireApiKey();
+  let response;
+  try {
+    response = await fetchImpl(CHAT_URL, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildBody({ ...params, stream: false })),
+      signal: AbortSignal.timeout(params.timeoutMs || 30000),
+    });
+  } catch (cause) {
+    throw mapTransportError(cause);
+  }
+  if (!response.ok) throw mapHttpError(response.status);
+
+  const result = await response.json();
+  const message = result.choices?.[0]?.message || {};
+  return {
+    content: typeof message.content === 'string' ? message.content.trim() : '',
+    reasoning: typeof message.reasoning_content === 'string' ? message.reasoning_content : '',
+    usage: result.usage || {},
+    finish: result.choices?.[0]?.finish_reason,
+  };
+}
+
+// Buffered completion with a single retry on the fallback model if the primary
+// fails for a retryable reason. Throws the original error if no fallback helps.
+async function chatWithFallback(params, fetchImpl = fetch) {
+  const { fallbackModel, ...primary } = params;
+  try {
+    return await chatCompletion(primary, fetchImpl);
+  } catch (error) {
+    if (!fallbackModel || fallbackModel === primary.model || !RETRYABLE_STATUS.has(error.status)) {
+      throw error;
+    }
+    return chatCompletion({ ...primary, model: fallbackModel }, fetchImpl);
+  }
+}
+
+// Streams server-sent chunks. Yields { delta } for each content token and a
+// final { usage } when the provider reports it.
+async function* streamChatCompletion(params, fetchImpl = fetch) {
+  const key = requireApiKey();
+  let response;
+  try {
+    response = await fetchImpl(CHAT_URL, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildBody({ ...params, stream: true })),
+      signal: AbortSignal.timeout(params.timeoutMs || 30000),
+    });
+  } catch (cause) {
+    throw mapTransportError(cause);
+  }
+  if (!response.ok) throw mapHttpError(response.status);
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('data:')) continue;
+      const data = trimmed.slice(5).trim();
+      if (data === '[DONE]') continue;
+      let parsed;
+      try {
+        parsed = JSON.parse(data);
+      } catch {
+        continue;
+      }
+      const delta = parsed.choices?.[0]?.delta?.content;
+      if (delta) yield { delta };
+      if (parsed.usage) yield { usage: parsed.usage };
+    }
+  }
+}
+
+// Streaming fallback is only safe before the first token has been emitted, so
+// a mid-stream failure is surfaced rather than restarted.
+async function* streamWithFallback(params, fetchImpl = fetch) {
+  const { fallbackModel, ...primary } = params;
+  let yielded = false;
+  try {
+    for await (const chunk of streamChatCompletion(primary, fetchImpl)) {
+      yielded = true;
+      yield chunk;
+    }
+    return;
+  } catch (error) {
+    if (yielded || !fallbackModel || fallbackModel === primary.model || !RETRYABLE_STATUS.has(error.status)) {
+      throw error;
+    }
+  }
+  for await (const chunk of streamChatCompletion({ ...primary, model: fallbackModel }, fetchImpl)) {
+    yield chunk;
+  }
+}
+
+module.exports = {
+  CHAT_URL,
+  chatCompletion,
+  chatWithFallback,
+  streamChatCompletion,
+  streamWithFallback,
+  llmError,
+};
