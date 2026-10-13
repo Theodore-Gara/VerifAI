@@ -48,7 +48,7 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
     _speakGreeting();
   }
 
-  static const _greeting = "Hi I'm Vera, your AI assistant. What are we doing today.";
+  static const _greeting = "Hi I'm Vera, your AI assistant.";
 
   Future<void> _speakGreeting() async {
     // Preferred: the on-device Piper (en_GB-cori-high) voice.
@@ -381,9 +381,6 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
                 fillColor: AppColors.surface,
                 contentPadding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.md, vertical: AppSpacing.md),
-                suffixIcon: _WebSearchButton(
-                    active: _webSearch, onTap: () => setState(() => _webSearch = !_webSearch)),
-                suffixIconConstraints: const BoxConstraints(minWidth: 52, minHeight: 48),
                 border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.card),
                     borderSide: const BorderSide(color: AppColors.border)),
@@ -398,6 +395,9 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
+          _WebSearchButton(
+              active: _webSearch, onTap: () => setState(() => _webSearch = !_webSearch)),
+          const SizedBox(width: AppSpacing.sm),
           IconButton.filled(
             onPressed: _sending ? null : () => _send(),
             icon: const Icon(Icons.send_rounded),
@@ -410,7 +410,7 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
   }
 }
 
-/// Circular web-search toggle that sits on the right of the input, beside send.
+/// Circular web-search toggle that sits beside the send button.
 class _WebSearchButton extends StatelessWidget {
   const _WebSearchButton({required this.active, required this.onTap});
   final bool active;
@@ -419,7 +419,7 @@ class _WebSearchButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(right: 6),
+      padding: EdgeInsets.zero,
       child: Align(
         alignment: Alignment.center,
         child: Tooltip(

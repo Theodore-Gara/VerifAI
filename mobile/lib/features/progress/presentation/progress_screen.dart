@@ -288,9 +288,7 @@ class ProgressScreen extends ConsumerWidget {
                   height: height,
                   decoration: BoxDecoration(
                     color: ratio > 0
-                        ? (entry.value.key == today
-                            ? AppColors.accentGreen
-                            : AppColors.primaryNavy)
+                        ? AppColors.primaryNavy
                         : AppColors.border.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(AppRadius.pill),
                   ),
