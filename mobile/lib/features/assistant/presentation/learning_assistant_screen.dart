@@ -7,6 +7,7 @@ import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/shared/models/daily_task.dart';
 import 'package:verifai/core/services/api_client.dart';
+import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 
 class LearningAssistantScreen extends ConsumerStatefulWidget {
   final DailyTask task;
@@ -65,15 +66,11 @@ class _LearningAssistantScreenState
         _messages.removeLast();
         _input.text = text;
       });
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content:
-                Text('The assistant could not respond. Try again shortly.'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+      showFeedback(
+        context,
+        FeedbackKind.error,
+        'The assistant could not respond. Try again shortly.',
+      );
     } finally {
       if (mounted) setState(() => _sending = false);
     }

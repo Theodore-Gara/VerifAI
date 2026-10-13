@@ -1,6 +1,5 @@
-// Verifies the login error snackbar shows once and Dismiss removes it.
-
-import 'dart:async';
+// Verifies the login error banner shows once and its close button removes it
+// (the old dark Material snackbar was replaced by the themed FeedbackBanner).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -54,8 +53,10 @@ Widget _harness() {
   );
 }
 
+const _errorMatcher = 'email or password is incorrect';
+
 void main() {
-  testWidgets('failed login shows error snackbar and Dismiss removes it',
+  testWidgets('failed login shows the error banner and close removes it',
       (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
     FlutterSecureStorage.setMockInitialValues({});
@@ -68,16 +69,18 @@ void main() {
     await tester.enterText(find.byType(TextFormField).at(1), 'wrongpass');
     await tester.tap(find.widgetWithText(ElevatedButton, 'Sign In'));
     await tester.pump();
-    await tester.pump(const Duration(seconds: 1)); // error + snackbar
+    await tester.pump(const Duration(seconds: 1)); // error + banner
 
-    expect(
-        find.textContaining('email or password is incorrect'), findsOneWidget);
+    expect(find.textContaining(_errorMatcher), findsOneWidget);
 
+    // Let the snackbar entrance animation finish so the banner accepts
+    // pointer events, then tap the themed banner's Dismiss action (it replaces
+    // the old snackbar's Dismiss).
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Dismiss'));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1)); // snackbar exit animation
+    await tester.pumpAndSettle();
 
-    expect(find.textContaining('email or password is incorrect'), findsNothing);
+    expect(find.textContaining(_errorMatcher), findsNothing);
   });
 
   testWidgets('second failed attempt shows the error again (not stuck)',
@@ -95,15 +98,13 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
-    expect(
-        find.textContaining('email or password is incorrect'), findsOneWidget);
+    expect(find.textContaining(_errorMatcher), findsOneWidget);
 
     // Try again — the button must be enabled and the error re-shown once.
     await tester.tap(find.widgetWithText(ElevatedButton, 'Sign In'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
-    expect(
-        find.textContaining('email or password is incorrect'), findsOneWidget);
+    expect(find.textContaining(_errorMatcher), findsOneWidget);
   });
 }

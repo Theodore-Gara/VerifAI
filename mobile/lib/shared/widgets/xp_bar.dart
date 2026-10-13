@@ -30,11 +30,11 @@ class XPBar extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
             decoration: BoxDecoration(
-              color: AppColors.xpPurple,
+              color: AppColors.primaryNavy,
               borderRadius: BorderRadius.circular(AppRadius.pill),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.xpPurple.withValues(alpha: 0.3),
+                  color: AppColors.primaryNavy.withValues(alpha: 0.3),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),
@@ -58,13 +58,13 @@ class XPBar extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.pill),
               child: Stack(
                 children: [
-                  Container(color: AppColors.xpPurpleLight),
+                  Container(color: AppColors.border.withValues(alpha: 0.4)),
                   FractionallySizedBox(
                     widthFactor: progress,
                     child: Container(
                       decoration: const BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [AppColors.xpPurple, AppColors.accentCyan],
+                          colors: [AppColors.primaryNavy, AppColors.accentCyan],
                         ),
                       ),
                     ),
@@ -103,13 +103,11 @@ class XPBar extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 3.5),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.xpPurple, Color(0xFF6D28D9)],
-                      ),
+                      color: AppColors.primaryNavy,
                       borderRadius: BorderRadius.circular(AppRadius.pill),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.xpPurple.withValues(alpha: 0.3),
+                          color: AppColors.primaryNavy.withValues(alpha: 0.3),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -159,7 +157,7 @@ class XPBar extends StatelessWidget {
                     child: Container(
                       decoration: const BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [AppColors.xpPurple, AppColors.accentCyan],
+                          colors: [AppColors.primaryNavy, AppColors.accentCyan],
                         ),
                       ),
                     ),

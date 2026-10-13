@@ -29,32 +29,6 @@ class TrackRoadmapScreen extends ConsumerWidget {
         elevation: 0,
         title: const Text('Track Roadmap'),
         centerTitle: false,
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: AppSpacing.screenPadding),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.accentLight,
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.verified_rounded,
-                    size: 14, color: AppColors.accentGreen),
-                const SizedBox(width: 4),
-                Text(
-                  'YOUR JOURNEY',
-                  style: AppTypography.textTheme.labelSmall?.copyWith(
-                    color: AppColors.accentGreen,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 9.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(milestonesProvider),
@@ -111,44 +85,23 @@ class TrackRoadmapScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.accentGreen.withValues(alpha: 0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.alt_route_rounded,
-                        color: AppColors.accentGreen,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'SPECIALIZATION PATH',
-                          style: AppTypography.textTheme.labelSmall?.copyWith(
-                            color: AppColors.accentCyan,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.8,
-                            fontSize: 9.5,
-                          ),
-                        ),
-                        Text(
-                          trackName,
-                          style: AppTypography.textTheme.titleLarge?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                Text(
+                  'SPECIALIZATION PATH',
+                  style: AppTypography.textTheme.labelSmall?.copyWith(
+                    color: AppColors.accentGreen,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                    fontSize: 9.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  trackName,
+                  style: AppTypography.textTheme.titleLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text(
@@ -272,54 +225,31 @@ class TrackRoadmapScreen extends ConsumerWidget {
     );
   }
 
-  IconData _iconFor(String code) {
-    if (code.startsWith('first_task')) return Icons.flag_rounded;
-    if (code.startsWith('track_master')) return Icons.military_tech_rounded;
-    if (code.startsWith('xp_')) return Icons.bolt_rounded;
-    if (code.startsWith('streak_')) return Icons.local_fire_department_rounded;
-    if (code.startsWith('level_')) return Icons.workspace_premium_rounded;
-    return Icons.emoji_events_rounded;
-  }
-
   Widget _buildNodeIndicator(MilestoneStatus status) {
     switch (status) {
       case MilestoneStatus.completed:
         return Container(
-          width: 36,
-          height: 36,
+          width: 20,
+          height: 20,
           decoration: const BoxDecoration(
             color: AppColors.accentGreen,
             shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.shadow,
-                blurRadius: 6,
-                offset: Offset(0, 2),
-              ),
-            ],
           ),
-          child: const Icon(Icons.check, size: 20, color: Colors.white),
+          child: const Icon(Icons.check, size: 13, color: Colors.white),
         );
       case MilestoneStatus.active:
         return Container(
-          width: 36,
-          height: 36,
+          width: 20,
+          height: 20,
           decoration: BoxDecoration(
             color: AppColors.primaryNavy,
             shape: BoxShape.circle,
             border: Border.all(color: AppColors.accentGreen, width: 2.5),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.shadow,
-                blurRadius: 6,
-                offset: Offset(0, 2),
-              ),
-            ],
           ),
           child: Center(
             child: Container(
-              width: 10,
-              height: 10,
+              width: 7,
+              height: 7,
               decoration: const BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
@@ -329,15 +259,14 @@ class TrackRoadmapScreen extends ConsumerWidget {
         );
       case MilestoneStatus.locked:
         return Container(
-          width: 36,
-          height: 36,
+          width: 20,
+          height: 20,
           decoration: BoxDecoration(
             color: AppColors.background,
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.border, width: 2),
+            border: Border.all(
+                color: AppColors.border.withValues(alpha: 0.8), width: 2),
           ),
-          child: const Icon(Icons.lock_rounded,
-              size: 16, color: AppColors.textSecondary),
         );
     }
   }
@@ -378,25 +307,6 @@ class TrackRoadmapScreen extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: isLocked
-                      ? AppColors.border.withValues(alpha: 0.5)
-                      : AppColors.accentLight,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: Icon(
-                  milestone.achieved
-                      ? Icons.check_circle_rounded
-                      : _iconFor(milestone.code),
-                  size: 16,
-                  color: isLocked
-                      ? AppColors.textSecondary
-                      : AppColors.accentGreen,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
                   milestone.name,
@@ -444,6 +354,8 @@ class TrackRoadmapScreen extends ConsumerWidget {
               fontSize: 12,
               height: 1.35,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

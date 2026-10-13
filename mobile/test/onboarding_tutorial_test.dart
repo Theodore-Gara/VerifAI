@@ -56,4 +56,18 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Dashboard destination'), findsOneWidget);
   });
+
+  testWidgets('next stays visible on a narrow screen after advancing',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(testApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Next'), findsOneWidget);
+    expect(find.text('Back'), findsOneWidget);
+  });
 }
