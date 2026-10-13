@@ -131,7 +131,7 @@ Protected. The user's recent analyses (metadata + report), newest first. Optiona
 Protected. The AI Lab lesson catalog available to the user's track (plus global lessons), each with section/activity/question counts and the user's progress.
 
 ### GET /api/lab/lessons/:code
-Protected. One lesson with its textbook `sections`, practical `activities` and assessment `questions`, plus the user's progress. Opening a lesson records recency (not completion). The response also includes `sources`, `attributions` (ready-made credit lines) and a `share_alike` flag. **Answer keys are withheld** (`correct_index`/`explanation` are not returned here).
+Protected. One lesson with its textbook `sections`, graded recall `activities` (each with `type`, `prompt`, `payload`, `xp_reward` and whether the user has `passed`) and assessment `questions`, plus the user's progress. Opening a lesson records recency (not completion). The response also includes `sources`, `attributions` (ready-made credit lines) and a `share_alike` flag. **Answer keys are withheld** — activities never return `correct`, and questions never return `correct_index`/`explanation`.
 
 ### GET /api/lab/lessons/next
 Protected. Content rotation. Prefers a lesson the learner has not opened yet; when none remain and `include_seen` is true (the default), it serves the lesson gone longest without a revisit, so seen content is never locked away. Optional `?include_seen=true|false` (default true). Response: `{ lesson, revisited }`; `lesson` is `null` when all content is seen and `include_seen=false`.
@@ -150,6 +150,15 @@ Protected. Body `{ "sections_completed": 3, "activities_completed": 1 }`. Counts
 
 ### POST /api/lab/lessons/:code/assessment
 Protected. Body `{ "answers": [1, 0, 2] }` (one index per question). Graded **server-side** against the stored answer key. Returns `{ result: { score, passed, correct_count, total }, questions: [{ question_id, answered, correct, correct_index, explanation }] }`. Passing threshold is 60.
+
+### POST /api/lab/activities/:id/attempt
+Protected. Body `{ "response": <answer>, "practice": false }`. Grades a recall activity **server-side** and returns `{ result: { correct, passed, xp_earned, practice }, explanation, answer }`. A **first non-practice pass** awards the activity's XP (default 10); repeat attempts are practice and earn nothing. The `response` shape depends on `type`:
+
+- `multiple_choice` — the option index (`0`-based).
+- `true_false` — a boolean.
+- `fill_blank` — a string (matched case-insensitively against accepted answers).
+- `matching` — an object `{ "<left>": "<right>", ... }`.
+- `ordering` — an array of the items in the chosen order.
 
 ### POST /api/lab/coach
 Protected. Body `{ "lesson_code": "ai-ethics-and-bias", "messages": [...] }` → a Socratic tutor reply. `?stream=1` streams SSE as above. Rate-limited.
@@ -201,6 +210,7 @@ XP:
 - practice runs earn 0 XP
 - otherwise scaled by score and difficulty: `round(score/100 * difficulty_max)`, with difficulty maxima easy 50 / medium 70 / hard 100
 - a pass is `score >= 50` for judgement and risk & governance, `>= 60` for verification
+- AI Lab practice activities award their `xp_reward` (default 10) on the **first non-practice pass**; repeat attempts earn none, and a pass still advances the level/token economy
 
 Level:
 

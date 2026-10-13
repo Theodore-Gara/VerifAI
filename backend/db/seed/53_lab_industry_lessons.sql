@@ -37,19 +37,6 @@ FROM lab_lessons l, (VALUES
 ) AS v(code, heading, body, sort_order)
 WHERE l.code = v.code;
 
-DELETE FROM lab_activities WHERE lesson_id IN (SELECT id FROM lab_lessons WHERE code IN ('finance-read-the-numbers', 'finance-verify-a-forecast'));
-INSERT INTO lab_activities (lesson_id, kind, title, instructions, sort_order)
-SELECT l.id, v.kind, v.title, v.instructions, v.sort_order
-FROM lab_lessons l, (VALUES
-  ('finance-read-the-numbers', 'reflection', 'Trace three numbers',
-   'Pick three figures from an AI summary of a set of accounts. Record the exact source and date for each, or mark it unverified. Write one line on what you could not confirm.', 1),
-  ('finance-read-the-numbers', 'guided_practice', 'Add the missing benchmark',
-   'Take one ratio from a summary and find an appropriate benchmark (a prior period or a peer). Note whether the original conclusion still holds.', 2),
-  ('finance-verify-a-forecast', 'guided_practice', 'List the assumptions',
-   'For an AI-generated forecast, write down every assumption it implies, then mark each as supported, assumed or unknown.', 1)
-) AS v(code, kind, title, instructions, sort_order)
-WHERE l.code = v.code;
-
 DELETE FROM lab_questions WHERE lesson_id IN (SELECT id FROM lab_lessons WHERE code IN ('finance-read-the-numbers', 'finance-verify-a-forecast'));
 INSERT INTO lab_questions (lesson_id, prompt, options, correct_index, explanation, sort_order)
 SELECT l.id, v.prompt, v.options::jsonb, v.correct_index, v.explanation, v.sort_order
@@ -104,19 +91,6 @@ FROM lab_lessons l, (VALUES
 ) AS v(code, heading, body, sort_order)
 WHERE l.code = v.code;
 
-DELETE FROM lab_activities WHERE lesson_id IN (SELECT id FROM lab_lessons WHERE code IN ('legal-primary-sources', 'legal-ai-citation-check'));
-INSERT INTO lab_activities (lesson_id, kind, title, instructions, sort_order)
-SELECT l.id, v.kind, v.title, v.instructions, v.sort_order
-FROM lab_lessons l, (VALUES
-  ('legal-primary-sources', 'reflection', 'Find the provision',
-   'For a claim in an AI legal memo, locate the primary provision that governs it. Quote the exact wording and note the source and date.', 1),
-  ('legal-primary-sources', 'guided_practice', 'Spot the commentary',
-   'Take a paragraph that mixes statute and commentary. Mark which sentences are primary law and which are someone''s opinion.', 2),
-  ('legal-ai-citation-check', 'guided_practice', 'Verify a citation',
-   'Take an authority an AI cites. Confirm it exists (e.g. via SAFLII), that it is current, and that it supports the proposition.', 1)
-) AS v(code, kind, title, instructions, sort_order)
-WHERE l.code = v.code;
-
 DELETE FROM lab_questions WHERE lesson_id IN (SELECT id FROM lab_lessons WHERE code IN ('legal-primary-sources', 'legal-ai-citation-check'));
 INSERT INTO lab_questions (lesson_id, prompt, options, correct_index, explanation, sort_order)
 SELECT l.id, v.prompt, v.options::jsonb, v.correct_index, v.explanation, v.sort_order
@@ -167,17 +141,6 @@ FROM lab_lessons l, (VALUES
   ('it-model-limits', 'Distribution shift',
    'Performance degrades when live data differs from training data. Monitor for drift and re-evaluate when the world changes.', 2)
 ) AS v(code, heading, body, sort_order)
-WHERE l.code = v.code;
-
-DELETE FROM lab_activities WHERE lesson_id IN (SELECT id FROM lab_lessons WHERE code IN ('it-verify-generated-code', 'it-model-limits'));
-INSERT INTO lab_activities (lesson_id, kind, title, instructions, sort_order)
-SELECT l.id, v.kind, v.title, v.instructions, v.sort_order
-FROM lab_lessons l, (VALUES
-  ('it-verify-generated-code', 'guided_practice', 'Security review checklist',
-   'Take an AI-generated function that touches authentication. Walk it against an input-validation and auth checklist, and note any unhandled case.', 1),
-  ('it-model-limits', 'reflection', 'Where would this model mislead?',
-   'For a model feature you use, write one scenario where its output would be confidently wrong and how you would catch it.', 1)
-) AS v(code, kind, title, instructions, sort_order)
 WHERE l.code = v.code;
 
 DELETE FROM lab_questions WHERE lesson_id IN (SELECT id FROM lab_lessons WHERE code IN ('it-verify-generated-code', 'it-model-limits'));
@@ -232,17 +195,6 @@ FROM lab_lessons l, (VALUES
 ) AS v(code, heading, body, sort_order)
 WHERE l.code = v.code;
 
-DELETE FROM lab_activities WHERE lesson_id IN (SELECT id FROM lab_lessons WHERE code IN ('business-ai-in-decisions', 'business-stakeholder-risk'));
-INSERT INTO lab_activities (lesson_id, kind, title, instructions, sort_order)
-SELECT l.id, v.kind, v.title, v.instructions, v.sort_order
-FROM lab_lessons l, (VALUES
-  ('business-ai-in-decisions', 'reflection', 'Name the decision owner',
-   'For an AI-assisted decision in your work, name the accountable person and what evidence they would need before acting.', 1),
-  ('business-stakeholder-risk', 'guided_practice', 'Stakeholder map',
-   'Pick one AI use case. List the affected groups and one check that would catch an unfair outcome.', 1)
-) AS v(code, kind, title, instructions, sort_order)
-WHERE l.code = v.code;
-
 DELETE FROM lab_questions WHERE lesson_id IN (SELECT id FROM lab_lessons WHERE code IN ('business-ai-in-decisions', 'business-stakeholder-risk'));
 INSERT INTO lab_questions (lesson_id, prompt, options, correct_index, explanation, sort_order)
 SELECT l.id, v.prompt, v.options::jsonb, v.correct_index, v.explanation, v.sort_order
@@ -284,14 +236,6 @@ FROM lab_lessons l, (VALUES
   ('Map, measure, manage', 'Identify the context and risks, assess how serious they are, then assign controls and named owners.', 2),
   ('Document and review', 'Keep a record of the assessment and review it as the system, the data or the world changes.', 3)
 ) AS v(heading, body, sort_order)
-WHERE l.code = 'risk-ai-governance-nist';
-
-DELETE FROM lab_activities WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'risk-ai-governance-nist');
-INSERT INTO lab_activities (lesson_id, kind, title, instructions, sort_order)
-SELECT l.id, v.kind, v.title, v.instructions, v.sort_order
-FROM lab_lessons l, (VALUES
-  ('guided_practice', 'Risk register for one use case', 'For one AI use case, write a short risk register: the context, the top risks, a control for each, and the owner.', 1)
-) AS v(kind, title, instructions, sort_order)
 WHERE l.code = 'risk-ai-governance-nist';
 
 DELETE FROM lab_questions WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'risk-ai-governance-nist');

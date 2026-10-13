@@ -7,6 +7,7 @@ const {
   getLesson,
   recordProgress,
   submitAssessment,
+  submitActivity,
   listSources,
   getSource,
   getLibrary,
@@ -21,6 +22,7 @@ router.get('/lessons/next', verifyFirebaseToken, getNextLesson);
 router.get('/lessons/:code', verifyFirebaseToken, getLesson);
 router.post('/lessons/:code/progress', verifyFirebaseToken, writeLimit, recordProgress);
 router.post('/lessons/:code/assessment', verifyFirebaseToken, writeLimit, submitAssessment);
+router.post('/activities/:id/attempt', verifyFirebaseToken, writeLimit, submitActivity);
 
 router.get('/sources', verifyFirebaseToken, listSources);
 router.get('/sources/:id', verifyFirebaseToken, getSource);

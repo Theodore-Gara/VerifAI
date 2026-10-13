@@ -158,6 +158,7 @@ app.get('/api/docs', (req, res) => {
       'GET /api/lab/lessons/:code',
       'POST /api/lab/lessons/:code/progress',
       'POST /api/lab/lessons/:code/assessment',
+      'POST /api/lab/activities/:id/attempt',
       'GET /api/lab/sources',
       'GET /api/lab/sources/:id',
       'GET /api/lab/library',

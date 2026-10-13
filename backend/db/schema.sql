@@ -206,14 +206,29 @@ CREATE TABLE IF NOT EXISTS lab_lesson_sections (
   sort_order INTEGER NOT NULL DEFAULT 0
 );
 
+-- Practice activities: graded recall checks (multiple choice, true/false,
+-- fill-in-the-blank, matching, ordering). `correct` is never sent to the app.
+-- `source_id` FK is added after content_sources is created, below.
 CREATE TABLE IF NOT EXISTS lab_activities (
   id SERIAL PRIMARY KEY,
   lesson_id INTEGER NOT NULL REFERENCES lab_lessons(id) ON DELETE CASCADE,
-  kind VARCHAR(30) NOT NULL CHECK (kind IN ('reflection', 'guided_practice', 'task_link', 'artifact')),
-  title VARCHAR(255) NOT NULL,
-  instructions TEXT NOT NULL,
-  task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+  type VARCHAR(20) NOT NULL CHECK (type IN ('multiple_choice', 'true_false', 'matching', 'fill_blank', 'ordering')),
+  prompt TEXT NOT NULL,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  correct JSONB NOT NULL,
+  explanation TEXT NOT NULL,
+  source_id UUID,
+  xp_reward INTEGER NOT NULL DEFAULT 10 CHECK (xp_reward >= 0),
   sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS lab_activity_attempts (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  activity_id INTEGER NOT NULL REFERENCES lab_activities(id) ON DELETE CASCADE,
+  passed BOOLEAN NOT NULL,
+  xp_awarded INTEGER NOT NULL DEFAULT 0 CHECK (xp_awarded >= 0),
+  submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS lab_questions (
@@ -343,6 +358,11 @@ CREATE TABLE IF NOT EXISTS content_sources (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_content_sources_title ON content_sources(title);
 
+DO $$ BEGIN
+  ALTER TABLE lab_activities
+    ADD CONSTRAINT lab_activities_source_fk FOREIGN KEY (source_id) REFERENCES content_sources(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
 CREATE TABLE IF NOT EXISTS lesson_sources (
   lesson_id     INTEGER NOT NULL REFERENCES lab_lessons(id)      ON DELETE CASCADE,
   source_id     UUID    NOT NULL REFERENCES content_sources(id)  ON DELETE RESTRICT,
@@ -409,6 +429,7 @@ CREATE INDEX IF NOT EXISTS idx_reward_redemptions_user ON reward_redemptions(use
 CREATE INDEX IF NOT EXISTS idx_content_sources_industry ON content_sources(industry, title);
 CREATE INDEX IF NOT EXISTS idx_lesson_sources_source ON lesson_sources(source_id);
 CREATE INDEX IF NOT EXISTS idx_lab_lesson_progress_viewed ON lab_lesson_progress(user_id, last_viewed_at);
+CREATE INDEX IF NOT EXISTS idx_lab_activity_attempts ON lab_activity_attempts(user_id, activity_id);
 
 -- ---------------------------------------------------------------------------
 -- updated_at triggers

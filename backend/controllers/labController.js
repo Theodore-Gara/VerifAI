@@ -1,7 +1,9 @@
 const pool = require('../db/pool');
-const { optionalString, clampInt } = require('../middleware/validate');
+const { optionalString, clampInt, positiveIntegerParam } = require('../middleware/validate');
 const { findUserByFirebaseUid } = require('../db/users');
 const { getCoachReply, streamCoachReply } = require('../services/nvidiaAssistant');
+const { gradeActivity } = require('../services/activityGrading');
+const { awardXp } = require('../services/xpService');
 const { validateMessages } = require('./assistantController');
 const { handleAiError } = require('../middleware/aiError');
 const { openStream, sendEvent, endStream } = require('../middleware/sse');
@@ -173,8 +175,11 @@ async function getLesson(req, res, next) {
         [lesson.id],
       ),
       pool.query(
-        `SELECT id, kind, title, instructions, task_id, sort_order FROM lab_activities WHERE lesson_id = $1 ORDER BY sort_order, id`,
-        [lesson.id],
+        `SELECT a.id, a.type, a.prompt, a.payload, a.sort_order, a.xp_reward,
+                EXISTS (SELECT 1 FROM lab_activity_attempts aa
+                        WHERE aa.activity_id = a.id AND aa.user_id = $2 AND aa.passed) AS passed
+         FROM lab_activities a WHERE a.lesson_id = $1 ORDER BY a.sort_order, a.id`,
+        [lesson.id, user.id],
       ),
       // correct_index and explanation are withheld until the assessment is submitted.
       pool.query(
@@ -333,6 +338,66 @@ async function submitAssessment(req, res, next) {
   }
 }
 
+// POST /api/lab/activities/:id/attempt  { response, practice? }
+// Grades a recall activity. A first non-practice pass awards XP (default 10);
+// repeat attempts are practice and earn nothing.
+async function submitActivity(req, res, next) {
+  let client = null;
+  try {
+    const user = await requireUser(res, req);
+    if (!user) return undefined;
+
+    const activityId = positiveIntegerParam(req.params.id, 'activity id');
+    const practice = req.body.practice === true;
+
+    const activityResult = await pool.query(
+      `SELECT a.id, a.lesson_id, a.type, a.correct, a.explanation, a.xp_reward
+       FROM lab_activities a
+       JOIN lab_lessons l ON l.id = a.lesson_id
+       WHERE a.id = $1 AND (l.track_id IS NULL OR l.track_id = $2)`,
+      [activityId, user.industry_track_id],
+    );
+    if (!activityResult.rows.length) {
+      return res.status(404).json({ error: 'Activity not found for your selected track.', request_id: req.requestId });
+    }
+    const activity = activityResult.rows[0];
+
+    const passed = gradeActivity(activity.type, activity.correct, req.body.response);
+
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const prior = await client.query(
+      `SELECT 1 FROM lab_activity_attempts WHERE user_id = $1 AND activity_id = $2 AND passed LIMIT 1`,
+      [user.id, activityId],
+    );
+    const firstPass = passed && prior.rows.length === 0 && !practice;
+    const xpEarned = firstPass ? activity.xp_reward : 0;
+    if (xpEarned > 0) await awardXp(client, user.id, xpEarned);
+
+    await client.query(
+      `INSERT INTO lab_activity_attempts (user_id, activity_id, passed, xp_awarded)
+       VALUES ($1, $2, $3, $4)`,
+      [user.id, activityId, passed, xpEarned],
+    );
+    await client.query('COMMIT');
+
+    return res.status(200).json({
+      result: { correct: passed, passed, xp_earned: xpEarned, practice },
+      explanation: activity.explanation,
+      answer: activity.correct,
+      request_id: req.requestId,
+    });
+  } catch (err) {
+    if (client) await client.query('ROLLBACK').catch(() => {});
+    if (err && err.status) {
+      return res.status(err.status).json({ error: err.message, request_id: req.requestId });
+    }
+    return next(err);
+  } finally {
+    if (client) client.release();
+  }
+}
+
 // GET /api/lab/sources — the "where our material comes from" catalogue.
 async function listSources(req, res, next) {
   try {
@@ -448,6 +513,7 @@ module.exports = {
   getLesson,
   recordProgress,
   submitAssessment,
+  submitActivity,
   listSources,
   getSource,
   getLibrary,
