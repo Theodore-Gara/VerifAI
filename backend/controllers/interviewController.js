@@ -70,7 +70,7 @@ async function markPracticed(req, res, next) {
       [user.id, questionId]
     );
 
-    // Coverage is part of the weighted readiness score, so recompute it here.
+    // Interview coverage is part of the weighted readiness score.
     await refreshReadiness(pool, user.id, user.industry_track_id);
 
     const counts = await pool.query(

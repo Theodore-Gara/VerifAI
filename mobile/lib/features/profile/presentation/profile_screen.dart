@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
+import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/core/providers/app_reconnect.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
@@ -26,6 +27,40 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Uint8List? _localProfileImage;
+  bool _deleting = false;
+
+  Future<void> _deleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete account?'),
+        content: const Text(
+            'This permanently removes your account, your progress and your data. It cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _deleting = true);
+    try {
+      await ref.read(apiClientProvider).deleteAccount();
+      if (!mounted) return;
+      await ref.read(authNotifierProvider.notifier).logout();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not delete the account. Try again.')));
+    } finally {
+      if (mounted) setState(() => _deleting = false);
+    }
+  }
 
   Future<void> _chooseProfileImage() async {
     try {
@@ -336,6 +371,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         color: AppColors.textSecondary,
                       ),
                       onTap: () => context.go('/change-industry'),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Material(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    child: ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                        side: const BorderSide(color: AppColors.border),
+                      ),
+                      leading:
+                          const Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                      title: const Text(
+                        'Delete account',
+                        style: TextStyle(
+                            color: AppColors.error, fontWeight: FontWeight.w800),
+                      ),
+                      subtitle: const Text(
+                        'Permanently remove your account and all your data.',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                      onTap: _deleting ? null : _deleteAccount,
                     ),
                   ),
                 ],

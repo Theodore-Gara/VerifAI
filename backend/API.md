@@ -306,7 +306,9 @@ Reward tokens:
 
 Readiness:
 
-- weighted mean of the dimension skill scores plus interview coverage (each question practised counts `100 / total`) and lab capstone results (a `Learning` component, the average of the learner's best passed capstone scores); weights are renormalised over whichever components have data and stored monotonically via `GREATEST` so readiness never drops
+- weighted mean of the dimension skill scores, interview coverage (each question practised counts `100 / total`) and lab capstone results (a `Learning` component, the average of the learner's best passed capstone scores). Weights are renormalised over whichever components have data and stored monotonically via `GREATEST`, so readiness is a quality signal that never drops.
+- Readiness is **separate from promotion**: it does not gate tiers, so a learner at 45% can still be promoted for the work they have put in.
+- Promotion tiers advance on **passed** tasks (feature-agnostic): Novice (5) → Developing (10) → Proficient (15) → Advanced (20). Failed and practice attempts do not advance; tiers never demote. The current tier's passed-task count is exposed as `tier_tasks_completed`.
 
 Streak:
 

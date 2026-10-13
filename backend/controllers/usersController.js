@@ -1,6 +1,7 @@
 const pool = require('../db/pool');
 const { positiveIntegerParam } = require('../middleware/validate');
 const { findUserByFirebaseUid } = require('../db/users');
+const { getFirebaseAuth } = require('../db/firebase');
 
 const AVATAR_MIME = new Set(['image/png', 'image/jpeg', 'image/webp']);
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
@@ -133,4 +134,33 @@ async function getAvatar(req, res, next) {
   }
 }
 
-module.exports = { getMe, updateProfile, uploadAvatar, getAvatar };
+// DELETE /api/users/me
+// Removes the account everywhere: the Firebase identity (so the email can be
+// reused) and the database row, which cascades to all of the user's data.
+async function deleteAccount(req, res, next) {
+  try {
+    const uid = req.firebaseUser.uid;
+
+    try {
+      await getFirebaseAuth().deleteUser(uid);
+    } catch (err) {
+      // Already gone in Firebase is fine; anything else is a real failure.
+      if (err.code !== 'auth/user-not-found') throw err;
+    }
+
+    const result = await pool.query(
+      `DELETE FROM users WHERE firebase_uid = $1 RETURNING id`,
+      [uid],
+    );
+
+    return res.status(200).json({
+      deleted: true,
+      had_profile: result.rows.length > 0,
+      request_id: req.requestId,
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+module.exports = { getMe, updateProfile, uploadAvatar, getAvatar, deleteAccount };

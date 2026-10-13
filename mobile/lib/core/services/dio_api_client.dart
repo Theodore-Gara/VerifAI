@@ -65,6 +65,12 @@ class DioApiClient implements ApiClient {
   }
 
   @override
+  Future<void> deleteAccount() async {
+    final token = await _idToken();
+    await _dio.delete<void>('users/me', options: Options(headers: _authHeaders(token)));
+  }
+
+  @override
   Future<DashboardData> getDashboard() async {
     final token = await _idToken();
     final auth = Options(headers: _authHeaders(token));

@@ -26,11 +26,16 @@ const listMigrations = () =>
     .sort()
     .map((name) => {
       const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, name), 'utf8');
+      const sha = (value) => crypto.createHash('sha256').update(value).digest('hex').slice(0, 16);
+      // Hash with LF endings so the checksum is stable across platforms (a
+      // Windows checkout that rewrote CRLF would otherwise look like an edit).
+      // checksumRaw keeps the on-disk hash so older records still match.
       return {
         version: MIGRATION_FILE.exec(name)[1],
         name,
         sql,
-        checksum: crypto.createHash('sha256').update(sql).digest('hex').slice(0, 16),
+        checksum: sha(sql.replace(/\r\n/g, '\n')),
+        checksumRaw: sha(sql),
       };
     });
 
@@ -63,7 +68,7 @@ async function runMigrations(client, migrations, { log = () => {} } = {}) {
   for (const m of migrations) {
     const prev = applied.get(m.version);
     if (prev) {
-      if (prev.checksum !== m.checksum) {
+      if (prev.checksum !== m.checksum && prev.checksum !== m.checksumRaw) {
         throw new Error(
           `${m.name} changed after it was applied ` +
           `(recorded ${prev.checksum}, now ${m.checksum}). Applied migrations are ` +

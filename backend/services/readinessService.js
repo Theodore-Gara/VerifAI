@@ -1,7 +1,12 @@
 // Readiness is the weighted mean of a learner's skill scores, interview
 // coverage and lab capstone results. Weights are renormalised over whichever
 // components currently have data, so a learner is never penalised for a
-// component they have not reached yet. Stored monotonically via GREATEST.
+// component they have not reached yet. Stored monotonically via GREATEST so a
+// single weak attempt never drops the displayed readiness.
+//
+// Readiness is a QUALITY signal, separate from promotion: tiers advance on the
+// volume of passed tasks (see tasksController.TIERS), so a learner at 45% can
+// still be promoted to the next tier for the work they have put in.
 const READINESS_WEIGHTS = {
   Verification: 0.3,
   'AI Judgement': 0.3,

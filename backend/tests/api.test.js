@@ -553,6 +553,8 @@ test('marking a question practised is idempotent and refreshes readiness', async
   assert.equal(second.status, 200);
   assert.equal(second.body.practised_count, first.body.practised_count);
 
+  // Interview coverage feeds the weighted readiness score, so it is recomputed
+  // after each practice.
   const updates = queries.filter((sql) => sql.includes('UPDATE user_progress') && sql.includes('readiness_score'));
   assert.equal(updates.length, 2, 'readiness recomputed after every practice');
 });

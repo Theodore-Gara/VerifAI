@@ -27,8 +27,9 @@ const PASS_THRESHOLD = {
   prompt_design: 60,
 };
 
-// Readiness weights live in services/readinessService.js so tasks, interviews
-// and lab capstones all recompute the same way.
+// Promotion tiers are volume-based: a learner advances once they have passed
+// enough tasks for the current tier. Readiness is a separate weighted skill
+// metric (see services/readinessService.js) and does not gate promotion.
 
 const TIERS = [
   { name: 'Novice', required: 5 },
@@ -566,6 +567,9 @@ async function updateProgress(client, user, xpEarned, passed) {
     }
   }
 
+  // Readiness (a separate weighted skill metric) is recomputed by
+  // refreshReadiness after this; updateProgress only owns XP, level, streak,
+  // tier and the tier counter.
   const updated = await client.query(
     `UPDATE user_progress
      SET xp = $1, level = $2, streak = $3,

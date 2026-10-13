@@ -87,14 +87,16 @@ class VerificationResult {
   bool get needsReview => overallStatus == 'human_review_required' || overallStatus == 'insufficient_evidence';
 
   /// Parses the `analysis` row plus the top-level `sources`/`inputs` of the
-  /// analyze response, or a stored analysis row from the history list.
+  /// analyze response, or a stored analysis row from the history list. Note the
+  /// row's `items_requiring_review` is a COUNT; the list lives in `report`.
   factory VerificationResult.fromJson(Map<String, dynamic> json) {
     final analysis = (json['analysis'] as Map?)?.cast<String, dynamic>() ?? json;
-    final items = (analysis['items_requiring_review'] as List<dynamic>? ?? const [])
+    final report = (analysis['report'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final items = (report['items_requiring_review'] as List<dynamic>? ?? const [])
         .map((e) => VerificationItem.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
     final sourcesJson = (json['sources'] as List<dynamic>?) ??
-        ((analysis['report'] as Map?)?['sources'] as List<dynamic>?) ??
+        (report['sources'] as List<dynamic>?) ??
         const [];
     final inputsJson = json['inputs'] as List<dynamic>? ?? const [];
     return VerificationResult(

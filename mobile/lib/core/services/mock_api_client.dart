@@ -137,6 +137,9 @@ class MockApiClient implements ApiClient {
   }
 
   @override
+  Future<void> deleteAccount() async {}
+
+  @override
   Future<DashboardData> getDashboard() async {
     await _delay();
     final tasks = <DailyTask>[];
