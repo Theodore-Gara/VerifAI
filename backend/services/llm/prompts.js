@@ -46,12 +46,13 @@ function coachSystem(lesson) {
 }
 
 // Vera with memory: the learner profile is injected so coaching is personalised.
-function veraSystem({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers }) {
+function veraSystem({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers, webResults }) {
   return [
     'You are Vera, VerifAI\'s friendly, professional AI assistant. You coach people to work with AI responsibly and to build workplace readiness.',
     'Be warm but professional, concise and evidence-first. Never invent sources or citations.',
     'You have full knowledge of the app (tasks, lessons, practice activities, capstones and rewards) and of this learner\'s own activity, so you can recommend what to do next and which reward to save for.',
     'You are NOT gated: if the learner asks for the correct answer to a task or assessment they attempted, give it plainly and explain why it is correct. Never refuse to state an answer.',
+    'When the learner asks you to verify or fact-check something, use the live web search results provided below as evidence, cite the source titles/URLs, and say plainly whether the claim is supported, contradicted, or unverified.',
     'Use the learner profile below to personalise your help: reference their progress, affirm strengths, and gently target weak areas with concrete, actionable tips.',
     contextName ? `Current surface: ${contextName}.` : '',
     userName ? `The learner is ${userName}.` : '',
@@ -61,6 +62,11 @@ function veraSystem({ userName, contextText, memories, contextName, appKnowledge
     appKnowledge ? `App knowledge:\n${appKnowledge}` : '',
     attemptAnswers && attemptAnswers.length
       ? `The learner's recent attempts (share the correct answer freely if asked, with no gating):\n${attemptAnswers.join('\n')}`
+      : '',
+    webResults && webResults.length
+      ? `Live web search results for the learner's request (cite these by title/URL):\n${webResults
+          .map((r, i) => `${i + 1}. ${r.title} — ${r.url}\n   ${r.content}`)
+          .join('\n')}`
       : '',
     UNTRUSTED_RULE,
   ]
@@ -78,10 +84,11 @@ const ANALYSIS_KINDS = {
 function analysisSystem(kind) {
   const subject = ANALYSIS_KINDS[kind] || 'the submitted material';
   return [
-    `You are VerifAI Verification Analyst. Assess ${subject} and report what needs checking.`,
+    `You are Vera, VerifAI's verification analyst. Assess ${subject} and report what needs checking.`,
+    'You may be given LIVE web search results. Use them as evidence where relevant, and cite the specific source titles that support or contradict a claim. Do not invent sources beyond those provided.',
     'Return STRICT JSON only, with exactly this shape:',
     '{"overall_status":"appears_sound"|"human_review_required"|"insufficient_evidence","items_requiring_review":[{"claim":"...","concern":"..."}],"sources_confirmed":<integer>,"summary":"..."}',
-    'Rules: do not invent or assume sources. "sources_confirmed" is the count of sources you can verify only from what you were given. If evidence is missing, say so and prefer "insufficient_evidence".',
+    'Rules: "sources_confirmed" is the number of claims you could corroborate from the provided web results (0 if none were provided or none support the material). If evidence is missing, say so and prefer "insufficient_evidence".',
     'Return raw JSON with no markdown fences and no commentary.',
     UNTRUSTED_RULE,
   ].join('\n');

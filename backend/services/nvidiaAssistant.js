@@ -108,13 +108,19 @@ async function* streamCoachReply({ lesson, messages, fetchImpl }) {
 
 // --- Verification Studio analysis -------------------------------------------
 // Returns raw model text; the controller validates it into the report schema.
-async function analyzeContent({ kind, content, fetchImpl }) {
+// `webResults` (from Tavily) are supplied to the model as live evidence.
+async function analyzeContent({ kind, content, webResults, fetchImpl }) {
+  const evidence = webResults && webResults.length
+    ? `\n\nLive web search results (use as evidence, cite by title):\n${webResults
+        .map((r, i) => `${i + 1}. ${r.title} — ${r.url}\n   ${r.content}`)
+        .join('\n')}`
+    : '\n\nNo live web results were available; assess from the material alone.';
   const result = await chatWithFallback(
     {
       ...resolveProfile('analysis'),
       messages: [
         { role: 'system', content: analysisSystem(kind) },
-        { role: 'user', content: `Kind: ${kind}\n\nAnalyse the following and return the JSON report:\n\n${content}` },
+        { role: 'user', content: `Kind: ${kind}\n\nAnalyse the following and return the JSON report:\n\n${content}${evidence}` },
       ],
     },
     fetchImpl,
@@ -124,12 +130,12 @@ async function analyzeContent({ kind, content, fetchImpl }) {
 }
 
 // --- Vera: personalised assistant with memory --------------------------------
-async function getVeraReply({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers, messages, fetchImpl }) {
+async function getVeraReply({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers, webResults, messages, fetchImpl }) {
   const { content } = await chatWithFallback(
     {
       ...resolveProfile('vera'),
       messages: [
-        { role: 'system', content: veraSystem({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers }) },
+        { role: 'system', content: veraSystem({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers, webResults }) },
         ...messages,
       ],
     },
@@ -139,12 +145,12 @@ async function getVeraReply({ userName, contextText, memories, contextName, appK
   return content;
 }
 
-async function* streamVeraReply({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers, messages, fetchImpl }) {
+async function* streamVeraReply({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers, webResults, messages, fetchImpl }) {
   yield* streamWithFallback(
     {
       ...resolveProfile('vera'),
       messages: [
-        { role: 'system', content: veraSystem({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers }) },
+        { role: 'system', content: veraSystem({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers, webResults }) },
         ...messages,
       ],
     },

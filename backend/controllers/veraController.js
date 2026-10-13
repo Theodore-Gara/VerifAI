@@ -2,6 +2,7 @@ const pool = require('../db/pool');
 const { positiveIntegerParam, clampInt } = require('../middleware/validate');
 const { getVeraReply, streamVeraReply, extractMemories } = require('../services/nvidiaAssistant');
 const { buildUserContext, describeContext, buildTips, buildAppKnowledge, buildAttemptAnswers } = require('../services/veraContext');
+const { webSearch } = require('../services/tavily');
 const { MEMORY_KINDS } = require('../services/llm/prompts');
 const { handleAiError } = require('../middleware/aiError');
 const { openStream, sendEvent, endStream } = require('../middleware/sse');
@@ -133,6 +134,10 @@ async function chat(req, res, next) {
     const { contextText, memories, appKnowledge, attemptAnswers } = await loadVeraInputs(user);
     const wantsStream = req.query.stream === '1' || req.body.stream === true;
 
+    // The learner can ask Vera to verify their input: search the web on request.
+    const webResults = req.body.web_search === true ? await webSearch(lastUser.content, { maxResults: 5 }) : [];
+    const sources = webResults.map((r) => ({ title: r.title, url: r.url }));
+
     if (!wantsStream) {
       const reply = await getVeraReply({
         userName: user.display_name,
@@ -141,10 +146,11 @@ async function chat(req, res, next) {
         contextName,
         appKnowledge,
         attemptAnswers,
+        webResults,
         messages,
       });
       await persistAssistantTurn(user, sessionId, lastUser.content, reply, contextText);
-      return res.status(200).json({ session_id: sessionId, reply, request_id: req.requestId });
+      return res.status(200).json({ session_id: sessionId, reply, sources, web_searched: webResults.length > 0, request_id: req.requestId });
     }
 
     openStream(res);
@@ -157,6 +163,7 @@ async function chat(req, res, next) {
         contextName,
         appKnowledge,
         attemptAnswers,
+        webResults,
         messages,
       })) {
         if (chunk.delta) {

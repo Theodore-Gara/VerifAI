@@ -118,11 +118,11 @@ Pass `?stream=1` (or `"stream": true`) to receive a Server-Sent Events stream: e
 Requires `NVIDIA_API_KEY` in the backend environment. Model routing is per use case: `NVIDIA_MODEL_CHAT` (default `nvidia/nemotron-3.5-lightning-30b-a3b`) for the assistant, coach and general surfaces, with a retryable failure falling back to `NVIDIA_MODEL_FALLBACK`.
 
 ### POST /api/verification/analyze
-Protected. Assesses a `document`, `claim`, `ai_response` or `source` and returns a structured report. **The submitted content is never stored** — only metadata and the report are persisted, so confidential material does not persist.
+Protected. Vera assesses a `document`, `claim`, `ai_response` or `source` and returns a structured report. **The submitted content is never stored** — only metadata and the report are persisted, so confidential material does not persist.
 
-Request: `{ "kind": "document", "content": "...", "document_name": "q3.pdf" }` (`content` ≤ 60,000 characters).
+Request: `{ "kind": "document", "content": "...", "document_name": "q3.pdf", "web_search": true }` (`content` ≤ 60,000 characters; `web_search` defaults to true).
 
-Response: `{ "analysis": { id, kind, document_name, overall_status, items_requiring_review, sources_confirmed, summary, report, created_at } }`, where `overall_status` is one of `appears_sound`, `human_review_required`, `insufficient_evidence`. Uses the analysis model (`NVIDIA_MODEL_ANALYSIS`, default `nvidia/nemotron-3-super-120b-a12b`) with reasoning enabled, and is rate-limited.
+When Tavily is configured (`TAVILY_API_KEY`), Vera searches the web and uses the results as live evidence, citing the source titles. Response: `{ "analysis": { id, kind, document_name, overall_status, items_requiring_review, sources_confirmed, summary, report, created_at }, "sources": [{ title, url }], "web_searched": bool }`, where `overall_status` is one of `appears_sound`, `human_review_required`, `insufficient_evidence`. Uses the analysis model (`NVIDIA_MODEL_ANALYSIS`) with reasoning enabled, and is rate-limited.
 
 ### GET /api/verification/analyses
 Protected. The user's recent analyses (metadata + report), newest first. Optional `?limit=<1..50>` (default 20).
@@ -220,7 +220,7 @@ Protected. Returns the caller's avatar image, or `404` when none is set.
 Vera is the app-wide, friendly professional assistant. She keeps track of the learner's progress (skill scores, task outcomes, lab and capstone results), remembers durable observations, and personalises coaching. Sessions and messages are stored per user.
 
 ### POST /api/vera/chat
-Protected. Body `{ session_id?, messages, context? }` where `messages` is the running history (1–20 messages, each ≤ 2,000 chars, last from the user) and `context` is one of `assistant`, `coach`, `lab`, `verification`, `general`. Creates a session when `session_id` is omitted. Vera's system prompt is built from the learner profile, stored memories, **app-wide knowledge** (task types, lessons, capstones and the rewards catalogue with the learner's token balance) and the learner's own recent attempts **including the correct answers**, so she can recommend what to do or which reward to save for, and is **not gated** — she will state the correct answer to a task or assessment the learner attempted if asked. The turn is stored and durable memories are extracted from the exchange. Returns `{ session_id, reply }`. `?stream=1` streams SSE. Rate-limited (8/min).
+Protected. Body `{ session_id?, messages, context? }` where `messages` is the running history (1–20 messages, each ≤ 2,000 chars, last from the user) and `context` is one of `assistant`, `coach`, `lab`, `verification`, `general`. Creates a session when `session_id` is omitted. Vera's system prompt is built from the learner profile, stored memories, **app-wide knowledge** (task types, lessons, capstones and the rewards catalogue with the learner's token balance) and the learner's own recent attempts **including the correct answers**, so she can recommend what to do or which reward to save for, and is **not gated** — she will state the correct answer to a task or assessment the learner attempted if asked. The turn is stored and durable memories are extracted from the exchange. Returns `{ session_id, reply }`. Pass `"web_search": true` to have Vera search the web (Tavily) for the request — useful for "verify this claim" — which adds `sources` and `web_searched` to the response and injects the results into her prompt. `?stream=1` streams SSE. Rate-limited (8/min).
 
 ### GET /api/vera/sessions
 Protected. The user's recent chat sessions.

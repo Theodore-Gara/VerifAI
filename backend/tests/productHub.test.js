@@ -8,6 +8,8 @@ delete process.env.NVIDIA_MODEL;
 delete process.env.NVIDIA_MODEL_ANALYSIS;
 delete process.env.NVIDIA_MODEL_CHAT;
 delete process.env.NVIDIA_MODEL_FALLBACK;
+// Keep the suite hermetic: no real Tavily calls during tests.
+delete process.env.TAVILY_API_KEY;
 
 const firebase = require('../db/firebase');
 firebase.getFirebaseAuth = () => ({
@@ -88,7 +90,7 @@ global.fetch = async (url, options) => {
   const body = JSON.parse(options.body);
   fetchLog.push(body);
   const system = body.messages[0].content;
-  const content = system.includes('Verification Analyst')
+  const content = system.includes('verification analyst')
     ? JSON.stringify({
         overall_status: 'insufficient_evidence',
         items_requiring_review: [{ claim: 'Revenue grew 15%', concern: 'No source cited' }],
@@ -193,7 +195,7 @@ test('POST /api/assistant/chat works without a task_id (general assistant)', asy
   assert.equal(response.status, 200);
   assert.equal(response.body.reply, 'Here is a helpful hint.');
   assert.equal(fetchLog[0].model, 'nvidia/nemotron-3.5-lightning-30b-a3b');
-  assert.equal(fetchLog[0].messages[0].content.includes('Verification Analyst'), false);
+  assert.equal(fetchLog[0].messages[0].content.includes('verification analyst'), false);
 });
 
 test('POST /api/users/avatar stores an image and GET returns it', async () => {

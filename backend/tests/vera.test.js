@@ -32,6 +32,7 @@ test('buildUserContext derives weak areas, strengths and recent failures', async
 
 // --- Endpoint --------------------------------------------------------------
 process.env.NVIDIA_API_KEY = 'test-key';
+process.env.TAVILY_API_KEY = 'test-key';
 const firebase = require('../db/firebase');
 firebase.getFirebaseAuth = () => ({ verifyIdToken: async () => ({ uid: 'test-uid' }) });
 
@@ -67,6 +68,9 @@ pool.end = async () => {};
 
 let systems = [];
 global.fetch = async (url, options) => {
+  if (String(url).includes('tavily')) {
+    return { ok: true, json: async () => ({ results: [{ title: 'Source A', url: 'https://a.example', content: 'The figure is 12%, not 15%.' }] }) };
+  }
   const body = JSON.parse(options.body);
   const system = body.messages[0].content;
   systems.push(system);
@@ -137,4 +141,16 @@ test('Vera prompt includes app knowledge, rewards and attempt answers, and is un
   assert.match(joined, /Rewards \(token cost\)/);
   assert.match(joined, /Correct answer: Check the source file/);
   assert.match(joined, /NOT gated/);
+});
+
+test('Vera can search the web to verify input when asked', async () => {
+  systems = [];
+  const response = await auth(request(app).post('/api/vera/chat')).send({
+    messages: [{ role: 'user', content: 'Please verify: revenue grew 15%.' }],
+    web_search: true,
+  });
+  assert.equal(response.status, 200);
+  assert.equal(response.body.web_searched, true);
+  assert.equal(response.body.sources[0].url, 'https://a.example');
+  assert.match(systems.join('\n---\n'), /Live web search results/);
 });

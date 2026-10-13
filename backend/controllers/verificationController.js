@@ -2,6 +2,7 @@ const pool = require('../db/pool');
 const { requiredString, optionalString, clampInt } = require('../middleware/validate');
 const { findUserByFirebaseUid } = require('../db/users');
 const { analyzeContent } = require('../services/nvidiaAssistant');
+const { webSearch } = require('../services/tavily');
 const { OVERALL_STATUSES } = require('../services/llm/prompts');
 const { handleAiError } = require('../middleware/aiError');
 
@@ -69,8 +70,13 @@ async function analyzeVerification(req, res, next) {
       return res.status(404).json({ error: 'User not found. Call /api/auth/sync first.', request_id: req.requestId });
     }
 
-    const raw = await analyzeContent({ kind, content });
+    // Vera verifies the input, using live web search as evidence when available.
+    const useWeb = req.body.web_search !== false;
+    const webResults = useWeb ? await webSearch(content, { maxResults: 5 }) : [];
+
+    const raw = await analyzeContent({ kind, content, webResults });
     const report = parseReport(raw);
+    report.sources = webResults.map((r) => ({ title: r.title, url: r.url }));
 
     const inserted = await pool.query(
       `INSERT INTO verification_analyses
@@ -89,7 +95,12 @@ async function analyzeVerification(req, res, next) {
       ],
     );
 
-    return res.status(201).json({ analysis: inserted.rows[0], request_id: req.requestId });
+    return res.status(201).json({
+      analysis: inserted.rows[0],
+      sources: report.sources,
+      web_searched: webResults.length > 0,
+      request_id: req.requestId,
+    });
   } catch (err) {
     return handleAiError(err, req, res, next);
   }
