@@ -96,7 +96,7 @@ class _LearningAssistantScreenState
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Learning Assistant',
+            Text('Vera',
                 style: AppTypography.textTheme.titleMedium),
             Text(
               widget.task.trackName ?? 'Current verification task',

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 
@@ -252,6 +254,351 @@ class DioApiClient implements ApiClient {
       throw const FormatException('The assistant returned an empty reply.');
     }
     return reply;
+  }
+
+  // --- Verification Studio ---
+  @override
+  Future<VerificationResult> analyzeVerification({
+    required String kind,
+    String? context,
+    String? documentName,
+    List<VerificationSourceInput> sources = const [],
+    bool webSearch = true,
+  }) async {
+    final token = await _idToken();
+    final response = await _dio.post<Map<String, dynamic>>(
+      'verification/analyze',
+      data: {
+        'kind': kind,
+        if (context != null && context.isNotEmpty) 'context': context,
+        if (documentName != null) 'document_name': documentName,
+        'sources': sources.map((s) => s.toJson()).toList(),
+        'web_search': webSearch,
+      },
+      options: Options(
+        headers: _authHeaders(token),
+        // Large documents + live analysis: give the request room.
+        sendTimeout: const Duration(seconds: 60),
+        receiveTimeout: const Duration(seconds: 90),
+      ),
+    );
+    return VerificationResult.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<List<VerificationResult>> getVerificationAnalyses({int limit = 20}) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>(
+      'verification/analyses',
+      queryParameters: {'limit': limit},
+      options: Options(headers: _authHeaders(token)),
+    );
+    final list = response.data?['analyses'] as List<dynamic>? ?? const [];
+    return list
+        .map((e) => VerificationResult.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+
+  // --- Vera assistant ---
+  @override
+  Future<VeraChatResult> sendVeraMessage({
+    int? sessionId,
+    required List<AssistantMessage> messages,
+    String context = 'assistant',
+    bool webSearch = false,
+  }) async {
+    final token = await _idToken();
+    final response = await _dio.post<Map<String, dynamic>>(
+      'vera/chat',
+      data: {
+        if (sessionId != null) 'session_id': sessionId,
+        'messages': messages.map((m) => m.toJson()).toList(),
+        'context': context,
+        if (webSearch) 'web_search': true,
+      },
+      options: Options(headers: _authHeaders(token), receiveTimeout: const Duration(seconds: 60)),
+    );
+    final data = response.data ?? const {};
+    return VeraChatResult(
+      sessionId: int.tryParse('${data['session_id']}') ?? 0,
+      reply: data['reply'] as String? ?? '',
+      sources: (data['sources'] as List<dynamic>? ?? const [])
+          .map((e) => VeraSource.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList(),
+      webSearched: data['web_searched'] as bool? ?? false,
+    );
+  }
+
+  @override
+  Stream<String> streamVeraMessage({
+    int? sessionId,
+    required List<AssistantMessage> messages,
+    String context = 'assistant',
+    bool webSearch = false,
+    void Function(int sessionId)? onSessionId,
+  }) async* {
+    final token = await _idToken();
+    final response = await _dio.post<ResponseBody>(
+      'vera/chat',
+      data: {
+        if (sessionId != null) 'session_id': sessionId,
+        'messages': messages.map((m) => m.toJson()).toList(),
+        'context': context,
+        if (webSearch) 'web_search': true,
+        'stream': true,
+      },
+      queryParameters: {'stream': '1'},
+      options: Options(
+        headers: _authHeaders(token),
+        responseType: ResponseType.stream,
+        receiveTimeout: const Duration(seconds: 90),
+      ),
+    );
+
+    var buffer = '';
+    await for (final chunk in response.data!.stream) {
+      buffer += utf8.decode(chunk, allowMalformed: true);
+      var index = buffer.indexOf('\n');
+      while (index >= 0) {
+        final line = buffer.substring(0, index).trim();
+        buffer = buffer.substring(index + 1);
+        index = buffer.indexOf('\n');
+        if (!line.startsWith('data:')) continue;
+        final data = line.substring(5).trim();
+        if (data == '[DONE]') return;
+        try {
+          final json = jsonDecode(data) as Map<String, dynamic>;
+          final sid = json['session_id'];
+          if (sid is int) onSessionId?.call(sid);
+          final delta = json['delta'];
+          if (delta is String && delta.isNotEmpty) yield delta;
+        } catch (_) {
+          // Ignore partial/unparseable frames.
+        }
+      }
+    }
+  }
+
+  @override
+  Future<List<VeraSession>> getVeraSessions() async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>('vera/sessions',
+        options: Options(headers: _authHeaders(token)));
+    final list = response.data?['sessions'] as List<dynamic>? ?? const [];
+    return list.map((e) => VeraSession.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+  }
+
+  @override
+  Future<VeraSessionDetail> getVeraSession(int id) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>('vera/sessions/$id',
+        options: Options(headers: _authHeaders(token)));
+    return VeraSessionDetail.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<List<VeraMemory>> getVeraMemory() async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>('vera/memory',
+        options: Options(headers: _authHeaders(token)));
+    final list = response.data?['memories'] as List<dynamic>? ?? const [];
+    return list.map((e) => VeraMemory.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+  }
+
+  @override
+  Future<void> addVeraMemory({required String kind, required String content}) async {
+    final token = await _idToken();
+    await _dio.post<Map<String, dynamic>>('vera/memory',
+        data: {'kind': kind, 'content': content},
+        options: Options(headers: _authHeaders(token)));
+  }
+
+  @override
+  Future<void> deleteVeraMemory(int id) async {
+    final token = await _idToken();
+    await _dio.delete<Map<String, dynamic>>('vera/memory/$id',
+        options: Options(headers: _authHeaders(token)));
+  }
+
+  @override
+  Future<List<VeraTip>> getVeraTips() async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>('vera/tips',
+        options: Options(headers: _authHeaders(token)));
+    final list = response.data?['tips'] as List<dynamic>? ?? const [];
+    return list.map((e) => VeraTip.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+  }
+
+  // --- AI Lab ---
+  @override
+  Future<List<LabLesson>> getLabLessons() async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>('lab/lessons',
+        options: Options(headers: _authHeaders(token)));
+    final list = response.data?['lessons'] as List<dynamic>? ?? const [];
+    return list.map((e) => LabLesson.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+  }
+
+  @override
+  Future<LabLessonDetail> getLabLesson(String code) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>('lab/lessons/$code',
+        options: Options(headers: _authHeaders(token)));
+    return LabLessonDetail.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<LabLesson?> getNextLesson({bool includeSeen = true}) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>('lab/lessons/next',
+        queryParameters: {'include_seen': includeSeen},
+        options: Options(headers: _authHeaders(token)));
+    final lesson = response.data?['lesson'] as Map<String, dynamic>?;
+    return lesson == null ? null : LabLesson.fromJson(lesson);
+  }
+
+  @override
+  Future<LabProgress> recordLessonProgress(
+    String code, {
+    required int sectionsCompleted,
+    required int activitiesCompleted,
+  }) async {
+    final token = await _idToken();
+    final response = await _dio.post<Map<String, dynamic>>(
+      'lab/lessons/$code/progress',
+      data: {'sections_completed': sectionsCompleted, 'activities_completed': activitiesCompleted},
+      options: Options(headers: _authHeaders(token)),
+    );
+    return LabProgress.fromJson(
+        (response.data?['progress'] as Map?)?.cast<String, dynamic>() ?? const {});
+  }
+
+  @override
+  Future<LabActivityResult> submitActivity(
+    int activityId, {
+    required dynamic response,
+    bool practice = false,
+  }) async {
+    final token = await _idToken();
+    final result = await _dio.post<Map<String, dynamic>>(
+      'lab/activities/$activityId/attempt',
+      data: {'response': response, if (practice) 'practice': true},
+      options: Options(headers: _authHeaders(token), receiveTimeout: const Duration(seconds: 30)),
+    );
+    return LabActivityResult.fromJson(result.data ?? const {});
+  }
+
+  @override
+  Future<List<LabAssessment>> getLabAssessments() async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>('lab/assessments',
+        options: Options(headers: _authHeaders(token)));
+    final list = response.data?['assessments'] as List<dynamic>? ?? const [];
+    return list.map((e) => LabAssessment.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+  }
+
+  @override
+  Future<LabAssessmentPaper> getAssessmentPaper(String code) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>('lab/assessments/$code',
+        options: Options(headers: _authHeaders(token), receiveTimeout: const Duration(seconds: 30)));
+    return LabAssessmentPaper.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<LabAssessmentStart> startAssessment(String code) async {
+    final token = await _idToken();
+    final response = await _dio.post<Map<String, dynamic>>('lab/assessments/$code/start',
+        options: Options(headers: _authHeaders(token), receiveTimeout: const Duration(seconds: 30)));
+    return LabAssessmentStart.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<LabAssessmentResult> submitAssessment(
+    String code, {
+    required int attemptId,
+    required Map<int, dynamic> answers,
+  }) async {
+    final token = await _idToken();
+    final response = await _dio.post<Map<String, dynamic>>(
+      'lab/assessments/$code/submit',
+      data: {
+        'attempt_id': attemptId,
+        'answers': {for (final e in answers.entries) '${e.key}': e.value},
+      },
+      options: Options(headers: _authHeaders(token), receiveTimeout: const Duration(seconds: 60)),
+    );
+    return LabAssessmentResult.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<LabAssessmentAnalysis> getAssessmentAnalysis(String code, int attemptId) async {
+    final token = await _idToken();
+    final response = await _dio.post<Map<String, dynamic>>(
+      'lab/assessments/$code/attempts/$attemptId/analysis',
+      options: Options(headers: _authHeaders(token), receiveTimeout: const Duration(seconds: 90)),
+    );
+    return LabAssessmentAnalysis.fromJson(response.data ?? const {});
+  }
+
+  // --- Industry Practice ---
+  @override
+  Future<List<IndustryCase>> getIndustryCases() async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>('industry-practice/cases',
+        options: Options(headers: _authHeaders(token)));
+    final list = response.data?['cases'] as List<dynamic>? ?? const [];
+    return list.map((e) => IndustryCase.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+  }
+
+  @override
+  Future<IndustryCase> getIndustryCase(int id) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>('industry-practice/cases/$id',
+        options: Options(headers: _authHeaders(token)));
+    return IndustryCase.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<void> markIndustryCaseRead(int id) async {
+    final token = await _idToken();
+    await _dio.post<Map<String, dynamic>>('industry-practice/cases/$id/read',
+        options: Options(headers: _authHeaders(token)));
+  }
+
+  // --- Rewards ---
+  @override
+  Future<RewardsData> getRewards() async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>('rewards',
+        options: Options(headers: _authHeaders(token)));
+    return RewardsData.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<RewardRedemptionResult> redeemReward(String code) async {
+    final token = await _idToken();
+    final response = await _dio.post<Map<String, dynamic>>('rewards/$code/redeem',
+        options: Options(headers: _authHeaders(token), receiveTimeout: const Duration(seconds: 30)));
+    return RewardRedemptionResult.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<TokenHistory> getTokenHistory({int limit = 20}) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>('rewards/tokens',
+        queryParameters: {'limit': limit}, options: Options(headers: _authHeaders(token)));
+    return TokenHistory.fromJson(response.data ?? const {});
+  }
+
+  // --- History ---
+  @override
+  Future<List<HistoryEntry>> getHistory({int limit = 30}) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>('history',
+        queryParameters: {'limit': limit}, options: Options(headers: _authHeaders(token)));
+    final list = response.data?['entries'] as List<dynamic>? ?? const [];
+    return list.map((e) => HistoryEntry.fromJson(Map<String, dynamic>.from(e as Map))).toList();
   }
 
   Future<String> _idToken() async {

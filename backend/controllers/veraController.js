@@ -154,6 +154,7 @@ async function chat(req, res, next) {
     }
 
     openStream(res);
+    sendEvent(res, { session_id: sessionId });
     let full = '';
     try {
       for await (const chunk of streamVeraReply({

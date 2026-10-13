@@ -18,6 +18,74 @@ abstract class ApiClient {
     required int taskId,
     required List<AssistantMessage> messages,
   });
+
+  // --- Verification Studio ---
+  Future<VerificationResult> analyzeVerification({
+    required String kind,
+    String? context,
+    String? documentName,
+    List<VerificationSourceInput> sources = const [],
+    bool webSearch = true,
+  });
+  Future<List<VerificationResult>> getVerificationAnalyses({int limit = 20});
+
+  // --- Vera assistant ---
+  Future<VeraChatResult> sendVeraMessage({
+    int? sessionId,
+    required List<AssistantMessage> messages,
+    String context = 'assistant',
+    bool webSearch = false,
+  });
+  Stream<String> streamVeraMessage({
+    int? sessionId,
+    required List<AssistantMessage> messages,
+    String context = 'assistant',
+    bool webSearch = false,
+    void Function(int sessionId)? onSessionId,
+  });
+  Future<List<VeraSession>> getVeraSessions();
+  Future<VeraSessionDetail> getVeraSession(int id);
+  Future<List<VeraMemory>> getVeraMemory();
+  Future<void> addVeraMemory({required String kind, required String content});
+  Future<void> deleteVeraMemory(int id);
+  Future<List<VeraTip>> getVeraTips();
+
+  // --- AI Lab ---
+  Future<List<LabLesson>> getLabLessons();
+  Future<LabLessonDetail> getLabLesson(String code);
+  Future<LabLesson?> getNextLesson({bool includeSeen = true});
+  Future<LabProgress> recordLessonProgress(
+    String code, {
+    required int sectionsCompleted,
+    required int activitiesCompleted,
+  });
+  Future<LabActivityResult> submitActivity(
+    int activityId, {
+    required dynamic response,
+    bool practice = false,
+  });
+  Future<List<LabAssessment>> getLabAssessments();
+  Future<LabAssessmentPaper> getAssessmentPaper(String code);
+  Future<LabAssessmentStart> startAssessment(String code);
+  Future<LabAssessmentResult> submitAssessment(
+    String code, {
+    required int attemptId,
+    required Map<int, dynamic> answers,
+  });
+  Future<LabAssessmentAnalysis> getAssessmentAnalysis(String code, int attemptId);
+
+  // --- Industry Practice ---
+  Future<List<IndustryCase>> getIndustryCases();
+  Future<IndustryCase> getIndustryCase(int id);
+  Future<void> markIndustryCaseRead(int id);
+
+  // --- Rewards ---
+  Future<RewardsData> getRewards();
+  Future<RewardRedemptionResult> redeemReward(String code);
+  Future<TokenHistory> getTokenHistory({int limit = 20});
+
+  // --- History ---
+  Future<List<HistoryEntry>> getHistory({int limit = 30});
 }
 
 class AssistantMessage {

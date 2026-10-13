@@ -7,7 +7,20 @@ import 'package:verifai/features/auth/presentation/recovery_screen.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/assistant/presentation/learning_assistant_screen.dart';
 import 'package:verifai/core/providers/app_providers.dart';
-import 'package:verifai/features/product_hub/presentation/product_hub_screen.dart';
+import 'package:verifai/features/vera/presentation/vera_assistant_screen.dart';
+import 'package:verifai/features/verification_studio/presentation/verification_studio_screen.dart';
+import 'package:verifai/features/lab/presentation/lab_home_screen.dart';
+import 'package:verifai/features/lab/presentation/lessons_screen.dart';
+import 'package:verifai/features/lab/presentation/topics_screen.dart';
+import 'package:verifai/features/lab/presentation/topic_reader_screen.dart';
+import 'package:verifai/features/lab/presentation/practice_lesson_screen.dart';
+import 'package:verifai/features/lab/presentation/activity_screen.dart';
+import 'package:verifai/features/lab/presentation/assessments_screen.dart';
+import 'package:verifai/features/lab/presentation/assessment_instructions_screen.dart';
+import 'package:verifai/features/lab/presentation/assessment_paper_screen.dart';
+import 'package:verifai/features/industry_practice/presentation/industry_practice_screen.dart';
+import 'package:verifai/features/rewards/presentation/rewards_screen.dart';
+import 'package:verifai/features/history/presentation/history_screen.dart';
 import 'package:verifai/features/task/presentation/task_run_screen.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
@@ -209,38 +222,94 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (task is DailyTask) {
             return LearningAssistantScreen(task: task);
           }
-          return const ProductHubScreen(mode: VerifAiHubMode.assistant);
+          return const VeraAssistantScreen();
         },
       ),
       GoRoute(
         path: '/verification-studio',
         name: 'verification-studio',
-        builder: (context, state) =>
-            const ProductHubScreen(mode: VerifAiHubMode.verify),
+        builder: (context, state) => const VerificationStudioScreen(),
       ),
       GoRoute(
         path: '/ai-lab',
         name: 'ai-lab',
+        builder: (context, state) => const LabHomeScreen(),
+      ),
+      GoRoute(
+        path: '/ai-lab/lessons',
+        name: 'lab-lessons',
+        builder: (context, state) => const LabLessonsScreen(),
+      ),
+      GoRoute(
+        path: '/ai-lab/lessons/:code',
+        name: 'lab-topics',
         builder: (context, state) =>
-            const ProductHubScreen(mode: VerifAiHubMode.lab),
+            LabTopicsScreen(code: state.pathParameters['code'] ?? ''),
+      ),
+      GoRoute(
+        path: '/ai-lab/lessons/:code/topic/:index',
+        name: 'lab-topic',
+        builder: (context, state) => LabTopicReaderScreen(
+          code: state.pathParameters['code'] ?? '',
+          index: int.tryParse(state.pathParameters['index'] ?? '0') ?? 0,
+        ),
+      ),
+      GoRoute(
+        path: '/ai-lab/practice',
+        name: 'lab-practice',
+        builder: (context, state) => const LabLessonsScreen(practice: true),
+      ),
+      GoRoute(
+        path: '/ai-lab/practice/activity',
+        name: 'lab-activity',
+        builder: (context, state) {
+          final args = state.extra;
+          if (args is ActivityArgs) return LabActivityScreen(args: args);
+          return const Scaffold(body: Center(child: Text('Open a practice question.')));
+        },
+      ),
+      GoRoute(
+        path: '/ai-lab/practice/:code',
+        name: 'lab-practice-lesson',
+        builder: (context, state) =>
+            LabPracticeScreen(code: state.pathParameters['code'] ?? ''),
+      ),
+      GoRoute(
+        path: '/ai-lab/assessments',
+        name: 'lab-assessments',
+        builder: (context, state) => const LabAssessmentsScreen(),
+      ),
+      GoRoute(
+        path: '/ai-lab/assessments/:code/paper',
+        name: 'lab-assessment-paper',
+        builder: (context, state) {
+          final args = state.extra;
+          if (args is PaperArgs) return LabAssessmentPaperScreen(args: args);
+          return const Scaffold(body: Center(child: Text('Open an assessment to start.')));
+        },
+      ),
+      GoRoute(
+        path: '/ai-lab/assessments/:code',
+        name: 'lab-assessment',
+        builder: (context, state) => LabAssessmentInstructionsScreen(
+          code: state.pathParameters['code'] ?? '',
+          outcome: state.extra is AssessmentOutcome ? state.extra as AssessmentOutcome : null,
+        ),
       ),
       GoRoute(
         path: '/industry-practice',
         name: 'industry-practice',
-        builder: (context, state) =>
-            const ProductHubScreen(mode: VerifAiHubMode.practice),
+        builder: (context, state) => const IndustryPracticeScreen(),
       ),
       GoRoute(
         path: '/rewards',
         name: 'rewards',
-        builder: (context, state) =>
-            const ProductHubScreen(mode: VerifAiHubMode.rewards),
+        builder: (context, state) => const RewardsScreen(),
       ),
       GoRoute(
         path: '/task-history',
         name: 'task-history',
-        builder: (context, state) =>
-            const ProductHubScreen(mode: VerifAiHubMode.history),
+        builder: (context, state) => const HistoryScreen(),
       ),
       GoRoute(
         path: '/progress',

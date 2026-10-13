@@ -363,4 +363,209 @@ class MockApiClient implements ApiClient {
     await _delay();
     return 'Start by identifying the specific claim in the scenario. What source or information would help you check it?';
   }
+
+  // --- Verification Studio ---
+  @override
+  Future<VerificationResult> analyzeVerification({
+    required String kind,
+    String? context,
+    String? documentName,
+    List<VerificationSourceInput> sources = const [],
+    bool webSearch = true,
+  }) async {
+    await _delay();
+    return VerificationResult(
+      id: 1,
+      kind: kind,
+      documentName: documentName,
+      overallStatus: 'human_review_required',
+    );
+  }
+
+  @override
+  Future<List<VerificationResult>> getVerificationAnalyses({int limit = 20}) async {
+    await _delay();
+    return const [];
+  }
+
+  // --- Vera assistant ---
+  @override
+  Future<VeraChatResult> sendVeraMessage({
+    int? sessionId,
+    required List<AssistantMessage> messages,
+    String context = 'assistant',
+    bool webSearch = false,
+  }) async {
+    await _delay();
+    return VeraChatResult(sessionId: sessionId ?? 1, reply: 'Hi, I am Vera.');
+  }
+
+  @override
+  Stream<String> streamVeraMessage({
+    int? sessionId,
+    required List<AssistantMessage> messages,
+    String context = 'assistant',
+    bool webSearch = false,
+    void Function(int sessionId)? onSessionId,
+  }) async* {
+    onSessionId?.call(sessionId ?? 1);
+    yield 'Hi, I am Vera.';
+  }
+
+  @override
+  Future<List<VeraSession>> getVeraSessions() async {
+    await _delay();
+    return const [];
+  }
+
+  @override
+  Future<VeraSessionDetail> getVeraSession(int id) async {
+    await _delay();
+    return VeraSessionDetail(
+      session: VeraSession(
+          id: id, context: 'assistant', startedAt: '', lastActiveAt: '', messageCount: 0),
+      messages: const [],
+    );
+  }
+
+  @override
+  Future<List<VeraMemory>> getVeraMemory() async {
+    await _delay();
+    return const [];
+  }
+
+  @override
+  Future<void> addVeraMemory({required String kind, required String content}) async {}
+
+  @override
+  Future<void> deleteVeraMemory(int id) async {}
+
+  @override
+  Future<List<VeraTip>> getVeraTips() async {
+    await _delay();
+    return const [];
+  }
+
+  // --- AI Lab ---
+  @override
+  Future<List<LabLesson>> getLabLessons() async {
+    await _delay();
+    return const [];
+  }
+
+  @override
+  Future<LabLessonDetail> getLabLesson(String code) async {
+    await _delay();
+    return LabLessonDetail(lesson: LabLesson(id: 0, code: code, title: code, summary: ''));
+  }
+
+  @override
+  Future<LabLesson?> getNextLesson({bool includeSeen = true}) async {
+    await _delay();
+    return null;
+  }
+
+  @override
+  Future<LabProgress> recordLessonProgress(
+    String code, {
+    required int sectionsCompleted,
+    required int activitiesCompleted,
+  }) async {
+    await _delay();
+    return const LabProgress();
+  }
+
+  @override
+  Future<LabActivityResult> submitActivity(
+    int activityId, {
+    required dynamic response,
+    bool practice = false,
+  }) async {
+    await _delay();
+    return const LabActivityResult(passed: true, xpEarned: 10);
+  }
+
+  @override
+  Future<List<LabAssessment>> getLabAssessments() async {
+    await _delay();
+    return const [];
+  }
+
+  @override
+  Future<LabAssessmentPaper> getAssessmentPaper(String code) async {
+    await _delay();
+    return LabAssessmentPaper(assessment: LabAssessment(id: 0, code: code, title: code));
+  }
+
+  @override
+  Future<LabAssessmentStart> startAssessment(String code) async {
+    await _delay();
+    return const LabAssessmentStart(
+      attemptId: 1,
+      startedAt: '',
+      expiresAt: '',
+      timeLimitSeconds: 2400,
+      passScore: 60,
+      totalMarks: 25,
+      attemptsRemaining: 3,
+    );
+  }
+
+  @override
+  Future<LabAssessmentResult> submitAssessment(
+    String code, {
+    required int attemptId,
+    required Map<int, dynamic> answers,
+  }) async {
+    await _delay();
+    return const LabAssessmentResult();
+  }
+
+  @override
+  Future<LabAssessmentAnalysis> getAssessmentAnalysis(String code, int attemptId) async {
+    await _delay();
+    return const LabAssessmentAnalysis(report: 'Keep going.');
+  }
+
+  // --- Industry Practice ---
+  @override
+  Future<List<IndustryCase>> getIndustryCases() async {
+    await _delay();
+    return const [];
+  }
+
+  @override
+  Future<IndustryCase> getIndustryCase(int id) async {
+    await _delay();
+    return IndustryCase(id: id, title: 'Case');
+  }
+
+  @override
+  Future<void> markIndustryCaseRead(int id) async {}
+
+  // --- Rewards ---
+  @override
+  Future<RewardsData> getRewards() async {
+    await _delay();
+    return const RewardsData();
+  }
+
+  @override
+  Future<RewardRedemptionResult> redeemReward(String code) async {
+    await _delay();
+    return RewardRedemptionResult(rewardCode: code);
+  }
+
+  @override
+  Future<TokenHistory> getTokenHistory({int limit = 20}) async {
+    await _delay();
+    return const TokenHistory();
+  }
+
+  // --- History ---
+  @override
+  Future<List<HistoryEntry>> getHistory({int limit = 30}) async {
+    await _delay();
+    return const [];
+  }
 }

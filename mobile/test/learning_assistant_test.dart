@@ -26,7 +26,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Learning Assistant'), findsOneWidget);
+    expect(find.text('Vera'), findsOneWidget);
     expect(find.text('Review the forecast'), findsOneWidget);
     await tester.tap(find.text('Can you give me a hint?'));
     await tester.pump();
