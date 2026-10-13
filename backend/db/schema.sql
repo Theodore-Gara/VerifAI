@@ -191,6 +191,9 @@ CREATE TABLE IF NOT EXISTS lab_lessons (
   summary TEXT NOT NULL,
   estimated_minutes INTEGER NOT NULL DEFAULT 5 CHECK (estimated_minutes > 0),
   level INTEGER NOT NULL DEFAULT 1 CHECK (level >= 1),
+  is_original BOOLEAN NOT NULL DEFAULT TRUE,
+  reviewed_by TEXT,
+  competency VARCHAR(40),
   sort_order INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -230,6 +233,7 @@ CREATE TABLE IF NOT EXISTS lab_lesson_progress (
   activities_completed INTEGER NOT NULL DEFAULT 0 CHECK (activities_completed >= 0),
   assessment_best_score INTEGER NOT NULL DEFAULT 0 CHECK (assessment_best_score BETWEEN 0 AND 100),
   status VARCHAR(20) NOT NULL DEFAULT 'in_progress' CHECK (status IN ('in_progress', 'completed')),
+  last_viewed_at TIMESTAMPTZ,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (user_id, lesson_id)
 );
@@ -311,6 +315,76 @@ CREATE TABLE IF NOT EXISTS user_avatars (
 );
 
 -- ---------------------------------------------------------------------------
+-- AI Lab content sources + licensing
+-- ---------------------------------------------------------------------------
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+DO $$ BEGIN
+  CREATE TYPE license_code AS ENUM ('CC0', 'PUBLIC_DOMAIN', 'CC_BY_4', 'CC_BY_SA_4');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE industry_code AS ENUM ('FINANCE', 'LEGAL', 'IT_SOFTWARE', 'BUSINESS_CONSULTING', 'CROSS_INDUSTRY');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE TABLE IF NOT EXISTS content_sources (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title         TEXT          NOT NULL,
+  author        TEXT          NOT NULL,
+  publisher     TEXT,
+  edition       TEXT,
+  source_url    TEXT          NOT NULL,
+  license       license_code  NOT NULL,
+  license_url   TEXT          NOT NULL,
+  industry      industry_code NOT NULL,
+  checked_on    DATE          NOT NULL DEFAULT CURRENT_DATE,
+  notes         TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_content_sources_title ON content_sources(title);
+
+CREATE TABLE IF NOT EXISTS lesson_sources (
+  lesson_id     INTEGER NOT NULL REFERENCES lab_lessons(id)      ON DELETE CASCADE,
+  source_id     UUID    NOT NULL REFERENCES content_sources(id)  ON DELETE RESTRICT,
+  use_type      TEXT    NOT NULL CHECK (use_type IN ('linked', 'inspired_by', 'adapted', 'copied')),
+  changes_made  TEXT,
+  PRIMARY KEY (lesson_id, source_id)
+);
+
+CREATE OR REPLACE VIEW lessons_needing_share_alike AS
+SELECT DISTINCT l.id, l.title
+FROM lab_lessons l
+JOIN lesson_sources ls ON ls.lesson_id = l.id
+JOIN content_sources cs ON cs.id = ls.source_id
+WHERE cs.license = 'CC_BY_SA_4'
+  AND ls.use_type IN ('adapted', 'copied');
+
+CREATE OR REPLACE VIEW lesson_attributions AS
+SELECT
+    ls.lesson_id,
+    format(
+        '"%s"%s by %s, %s%s',
+        cs.title,
+        COALESCE(' (' || cs.edition || ')', ''),
+        cs.author,
+        CASE cs.license
+            WHEN 'CC_BY_4'       THEN 'licensed under CC BY 4.0'
+            WHEN 'CC_BY_SA_4'    THEN 'licensed under CC BY-SA 4.0'
+            WHEN 'CC0'           THEN 'dedicated to the public domain (CC0)'
+            WHEN 'PUBLIC_DOMAIN' THEN 'public domain'
+        END,
+        CASE WHEN ls.use_type IN ('adapted', 'copied') AND ls.changes_made IS NOT NULL
+             THEN '. Changes: ' || ls.changes_made ELSE '' END
+    ) AS credit_line,
+    cs.source_url,
+    cs.license_url,
+    cs.title,
+    cs.license,
+    ls.use_type
+FROM lesson_sources ls
+JOIN content_sources cs ON cs.id = ls.source_id;
+
+-- ---------------------------------------------------------------------------
 -- Indexes
 -- ---------------------------------------------------------------------------
 
@@ -332,6 +406,9 @@ CREATE INDEX IF NOT EXISTS idx_workshop_posts_track ON workshop_posts(track_id, 
 CREATE INDEX IF NOT EXISTS idx_workshop_posts_parent ON workshop_posts(parent_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_reward_token_events_user ON reward_token_events(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_reward_redemptions_user ON reward_redemptions(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_content_sources_industry ON content_sources(industry, title);
+CREATE INDEX IF NOT EXISTS idx_lesson_sources_source ON lesson_sources(source_id);
+CREATE INDEX IF NOT EXISTS idx_lab_lesson_progress_viewed ON lab_lesson_progress(user_id, last_viewed_at);
 
 -- ---------------------------------------------------------------------------
 -- updated_at triggers

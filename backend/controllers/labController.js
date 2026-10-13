@@ -7,6 +7,9 @@ const { handleAiError } = require('../middleware/aiError');
 const { openStream, sendEvent, endStream } = require('../middleware/sse');
 
 const PASS_SCORE = 60;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const LESSON_FIELDS = `id, code, title, summary, estimated_minutes, level, competency, is_original`;
 
 function notFound(res, req, message = 'Lesson not found for your selected track.') {
   return res.status(404).json({ error: message, request_id: req.requestId });
@@ -25,9 +28,7 @@ async function requireUser(res, req) {
 // user's track.
 async function findLessonForUser(executor, code, trackId) {
   const result = await executor.query(
-    `SELECT id, code, title, summary, estimated_minutes, level
-     FROM lab_lessons
-     WHERE code = $1 AND (track_id IS NULL OR track_id = $2)`,
+    `SELECT ${LESSON_FIELDS} FROM lab_lessons WHERE code = $1 AND (track_id IS NULL OR track_id = $2)`,
     [code, trackId],
   );
   return result.rows[0] || null;
@@ -47,6 +48,36 @@ async function recomputeStatus(client, userId, lessonId) {
   );
 }
 
+async function lessonSources(executor, lessonId) {
+  const result = await executor.query(
+    `SELECT cs.id, cs.title, cs.author, cs.publisher, cs.edition, cs.source_url,
+            cs.license, cs.license_url, cs.industry, ls.use_type, ls.changes_made
+     FROM lesson_sources ls
+     JOIN content_sources cs ON cs.id = ls.source_id
+     WHERE ls.lesson_id = $1
+     ORDER BY cs.title`,
+    [lessonId],
+  );
+  return result.rows;
+}
+
+async function lessonAttributions(executor, lessonId) {
+  const result = await executor.query(
+    `SELECT credit_line, source_url, license_url, title, license, use_type
+     FROM lesson_attributions WHERE lesson_id = $1 ORDER BY title`,
+    [lessonId],
+  );
+  return result.rows;
+}
+
+async function lessonShareAlike(executor, lessonId) {
+  const result = await executor.query(
+    `SELECT EXISTS (SELECT 1 FROM lessons_needing_share_alike WHERE id = $1) AS share_alike`,
+    [lessonId],
+  );
+  return result.rows[0]?.share_alike === true;
+}
+
 // GET /api/lab/lessons
 async function listLessons(req, res, next) {
   try {
@@ -54,14 +85,16 @@ async function listLessons(req, res, next) {
     if (!user) return undefined;
 
     const result = await pool.query(
-      `SELECT l.id, l.code, l.title, l.summary, l.estimated_minutes, l.level, l.sort_order,
+      `SELECT l.id, l.code, l.title, l.summary, l.estimated_minutes, l.level, l.competency, l.sort_order,
               (SELECT COUNT(*)::int FROM lab_lesson_sections s WHERE s.lesson_id = l.id) AS sections_count,
               (SELECT COUNT(*)::int FROM lab_activities a WHERE a.lesson_id = l.id) AS activities_count,
               (SELECT COUNT(*)::int FROM lab_questions q WHERE q.lesson_id = l.id) AS questions_count,
               COALESCE(p.sections_completed, 0)::int AS sections_completed,
               COALESCE(p.activities_completed, 0)::int AS activities_completed,
               COALESCE(p.assessment_best_score, 0)::int AS assessment_best_score,
-              COALESCE(p.status, 'not_started') AS status
+              COALESCE(p.status, 'not_started') AS status,
+              p.last_viewed_at,
+              (p.user_id IS NOT NULL) AS seen
        FROM lab_lessons l
        LEFT JOIN lab_lesson_progress p ON p.lesson_id = l.id AND p.user_id = $1
        WHERE l.track_id IS NULL OR l.track_id = $2
@@ -70,6 +103,47 @@ async function listLessons(req, res, next) {
     );
 
     return res.status(200).json({ lessons: result.rows, request_id: req.requestId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// GET /api/lab/lessons/next?include_seen=<bool>
+//
+// Rotates content: prefer a lesson the learner has not opened yet; when none
+// remain and include_seen is true (the default), serve the lesson they have
+// gone longest without revisiting, so seen content is never locked away.
+async function getNextLesson(req, res, next) {
+  try {
+    const user = await requireUser(res, req);
+    if (!user) return undefined;
+
+    const includeSeen = String(req.query.include_seen ?? 'true').toLowerCase() !== 'false';
+
+    const params = [user.id, user.industry_track_id];
+    let where = 'WHERE (l.track_id IS NULL OR l.track_id = $2)';
+    if (!includeSeen) where += ' AND p.user_id IS NULL';
+
+    const result = await pool.query(
+      `SELECT l.id, l.code, l.title, l.summary, l.estimated_minutes, l.level, l.competency,
+              (p.user_id IS NOT NULL) AS seen, p.last_viewed_at
+       FROM lab_lessons l
+       LEFT JOIN lab_lesson_progress p ON p.lesson_id = l.id AND p.user_id = $1
+       ${where}
+       ORDER BY seen ASC, p.last_viewed_at ASC NULLS FIRST, l.sort_order, l.id
+       LIMIT 1`,
+      params,
+    );
+
+    if (!result.rows.length) {
+      return res.status(200).json({ lesson: null, revisited: false, request_id: req.requestId });
+    }
+    const lesson = result.rows[0];
+    return res.status(200).json({
+      lesson,
+      revisited: lesson.seen === true,
+      request_id: req.requestId,
+    });
   } catch (err) {
     return next(err);
   }
@@ -84,7 +158,16 @@ async function getLesson(req, res, next) {
     const lesson = await findLessonForUser(pool, req.params.code, user.industry_track_id);
     if (!lesson) return notFound(res, req);
 
-    const [sections, activities, questions, progress] = await Promise.all([
+    // Opening a lesson records recency (not completion) so it can be rotated
+    // back in later; revisiting is always allowed.
+    await pool.query(
+      `INSERT INTO lab_lesson_progress (user_id, lesson_id, last_viewed_at)
+       VALUES ($1, $2, now())
+       ON CONFLICT (user_id, lesson_id) DO UPDATE SET last_viewed_at = now()`,
+      [user.id, lesson.id],
+    );
+
+    const [sections, activities, questions, progress, sources, attributions, shareAlike] = await Promise.all([
       pool.query(
         `SELECT id, heading, body, sort_order FROM lab_lesson_sections WHERE lesson_id = $1 ORDER BY sort_order, id`,
         [lesson.id],
@@ -99,10 +182,13 @@ async function getLesson(req, res, next) {
         [lesson.id],
       ),
       pool.query(
-        `SELECT sections_completed, activities_completed, assessment_best_score, status, updated_at
+        `SELECT sections_completed, activities_completed, assessment_best_score, status, last_viewed_at
          FROM lab_lesson_progress WHERE user_id = $1 AND lesson_id = $2`,
         [user.id, lesson.id],
       ),
+      lessonSources(pool, lesson.id),
+      lessonAttributions(pool, lesson.id),
+      lessonShareAlike(pool, lesson.id),
     ]);
 
     return res.status(200).json({
@@ -111,11 +197,15 @@ async function getLesson(req, res, next) {
         sections: sections.rows,
         activities: activities.rows,
         questions: questions.rows,
+        sources,
+        attributions,
+        share_alike: shareAlike,
         progress: progress.rows[0] || {
           sections_completed: 0,
           activities_completed: 0,
           assessment_best_score: 0,
           status: 'not_started',
+          last_viewed_at: null,
         },
       },
       request_id: req.requestId,
@@ -140,20 +230,20 @@ async function recordProgress(req, res, next) {
 
     client = await pool.connect();
     await client.query('BEGIN');
-    const result = await client.query(
-      `INSERT INTO lab_lesson_progress (user_id, lesson_id, sections_completed, activities_completed)
-       VALUES ($1, $2, $3, $4)
+    await client.query(
+      `INSERT INTO lab_lesson_progress (user_id, lesson_id, sections_completed, activities_completed, last_viewed_at)
+       VALUES ($1, $2, $3, $4, now())
        ON CONFLICT (user_id, lesson_id) DO UPDATE SET
          sections_completed = GREATEST(lab_lesson_progress.sections_completed, EXCLUDED.sections_completed),
-         activities_completed = GREATEST(lab_lesson_progress.activities_completed, EXCLUDED.activities_completed)
-       RETURNING sections_completed, activities_completed, assessment_best_score, status, updated_at`,
+         activities_completed = GREATEST(lab_lesson_progress.activities_completed, EXCLUDED.activities_completed),
+         last_viewed_at = now()`,
       [user.id, lesson.id, sectionsCompleted, activitiesCompleted],
     );
     await recomputeStatus(client, user.id, lesson.id);
     await client.query('COMMIT');
 
     const refreshed = await pool.query(
-      `SELECT sections_completed, activities_completed, assessment_best_score, status, updated_at
+      `SELECT sections_completed, activities_completed, assessment_best_score, status, last_viewed_at
        FROM lab_lesson_progress WHERE user_id = $1 AND lesson_id = $2`,
       [user.id, lesson.id],
     );
@@ -201,11 +291,10 @@ async function submitAssessment(req, res, next) {
     const results = questions.rows.map((question, index) => {
       const optionCount = Array.isArray(question.options) ? question.options.length : 0;
       const answered = answers[index];
-      const correct = answered === question.correct_index;
       return {
         question_id: question.id,
         answered: answered < optionCount ? answered : null,
-        correct,
+        correct: answered === question.correct_index,
         correct_index: question.correct_index,
         explanation: question.explanation,
       };
@@ -221,11 +310,11 @@ async function submitAssessment(req, res, next) {
       [user.id, lesson.id, score, passed],
     );
     await client.query(
-      `INSERT INTO lab_lesson_progress (user_id, lesson_id, assessment_best_score)
-       VALUES ($1, $2, $3)
+      `INSERT INTO lab_lesson_progress (user_id, lesson_id, assessment_best_score, last_viewed_at)
+       VALUES ($1, $2, $3, now())
        ON CONFLICT (user_id, lesson_id) DO UPDATE SET
          assessment_best_score = GREATEST(lab_lesson_progress.assessment_best_score, EXCLUDED.assessment_best_score),
-         updated_at = CURRENT_TIMESTAMP`,
+         last_viewed_at = now()`,
       [user.id, lesson.id, score],
     );
     await recomputeStatus(client, user.id, lesson.id);
@@ -241,6 +330,76 @@ async function submitAssessment(req, res, next) {
     return next(err);
   } finally {
     if (client) client.release();
+  }
+}
+
+// GET /api/lab/sources — the "where our material comes from" catalogue.
+async function listSources(req, res, next) {
+  try {
+    const result = await pool.query(
+      `SELECT id, title, author, publisher, edition, source_url, license, license_url,
+              industry, checked_on, notes
+       FROM content_sources
+       ORDER BY industry, title`,
+    );
+    return res.status(200).json({ sources: result.rows, request_id: req.requestId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// GET /api/lab/sources/:id
+async function getSource(req, res, next) {
+  try {
+    const id = String(req.params.id || '');
+    if (!UUID_RE.test(id)) {
+      return res.status(400).json({ error: 'Invalid source id.', request_id: req.requestId });
+    }
+
+    const source = await pool.query(`SELECT * FROM content_sources WHERE id = $1`, [id]);
+    if (!source.rows.length) {
+      return res.status(404).json({ error: 'Source not found.', request_id: req.requestId });
+    }
+
+    const lessons = await pool.query(
+      `SELECT l.id, l.code, l.title, ls.use_type, ls.changes_made
+       FROM lesson_sources ls
+       JOIN lab_lessons l ON l.id = ls.lesson_id
+       WHERE ls.source_id = $1
+       ORDER BY l.sort_order, l.id`,
+      [id],
+    );
+
+    return res.status(200).json({ source: source.rows[0], lessons: lessons.rows, request_id: req.requestId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// GET /api/lab/library — sources grouped by industry.
+async function getLibrary(req, res, next) {
+  try {
+    const result = await pool.query(
+      `SELECT id, title, author, publisher, edition, source_url, license, license_url,
+              industry, checked_on, notes
+       FROM content_sources
+       ORDER BY industry, title`,
+    );
+
+    const groups = [];
+    const byIndustry = new Map();
+    for (const source of result.rows) {
+      if (!byIndustry.has(source.industry)) {
+        const group = { industry: source.industry, sources: [] };
+        byIndustry.set(source.industry, group);
+        groups.push(group);
+      }
+      byIndustry.get(source.industry).sources.push(source);
+    }
+
+    return res.status(200).json({ groups, request_id: req.requestId });
+  } catch (err) {
+    return next(err);
   }
 }
 
@@ -285,8 +444,12 @@ async function coach(req, res, next) {
 
 module.exports = {
   listLessons,
+  getNextLesson,
   getLesson,
   recordProgress,
   submitAssessment,
+  listSources,
+  getSource,
+  getLibrary,
   coach,
 };

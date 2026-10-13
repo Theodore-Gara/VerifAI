@@ -131,7 +131,19 @@ Protected. The user's recent analyses (metadata + report), newest first. Optiona
 Protected. The AI Lab lesson catalog available to the user's track (plus global lessons), each with section/activity/question counts and the user's progress.
 
 ### GET /api/lab/lessons/:code
-Protected. One lesson with its textbook `sections`, practical `activities` and assessment `questions`, plus the user's progress. **Answer keys are withheld** (`correct_index`/`explanation` are not returned here).
+Protected. One lesson with its textbook `sections`, practical `activities` and assessment `questions`, plus the user's progress. Opening a lesson records recency (not completion). The response also includes `sources`, `attributions` (ready-made credit lines) and a `share_alike` flag. **Answer keys are withheld** (`correct_index`/`explanation` are not returned here).
+
+### GET /api/lab/lessons/next
+Protected. Content rotation. Prefers a lesson the learner has not opened yet; when none remain and `include_seen` is true (the default), it serves the lesson gone longest without a revisit, so seen content is never locked away. Optional `?include_seen=true|false` (default true). Response: `{ lesson, revisited }`; `lesson` is `null` when all content is seen and `include_seen=false`.
+
+### GET /api/lab/sources
+Protected. The content-source catalogue ("where our material comes from"): title, author, publisher, edition, URL, licence, licence URL, industry, the date the licence was checked, and notes.
+
+### GET /api/lab/sources/:id
+Protected. One source plus the lessons that draw on it (`use_type` and `changes_made` per link). `400` for a malformed id, `404` if unknown.
+
+### GET /api/lab/library
+Protected. The catalogue grouped by industry: `{ groups: [{ industry, sources: [...] }] }`.
 
 ### POST /api/lab/lessons/:code/progress
 Protected. Body `{ "sections_completed": 3, "activities_completed": 1 }`. Counts are monotonic (never decrease) and completion is recomputed.
