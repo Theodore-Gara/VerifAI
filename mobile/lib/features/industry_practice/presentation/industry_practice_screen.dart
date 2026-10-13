@@ -12,7 +12,7 @@ import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
 
-/// Industry Practice — real workplace case studies (scenario → cause → solution).
+/// Industry Practice: real workplace case studies (scenario, cause, solution).
 class IndustryPracticeScreen extends ConsumerWidget {
   const IndustryPracticeScreen({super.key});
 
@@ -47,7 +47,7 @@ class IndustryPracticeScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.sm,
                     AppSpacing.screenPadding, AppSpacing.xxl),
                 children: [
-                  Text('Learn from real workplace mistakes — then read what fixed them.',
+                  Text('Learn from real workplace mistakes, then read what fixed them.',
                       style: AppTypography.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary)),
                   const SizedBox(height: AppSpacing.lg),
                   for (final c in cases) _card(context, c),

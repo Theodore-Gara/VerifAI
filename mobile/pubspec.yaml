@@ -35,6 +35,10 @@ dependencies:
   url_launcher: ^6.3.0
   audioplayers: ^6.1.0
   flutter_tts: ^4.2.3
+  # Offline Piper TTS for Vera's voice (en_GB-cori-high), downloaded on first use.
+  sherpa_onnx: ^1.13.8
+  path_provider: ^2.1.4
+  archive: ^3.6.1
 
   # UI
   fl_chart: ^0.65.0

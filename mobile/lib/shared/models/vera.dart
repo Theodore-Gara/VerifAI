@@ -1,4 +1,4 @@
-// Vera AI assistant — chat sessions, messages, memory and tips.
+// Vera AI assistant: chat sessions, messages, memory and tips.
 // Plain classes (no codegen).
 
 class VeraSession {

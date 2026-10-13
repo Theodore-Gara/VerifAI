@@ -49,7 +49,7 @@ class _RewardDetailScreenState extends ConsumerState<RewardDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Could not redeem — check your token balance.')));
+          .showSnackBar(const SnackBar(content: Text('Could not redeem. Check your token balance.')));
     } finally {
       if (mounted) setState(() => _redeeming = false);
     }
@@ -97,7 +97,7 @@ class _RewardDetailScreenState extends ConsumerState<RewardDetailScreen> {
           const SizedBox(height: AppSpacing.lg),
           _info(
             'How you earn tokens',
-            'Reward tokens are earned as you progress — you gain tokens for every level you reach and '
+            'Reward tokens are earned as you progress. You gain tokens for every level you reach and '
                 'for achievements you unlock. XP keeps rising as a permanent record; tokens are the '
                 'spendable currency.',
           ),

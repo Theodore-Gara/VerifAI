@@ -4,6 +4,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/core/services/api_client.dart';
+import 'package:verifai/core/services/vera_voice.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
@@ -12,7 +13,7 @@ import 'package:verifai/features/vera/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 
-/// Vera — the app-wide AI assistant with memory and session history.
+/// Vera: the app-wide AI assistant with memory and session history.
 class VeraAssistantScreen extends ConsumerStatefulWidget {
   const VeraAssistantScreen({super.key});
 
@@ -35,6 +36,8 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
   @override
   void initState() {
     super.initState();
+    // Prepare Vera's offline Piper voice in the background.
+    VeraVoice.instance.warmUp();
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeGreet());
   }
 
@@ -45,13 +48,21 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
     _speakGreeting();
   }
 
+  static const _greeting = "Hi I'm Vera, your AI assistant. What are we doing today.";
+
   Future<void> _speakGreeting() async {
+    // Preferred: the on-device Piper (en_GB-cori-high) voice.
+    try {
+      if (await VeraVoice.instance.speak(_greeting)) return;
+    } catch (_) {
+      // fall through to device TTS
+    }
     try {
       await _tts.stop();
       await _tts.setLanguage('en-GB');
       await _tts.setSpeechRate(0.47);
       await _tts.setPitch(1.0);
-      await _tts.speak("Hi I'm Vera, your AI assistant. What are we doing today.");
+      await _tts.speak(_greeting);
     } catch (_) {
       // Device speech is unavailable; the written greeting still shows.
     }
@@ -62,6 +73,7 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
     _input.dispose();
     _scroll.dispose();
     _tts.stop();
+    VeraVoice.instance.stop();
     super.dispose();
   }
 
@@ -265,7 +277,7 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
                   ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
         ),
         const SizedBox(height: AppSpacing.xs),
-        Text('Ask me anything — I know your progress, your lessons and your rewards, and I can '
+        Text('Ask me anything. I know your progress, your lessons and your rewards, and I can '
             'look things up on the web to help you verify a claim.',
             textAlign: TextAlign.center,
             style: AppTypography.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary, height: 1.5)),

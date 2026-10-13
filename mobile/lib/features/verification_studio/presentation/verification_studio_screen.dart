@@ -13,7 +13,7 @@ import 'package:verifai/features/verification_studio/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 
-/// Verification Studio — Vera verifies text, documents, links and citations.
+/// Verification Studio: Vera verifies text, documents, links and citations.
 class VerificationStudioScreen extends ConsumerStatefulWidget {
   const VerificationStudioScreen({super.key});
 

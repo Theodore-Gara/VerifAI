@@ -11,7 +11,7 @@ import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
 
-/// Rewards — token wallet + catalogue.
+/// Rewards: token wallet + catalogue.
 class RewardsScreen extends ConsumerWidget {
   const RewardsScreen({super.key});
 

@@ -1,4 +1,4 @@
-// Industry Practice — informational workplace case studies. Plain class.
+// Industry Practice: informational workplace case studies. Plain class.
 class IndustryCase {
   final int id;
   final String title;

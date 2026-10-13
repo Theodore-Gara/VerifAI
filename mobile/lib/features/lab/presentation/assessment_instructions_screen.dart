@@ -102,7 +102,7 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
               FilledButton.icon(
                 onPressed: _starting || paper.assessment.viewOnly ? null : _start,
                 icon: const Icon(Icons.play_arrow_rounded),
-                label: Text(paper.assessment.viewOnly ? 'View only — attempts used' : 'Start attempt'),
+                label: Text(paper.assessment.viewOnly ? 'View only: attempts used' : 'Start attempt'),
               )
             else
               _resultPanel(context, paper, widget.outcome!),
@@ -249,7 +249,7 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(r.pendingMarking ? 'Submitted — awaiting marking' : (r.passed ? 'Passed' : 'Not passed'),
+              Text(r.pendingMarking ? 'Submitted, awaiting marking' : (r.passed ? 'Passed' : 'Not passed'),
                   style: AppTypography.textTheme.titleMedium
                       ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
               const SizedBox(height: 6),

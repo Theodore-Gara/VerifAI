@@ -6,7 +6,7 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 
-/// AI Lab home: the three pillars — Learning material, Practice, Assessments.
+/// AI Lab home: the three pillars: Learning material, Practice, Assessments.
 class LabHomeScreen extends StatelessWidget {
   const LabHomeScreen({super.key});
 
@@ -21,13 +21,13 @@ class LabHomeScreen extends StatelessWidget {
       ),
       (
         title: 'Practice',
-        subtitle: 'Recall questions drawn from each lesson — earn XP',
+        subtitle: 'Recall questions drawn from each lesson, earn XP',
         icon: Icons.quiz_outlined,
         route: '/ai-lab/practice',
       ),
       (
         title: 'Assessments',
-        subtitle: 'Module capstones — scenario based, timed and marked',
+        subtitle: 'Module capstones: scenario based, timed and marked',
         icon: Icons.workspace_premium_rounded,
         route: '/ai-lab/assessments',
       ),

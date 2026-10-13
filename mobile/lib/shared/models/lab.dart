@@ -1,4 +1,4 @@
-// AI Lab — lessons, textbook sections, practice activities and capstones.
+// AI Lab: lessons, textbook sections, practice activities and capstones.
 // Plain classes (no codegen).
 import 'vera.dart' show VeraSource;
 

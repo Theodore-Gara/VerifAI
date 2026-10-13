@@ -10,7 +10,7 @@ import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
 
-/// Task History — a unified timeline of tasks, practice activities and capstones.
+/// Task History: a unified timeline of tasks, practice activities and capstones.
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
 
@@ -58,7 +58,7 @@ class HistoryScreen extends ConsumerWidget {
     };
     final trailing = e.score != null
         ? '${e.score}%'
-        : (e.passed == true ? 'Done' : (e.passed == false ? 'Attempted' : '—'));
+        : (e.passed == true ? 'Done' : (e.passed == false ? 'Attempted' : '-'));
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Container(

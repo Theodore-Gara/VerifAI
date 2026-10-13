@@ -1,4 +1,4 @@
-// Verification Studio — analysis report + sources. Plain classes (no codegen).
+// Verification Studio: analysis report + sources. Plain classes (no codegen).
 import 'vera.dart' show VeraSource;
 
 class VerificationSourceInput {
