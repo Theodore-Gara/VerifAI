@@ -534,7 +534,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           itemBuilder: (context, index) {
             final item = gridItems[index];
             return Material(
-              color: AppColors.surface,
+              color: const Color(0xFFF5F7FA),
               borderRadius: BorderRadius.circular(AppRadius.card),
               child: InkWell(
                 borderRadius: BorderRadius.circular(AppRadius.card),
@@ -543,7 +543,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(
+                      color: AppColors.border.withValues(alpha: 0.7),
+                    ),
                     boxShadow: const [
                       BoxShadow(
                         color: AppColors.shadow,
@@ -562,7 +564,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           Container(
                             padding: const EdgeInsets.all(7),
                             decoration: BoxDecoration(
-                              color: AppColors.background,
+                              color: Colors.white,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(
@@ -606,7 +608,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             );
           },
         ),
-        const SizedBox(height: 11),
+        const SizedBox(height: 5),
 
         // Task History Strip
         Material(
