@@ -8,7 +8,7 @@ const READINESS_WEIGHTS = {
   'Risk & Governance': 0.2,
   'Prompt Design': 0.1,
   Interview: 0.1,
-  Learning: 0.1,
+  Learning: 0.2,
 };
 
 async function refreshReadiness(client, userId, trackId) {

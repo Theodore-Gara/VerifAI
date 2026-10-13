@@ -161,13 +161,19 @@ Protected. Body `{ "response": <answer>, "practice": false }`. Grades a recall a
 - `ordering` — an array of the items in the chosen order.
 
 ### GET /api/lab/assessments
-Protected. Capstone assessments (module-level, scenario-based) available to the user's track plus cross-industry ones. Each carries `time_limit_seconds`, `pass_score`, `max_attempts`, `question_count`, `attempts_used`, `attempts_remaining`, `best_score` and `passed`.
+Protected. Capstone assessments (module-level, scenario-based) available to the user's track plus cross-industry ones. Each carries `total_marks`, `time_limit_seconds` (default 40 min), `pass_score` (60), `max_attempts` (3), `question_count`, `attempts_used`, `attempts_remaining`, `best_score`, `passed` and `view_only`.
+
+### GET /api/lab/assessments/:code
+Protected. The full paper read-only (scenario, instructions, questions with `marks`/`marking` and answers withheld). `view_only` is true once the attempts are exhausted, at which point the learner can still revisit the paper but cannot start again.
 
 ### POST /api/lab/assessments/:code/start
-Protected. Opens a timed attempt. Questions (and multiple-choice options) are **shuffled**; answers are withheld. Returns `{ attempt_id, started_at, expires_at, time_limit_seconds, pass_score, attempts_remaining, questions }`. `404` if not available, `409` when no attempts remain, `400` if it has no questions.
+Protected. Opens a timed attempt. Questions (and multiple-choice / multi-select options) are **shuffled**; answer keys and rubrics are withheld. Returns `{ attempt_id, started_at, expires_at, time_limit_seconds, pass_score, total_marks, scenario, instructions, attempts_remaining, questions }`. `404` if not available, `409` when no attempts remain, `400` if it has no questions.
 
 ### POST /api/lab/assessments/:code/submit
-Protected. Body `{ attempt_id, answers: { "<question_id>": <response> } }`. Grades **server-side**, remapping the shuffled options. Returns `{ result: { score, passed, timed_out, earned_points, total_points, attempts_remaining }, results, xp_earned, tokens_earned, achievement }`. A **first pass** awards XP + tokens + a badge and feeds the readiness score; an attempt submitted more than 30 s past the time limit is marked `timed_out` and fails. `409` if the attempt was already submitted.
+Protected. Body `{ attempt_id, answers: { "<question_id>": <response> } }`. Grades the **auto-marked** questions server-side (remapping shuffled options). If the paper contains a **rubric** question (e.g. an extended response), the attempt is held and returns `202` with `{ result: { pending_marking: true, score, auto_marks, total_marks, ... }, results }`. Otherwise it finalises immediately: `{ result: { pending_marking: false, score, passed, timed_out, marks_awarded, total_marks, attempts_remaining }, results, xp_earned, tokens_earned, achievement }`. A **first pass** — even on the third attempt after two failures — awards XP + tokens + a badge and feeds the readiness score. Answers submitted more than 30 s past `expires_at` are marked `timed_out` and fail. Response shapes by type: `multiple_choice` index, `true_false` boolean, `fill_blank` string, `matching` `{left:right}` map, `ordering` array, `numeric` a number (or array for multi-part), `multi_select` an array of selected indices, `extended_response` free text.
+
+### POST /api/lab/assessments/:code/attempts/:id/mark
+Reviewer/AI-marker endpoint. Body `{ marks: { "<question_id>": <total> | [<per-criterion>] }, marked_by }`. Finalises a `pending_marking` attempt: rubric marks are capped at the question marks, added to the auto marks, and the score, pass, rewards and readiness are applied (a human should spot-check any AI marking). `409` if the attempt is not awaiting marking.
 
 ### POST /api/lab/coach
 Protected. Body `{ "lesson_code": "ai-ethics-and-bias", "messages": [...] }` → a Socratic tutor reply. `?stream=1` streams SSE as above. Rate-limited.

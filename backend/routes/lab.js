@@ -11,6 +11,8 @@ const {
   listAssessments,
   startAssessment,
   submitCapstone,
+  getAssessmentPaper,
+  markCapstone,
   listSources,
   getSource,
   getLibrary,
@@ -28,8 +30,10 @@ router.post('/lessons/:code/assessment', verifyFirebaseToken, writeLimit, submit
 router.post('/activities/:id/attempt', verifyFirebaseToken, writeLimit, submitActivity);
 
 router.get('/assessments', verifyFirebaseToken, listAssessments);
+router.get('/assessments/:code', verifyFirebaseToken, getAssessmentPaper);
 router.post('/assessments/:code/start', verifyFirebaseToken, writeLimit, startAssessment);
 router.post('/assessments/:code/submit', verifyFirebaseToken, writeLimit, submitCapstone);
+router.post('/assessments/:code/attempts/:id/mark', verifyFirebaseToken, writeLimit, markCapstone);
 
 router.get('/sources', verifyFirebaseToken, listSources);
 router.get('/sources/:id', verifyFirebaseToken, getSource);
