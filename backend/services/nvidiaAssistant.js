@@ -14,6 +14,7 @@ const {
   veraSystem,
   markerSystem,
   extractorSystem,
+  capstoneReportSystem,
   MEMORY_KINDS,
 } = require('./llm/prompts');
 
@@ -215,6 +216,28 @@ async function markRubric({ question, response, fetchImpl }) {
   return parsed;
 }
 
+// --- Post-capstone performance report ---------------------------------------
+async function generateCapstoneReport({ assessment, summary, fetchImpl }) {
+  const { content } = await chatWithFallback(
+    {
+      ...resolveProfile('marker'),
+      messages: [
+        { role: 'system', content: capstoneReportSystem() },
+        { role: 'user', content: `Assessment: ${assessment.title}\nPass mark: ${assessment.pass_score}\nLearner result:\n${summary}` },
+      ],
+    },
+    fetchImpl,
+  );
+  const parsed = parseJsonObject(content);
+  if (!parsed) throw llmError(502, 'The coach returned an unreadable report.');
+  return {
+    headline: typeof parsed.headline === 'string' ? parsed.headline.slice(0, 200) : '',
+    strengths: Array.isArray(parsed.strengths) ? parsed.strengths.filter((s) => typeof s === 'string').slice(0, 4) : [],
+    focus: Array.isArray(parsed.focus) ? parsed.focus.filter((s) => typeof s === 'string').slice(0, 4) : [],
+    report: typeof parsed.report === 'string' ? parsed.report.slice(0, 2000) : '',
+  };
+}
+
 module.exports = {
   getAssistantReply,
   streamAssistantReply,
@@ -227,4 +250,5 @@ module.exports = {
   streamVeraReply,
   extractMemories,
   markRubric,
+  generateCapstoneReport,
 };

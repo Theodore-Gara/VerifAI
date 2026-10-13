@@ -466,6 +466,8 @@ CREATE TABLE IF NOT EXISTS lab_capstone_attempts (
   marking JSONB,
   marked_by TEXT,
   marked_at TIMESTAMPTZ,
+  analysis JSONB,
+  analyzed_at TIMESTAMPTZ,
   timed_out BOOLEAN NOT NULL DEFAULT FALSE,
   started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   submitted_at TIMESTAMPTZ

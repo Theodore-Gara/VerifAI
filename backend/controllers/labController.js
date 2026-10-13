@@ -1,7 +1,7 @@
 const pool = require('../db/pool');
 const { optionalString, clampInt, positiveIntegerParam } = require('../middleware/validate');
 const { findUserByFirebaseUid } = require('../db/users');
-const { getCoachReply, streamCoachReply, markRubric } = require('../services/nvidiaAssistant');
+const { getCoachReply, streamCoachReply, markRubric, generateCapstoneReport } = require('../services/nvidiaAssistant');
 const { gradeActivity } = require('../services/activityGrading');
 const { markQuestion, rubricAward } = require('../services/capstoneMarking');
 const { awardXp } = require('../services/xpService');
@@ -948,6 +948,88 @@ async function aiMarkCapstone(req, res, next) {
   }
 }
 
+// POST /api/lab/assessments/:code/attempts/:id/analysis
+// Vera's post-capstone performance report. Generated once, then cached on the
+// attempt. Owner-only.
+async function getAssessmentAnalysis(req, res, next) {
+  try {
+    const user = await requireUser(res, req);
+    if (!user) return undefined;
+
+    const attemptId = positiveIntegerParam(req.params.id, 'attempt id');
+    const assessment = await findCapstone(pool, req.params.code, user.industry_track_id);
+    if (!assessment) {
+      return res.status(404).json({ error: 'Assessment not found for your selected track.', request_id: req.requestId });
+    }
+
+    const attemptResult = await pool.query(
+      `SELECT id, user_id, answers, presentation, auto_marks, marks_awarded, score, passed,
+              status, timed_out, analysis, submitted_at
+       FROM lab_capstone_attempts WHERE id = $1 AND assessment_id = $2`,
+      [attemptId, assessment.id],
+    );
+    if (!attemptResult.rows.length) {
+      return res.status(404).json({ error: 'Attempt not found.', request_id: req.requestId });
+    }
+    const attempt = attemptResult.rows[0];
+    if (Number(attempt.user_id) !== Number(user.id)) {
+      return res.status(403).json({ error: 'This attempt belongs to another learner.', request_id: req.requestId });
+    }
+    if (!attempt.submitted_at) {
+      return res.status(400).json({ error: 'Submit the paper before requesting an analysis.', request_id: req.requestId });
+    }
+    if (attempt.analysis) {
+      return res.status(200).json({ analysis: attempt.analysis, cached: true, request_id: req.requestId });
+    }
+
+    const questions = await pool.query(
+      `SELECT id, type, prompt, marks, marking, correct FROM lab_capstone_questions WHERE assessment_id = $1 ORDER BY sort_order, id`,
+      [assessment.id],
+    );
+    const answers = attempt.answers || {};
+    const presentation = attempt.presentation || { options: {} };
+    const marking = attempt.marking || {};
+
+    let totalMarks = 0;
+    const lines = [];
+    for (const question of questions.rows) {
+      const max = Number(question.marks) || 0;
+      totalMarks += max;
+      let response = answers[String(question.id)];
+      if ((question.type === 'multiple_choice' || question.type === 'multi_select') &&
+          presentation.options && presentation.options[question.id]) {
+        const perm = presentation.options[question.id];
+        const mapIndex = (value) => {
+          const n = Number(value);
+          return Number.isInteger(n) && n >= 0 && n < perm.length ? perm[n] : value;
+        };
+        response = Array.isArray(response) ? response.map(mapIndex) : mapIndex(response);
+      }
+      const awarded = (question.marking === 'rubric' || question.type === 'extended_response')
+        ? Number(marking[String(question.id)]) || 0
+        : markQuestion(question, response).awarded;
+      lines.push(`- [${question.type}] ${String(question.prompt || '').slice(0, 110)} -> ${awarded}/${max}`);
+    }
+
+    const summary = [
+      `Overall: ${attempt.score ?? 0}% (pass mark ${assessment.pass_score}). ${attempt.passed ? 'Passed' : 'Not passed yet'}${attempt.status === 'pending_marking' ? ' (a rubric answer is still being marked)' : ''}.`,
+      `Marks: ${attempt.marks_awarded ?? attempt.auto_marks ?? 0}/${totalMarks}.`,
+      'Per question:',
+      ...lines,
+    ].join('\n');
+
+    const analysis = await generateCapstoneReport({ assessment, summary });
+    await pool.query(
+      `UPDATE lab_capstone_attempts SET analysis = $1, analyzed_at = now() WHERE id = $2`,
+      [JSON.stringify(analysis), attemptId],
+    );
+
+    return res.status(200).json({ analysis, cached: false, request_id: req.requestId });
+  } catch (err) {
+    return handleAiError(err, req, res, next);
+  }
+}
+
 // GET /api/lab/sources — the "where our material comes from" catalogue.
 async function listSources(req, res, next) {
   try {
@@ -1070,6 +1152,7 @@ module.exports = {
   getAssessmentPaper,
   markCapstone,
   aiMarkCapstone,
+  getAssessmentAnalysis,
   listSources,
   getSource,
   getLibrary,

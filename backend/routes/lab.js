@@ -14,6 +14,7 @@ const {
   getAssessmentPaper,
   markCapstone,
   aiMarkCapstone,
+  getAssessmentAnalysis,
   listSources,
   getSource,
   getLibrary,
@@ -36,6 +37,7 @@ router.post('/assessments/:code/start', verifyFirebaseToken, writeLimit, startAs
 router.post('/assessments/:code/submit', verifyFirebaseToken, writeLimit, submitCapstone);
 router.post('/assessments/:code/attempts/:id/mark', verifyFirebaseToken, writeLimit, markCapstone);
 router.post('/assessments/:code/attempts/:id/ai-mark', verifyFirebaseToken, aiLimit, aiMarkCapstone);
+router.post('/assessments/:code/attempts/:id/analysis', verifyFirebaseToken, aiLimit, getAssessmentAnalysis);
 
 router.get('/sources', verifyFirebaseToken, listSources);
 router.get('/sources/:id', verifyFirebaseToken, getSource);

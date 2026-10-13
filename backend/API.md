@@ -118,11 +118,28 @@ Pass `?stream=1` (or `"stream": true`) to receive a Server-Sent Events stream: e
 Requires `NVIDIA_API_KEY` in the backend environment. Model routing is per use case: `NVIDIA_MODEL_CHAT` (default `nvidia/nemotron-3.5-lightning-30b-a3b`) for the assistant, coach and general surfaces, with a retryable failure falling back to `NVIDIA_MODEL_FALLBACK`.
 
 ### POST /api/verification/analyze
-Protected. Vera assesses a `document`, `claim`, `ai_response` or `source` and returns a structured report. **The submitted content is never stored** — only metadata and the report are persisted, so confidential material does not persist.
+Protected. Vera assesses submitted material and returns a structured report. **The submitted content is never stored** — only metadata and the report are persisted.
 
-Request: `{ "kind": "document", "content": "...", "document_name": "q3.pdf", "web_search": true }` (`content` ≤ 60,000 characters; `web_search` defaults to true).
+Request (all optional except `kind`, but at least one input is required):
 
-When Tavily is configured (`TAVILY_API_KEY`), Vera searches the web and uses the results as live evidence, citing the source titles. Response: `{ "analysis": { id, kind, document_name, overall_status, items_requiring_review, sources_confirmed, summary, report, created_at }, "sources": [{ title, url }], "web_searched": bool }`, where `overall_status` is one of `appears_sound`, `human_review_required`, `insufficient_evidence`. Uses the analysis model (`NVIDIA_MODEL_ANALYSIS`) with reasoning enabled, and is rate-limited.
+```json
+{
+  "kind": "document",
+  "context": "optional extra context the user typed",
+  "document_name": "q3.pdf",
+  "web_search": true,
+  "sources": [
+    { "type": "text", "text": "a pasted claim", "label": "optional" },
+    { "type": "document", "name": "q3.pdf", "mime": "application/pdf", "base64": "..." },
+    { "type": "url", "url": "https://example.com/article" },
+    { "type": "citation", "text": "POPIA section 22" }
+  ]
+}
+```
+
+The backend resolves each input: `document` is parsed (`pdf-parse` for PDF, `mammoth` for DOCX, UTF-8 otherwise; **10 MB max**), `url` is fetched and HTML-stripped, `citation` is looked up with Tavily. A legacy top-level `content` string is accepted as a text source. Vera then verifies the combined material, citing live web sources.
+
+Response: `{ "analysis": { id, kind, document_name, overall_status, items_requiring_review, sources_confirmed, summary, report, created_at }, "sources": [{ title, url }], "inputs": [{ type, label, chars }], "web_searched": bool }`. `overall_status` is one  of `appears_sound`, `human_review_required`, `insufficient_evidence`. Rate-limited.
 
 ### GET /api/verification/analyses
 Protected. The user's recent analyses (metadata + report), newest first. Optional `?limit=<1..50>` (default 20).
@@ -177,6 +194,12 @@ Reviewer/AI-marker endpoint. Body `{ marks: { "<question_id>": <total> | [<per-c
 
 ### POST /api/lab/assessments/:code/attempts/:id/ai-mark
 Protected. AI-assisted marking. Vera's marker model scores each rubric question against the rubric and stores a **suggestion** (`ai_suggestion`, plus `suggested_marks` and a `projected_score`) without finalising — the attempt stays `pending_marking` until a human confirms via the mark endpoint. `409` if not awaiting marking, `400` if there are no rubric questions.
+
+### POST /api/lab/assessments/:code/attempts/:id/analysis
+Protected (owner only). Returns Vera's post-capstone performance report, generated once and cached on the attempt: `{ "analysis": { headline, strengths[], focus[], report }, "cached": bool }`. `400` if the paper is not yet submitted.
+
+### GET /api/history
+Protected. One newest-first timeline across scored task attempts, AI Lab practice activities and capstone attempts. Optional `?limit=<1..100>` (default 30). Response: `{ entries: [{ type: task|activity|capstone, id, title, feature, score, passed, xp_earned, created_at }] }`.
 
 ### POST /api/lab/coach
 Protected. Body `{ "lesson_code": "ai-ethics-and-bias", "messages": [...] }` → a Socratic tutor reply. `?stream=1` streams SSE as above. Rate-limited.

@@ -20,6 +20,7 @@ const workshopRoutes = require('./routes/workshop');
 const rewardsRoutes = require('./routes/rewards');
 const veraRoutes = require('./routes/vera');
 const industryPracticeRoutes = require('./routes/industryPractice');
+const historyRoutes = require('./routes/history');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -55,8 +56,10 @@ app.use(cors({
 
 // Path-scoped parsers run first so avatar images and long documents are not
 // capped by the small global limit; body-parser skips paths already parsed.
+// The verification route accepts a 10MB document (base64 inflates it ~33%), so
+// it gets a 14MB ceiling.
 app.use(['/api/users/avatar'], express.json({ limit: '3mb' }));
-app.use(['/api/verification/analyze'], express.json({ limit: '1mb' }));
+app.use(['/api/verification/analyze'], express.json({ limit: '14mb' }));
 app.use(express.json({ limit: '32kb' }));
 app.use(express.urlencoded({ extended: false, limit: '16kb' }));
 
@@ -132,6 +135,7 @@ app.use('/api/workshop', workshopRoutes);
 app.use('/api/rewards', rewardsRoutes);
 app.use('/api/vera', veraRoutes);
 app.use('/api/industry-practice', industryPracticeRoutes);
+app.use('/api/history', historyRoutes);
 
 app.get('/api/docs', (req, res) => {
   res.json({
@@ -191,9 +195,11 @@ app.get('/api/docs', (req, res) => {
       'DELETE /api/vera/memory/:id',
       'GET /api/vera/tips',
       'POST /api/lab/assessments/:code/attempts/:id/ai-mark',
+      'POST /api/lab/assessments/:code/attempts/:id/analysis',
       'GET /api/industry-practice/cases',
       'GET /api/industry-practice/cases/:id',
       'POST /api/industry-practice/cases/:id/read',
+      'GET /api/history',
     ],
   });
 });
