@@ -160,6 +160,15 @@ Protected. Body `{ "response": <answer>, "practice": false }`. Grades a recall a
 - `matching` — an object `{ "<left>": "<right>", ... }`.
 - `ordering` — an array of the items in the chosen order.
 
+### GET /api/lab/assessments
+Protected. Capstone assessments (module-level, scenario-based) available to the user's track plus cross-industry ones. Each carries `time_limit_seconds`, `pass_score`, `max_attempts`, `question_count`, `attempts_used`, `attempts_remaining`, `best_score` and `passed`.
+
+### POST /api/lab/assessments/:code/start
+Protected. Opens a timed attempt. Questions (and multiple-choice options) are **shuffled**; answers are withheld. Returns `{ attempt_id, started_at, expires_at, time_limit_seconds, pass_score, attempts_remaining, questions }`. `404` if not available, `409` when no attempts remain, `400` if it has no questions.
+
+### POST /api/lab/assessments/:code/submit
+Protected. Body `{ attempt_id, answers: { "<question_id>": <response> } }`. Grades **server-side**, remapping the shuffled options. Returns `{ result: { score, passed, timed_out, earned_points, total_points, attempts_remaining }, results, xp_earned, tokens_earned, achievement }`. A **first pass** awards XP + tokens + a badge and feeds the readiness score; an attempt submitted more than 30 s past the time limit is marked `timed_out` and fails. `409` if the attempt was already submitted.
+
 ### POST /api/lab/coach
 Protected. Body `{ "lesson_code": "ai-ethics-and-bias", "messages": [...] }` → a Socratic tutor reply. `?stream=1` streams SSE as above. Rate-limited.
 
@@ -221,12 +230,13 @@ Reward tokens:
 
 - XP is a permanent progression metric and is **never spent**. Reward tokens are a separate, spendable currency earned from milestones.
 - Each level gained grants `TOKENS_PER_LEVEL` tokens (default 10); each achievement earned grants `TOKENS_PER_ACHIEVEMENT` tokens (default 5).
+- A first capstone pass may also grant a token bonus (ledger reason `capstone`).
 - Grants are recorded in an append-only ledger (`reward_token_events`) whose `UNIQUE(user_id, reason, ref)` constraint makes them idempotent, so a retried submission cannot double-credit.
 - Redemptions (`POST /api/rewards/:code/redeem`) deduct tokens only; XP, level and readiness are untouched.
 
 Readiness:
 
-- weighted mean of the dimension skill scores plus interview coverage (each question practised counts `100 / total`); stored monotonically via `GREATEST` so readiness never drops
+- weighted mean of the dimension skill scores plus interview coverage (each question practised counts `100 / total`) and lab capstone results (a `Learning` component, the average of the learner's best passed capstone scores); weights are renormalised over whichever components have data and stored monotonically via `GREATEST` so readiness never drops
 
 Streak:
 

@@ -4,6 +4,8 @@ const { findUserByFirebaseUid } = require('../db/users');
 const { getCoachReply, streamCoachReply } = require('../services/nvidiaAssistant');
 const { gradeActivity } = require('../services/activityGrading');
 const { awardXp } = require('../services/xpService');
+const { grantTokens } = require('../services/rewardTokens');
+const { refreshReadiness } = require('../services/readinessService');
 const { validateMessages } = require('./assistantController');
 const { handleAiError } = require('../middleware/aiError');
 const { openStream, sendEvent, endStream } = require('../middleware/sse');
@@ -398,6 +400,273 @@ async function submitActivity(req, res, next) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Capstone assessments (module-level, scenario-based)
+// ---------------------------------------------------------------------------
+const CAPSTONE_GRACE_SECONDS = 30;
+
+function shuffle(values) {
+  const a = [...values];
+  for (let i = a.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+async function findCapstone(executor, code, trackId) {
+  const result = await executor.query(
+    `SELECT id, code, title, summary, time_limit_seconds, pass_score, max_attempts,
+            xp_reward, token_reward, achievement_code
+     FROM lab_capstone_assessments
+     WHERE code = $1 AND active = TRUE AND (track_id IS NULL OR track_id = $2)`,
+    [code, trackId],
+  );
+  return result.rows[0] || null;
+}
+
+async function attemptsUsed(executor, userId, assessmentId) {
+  const result = await executor.query(
+    `SELECT COUNT(*)::int AS used FROM lab_capstone_attempts
+     WHERE user_id = $1 AND assessment_id = $2 AND submitted_at IS NOT NULL`,
+    [userId, assessmentId],
+  );
+  return result.rows[0]?.used ?? 0;
+}
+
+// GET /api/lab/assessments
+async function listAssessments(req, res, next) {
+  try {
+    const user = await requireUser(res, req);
+    if (!user) return undefined;
+
+    const result = await pool.query(
+      `SELECT c.id, c.code, c.title, c.summary, c.time_limit_seconds, c.pass_score,
+              c.max_attempts, c.xp_reward, c.token_reward,
+              (SELECT COUNT(*)::int FROM lab_capstone_questions q WHERE q.assessment_id = c.id) AS question_count,
+              (SELECT COUNT(*)::int FROM lab_capstone_attempts a
+                WHERE a.assessment_id = c.id AND a.user_id = $1 AND a.submitted_at IS NOT NULL) AS attempts_used,
+              (SELECT MAX(a.score) FROM lab_capstone_attempts a
+                WHERE a.assessment_id = c.id AND a.user_id = $1 AND a.passed) AS best_score
+       FROM lab_capstone_assessments c
+       WHERE c.active = TRUE AND (c.track_id IS NULL OR c.track_id = $2)
+       ORDER BY c.sort_order, c.id`,
+      [user.id, user.industry_track_id],
+    );
+
+    const assessments = result.rows.map((row) => ({
+      ...row,
+      attempts_remaining: Math.max(0, row.max_attempts - row.attempts_used),
+      passed: row.best_score != null,
+    }));
+    return res.status(200).json({ assessments, request_id: req.requestId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// POST /api/lab/assessments/:code/start
+// Shuffles questions (and multiple-choice options) and opens a timed attempt.
+async function startAssessment(req, res, next) {
+  try {
+    const user = await requireUser(res, req);
+    if (!user) return undefined;
+
+    const assessment = await findCapstone(pool, req.params.code, user.industry_track_id);
+    if (!assessment) {
+      return res.status(404).json({ error: 'Assessment not found for your selected track.', request_id: req.requestId });
+    }
+
+    const used = await attemptsUsed(pool, user.id, assessment.id);
+    if (used >= assessment.max_attempts) {
+      return res.status(409).json({
+        error: 'No attempts remaining for this assessment.',
+        attempts_remaining: 0,
+        request_id: req.requestId,
+      });
+    }
+
+    const questions = await pool.query(
+      `SELECT id, type, scenario, prompt, payload, sort_order
+       FROM lab_capstone_questions WHERE assessment_id = $1 ORDER BY sort_order, id`,
+      [assessment.id],
+    );
+    if (!questions.rows.length) {
+      return res.status(400).json({ error: 'This assessment has no questions yet.', request_id: req.requestId });
+    }
+
+    const byId = new Map(questions.rows.map((q) => [String(q.id), q]));
+    const order = shuffle(questions.rows.map((q) => q.id));
+    const presentation = { order, options: {} };
+
+    const presented = order.map((qid) => {
+      const q = byId.get(String(qid));
+      let payload = q.payload || {};
+      if (q.type === 'multiple_choice' && Array.isArray(payload.options)) {
+        const perm = shuffle(payload.options.map((_, i) => i));
+        presentation.options[qid] = perm;
+        payload = { ...payload, options: perm.map((i) => payload.options[i]) };
+      }
+      return { id: q.id, type: q.type, scenario: q.scenario, prompt: q.prompt, payload, sort_order: q.sort_order };
+    });
+
+    const attempt = await pool.query(
+      `INSERT INTO lab_capstone_attempts (user_id, assessment_id, presentation)
+       VALUES ($1, $2, $3)
+       RETURNING id, started_at`,
+      [user.id, assessment.id, JSON.stringify(presentation)],
+    );
+
+    const startedAt = new Date(attempt.rows[0].started_at).getTime();
+    const expiresAt = new Date(startedAt + assessment.time_limit_seconds * 1000).toISOString();
+
+    return res.status(201).json({
+      attempt_id: attempt.rows[0].id,
+      started_at: new Date(startedAt).toISOString(),
+      expires_at: expiresAt,
+      time_limit_seconds: assessment.time_limit_seconds,
+      pass_score: assessment.pass_score,
+      attempts_remaining: assessment.max_attempts - used,
+      questions: presented,
+      request_id: req.requestId,
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// POST /api/lab/assessments/:code/submit  { attempt_id, answers: { "<qid>": response } }
+async function submitCapstone(req, res, next) {
+  let client = null;
+  try {
+    const user = await requireUser(res, req);
+    if (!user) return undefined;
+
+    const attemptId = positiveIntegerParam(req.body.attempt_id, 'attempt_id');
+    const answers = req.body.answers;
+    if (!answers || typeof answers !== 'object' || Array.isArray(answers)) {
+      return res.status(400).json({ error: 'answers must be an object keyed by question id.', request_id: req.requestId });
+    }
+
+    const assessment = await findCapstone(pool, req.params.code, user.industry_track_id);
+    if (!assessment) {
+      return res.status(404).json({ error: 'Assessment not found for your selected track.', request_id: req.requestId });
+    }
+
+    const attemptResult = await pool.query(
+      `SELECT id, presentation, started_at, submitted_at
+       FROM lab_capstone_attempts WHERE id = $1 AND user_id = $2 AND assessment_id = $3`,
+      [attemptId, user.id, assessment.id],
+    );
+    if (!attemptResult.rows.length) {
+      return res.status(404).json({ error: 'Attempt not found.', request_id: req.requestId });
+    }
+    const attempt = attemptResult.rows[0];
+    if (attempt.submitted_at) {
+      return res.status(409).json({ error: 'This attempt has already been submitted.', request_id: req.requestId });
+    }
+
+    const questions = await pool.query(
+      `SELECT id, type, correct, explanation, points
+       FROM lab_capstone_questions WHERE assessment_id = $1 ORDER BY sort_order, id`,
+      [assessment.id],
+    );
+
+    const presentation = attempt.presentation || { options: {} };
+    let earned = 0;
+    let total = 0;
+    const results = questions.rows.map((question) => {
+      total += question.points;
+      let response = answers[String(question.id)];
+      // Map a presented option index back to the original before grading.
+      if (question.type === 'multiple_choice' && presentation.options && presentation.options[question.id]) {
+        const perm = presentation.options[question.id];
+        const presented = Number(response);
+        if (Number.isInteger(presented) && presented >= 0 && presented < perm.length) {
+          response = perm[presented];
+        }
+      }
+      const correct = gradeActivity(question.type, question.correct, response);
+      if (correct) earned += question.points;
+      return { question_id: question.id, correct, answer: question.correct, explanation: question.explanation };
+    });
+
+    const score = total > 0 ? Math.round((100 * earned) / total) : 0;
+    const elapsedMs = Date.now() - new Date(attempt.started_at).getTime();
+    const timedOut = elapsedMs > (assessment.time_limit_seconds + CAPSTONE_GRACE_SECONDS) * 1000;
+    const passed = !timedOut && score >= assessment.pass_score;
+
+    client = await pool.connect();
+    await client.query('BEGIN');
+
+    const prior = await client.query(
+      `SELECT 1 FROM lab_capstone_attempts WHERE user_id = $1 AND assessment_id = $2 AND passed LIMIT 1`,
+      [user.id, assessment.id],
+    );
+    const firstPass = passed && prior.rows.length === 0;
+
+    let xpEarned = 0;
+    let tokensEarned = 0;
+    let achievement = null;
+    if (firstPass) {
+      if (assessment.xp_reward > 0) {
+        await awardXp(client, user.id, assessment.xp_reward);
+        xpEarned = assessment.xp_reward;
+      }
+      if (assessment.token_reward > 0) {
+        await grantTokens(client, user.id, [
+          { delta: assessment.token_reward, reason: 'capstone', ref: `capstone:${assessment.code}` },
+        ]);
+        tokensEarned = assessment.token_reward;
+      }
+      if (assessment.achievement_code) {
+        const inserted = await client.query(
+          `INSERT INTO user_achievements (user_id, achievement_id)
+           SELECT $1, id FROM achievements WHERE code = $2
+           ON CONFLICT DO NOTHING RETURNING achievement_id`,
+          [user.id, assessment.achievement_code],
+        );
+        if (inserted.rows.length) achievement = assessment.achievement_code;
+      }
+    }
+
+    await client.query(
+      `UPDATE lab_capstone_attempts
+       SET answers = $1, score = $2, passed = $3, timed_out = $4, submitted_at = now()
+       WHERE id = $5`,
+      [JSON.stringify(answers), score, passed, timedOut, attemptId],
+    );
+
+    const usedAfter = await attemptsUsed(client, user.id, assessment.id);
+    await refreshReadiness(client, user.id, user.industry_track_id);
+    await client.query('COMMIT');
+
+    return res.status(200).json({
+      result: {
+        score,
+        passed,
+        timed_out: timedOut,
+        earned_points: earned,
+        total_points: total,
+        attempts_remaining: Math.max(0, assessment.max_attempts - usedAfter),
+      },
+      results,
+      xp_earned: xpEarned,
+      tokens_earned: tokensEarned,
+      achievement,
+      request_id: req.requestId,
+    });
+  } catch (err) {
+    if (client) await client.query('ROLLBACK').catch(() => {});
+    if (err && err.status) {
+      return res.status(err.status).json({ error: err.message, request_id: req.requestId });
+    }
+    return next(err);
+  } finally {
+    if (client) client.release();
+  }
+}
+
 // GET /api/lab/sources — the "where our material comes from" catalogue.
 async function listSources(req, res, next) {
   try {
@@ -514,6 +783,9 @@ module.exports = {
   recordProgress,
   submitAssessment,
   submitActivity,
+  listAssessments,
+  startAssessment,
+  submitCapstone,
   listSources,
   getSource,
   getLibrary,
