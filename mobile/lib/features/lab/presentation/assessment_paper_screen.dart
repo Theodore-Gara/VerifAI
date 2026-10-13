@@ -375,9 +375,10 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
           ReorderableListView(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            onReorderItem: (fromIndex, toIndex) => setState(() {
-              final item = items.removeAt(fromIndex);
-              items.insert(toIndex, item);
+            onReorder: (oldIndex, newIndex) => setState(() {
+              if (newIndex > oldIndex) newIndex--;
+              final item = items.removeAt(oldIndex);
+              items.insert(newIndex, item);
               _answers[q.id] = items;
             }),
             children: [

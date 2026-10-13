@@ -35,7 +35,7 @@ class _LabTopicReaderScreenState extends ConsumerState<LabTopicReaderScreen> {
 
   List<String> _paginate(String body) {
     final paras = body
-        .split(RegExp(r'\n\s*\n'))
+        .split(RegExp('\n\\s*\n'))
         .map((e) => e.trim())
         .where((e) => e.isNotEmpty)
         .toList();

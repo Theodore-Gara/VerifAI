@@ -57,9 +57,19 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/ai-lab/assessments'),
+        ),
         title: Text('Assessment',
             style: AppTypography.textTheme.titleLarge
                 ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+        actions: [
+          TextButton(
+            onPressed: () => context.go('/ai-lab/assessments'),
+            child: const Text('Assessments'),
+          ),
+        ],
       ),
       body: paperAsync.when(
         loading: () => ListView(padding: const EdgeInsets.all(AppSpacing.screenPadding), children: const [

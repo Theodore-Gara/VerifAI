@@ -23,6 +23,19 @@ import 'package:verifai/features/rewards/presentation/rewards_screen.dart';
 import 'package:verifai/features/history/presentation/history_screen.dart';
 import 'package:verifai/features/task/presentation/task_run_screen.dart';
 import 'package:verifai/features/dashboard/providers.dart';
+import 'package:verifai/features/progress/providers.dart';
+import 'package:verifai/features/history/providers.dart';
+import 'package:verifai/features/scoreboard/providers.dart';
+import 'package:verifai/features/rewards/providers.dart';
+import 'package:verifai/features/profile/providers.dart';
+import 'package:verifai/features/track/providers.dart';
+import 'package:verifai/features/lab/providers.dart';
+import 'package:verifai/features/interview/providers.dart';
+import 'package:verifai/features/judgement/providers.dart';
+import 'package:verifai/features/risk_governance/providers.dart';
+import 'package:verifai/features/vera/providers.dart';
+import 'package:verifai/features/onboarding/providers.dart';
+import 'package:verifai/features/verification_studio/providers.dart';
 import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
 import 'package:verifai/features/navigation/main_nav_shell.dart';
 import 'package:verifai/features/onboarding/presentation.dart';
@@ -43,9 +56,32 @@ final routerProvider = Provider<GoRouter>((ref) {
   // router (rebuilding it would reset navigation back to the splash screen).
   ref.listen<AsyncValue<AuthState>>(authStateProvider, (previous, next) {
     refreshNotifier.notify();
-    // Drop user-scoped caches so a newly signed-in user never sees the previous
-    // user's dashboard data (shared-device data leak).
+    // Drop ALL user-scoped caches so a newly signed-in user never sees the
+    // previous user's data (shared-device data leak).
     ref.invalidate(dashboardProvider);
+    ref.invalidate(activityProvider);
+    ref.invalidate(historyProvider);
+    ref.invalidate(rewardsProvider);
+    ref.invalidate(achievementsProvider);
+    ref.invalidate(milestonesProvider);
+    ref.invalidate(labLessonsProvider);
+    ref.invalidate(labAssessmentsProvider);
+    ref.invalidate(interviewQuestionsProvider);
+    ref.invalidate(judgementTaskProvider);
+    ref.invalidate(riskGovernanceTaskProvider);
+    ref.invalidate(veraSessionsProvider);
+    ref.invalidate(veraMemoryProvider);
+    ref.invalidate(veraTipsProvider);
+    ref.invalidate(verificationHistoryProvider);
+    ref.invalidate(tracksProvider);
+    ref.invalidate(currentUserProvider);
+    // Family providers — invalidating the family clears all keyed instances.
+    ref.invalidate(leaderboardProvider);
+    ref.invalidate(labLessonProvider);
+    ref.invalidate(assessmentPaperProvider);
+    ref.invalidate(assessmentAnalysisProvider);
+    ref.invalidate(veraSessionProvider);
+    ref.read(selectedTrackProvider.notifier).state = null;
   });
 
   final router = GoRouter(
