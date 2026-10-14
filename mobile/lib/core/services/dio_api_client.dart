@@ -262,6 +262,16 @@ class DioApiClient implements ApiClient {
     return reply;
   }
 
+  @override
+  Future<AssistantSessionDetail> getAssistantSession(int taskId) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>(
+      'assistant/sessions/$taskId',
+      options: Options(headers: _authHeaders(token)),
+    );
+    return AssistantSessionDetail.fromJson(response.data ?? const {});
+  }
+
   // --- Verification Studio ---
   @override
   Future<VerificationResult> analyzeVerification({

@@ -361,6 +361,22 @@ test('assistant endpoint sends only the authenticated user task context to NVIDI
         }],
       };
     }
+    // New session persistence queries - return empty/new session
+    if (sql.includes('assistant_sessions WHERE user_id')) {
+      return { rows: [] };
+    }
+    if (sql.includes('INSERT INTO assistant_sessions')) {
+      return { rows: [{ id: 99 }] };
+    }
+    if (sql.includes('assistant_messages WHERE session_id')) {
+      return { rows: [] };
+    }
+    if (sql.includes('INSERT INTO assistant_messages')) {
+      return { rows: [] };
+    }
+    if (sql.includes('UPDATE assistant_sessions')) {
+      return { rows: [] };
+    }
     throw new Error('Unexpected assistant query');
   };
   global.fetch = async (url, options) => {

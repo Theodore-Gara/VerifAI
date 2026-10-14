@@ -6,6 +6,7 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/shared/models/daily_task.dart';
+import 'package:verifai/shared/models/assistant.dart';
 import 'package:verifai/core/services/api_client.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 import 'package:verifai/shared/widgets/inline_markdown_text.dart';
@@ -26,6 +27,28 @@ class _LearningAssistantScreenState
   final _scroll = ScrollController();
   final List<AssistantMessage> _messages = [];
   bool _sending = false;
+  int? _sessionId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    try {
+      final detail = await ref.read(apiClientProvider).getAssistantSession(widget.task.id);
+      if (!mounted) return;
+      if (detail.session != null && detail.messages.isNotEmpty) {
+        setState(() {
+          _sessionId = detail.session!.id;
+          _messages.addAll(detail.messages.map((m) => AssistantMessage(role: m.role, content: m.content)));
+        });
+      }
+    } catch (_) {
+      // Silently fail - start with empty history
+    }
+  }
 
   @override
   void dispose() {

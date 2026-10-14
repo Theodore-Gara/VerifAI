@@ -367,6 +367,12 @@ class MockApiClient implements ApiClient {
     return 'Start by identifying the specific claim in the scenario. What source or information would help you check it?';
   }
 
+  @override
+  Future<AssistantSessionDetail> getAssistantSession(int taskId) async {
+    await _delay();
+    return const AssistantSessionDetail(session: null, messages: []);
+  }
+
   // --- Verification Studio ---
   @override
   Future<VerificationResult> analyzeVerification({

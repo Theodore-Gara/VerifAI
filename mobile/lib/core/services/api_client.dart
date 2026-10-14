@@ -19,6 +19,7 @@ abstract class ApiClient {
     required int taskId,
     required List<AssistantMessage> messages,
   });
+  Future<AssistantSessionDetail> getAssistantSession(int taskId);
 
   // --- Verification Studio ---
   Future<VerificationResult> analyzeVerification({
@@ -166,4 +167,20 @@ class TaskSubmissionResponse {
     this.missedKeywords = const [],
     this.newlyEarnedAchievements = const [],
   });
+}
+
+class AssistantSessionDetail {
+  final AssistantSession? session;
+  final List<AssistantMessageModel> messages;
+
+  const AssistantSessionDetail({required this.session, required this.messages});
+
+  factory AssistantSessionDetail.fromJson(Map<String, dynamic> json) => AssistantSessionDetail(
+        session: json['session'] != null
+            ? AssistantSession.fromJson(Map<String, dynamic>.from(json['session'] as Map))
+            : null,
+        messages: ((json['messages'] as List<dynamic>?) ?? const [])
+            .map((e) => AssistantMessageModel.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList(),
+      );
 }
