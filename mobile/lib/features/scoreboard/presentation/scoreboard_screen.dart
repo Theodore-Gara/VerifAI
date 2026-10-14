@@ -68,7 +68,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
               ),
             ),
             Text(
-              'Cohort readiness & rankings',
+              'Cohort XP & rankings',
               style: AppTypography.textTheme.labelSmall?.copyWith(
                 color: AppColors.textSecondary,
                 fontSize: 11,
@@ -294,7 +294,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
           ),
         ),
         Text(
-          'Verified Readiness',
+          'Total XP',
           style: AppTypography.textTheme.labelSmall?.copyWith(
             color: AppColors.textSecondary.withValues(alpha: 0.7),
             fontSize: 10,
@@ -403,20 +403,11 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
           ),
           const SizedBox(height: 4),
           Text(
-            '${entry.readinessScore}% Ready',
+            '${entry.xp} XP',
             style: AppTypography.textTheme.labelSmall?.copyWith(
               color: AppColors.accentGreen,
               fontWeight: FontWeight.w800,
               fontSize: 9.5,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            '${entry.xp} XP',
-            style: AppTypography.textTheme.labelSmall?.copyWith(
-              color: AppColors.textSecondary,
-              fontSize: 9.5,
-              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -539,21 +530,13 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${entry.readinessScore}%',
+                '${entry.xp} XP',
                 style: AppTypography.textTheme.titleSmall?.copyWith(
                   color: entry.isCurrentUser
                       ? AppColors.accentGreen
                       : AppColors.primaryNavy,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.2,
-                ),
-              ),
-              Text(
-                '${entry.xp} XP',
-                style: AppTypography.textTheme.labelSmall?.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 10.5,
                 ),
               ),
             ],
