@@ -1,4 +1,4 @@
-﻿name: verifai
+name: verifai
 description: AI Workplace Readiness App - Flutter Mobile App
 version: 1.0.0+1
 
@@ -41,7 +41,9 @@ dependencies:
   archive: ^3.6.1
 
   # UI
+  cupertino_icons: ^2.0.0
   fl_chart: ^0.65.0
+  flutter_markdown_plus: ^1.0.12
   shimmer: ^3.0.0
 
   # Code generation

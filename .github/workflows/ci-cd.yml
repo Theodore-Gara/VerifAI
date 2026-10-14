@@ -175,6 +175,13 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Free disk space for Android build
+        run: |
+          df -h
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost || true
+          docker system prune -af || true
+          df -h
+
       - name: Build release APK
         run: flutter build apk --release
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:verifai/shared/widgets/inline_markdown_text.dart';
 
@@ -9,30 +10,21 @@ void main() {
       home: InlineMarkdownText('Make **this** bold'),
     ));
 
-    final rich = tester
-        .widgetList<RichText>(find.byType(RichText))
-        .singleWhere((widget) => widget.text.toPlainText() == 'Make this bold');
-    final plain = rich.text.toPlainText();
-    expect(plain, 'Make this bold');
-
-    final bold = _flatten(rich.text as TextSpan)
-        .singleWhere((span) => span.text == 'this');
-    expect(bold.style?.fontWeight, FontWeight.w800);
+    expect(find.byType(MarkdownBody), findsOneWidget);
+    expect(find.text('Make this bold'), findsOneWidget);
   });
 
-  testWidgets('leaves unmatched markers visible', (tester) async {
+  testWidgets('supports headings, lists, and code blocks', (tester) async {
     await tester.pumpWidget(const MaterialApp(
-      home: InlineMarkdownText('Keep **unfinished text'),
+      home: Scaffold(
+        body: InlineMarkdownText(
+            '# Heading\n\n- one\n- two\n\n```dart\nfinal ok = true;\n```'),
+      ),
     ));
 
-    final rich = tester.widget<RichText>(find.byType(RichText));
-    expect(rich.text.toPlainText(), 'Keep **unfinished text');
+    expect(find.text('Heading'), findsOneWidget);
+    expect(find.text('one'), findsOneWidget);
+    expect(find.text('two'), findsOneWidget);
+    expect(find.textContaining('final ok = true;'), findsOneWidget);
   });
-}
-
-Iterable<TextSpan> _flatten(TextSpan span) sync* {
-  yield span;
-  for (final child in span.children ?? const <InlineSpan>[]) {
-    if (child is TextSpan) yield* _flatten(child);
-  }
 }
