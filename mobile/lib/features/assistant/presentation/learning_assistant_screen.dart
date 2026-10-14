@@ -8,6 +8,7 @@ import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/shared/models/daily_task.dart';
 import 'package:verifai/core/services/api_client.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
+import 'package:verifai/shared/widgets/inline_markdown_text.dart';
 
 class LearningAssistantScreen extends ConsumerStatefulWidget {
   final DailyTask task;
@@ -96,8 +97,7 @@ class _LearningAssistantScreenState
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Vera',
-                style: AppTypography.textTheme.titleMedium),
+            Text('Vera', style: AppTypography.textTheme.titleMedium),
             Text(
               widget.task.trackName ?? 'Current verification task',
               style: AppTypography.textTheme.labelSmall,
@@ -196,7 +196,7 @@ class _LearningAssistantScreenState
               border:
                   fromAssistant ? Border.all(color: AppColors.border) : null,
             ),
-            child: Text(
+            child: InlineMarkdownText(
               message.content,
               style: AppTypography.textTheme.bodyMedium?.copyWith(
                 color: fromAssistant ? AppColors.textPrimary : Colors.white,

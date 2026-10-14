@@ -12,13 +12,15 @@ import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/vera/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
+import 'package:verifai/shared/widgets/inline_markdown_text.dart';
 
 /// Vera: the app-wide AI assistant with memory and session history.
 class VeraAssistantScreen extends ConsumerStatefulWidget {
   const VeraAssistantScreen({super.key});
 
   @override
-  ConsumerState<VeraAssistantScreen> createState() => _VeraAssistantScreenState();
+  ConsumerState<VeraAssistantScreen> createState() =>
+      _VeraAssistantScreenState();
 }
 
 class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
@@ -53,7 +55,12 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
   Future<void> _speakGreeting() async {
     // Preferred: the on-device Piper (en_GB-cori-high) voice.
     try {
-      if (await VeraVoice.instance.speak(_greeting)) return;
+      if (await VeraVoice.instance.speak(
+        _greeting,
+        readyTimeout: const Duration(milliseconds: 250),
+      )) {
+        return;
+      }
     } catch (_) {
       // fall through to device TTS
     }
@@ -93,18 +100,21 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
   Future<void> _openSession(VeraSession session) async {
     Navigator.of(context).pop(); // close drawer
     try {
-      final detail = await ref.read(apiClientProvider).getVeraSession(session.id);
+      final detail =
+          await ref.read(apiClientProvider).getVeraSession(session.id);
       if (!mounted) return;
       setState(() {
         _sessionId = session.id;
         _messages
           ..clear()
-          ..addAll(detail.messages.map((m) => AssistantMessage(role: m.role, content: m.content)));
+          ..addAll(detail.messages
+              .map((m) => AssistantMessage(role: m.role, content: m.content)));
       });
       _scrollToBottom();
     } catch (_) {
       if (!mounted) return;
-      showFeedback(context, FeedbackKind.error, 'Could not open that conversation.');
+      showFeedback(
+          context, FeedbackKind.error, 'Could not open that conversation.');
     }
   }
 
@@ -114,8 +124,9 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
 
     final userMessage = AssistantMessage(role: 'user', content: text);
     final conversation = [..._messages, userMessage];
-    final requestMessages =
-        conversation.skip(conversation.length > 16 ? conversation.length - 16 : 0).toList();
+    final requestMessages = conversation
+        .skip(conversation.length > 16 ? conversation.length - 16 : 0)
+        .toList();
 
     setState(() {
       _messages.add(userMessage);
@@ -140,7 +151,8 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
       if (!mounted) return;
       setState(() {
         if (buffer.isNotEmpty) {
-          _messages.add(AssistantMessage(role: 'assistant', content: buffer.toString()));
+          _messages.add(
+              AssistantMessage(role: 'assistant', content: buffer.toString()));
         }
         _streaming = '';
       });
@@ -152,7 +164,8 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
         _input.text = text;
         _streaming = '';
       });
-      showFeedback(context, FeedbackKind.error, 'Vera could not respond. Try again shortly.');
+      showFeedback(context, FeedbackKind.error,
+          'Vera could not respond. Try again shortly.');
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -178,23 +191,27 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
         title: Row(
           children: [
             const CircleAvatar(
-                radius: 15, backgroundColor: AppColors.primaryNavy,
-                child: Icon(Icons.auto_awesome_rounded, size: 16, color: Colors.white)),
+                radius: 15,
+                backgroundColor: AppColors.primaryNavy,
+                child: Icon(Icons.auto_awesome_rounded,
+                    size: 16, color: Colors.white)),
             const SizedBox(width: 10),
             Text('Vera',
-                style: AppTypography.textTheme.titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+                style: AppTypography.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
           ],
         ),
         actions: [
           IconButton(
               tooltip: 'New chat',
               onPressed: _newChat,
-              icon: const Icon(Icons.edit_square, color: AppColors.primaryNavy)),
+              icon:
+                  const Icon(Icons.edit_square, color: AppColors.primaryNavy)),
           IconButton(
               tooltip: 'History',
               onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
-              icon: const Icon(Icons.history_rounded, color: AppColors.primaryNavy)),
+              icon: const Icon(Icons.history_rounded,
+                  color: AppColors.primaryNavy)),
         ],
       ),
       endDrawer: _sessionsDrawer(),
@@ -202,9 +219,12 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
         child: Column(
           children: [
             Expanded(
-              child: _messages.isEmpty && _streaming.isEmpty ? _welcome() : _conversation(),
+              child: _messages.isEmpty && _streaming.isEmpty
+                  ? _welcome()
+                  : _conversation(),
             ),
-            if (_sending && _streaming.isEmpty) const LinearProgressIndicator(minHeight: 2),
+            if (_sending && _streaming.isEmpty)
+              const LinearProgressIndicator(minHeight: 2),
             _composer(),
           ],
         ),
@@ -222,8 +242,9 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
             Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: Text('Conversations',
-                  style: AppTypography.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+                  style: AppTypography.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primaryNavy)),
             ),
             ListTile(
               leading: const Icon(Icons.add_rounded),
@@ -234,7 +255,8 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
             Expanded(
               child: sessionsAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => const Center(child: Text('Could not load conversations.')),
+                error: (e, _) =>
+                    const Center(child: Text('Could not load conversations.')),
                 data: (sessions) => sessions.isEmpty
                     ? const Center(child: Text('No conversations yet.'))
                     : ListView(
@@ -242,7 +264,9 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
                           for (final s in sessions)
                             ListTile(
                               selected: s.id == _sessionId,
-                              leading: const Icon(Icons.chat_bubble_outline_rounded, size: 20),
+                              leading: const Icon(
+                                  Icons.chat_bubble_outline_rounded,
+                                  size: 20),
                               title: Text(s.title ?? 'Conversation',
                                   maxLines: 1, overflow: TextOverflow.ellipsis),
                               subtitle: Text('${s.messageCount} messages',
@@ -267,20 +291,24 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
         const SizedBox(height: AppSpacing.lg),
         const Center(
           child: CircleAvatar(
-              radius: 30, backgroundColor: AppColors.primaryNavy,
-              child: Icon(Icons.auto_awesome_rounded, size: 30, color: Colors.white)),
+              radius: 30,
+              backgroundColor: AppColors.primaryNavy,
+              child: Icon(Icons.auto_awesome_rounded,
+                  size: 30, color: Colors.white)),
         ),
         const SizedBox(height: AppSpacing.md),
         Center(
           child: Text('Hi, I am Vera.',
-              style: AppTypography.textTheme.headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+              style: AppTypography.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
         ),
         const SizedBox(height: AppSpacing.xs),
-        Text('Ask me anything. I know your progress, your lessons and your rewards, and I can '
+        Text(
+            'Ask me anything. I know your progress, your lessons and your rewards, and I can '
             'look things up on the web to help you verify a claim.',
             textAlign: TextAlign.center,
-            style: AppTypography.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary, height: 1.5)),
+            style: AppTypography.textTheme.bodyMedium
+                ?.copyWith(color: AppColors.textSecondary, height: 1.5)),
         const SizedBox(height: AppSpacing.lg),
         tipsAsync.maybeWhen(
           data: (tips) => Column(
@@ -297,10 +325,13 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(t.title,
-                          style: AppTypography.textTheme.labelLarge
-                              ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+                          style: AppTypography.textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryNavy)),
                       const SizedBox(height: 2),
-                      Text(t.body, style: AppTypography.textTheme.bodySmall?.copyWith(height: 1.4)),
+                      Text(t.body,
+                          style: AppTypography.textTheme.bodySmall
+                              ?.copyWith(height: 1.4)),
                     ],
                   ),
                 ),
@@ -347,7 +378,8 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
   Widget _bubble(String text, bool assistant) => Align(
         alignment: assistant ? Alignment.centerLeft : Alignment.centerRight,
         child: Container(
-          constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.82),
+          constraints:
+              BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.82),
           margin: const EdgeInsets.only(bottom: AppSpacing.sm),
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
@@ -355,16 +387,17 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
             borderRadius: BorderRadius.circular(AppRadius.card),
             border: assistant ? Border.all(color: AppColors.border) : null,
           ),
-          child: Text(text,
-              style: AppTypography.textTheme.bodyMedium
-                  ?.copyWith(color: assistant ? AppColors.textPrimary : Colors.white, height: 1.5)),
+          child: InlineMarkdownText(text,
+              style: AppTypography.textTheme.bodyMedium?.copyWith(
+                  color: assistant ? AppColors.textPrimary : Colors.white,
+                  height: 1.5)),
         ),
       );
 
   Widget _composer() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.screenPadding, AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.sm),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+          AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
@@ -390,19 +423,23 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
                 focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.card),
                     borderSide: BorderSide(
-                        color: _webSearch ? AppColors.electricMint : AppColors.borderFocus)),
+                        color: _webSearch
+                            ? AppColors.electricMint
+                            : AppColors.borderFocus)),
               ),
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
           _WebSearchButton(
-              active: _webSearch, onTap: () => setState(() => _webSearch = !_webSearch)),
+              active: _webSearch,
+              onTap: () => setState(() => _webSearch = !_webSearch)),
           const SizedBox(width: AppSpacing.sm),
           IconButton.filled(
             onPressed: _sending ? null : () => _send(),
             icon: const Icon(Icons.send_rounded),
             style: IconButton.styleFrom(
-                backgroundColor: AppColors.primaryNavy, foregroundColor: Colors.white),
+                backgroundColor: AppColors.primaryNavy,
+                foregroundColor: Colors.white),
           ),
         ],
       ),
@@ -432,13 +469,18 @@ class _WebSearchButton extends StatelessWidget {
               height: 36,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: active ? AppColors.electricMint.withValues(alpha: .12) : Colors.transparent,
+                color: active
+                    ? AppColors.electricMint.withValues(alpha: .12)
+                    : Colors.transparent,
                 border: Border.all(
                     color: active ? AppColors.electricMint : AppColors.border,
                     width: active ? 1.8 : 1.2),
               ),
               child: Icon(Icons.travel_explore_rounded,
-                  size: 18, color: active ? AppColors.electricMint : AppColors.textSecondary),
+                  size: 18,
+                  color: active
+                      ? AppColors.electricMint
+                      : AppColors.textSecondary),
             ),
           ),
         ),

@@ -25,10 +25,12 @@ class LabAssessmentPaperScreen extends ConsumerStatefulWidget {
   final PaperArgs args;
 
   @override
-  ConsumerState<LabAssessmentPaperScreen> createState() => _LabAssessmentPaperScreenState();
+  ConsumerState<LabAssessmentPaperScreen> createState() =>
+      _LabAssessmentPaperScreenState();
 }
 
-class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScreen> {
+class _LabAssessmentPaperScreenState
+    extends ConsumerState<LabAssessmentPaperScreen> {
   final _pageController = PageController();
   final Map<int, dynamic> _answers = {};
   int _page = 0;
@@ -43,12 +45,23 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
   @override
   void initState() {
     super.initState();
+    _pageController.addListener(_syncPageIndex);
     _remaining = _secondsLeft();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       final left = _secondsLeft();
       setState(() => _remaining = left);
       if (left <= 0) _submit(auto: true);
     });
+  }
+
+  void _syncPageIndex() {
+    if (!_pageController.hasClients) return;
+    final page = _pageController.page;
+    if (page == null) return;
+    final rounded = page.round();
+    if (rounded != _page && mounted) {
+      setState(() => _page = rounded);
+    }
   }
 
   int _secondsLeft() {
@@ -61,6 +74,7 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
   @override
   void dispose() {
     _ticker?.cancel();
+    _pageController.removeListener(_syncPageIndex);
     _pageController.dispose();
     super.dispose();
   }
@@ -90,10 +104,14 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
           }
           break;
         case 'matching':
-          if (a is Map) payload[q.id] = a.map((k, v) => MapEntry('$k', v ?? ''));
+          if (a is Map) {
+            payload[q.id] = a.map((k, v) => MapEntry('$k', v ?? ''));
+          }
           break;
         case 'ordering':
-          if (a is List) payload[q.id] = a;
+          if (a is List) {
+            payload[q.id] = a;
+          }
           break;
         case 'extended_response':
           if (a is String && a.trim().isNotEmpty) payload[q.id] = a.trim();
@@ -116,7 +134,8 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
       if (!mounted) return;
       ref.invalidate(dashboardProvider);
       context.go('/ai-lab/assessments/$_code',
-          extra: AssessmentOutcome(result: result, attemptId: widget.args.start.attemptId));
+          extra: AssessmentOutcome(
+              result: result, attemptId: widget.args.start.attemptId));
     } catch (_) {
       if (!mounted) return;
       setState(() => _submitting = false);
@@ -142,8 +161,8 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
           surfaceTintColor: Colors.transparent,
           automaticallyImplyLeading: false,
           title: Text('Assessment paper',
-              style: AppTypography.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+              style: AppTypography.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
         ),
         body: SafeArea(
           child: Column(
@@ -154,10 +173,12 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
                   controller: _pageController,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: _questions.length,
-                  onPageChanged: (i) => setState(() => _page = i),
+                  onPageChanged: (i) {
+                    if (i != _page) setState(() => _page = i);
+                  },
                   itemBuilder: (context, i) => SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.md,
-                        AppSpacing.screenPadding, AppSpacing.md),
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+                        AppSpacing.md, AppSpacing.screenPadding, AppSpacing.md),
                     child: _questionView(_questions[i], i),
                   ),
                 ),
@@ -176,19 +197,24 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
     final s = (_remaining % 60).toString().padLeft(2, '0');
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding, vertical: AppSpacing.sm),
-      color: critical ? AppColors.warning.withValues(alpha: .12) : AppColors.primaryNavy,
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenPadding, vertical: AppSpacing.sm),
+      color: critical
+          ? AppColors.warning.withValues(alpha: .12)
+          : AppColors.primaryNavy,
       child: Row(
         children: [
-          Icon(Icons.timer_outlined, size: 18, color: critical ? AppColors.goldDark : Colors.white),
+          Icon(Icons.timer_outlined,
+              size: 18, color: critical ? AppColors.goldDark : Colors.white),
           const SizedBox(width: 8),
           Text('$m:$s',
               style: AppTypography.textTheme.titleMedium?.copyWith(
-                  color: critical ? AppColors.goldDark : Colors.white, fontWeight: FontWeight.w900)),
+                  color: critical ? AppColors.goldDark : Colors.white,
+                  fontWeight: FontWeight.w900)),
           const Spacer(),
           Text('Question ${_page + 1} of ${_questions.length}',
-              style: AppTypography.textTheme.labelMedium
-                  ?.copyWith(color: critical ? AppColors.goldDark : Colors.white70)),
+              style: AppTypography.textTheme.labelMedium?.copyWith(
+                  color: critical ? AppColors.goldDark : Colors.white70)),
         ],
       ),
     );
@@ -197,15 +223,18 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
   Widget _navBar() {
     final last = _page == _questions.length - 1;
     return Container(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.md),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+          AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.md),
       decoration: const BoxDecoration(
-          color: Colors.white, border: Border(top: BorderSide(color: AppColors.border))),
+          color: Colors.white,
+          border: Border(top: BorderSide(color: AppColors.border))),
       child: Row(
         children: [
           OutlinedButton.icon(
             onPressed: _page > 0
                 ? () => _pageController.previousPage(
-                    duration: const Duration(milliseconds: 260), curve: Curves.easeOut)
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOut)
                 : null,
             icon: const Icon(Icons.arrow_back_rounded, size: 17),
             label: const Text('Back'),
@@ -219,11 +248,14 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
                       _submit();
                     } else {
                       _pageController.nextPage(
-                          duration: const Duration(milliseconds: 260), curve: Curves.easeOut);
+                          duration: const Duration(milliseconds: 260),
+                          curve: Curves.easeOut);
                     }
                   },
-            icon: Icon(last ? Icons.check_rounded : Icons.arrow_forward_rounded, size: 17),
-            label: Text(_submitting ? 'Submitting…' : (last ? 'Submit paper' : 'Next')),
+            icon: Icon(last ? Icons.check_rounded : Icons.arrow_forward_rounded,
+                size: 17),
+            label: Text(
+                _submitting ? 'Submitting…' : (last ? 'Submit paper' : 'Next')),
           ),
         ],
       ),
@@ -235,8 +267,8 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Question ${index + 1} · ${q.marks} marks',
-            style: AppTypography.textTheme.labelMedium
-                ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.textSecondary)),
+            style: AppTypography.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w800, color: AppColors.textSecondary)),
         const SizedBox(height: AppSpacing.sm),
         if (q.scenario != null && q.scenario!.isNotEmpty) ...[
           _scenario(q.scenario!),
@@ -247,8 +279,10 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
           const SizedBox(height: AppSpacing.md),
         ],
         Text(q.prompt,
-            style: AppTypography.textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.textPrimary, height: 1.35)),
+            style: AppTypography.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+                height: 1.35)),
         const SizedBox(height: AppSpacing.lg),
         ..._answerWidgets(q),
       ],
@@ -261,15 +295,22 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
             color: AppColors.background,
             borderRadius: BorderRadius.circular(AppRadius.card),
             border: Border.all(color: AppColors.border)),
-        child: Text(text, style: AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
+        child: Text(text,
+            style: AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
       );
 
   Widget _codeBlock(List<String> lines) => Container(
         width: double.infinity,
         padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(color: AppColors.primaryDark, borderRadius: BorderRadius.circular(AppRadius.card)),
+        decoration: BoxDecoration(
+            color: AppColors.primaryDark,
+            borderRadius: BorderRadius.circular(AppRadius.card)),
         child: Text(lines.join('\n'),
-            style: const TextStyle(fontFamily: 'monospace', color: Colors.white, fontSize: 12, height: 1.5)),
+            style: const TextStyle(
+                fontFamily: 'monospace',
+                color: Colors.white,
+                fontSize: 12,
+                height: 1.5)),
       );
 
   List<Widget> _answerWidgets(LabAssessmentQuestion q) {
@@ -277,12 +318,15 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
       case 'multiple_choice':
         return [
           for (var i = 0; i < q.options.length; i++)
-            _optionTile(q.options[i], _answers[q.id] == i, () => setState(() => _answers[q.id] = i)),
+            _optionTile(q.options[i], _answers[q.id] == i,
+                () => setState(() => _answers[q.id] = i)),
         ];
       case 'true_false':
         return [
-          _optionTile('True', _answers[q.id] == true, () => setState(() => _answers[q.id] = true)),
-          _optionTile('False', _answers[q.id] == false, () => setState(() => _answers[q.id] = false)),
+          _optionTile('True', _answers[q.id] == true,
+              () => setState(() => _answers[q.id] = true)),
+          _optionTile('False', _answers[q.id] == false,
+              () => setState(() => _answers[q.id] = false)),
         ];
       case 'multi_select':
         final set = (_answers[q.id] as Set<int>?) ?? <int>{};
@@ -309,29 +353,36 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
           TextFormField(
             initialValue: _answers[q.id] as String? ?? '',
             onChanged: (v) => _answers[q.id] = v,
-            decoration: const InputDecoration(hintText: 'Your answer', border: OutlineInputBorder()),
+            decoration: const InputDecoration(
+                hintText: 'Your answer', border: OutlineInputBorder()),
           ),
         ];
       case 'numeric':
         if (q.parts.isNotEmpty) {
-          final vals = (_answers[q.id] as List<String>?) ?? List<String>.filled(q.parts.length, '');
+          final vals = (_answers[q.id] as List<String>?) ??
+              List<String>.filled(q.parts.length, '');
           return [
             for (var i = 0; i < q.parts.length; i++) ...[
               Text((q.parts[i]['label'] ?? 'Part ${i + 1}').toString(),
-                  style: AppTypography.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  style: AppTypography.textTheme.bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
               Text((q.parts[i]['prompt'] ?? '').toString(),
-                  style: AppTypography.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
+                  style: AppTypography.textTheme.bodySmall
+                      ?.copyWith(color: AppColors.textSecondary)),
               const SizedBox(height: 4),
               TextFormField(
                 initialValue: vals[i],
                 keyboardType: TextInputType.number,
                 onChanged: (v) {
-                  final list = List<String>.from((_answers[q.id] as List<String>?) ?? List<String>.filled(q.parts.length, ''));
+                  final list = List<String>.from(
+                      (_answers[q.id] as List<String>?) ??
+                          List<String>.filled(q.parts.length, ''));
                   list[i] = v;
                   _answers[q.id] = list;
                 },
-                decoration: const InputDecoration(hintText: 'Number', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                    hintText: 'Number', border: OutlineInputBorder()),
               ),
               const SizedBox(height: AppSpacing.md),
             ],
@@ -342,23 +393,30 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
             initialValue: _answers[q.id] as String? ?? '',
             keyboardType: TextInputType.number,
             onChanged: (v) => _answers[q.id] = v,
-            decoration: const InputDecoration(hintText: 'Number', border: OutlineInputBorder()),
+            decoration: const InputDecoration(
+                hintText: 'Number', border: OutlineInputBorder()),
           ),
         ];
       case 'matching':
-        final map = (_answers[q.id] as Map<String, String?>?) ?? {for (final l in q.left) l: null};
+        final map = (_answers[q.id] as Map<String, String?>?) ??
+            {for (final l in q.left) l: null};
         return [
           for (final l in q.left)
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: Row(
                 children: [
-                  Expanded(child: Text(l, style: AppTypography.textTheme.bodyMedium)),
+                  Expanded(
+                      child:
+                          Text(l, style: AppTypography.textTheme.bodyMedium)),
                   const SizedBox(width: AppSpacing.sm),
                   DropdownButton<String>(
                     value: map[l],
                     hint: const Text('Match'),
-                    items: [for (final r in q.right) DropdownMenuItem(value: r, child: Text(r))],
+                    items: [
+                      for (final r in q.right)
+                        DropdownMenuItem(value: r, child: Text(r))
+                    ],
                     onChanged: (v) => setState(() {
                       final m = Map<String, String?>.from(map);
                       m[l] = v;
@@ -370,20 +428,23 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
             ),
         ];
       case 'ordering':
-        final items = (_answers[q.id] as List<String>?) ?? List<String>.from(q.items);
+        final items =
+            (_answers[q.id] as List<String>?) ?? List<String>.from(q.items);
         return [
           ReorderableListView(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            onReorder: (oldIndex, newIndex) => setState(() {
-              if (newIndex > oldIndex) newIndex--;
+            onReorderItem: (oldIndex, newIndex) => setState(() {
               final item = items.removeAt(oldIndex);
               items.insert(newIndex, item);
               _answers[q.id] = items;
             }),
             children: [
               for (var i = 0; i < items.length; i++)
-                Card(key: ValueKey('$i-${items[i]}'), child: ListTile(leading: Text('${i + 1}'), title: Text(items[i]))),
+                Card(
+                    key: ValueKey('$i-${items[i]}'),
+                    child: ListTile(
+                        leading: Text('${i + 1}'), title: Text(items[i]))),
             ],
           ),
         ];
@@ -395,13 +456,17 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
             maxLines: 12,
             onChanged: (v) => _answers[q.id] = v,
             decoration: const InputDecoration(
-                hintText: 'Write your answer…', border: OutlineInputBorder(), alignLabelWithHint: true),
+                hintText: 'Write your answer…',
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true),
           ),
           if (q.wordLimit != null)
             Padding(
               padding: const EdgeInsets.only(top: 6),
-              child: Text('Aim for ${q.wordLimit!['min'] ?? ''}-${q.wordLimit!['max'] ?? ''} words.',
-                  style: AppTypography.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
+              child: Text(
+                  'Aim for ${q.wordLimit!['min'] ?? ''}-${q.wordLimit!['max'] ?? ''} words.',
+                  style: AppTypography.textTheme.bodySmall
+                      ?.copyWith(color: AppColors.textSecondary)),
             ),
         ];
       default:
@@ -409,7 +474,8 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
     }
   }
 
-  Widget _optionTile(String label, bool selected, VoidCallback onTap) => Padding(
+  Widget _optionTile(String label, bool selected, VoidCallback onTap) =>
+      Padding(
         padding: const EdgeInsets.only(bottom: AppSpacing.sm),
         child: InkWell(
           onTap: onTap,
@@ -417,16 +483,28 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
           child: Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: selected ? AppColors.accentLight.withValues(alpha: .7) : AppColors.surface,
+              color: selected
+                  ? AppColors.accentLight.withValues(alpha: .7)
+                  : AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(color: selected ? AppColors.accentGreen : AppColors.border, width: selected ? 2 : 1),
+              border: Border.all(
+                  color: selected ? AppColors.accentGreen : AppColors.border,
+                  width: selected ? 2 : 1),
             ),
             child: Row(
               children: [
-                Icon(selected ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded,
-                    size: 20, color: selected ? AppColors.accentGreen : AppColors.textSecondary),
+                Icon(
+                    selected
+                        ? Icons.radio_button_checked_rounded
+                        : Icons.radio_button_unchecked_rounded,
+                    size: 20,
+                    color: selected
+                        ? AppColors.accentGreen
+                        : AppColors.textSecondary),
                 const SizedBox(width: AppSpacing.md),
-                Expanded(child: Text(label, style: AppTypography.textTheme.bodyMedium)),
+                Expanded(
+                    child:
+                        Text(label, style: AppTypography.textTheme.bodyMedium)),
               ],
             ),
           ),
@@ -438,9 +516,12 @@ class _LabAssessmentPaperScreenState extends ConsumerState<LabAssessmentPaperScr
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Leave the paper?'),
-        content: const Text('Your progress on this attempt is not saved until you submit.'),
+        content: const Text(
+            'Your progress on this attempt is not saved until you submit.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Stay')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Stay')),
           TextButton(
               onPressed: () => Navigator.pop(ctx, true),
               child: const Text('Leave')),

@@ -23,8 +23,7 @@ class VeraVoice {
   Future<_PiperWorker?>? _starting;
   Future<Directory>? _base;
 
-  Future<Directory> _baseDir() =>
-      _base ??= _resolveBase();
+  Future<Directory> _baseDir() => _base ??= _resolveBase();
 
   Future<Directory> _resolveBase() async {
     final support = await getApplicationSupportDirectory();
@@ -58,12 +57,15 @@ class VeraVoice {
 
   /// Speaks [text] with the Piper voice. Returns false when the voice is not
   /// ready yet so the caller can fall back to device TTS.
-  Future<bool> speak(String text) async {
+  Future<bool> speak(
+    String text, {
+    Duration readyTimeout = const Duration(seconds: 5),
+  }) async {
     if (text.trim().isEmpty) return false;
     final worker = await _ensureWorker();
     if (worker == null) return false;
     try {
-      final wav = await worker.speak(text.trim());
+      final wav = await worker.speak(text.trim(), readyTimeout: readyTimeout);
       if (wav == null) return false;
       final file = File('${(await _baseDir()).path}/voice.wav');
       await file.writeAsBytes(wav);
@@ -241,7 +243,8 @@ Uint8List _wav(Float32List samples, int sampleRate) {
   final dataSize = n * 2;
   final out = BytesBuilder();
   void str(String s) => out.add(ascii.encode(s));
-  void u32(int v) => out.add([v & 0xff, (v >> 8) & 0xff, (v >> 16) & 0xff, (v >> 24) & 0xff]);
+  void u32(int v) =>
+      out.add([v & 0xff, (v >> 8) & 0xff, (v >> 16) & 0xff, (v >> 24) & 0xff]);
   void u16(int v) => out.add([v & 0xff, (v >> 8) & 0xff]);
   final byteRate = sampleRate * 2;
   str('RIFF');
