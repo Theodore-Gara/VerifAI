@@ -27,20 +27,8 @@ const PASS_THRESHOLD = {
   prompt_design: 60,
 };
 
-// Promotion tiers are volume-based: a learner advances once they have passed
-// enough tasks for the current tier. Readiness is a separate weighted skill
-// metric (see services/readinessService.js) and does not gate promotion.
-
-const TIERS = [
-  { name: 'Novice', required: 5 },
-  { name: 'Developing', required: 10 },
-  { name: 'Proficient', required: 15 },
-  { name: 'Advanced', required: 20 },
-];
-
-// Streak days are anchored to this timezone, NOT the database server clock
-// (which is usually UTC). A SAST user active at 00:30 local must roll into the
-// new local day even though UTC still shows the previous date.
+// Tiers are derived from the readiness score (see services/tiers.js and
+// services/readinessService.js); this controller no longer manages them.
 const STREAK_TIMEZONE = process.env.STREAK_TIMEZONE || 'Africa/Johannesburg';
 
 const FEATURES = new Set(Object.keys(FEATURE_DIMENSION));
@@ -337,8 +325,10 @@ async function submitAttempt(req, res, next) {
 
     if (!practice) {
       skillScore = await updateSkillScore(client, user.id, task.feature, task.track_id);
-      progress = await updateProgress(client, user, xpEarned, passed);
+      // Readiness (and the tier it drives) is recomputed before progress so the
+      // returned row carries the fresh readiness and tier.
       await refreshReadiness(client, user.id, user.industry_track_id);
+      progress = await updateProgress(client, user, xpEarned);
       newlyEarned = await awardAchievements(client, user.id);
     }
 
@@ -491,44 +481,48 @@ function scoreByFeature(feature, content, body) {
 // The skill score is the share of that skill's track tasks the user has passed:
 // passed non-practice tasks / total tasks in this skill for the track, as a %.
 // A skill with 4 tasks fills 25% per passed task (25 -> 50 -> 75 -> 100).
+// A skill score is COVERAGE: the share of the feature's tasks the learner has
+// passed (distinct tasks / tasks available), so each new pass adds a slice
+// (e.g. 1 of 4 = 25%) rather than jumping to 100% on the first attempt.
 async function updateSkillScore(client, userId, feature, trackId) {
   const dimension = FEATURE_DIMENSION[feature];
-  const fill = await client.query(
-    `SELECT
-       (SELECT COUNT(DISTINCT ta.task_id)::int
-          FROM task_attempts ta
-          JOIN tasks t ON t.id = ta.task_id
-         WHERE ta.user_id = $1 AND ta.practice = FALSE AND ta.passed
-           AND t.feature = $2 AND t.track_id = $3) AS passed,
-       (SELECT COUNT(*)::int
-          FROM tasks t
-         WHERE t.feature = $2 AND t.track_id = $3) AS total`,
-    [userId, feature, trackId]
-  );
-  const passed = Number(fill.rows[0]?.passed) || 0;
-  const total = Number(fill.rows[0]?.total) || 0;
-  const score = total > 0 ? Math.round((100 * passed) / total) : 0;
-
   const result = await client.query(
-    `INSERT INTO skill_scores (user_id, dimension, score, attempts_count, updated_at)
-     VALUES ($1, $2, $3, 1, CURRENT_TIMESTAMP)
+    `WITH stats AS (
+       SELECT
+         (SELECT COUNT(DISTINCT ta.task_id)::int
+            FROM task_attempts ta
+            JOIN tasks t ON t.id = ta.task_id
+           WHERE ta.user_id = $1 AND ta.practice = FALSE AND ta.passed
+             AND t.feature = $2 AND t.track_id = $3) AS passed,
+         (SELECT COUNT(*)::int FROM tasks t WHERE t.feature = $2 AND t.track_id = $3) AS total,
+         (SELECT COUNT(*)::int
+            FROM task_attempts ta
+            JOIN tasks t ON t.id = ta.task_id
+           WHERE ta.user_id = $1 AND ta.practice = FALSE
+             AND t.feature = $2 AND t.track_id = $3) AS attempts
+     )
+     INSERT INTO skill_scores (user_id, dimension, score, attempts_count, updated_at)
+     SELECT $1, $4,
+            CASE WHEN total > 0 THEN ROUND((100.0 * passed) / total)::int ELSE 0 END,
+            attempts, CURRENT_TIMESTAMP
+     FROM stats
      ON CONFLICT (user_id, dimension)
      DO UPDATE SET
        score = EXCLUDED.score,
-       attempts_count = skill_scores.attempts_count + 1,
+       attempts_count = EXCLUDED.attempts_count,
        updated_at = CURRENT_TIMESTAMP
      RETURNING dimension, score, attempts_count`,
-    [userId, dimension, score]
+    [userId, feature, trackId, dimension]
   );
   return result.rows[0];
 }
 
-async function updateProgress(client, user, xpEarned, passed) {
+async function updateProgress(client, user, xpEarned) {
   const progressResult = await client.query(
     `INSERT INTO user_progress (user_id, xp, level, streak, last_activity_date)
      VALUES ($1, 0, 1, 0, NULL)
      ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id
-     RETURNING id, xp, level, streak, last_activity_date, tier, tier_tasks_completed`,
+     RETURNING id, xp, level, streak, last_activity_date`,
     [user.id]
   );
   const progress = progressResult.rows[0];
@@ -556,28 +550,15 @@ async function updateProgress(client, user, xpEarned, passed) {
   // ledger's unique constraint makes this safe to run on every attempt.
   await grantTokens(client, user.id, levelGrants(Number(progress.level) || 1, newLevel));
 
-  let tier = progress.tier || 'Novice';
-  let tierCount = progress.tier_tasks_completed || 0;
-  if (passed) {
-    const idx = TIERS.findIndex((t) => t.name === tier);
-    tierCount += 1;
-    if (idx >= 0 && idx < TIERS.length - 1 && tierCount >= TIERS[idx].required) {
-      tier = TIERS[idx + 1].name;
-      tierCount = 0;
-    }
-  }
-
-  // Readiness (a separate weighted skill metric) is recomputed by
-  // refreshReadiness after this; updateProgress only owns XP, level, streak,
-  // tier and the tier counter.
+  // The tier is derived from readiness and written by refreshReadiness before
+  // this; here we only own XP, level and streak.
   const updated = await client.query(
     `UPDATE user_progress
      SET xp = $1, level = $2, streak = $3,
-         last_activity_date = (NOW() AT TIME ZONE $7)::date,
-         tier = $4, tier_tasks_completed = $5, updated_at = CURRENT_TIMESTAMP
-     WHERE user_id = $6
-     RETURNING xp, level, streak, last_activity_date, tier, tier_tasks_completed, readiness_score, tokens`,
-    [newXp, newLevel, newStreak, tier, tierCount, user.id, STREAK_TIMEZONE]
+         last_activity_date = (NOW() AT TIME ZONE $5)::date, updated_at = CURRENT_TIMESTAMP
+     WHERE user_id = $4
+     RETURNING xp, level, streak, last_activity_date, readiness_score, tier, tokens`,
+    [newXp, newLevel, newStreak, user.id, STREAK_TIMEZONE]
   );
   return updated.rows[0];
 }

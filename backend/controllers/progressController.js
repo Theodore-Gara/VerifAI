@@ -11,7 +11,6 @@ async function getProgress(req, res, next) {
               p.last_activity_date,
               COALESCE(p.readiness_score, 0)::int AS readiness_score,
               COALESCE(p.tier, 'Novice') AS tier,
-              COALESCE(p.tier_tasks_completed, 0)::int AS tier_tasks_completed,
               COALESCE((SELECT json_agg(json_build_object(
                   'dimension', ss.dimension,
                   'score', ss.score,

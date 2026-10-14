@@ -3,15 +3,18 @@
 // capstone results and stored memories. Read-only aggregation over existing
 // tables; nothing is duplicated.
 
+const { nextTier } = require('./tiers');
+
 async function buildUserContext(executor, userId) {
   const progressResult = await executor.query(
     `SELECT COALESCE(xp, 0)::int AS xp, COALESCE(level, 1)::int AS level,
             COALESCE(streak, 0)::int AS streak, COALESCE(tokens, 0)::int AS tokens,
-            COALESCE(readiness_score, 0)::int AS readiness_score
+            COALESCE(readiness_score, 0)::int AS readiness_score,
+            COALESCE(tier, 'Novice') AS tier
      FROM user_progress WHERE user_id = $1`,
     [userId],
   );
-  const progress = progressResult.rows[0] || { xp: 0, level: 1, streak: 0, tokens: 0, readiness_score: 0 };
+  const progress = progressResult.rows[0] || { xp: 0, level: 1, streak: 0, tokens: 0, readiness_score: 0, tier: 'Novice' };
 
   const skillsResult = await executor.query(
     `SELECT dimension, score, attempts_count FROM skill_scores WHERE user_id = $1 ORDER BY score ASC`,
@@ -58,7 +61,10 @@ async function buildUserContext(executor, userId) {
 function describeContext(ctx) {
   const lines = [];
   const p = ctx.progress;
-  lines.push(`Level ${p.level}, ${p.xp} XP, ${p.streak}-day streak, ${p.tokens} reward tokens, readiness ${p.readiness_score}%.`);
+  const tier = p.tier || 'Novice';
+  lines.push(`Tier ${tier} at ${p.readiness_score}% readiness, Level ${p.level}, ${p.xp} XP, ${p.streak}-day streak, ${p.tokens} reward tokens.`);
+  const next = nextTier(tier);
+  if (next) lines.push(`Next tier: ${next.name} at ${next.min}% readiness.`);
   if (ctx.skills.length) lines.push(`Skill scores: ${ctx.skills.map((s) => `${s.dimension} ${s.score}`).join(', ')}.`);
   if (ctx.weak.length) lines.push(`Weak areas (below 60): ${ctx.weak.map((s) => s.dimension).join(', ')}.`);
   if (ctx.strengths.length) lines.push(`Strengths (70+): ${ctx.strengths.map((s) => s.dimension).join(', ')}.`);

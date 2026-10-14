@@ -1,12 +1,15 @@
 // Readiness is the weighted mean of a learner's skill scores, interview
-// coverage and lab capstone results. Weights are renormalised over whichever
-// components currently have data, so a learner is never penalised for a
-// component they have not reached yet. Stored monotonically via GREATEST so a
-// single weak attempt never drops the displayed readiness.
+// coverage and lab capstone results, on a 0-100 scale. Weights are renormalised
+// over whichever components currently have data, so a learner is never
+// penalised for a component they have not reached yet.
 //
-// Readiness is a QUALITY signal, separate from promotion: tiers advance on the
-// volume of passed tasks (see tasksController.TIERS), so a learner at 45% can
-// still be promoted to the next tier for the work they have put in.
+// Readiness is the single source of truth for a learner's tier: it is written
+// live on every scored attempt and the tier is derived from the current score
+// (see services/tiers.js). Each skill score is coverage of that feature's tasks
+// (passed tasks / tasks available), so readiness climbs as the learner covers
+// more of each module rather than jumping high on a single good attempt.
+const { tierForScore } = require('./tiers');
+
 const READINESS_WEIGHTS = {
   Verification: 0.3,
   'AI Judgement': 0.3,
@@ -61,12 +64,13 @@ async function refreshReadiness(client, userId, trackId) {
   if (!parts.length) return;
   const sumWeight = parts.reduce((s, p) => s + p.weight, 0);
   const value = Math.round(parts.reduce((s, p) => s + p.weight * p.score, 0) / sumWeight);
+  const readiness = Math.max(0, Math.min(100, value));
 
   await client.query(
     `UPDATE user_progress
-     SET readiness_score = GREATEST(readiness_score, $1)
-     WHERE user_id = $2`,
-    [Math.max(0, Math.min(100, value)), userId],
+     SET readiness_score = $1, tier = $2
+     WHERE user_id = $3`,
+    [readiness, tierForScore(readiness), userId],
   );
 }
 

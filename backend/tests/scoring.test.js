@@ -246,26 +246,26 @@ function fakeProgressClient(dayGap) {
 
 test('streak increments on a 1-day gap and pins the timezone, not the server clock', async () => {
   const fake = fakeProgressClient(1);
-  const row = await updateProgress(fake, { id: 7 }, 50, true);
+  const row = await updateProgress(fake, { id: 7 }, 50);
   assert.equal(row.streak, 2);
   const gapSql = fake.sqls.find((s) => s.includes('day_gap'));
   const updateSql = fake.sqls.find((s) => s.includes('SET xp'));
   // Both the gap lookup and the stored activity date must use the configured
   // timezone (parameterised), never the database server's CURRENT_DATE.
   assert.match(gapSql, /AT TIME ZONE \$2/);
-  assert.match(updateSql, /AT TIME ZONE \$7/);
+  assert.match(updateSql, /AT TIME ZONE \$5/);
   assert.doesNotMatch(updateSql, /last_activity_date = CURRENT_DATE/);
   assert.deepEqual(fake.calls.find((call) => call.sql.includes('day_gap')).values, [1, process.env.STREAK_TIMEZONE || 'Africa/Johannesburg']);
-  assert.equal(fake.calls.find((call) => call.sql.includes('SET xp')).values[6], process.env.STREAK_TIMEZONE || 'Africa/Johannesburg');
+  assert.equal(fake.calls.find((call) => call.sql.includes('SET xp')).values[4], process.env.STREAK_TIMEZONE || 'Africa/Johannesburg');
 });
 
 test('streak keeps on a same-day gap and resets after a missed day', async () => {
   const sameDay = fakeProgressClient(0);
-  const kept = await updateProgress(sameDay, { id: 7 }, 50, true);
+  const kept = await updateProgress(sameDay, { id: 7 }, 50);
   assert.equal(kept.streak, 2); // mock returns streak 2 for the update row; key check is reset below
 
   const missed = fakeProgressClient(5);
-  const reset = await updateProgress(missed, { id: 7 }, 50, true);
+  const reset = await updateProgress(missed, { id: 7 }, 50);
   assert.equal(reset.streak, 2);
   // The reset logic itself: gap 5 means newStreak starts at 1 before the mock's
   // returned row; assert via the streak parameter the code would send is not

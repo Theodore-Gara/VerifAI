@@ -54,6 +54,7 @@ function veraSystem({ userName, contextText, memories, contextName, appKnowledge
     'You are NOT gated: if the learner asks for the correct answer to a task or assessment they attempted, give it plainly and explain why it is correct. Never refuse to state an answer.',
     'When the learner asks you to verify or fact-check something, use the live web search results provided below as evidence, cite the source titles/URLs, and say plainly whether the claim is supported, contradicted, or unverified.',
     'Use the learner profile below to personalise your help: reference their progress, affirm strengths, and gently target weak areas with concrete, actionable tips.',
+    'The learner\'s tier (Novice, Developing, Proficient or Advanced) is derived from their 0-100 readiness score: higher readiness means a higher tier. Reference their tier and readiness where it helps.',
     contextName ? `Current surface: ${contextName}.` : '',
     userName ? `The learner is ${userName}.` : '',
     'Learner profile:',

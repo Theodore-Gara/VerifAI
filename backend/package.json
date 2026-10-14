@@ -10,7 +10,8 @@
     "test:watch": "node --test --watch",
     "check": "node scripts/check.js",
     "db:setup": "node scripts/db-setup.js",
-    "db:migrate": "node scripts/db-setup.js migrate"
+    "db:migrate": "node scripts/db-setup.js migrate",
+    "db:readiness": "node scripts/recompute-readiness.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
