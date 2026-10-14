@@ -270,9 +270,9 @@
     "semantic_hash": ""
   },
   "mobile/lib/features/scoreboard/presentation/scoreboard_screen.dart": {
-    "mtime": 1791981392.762807,
-    "seen": 1791981420.1197004,
-    "ast_hash": "8d06379f62c9f4906134404686aed2c4",
+    "mtime": 1791981864.663268,
+    "seen": 1791981911.4710777,
+    "ast_hash": "53eb1e636f967d6a1b25cd22b39a2f47",
     "semantic_hash": ""
   },
   "mobile/lib/features/track/presentation/track_roadmap_screen.dart": {
@@ -918,9 +918,9 @@
     "semantic_hash": ""
   },
   "backend/controllers/tasksController.js": {
-    "mtime": 1791979751.6154509,
-    "seen": 1791981420.1193893,
-    "ast_hash": "e42129c6e87ba0e9999448ff6c4ff208",
+    "mtime": 1791983146.4955077,
+    "seen": 1791983430.13886,
+    "ast_hash": "1b5506e0127fe3165e55168c1cdb4d23",
     "semantic_hash": ""
   },
   "backend/controllers/tracksController.js": {
@@ -1026,9 +1026,9 @@
     "semantic_hash": ""
   },
   "backend/services/scoringService.js": {
-    "mtime": 1791718655.5435438,
-    "seen": 1791882174.9169137,
-    "ast_hash": "d7dcb643c59c0b9e8f503cebcfdb482a",
+    "mtime": 1791983107.873907,
+    "seen": 1791983430.1390285,
+    "ast_hash": "5ec8bc410b95d580bdec29ef00f2d62b",
     "semantic_hash": ""
   },
   "backend/tests/api.test.js": {
@@ -1038,15 +1038,15 @@
     "semantic_hash": ""
   },
   "backend/tests/scoring.test.js": {
-    "mtime": 1791979282.138981,
-    "seen": 1791981420.1195683,
-    "ast_hash": "de1d6458db760418a9226280f5a6bcbd",
+    "mtime": 1791983201.263957,
+    "seen": 1791983430.139054,
+    "ast_hash": "10e6f4060859ba6b4f71c1236e7a34ba",
     "semantic_hash": ""
   },
   "backend/API.md": {
-    "mtime": 1791979864.2049258,
-    "seen": 1791981420.1198459,
-    "ast_hash": "773b9366395a42365b41c9c8fb0f61b8",
+    "mtime": 1791983320.18573,
+    "seen": 1791983430.139327,
+    "ast_hash": "fd568cf29e7f86f31b7e96f238e67301",
     "semantic_hash": ""
   },
   "backend/AUDIT_AND_FIXES.md": {
@@ -1248,9 +1248,9 @@
     "semantic_hash": ""
   },
   "BACKEND_TASKS.md": {
-    "mtime": 1791979872.255127,
-    "seen": 1791981420.1198413,
-    "ast_hash": "7d14e5f2f7deba539d2150f9023a09fb",
+    "mtime": 1791983355.220233,
+    "seen": 1791983430.1393225,
+    "ast_hash": "b5e7be1011dafe9acb6c6c26dadd1fbc",
     "semantic_hash": ""
   },
   "FRONTEND_TASKS.md": {
@@ -1440,9 +1440,9 @@
     "semantic_hash": ""
   },
   "mobile/lib/features/assistant/presentation/learning_assistant_screen.dart": {
-    "mtime": 1791977197.8760757,
-    "seen": 1791981420.119623,
-    "ast_hash": "388acfc4c43b203aec291a87011797b6",
+    "mtime": 1791984602.805743,
+    "seen": 1791985011.374375,
+    "ast_hash": "3ec3035b6922b91f03779c1b91c99462",
     "semantic_hash": ""
   },
   "mobile/lib/features/auth/presentation/recovery_screen.dart": {
@@ -2322,9 +2322,9 @@
     "semantic_hash": ""
   },
   "backend/scripts/recompute-readiness.js": {
-    "mtime": 1791979765.415284,
-    "seen": 1791981420.1195276,
-    "ast_hash": "355b3e3c105c3df018558042b372b593",
+    "mtime": 1791983158.542961,
+    "seen": 1791983430.1390114,
+    "ast_hash": "083cd14c6d92e9cb2143be6ba16f71cb",
     "semantic_hash": ""
   },
   "backend/services/tiers.js": {

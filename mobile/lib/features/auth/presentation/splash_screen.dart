@@ -1,11 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
@@ -22,8 +19,6 @@ class SplashScreen extends ConsumerStatefulWidget {
 class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  final AudioPlayer _welcomePlayer = AudioPlayer();
-  final FlutterTts _tts = FlutterTts();
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -63,9 +58,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   Future<void> _startWelcomeAndNavigate() async {
-    // The welcome chime/voice runs without blocking launch: navigation stays
-    // on a fixed minimum-splash timer so audio problems can never stall it.
-    unawaited(_playWelcome());
     // Wake the backend (Render free tier sleeps when idle) while the splash is
     // showing, so the first real request - especially an AI call - is not the
     // one that has to wait ~50s for the instance to boot.
@@ -93,34 +85,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     }
   }
 
-  Future<void> _playWelcome() async {
-    try {
-      await _welcomePlayer.setReleaseMode(ReleaseMode.stop);
-      await _welcomePlayer.play(
-        AssetSource('audio/verifai_welcome_chime.wav'),
-      );
-      final preferences = await SharedPreferences.getInstance();
-      final voicePlayed =
-          preferences.getBool('verifai_welcome_voice_played_v1') ?? false;
-      if (voicePlayed) return;
-      await Future<void>.delayed(const Duration(milliseconds: 350));
-      await _tts.setLanguage('en-ZA');
-      await _tts.setSpeechRate(0.47);
-      await _tts.setPitch(1);
-      await _tts.awaitSpeakCompletion(true);
-      await _tts.speak(
-        'Welcome to VerifAI. AI assists. Humans verify. Let us get started.',
-      );
-      await preferences.setBool('verifai_welcome_voice_played_v1', true);
-    } catch (_) {
-      // Audio or device speech must not prevent navigation.
-    }
-  }
-
   @override
   void dispose() {
-    _welcomePlayer.dispose();
-    _tts.stop();
     _controller.dispose();
     super.dispose();
   }

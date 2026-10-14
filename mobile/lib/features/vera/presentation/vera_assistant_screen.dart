@@ -1,11 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 
 import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/core/services/api_client.dart';
-import 'package:verifai/core/services/vera_voice.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
@@ -28,7 +26,6 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _input = TextEditingController();
   final _scroll = ScrollController();
-  final FlutterTts _tts = FlutterTts();
   final List<AssistantMessage> _messages = [];
   int? _sessionId;
   bool _sending = false;
@@ -39,8 +36,6 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
   @override
   void initState() {
     super.initState();
-    // Prepare Vera's offline Piper voice in the background.
-    VeraVoice.instance.warmUp();
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeGreet());
   }
 
@@ -48,40 +43,13 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
   void _maybeGreet() {
     if (_greeted || !mounted) return;
     _greeted = true;
-    _speakGreeting();
-  }
-
-  static const _greeting = "Hi I'm Vera, your AI assistant.";
-
-  Future<void> _speakGreeting() async {
-    // Preferred: the on-device Piper (en_GB-cori-high) voice.
-    try {
-      if (await VeraVoice.instance.speak(
-        _greeting,
-        readyTimeout: const Duration(milliseconds: 250),
-      )) {
-        return;
-      }
-    } catch (_) {
-      // fall through to device TTS
-    }
-    try {
-      await _tts.stop();
-      await _tts.setLanguage('en-GB');
-      await _tts.setSpeechRate(0.47);
-      await _tts.setPitch(1.0);
-      await _tts.speak(_greeting);
-    } catch (_) {
-      // Device speech is unavailable; the written greeting still shows.
-    }
+    // Greeting is shown in the welcome UI; no TTS.
   }
 
   @override
   void dispose() {
     _input.dispose();
     _scroll.dispose();
-    _tts.stop();
-    VeraVoice.instance.stop();
     super.dispose();
   }
 
