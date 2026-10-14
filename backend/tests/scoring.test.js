@@ -10,6 +10,7 @@ const {
   FIX_POINTS,
   REASON_POINTS,
   calculateXp,
+  calculatePracticeXp,
   xpForLevel,
   calculateLevel,
 } = require('../services/scoringService');
@@ -66,6 +67,14 @@ test('scales XP by score and difficulty', () => {
   assert.equal(calculateXp(100, 'hard'), 100);
   assert.equal(calculateXp(50, 'medium'), 35); // e.g. R&G partial
   assert.equal(calculateXp(25, 'medium'), 18); // e.g. Judgement neighbour
+});
+
+test('a practice pass earns half the XP', () => {
+  assert.equal(calculatePracticeXp(100, 'hard'), 50); // full pass would be 100
+  assert.equal(calculatePracticeXp(100, 'medium'), 35);
+  assert.equal(calculatePracticeXp(100, 'easy'), 25);
+  assert.equal(calculatePracticeXp(58, 'hard'), 29); // text task scoring 58
+  assert.equal(calculatePracticeXp(0, 'hard'), 0);
 });
 
 test('level thresholds rise by 60 XP each level', () => {

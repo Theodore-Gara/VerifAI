@@ -167,9 +167,10 @@ weight; Verification falls back to `keywords` only for free-text scenarios.
 Difficulty affects **XP only**, never the score.
 
 ### Readiness score (the single 0-100 score)
-Each `skill_scores` dimension is **coverage** of that feature: passed distinct
-tasks out of the tasks available (so it climbs a slice per pass rather than
-jumping to 100% on the first attempt). `readiness_score` is
+Each `skill_scores` dimension is **coverage** of that feature: a task passed on a
+normal attempt counts as a full task, a task passed only via a practice attempt
+counts as **half**. So it climbs a slice per pass rather than jumping to 100% on
+the first attempt. `readiness_score` is
 the **weighted mean** of the skill scores, interview coverage and lab capstone
 results, recomputed on every scored attempt, interview practice and capstone
 pass. Weights: **Verification 0.30, AI Judgement 0.30, Risk & Governance 0.20,
@@ -193,7 +194,8 @@ rises and falls with the score — no separate task-count counter:
 | Advanced | 85-100 |
 
 - Written to `user_progress.tier` alongside readiness on each recompute.
-- Practice attempts do not score, so they do not move readiness or the tier.
+- A practice **pass** moves readiness (it counts as half a task) and the tier; a
+  practice fail changes nothing.
 - `tier_tasks_completed` is retired (column retained but unused).
 
 ### XP level curve (cosmetic)
@@ -314,8 +316,10 @@ the user's answer, and the correct answer.
   BOOLEAN`.
 - **Interview Practice does not appear** in history — it is ungraded; only its
   completion (coverage) is tracked.
-- **Practice retakes:** a re-attempt from history is stored with `practice = true`
-  and is **excluded from XP and readiness**.
+- **Practice retakes:** a re-attempt from history is stored with `practice = true`.
+  A practice **pass** earns **half** the XP (once per task, only if it was never
+  passed before) and counts as **half** a task toward the skill; practice fails
+  earn nothing.
 
 **Why:** team feedback — users need to see what they completed and what they got
 right/wrong.

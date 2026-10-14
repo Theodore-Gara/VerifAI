@@ -7,6 +7,7 @@ const {
   FIX_POINTS,
   REASON_POINTS,
   calculateXp,
+  calculatePracticeXp,
   calculateLevel,
 } = require('../services/scoringService');
 const { grantTokens, levelGrants, achievementGrants } = require('../services/rewardTokens');
@@ -304,7 +305,18 @@ async function submitAttempt(req, res, next) {
     }
 
     const passed = scored.score >= PASS_THRESHOLD[task.feature];
-    const xpEarned = practice ? 0 : calculateXp(scored.score, content.difficulty);
+
+    // XP: a first-time (non-practice) attempt earns full, score-proportional XP.
+    // A practice pass earns half, but only the first time the task is passed
+    // (later practice passes, and practice fails, earn nothing).
+    let xpEarned = practice ? 0 : calculateXp(scored.score, content.difficulty);
+    if (practice && passed) {
+      const priorPass = await client.query(
+        `SELECT 1 FROM task_attempts WHERE user_id = $1 AND task_id = $2 AND passed LIMIT 1`,
+        [user.id, task.id],
+      );
+      if (!priorPass.rows.length) xpEarned = calculatePracticeXp(scored.score, content.difficulty);
+    }
 
     const attemptResult = await client.query(
       `INSERT INTO task_attempts
@@ -323,12 +335,17 @@ async function submitAttempt(req, res, next) {
     let skillScore = null;
     let newlyEarned = [];
 
-    if (!practice) {
+    // A practice pass now contributes half a task to the skill coverage, so the
+    // skill/readiness/tier recompute runs for it too (a practice fail changes
+    // nothing and is skipped).
+    if (!practice || passed) {
       skillScore = await updateSkillScore(client, user.id, task.feature, task.track_id);
       // Readiness (and the tier it drives) is recomputed before progress so the
       // returned row carries the fresh readiness and tier.
       await refreshReadiness(client, user.id, user.industry_track_id);
-      progress = await updateProgress(client, user, xpEarned);
+      if (!practice || xpEarned > 0) {
+        progress = await updateProgress(client, user, xpEarned);
+      }
       newlyEarned = await awardAchievements(client, user.id);
     }
 
@@ -481,9 +498,10 @@ function scoreByFeature(feature, content, body) {
 // The skill score is the share of that skill's track tasks the user has passed:
 // passed non-practice tasks / total tasks in this skill for the track, as a %.
 // A skill with 4 tasks fills 25% per passed task (25 -> 50 -> 75 -> 100).
-// A skill score is COVERAGE: the share of the feature's tasks the learner has
-// passed (distinct tasks / tasks available), so each new pass adds a slice
-// (e.g. 1 of 4 = 25%) rather than jumping to 100% on the first attempt.
+// A skill score is COVERAGE of the feature's tasks. A task passed on a normal
+// attempt counts as a full task; a task passed only via practice counts as half.
+// So each pass adds a slice (1 of 10 = 10%), and practising a task you failed
+// adds half a slice.
 async function updateSkillScore(client, userId, feature, trackId) {
   const dimension = FEATURE_DIMENSION[feature];
   const result = await client.query(
@@ -493,7 +511,16 @@ async function updateSkillScore(client, userId, feature, trackId) {
             FROM task_attempts ta
             JOIN tasks t ON t.id = ta.task_id
            WHERE ta.user_id = $1 AND ta.practice = FALSE AND ta.passed
-             AND t.feature = $2 AND t.track_id = $3) AS passed,
+             AND t.feature = $2 AND t.track_id = $3) AS full_passed,
+         (SELECT COUNT(DISTINCT ta.task_id)::int
+            FROM task_attempts ta
+            JOIN tasks t ON t.id = ta.task_id
+           WHERE ta.user_id = $1 AND ta.practice = TRUE AND ta.passed
+             AND t.feature = $2 AND t.track_id = $3
+             AND NOT EXISTS (
+               SELECT 1 FROM task_attempts fp
+               WHERE fp.user_id = $1 AND fp.task_id = ta.task_id
+                 AND fp.practice = FALSE AND fp.passed)) AS practice_passed,
          (SELECT COUNT(*)::int FROM tasks t WHERE t.feature = $2 AND t.track_id = $3) AS total,
          (SELECT COUNT(*)::int
             FROM task_attempts ta
@@ -503,7 +530,9 @@ async function updateSkillScore(client, userId, feature, trackId) {
      )
      INSERT INTO skill_scores (user_id, dimension, score, attempts_count, updated_at)
      SELECT $1, $4,
-            CASE WHEN total > 0 THEN ROUND((100.0 * passed) / total)::int ELSE 0 END,
+            CASE WHEN total > 0
+                 THEN ROUND((100.0 * (full_passed + 0.5 * practice_passed)) / total)::int
+                 ELSE 0 END,
             attempts, CURRENT_TIMESTAMP
      FROM stats
      ON CONFLICT (user_id, dimension)

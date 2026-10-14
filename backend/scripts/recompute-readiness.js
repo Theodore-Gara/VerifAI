@@ -22,21 +22,31 @@ async function main() {
     for (const [feature, dimension] of Object.entries(FEATURE_DIMENSION)) {
       const res = await client.query(
         `INSERT INTO skill_scores (user_id, dimension, score, attempts_count, updated_at)
-         SELECT s.user_id, $2,
-                CASE WHEN s.total > 0 THEN ROUND((100.0 * s.passed) / s.total)::int ELSE 0 END,
-                s.attempts, CURRENT_TIMESTAMP
-         FROM (
-           SELECT ta.user_id,
-                  COUNT(DISTINCT ta.task_id) FILTER (WHERE ta.passed)::int AS passed,
-                  COUNT(*)::int AS attempts,
-                  (SELECT COUNT(*)::int FROM tasks t2
-                    WHERE t2.feature = $1 AND t2.track_id = u.industry_track_id) AS total
-           FROM task_attempts ta
-           JOIN tasks t ON t.id = ta.task_id
-           JOIN users u ON u.id = ta.user_id
-           WHERE ta.practice = FALSE AND t.feature = $1 AND t.track_id = u.industry_track_id
-           GROUP BY ta.user_id, u.industry_track_id
-         ) s
+         SELECT u.id, $2,
+                CASE WHEN tot.n > 0
+                     THEN ROUND((100.0 * (f.n + 0.5 * p.n)) / tot.n)::int
+                     ELSE 0 END,
+                COALESCE(att.n, 0), CURRENT_TIMESTAMP
+         FROM users u
+         JOIN LATERAL (SELECT COUNT(*)::int AS n FROM tasks t
+                        WHERE t.feature = $1 AND t.track_id = u.industry_track_id) tot ON TRUE
+         LEFT JOIN LATERAL (SELECT COUNT(DISTINCT ta.task_id)::int AS n
+                        FROM task_attempts ta JOIN tasks t ON t.id = ta.task_id
+                        WHERE ta.user_id = u.id AND ta.practice = FALSE AND ta.passed
+                          AND t.feature = $1 AND t.track_id = u.industry_track_id) f ON TRUE
+         LEFT JOIN LATERAL (SELECT COUNT(DISTINCT ta.task_id)::int AS n
+                        FROM task_attempts ta JOIN tasks t ON t.id = ta.task_id
+                        WHERE ta.user_id = u.id AND ta.practice = TRUE AND ta.passed
+                          AND t.feature = $1 AND t.track_id = u.industry_track_id
+                          AND NOT EXISTS (SELECT 1 FROM task_attempts fp
+                             WHERE fp.user_id = u.id AND fp.task_id = ta.task_id
+                               AND fp.practice = FALSE AND fp.passed)) p ON TRUE
+         LEFT JOIN LATERAL (SELECT COUNT(*)::int AS n
+                        FROM task_attempts ta JOIN tasks t ON t.id = ta.task_id
+                        WHERE ta.user_id = u.id AND t.feature = $1
+                          AND t.track_id = u.industry_track_id) att ON TRUE
+         WHERE u.industry_track_id IS NOT NULL
+           AND (COALESCE(f.n, 0) > 0 OR COALESCE(p.n, 0) > 0 OR COALESCE(att.n, 0) > 0)
          ON CONFLICT (user_id, dimension) DO UPDATE SET
            score = EXCLUDED.score,
            attempts_count = EXCLUDED.attempts_count,

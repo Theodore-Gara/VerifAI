@@ -38,7 +38,7 @@ Query parameters:
 Every task payload carries `feature` and `dimension` (e.g. `"feature": "judgement", "dimension": "AI Judgement"`).
 
 ### POST /api/tasks/:id/attempt
-Protected. Submits an answer and atomically updates attempt history, skill score, XP, level, streak, readiness and achievements.
+Protected. Submits an answer and atomically updates attempt history, skill score, XP, level, streak, readiness and achievements. A normal attempt earns score-proportional XP. Body may include `"practice": true` for a repeat attempt: a practice **pass** earns **half** the XP (once per task, only if the task has never been passed before), and counts as **half** a task toward the skill; practice fails earn nothing.
 
 The request body depends on the task feature:
 
@@ -306,7 +306,7 @@ Reward tokens:
 
 Readiness:
 
-- the single 0-100 readiness score. Each `skill_scores` dimension is **coverage** of that feature: passed distinct tasks out of the tasks available. Readiness is the weighted mean of those skill scores, interview coverage (each question practised counts `100 / total`) and lab capstone results (a `Learning` component, the average of the learner's best passed capstone scores). Weights are renormalised over whichever components have data.
+- the single 0-100 readiness score. Each `skill_scores` dimension is **coverage** of that feature: a task passed on a normal attempt counts as a full task, a task passed only via a **practice** attempt counts as **half**. Readiness is the weighted mean of those skill scores, interview coverage (each question practised counts `100 / total`) and lab capstone results (a `Learning` component, the average of the learner's best passed capstone scores). Weights are renormalised over whichever components have data.
 - Recomputed **live** on every scored task, interview practice and capstone pass, so it climbs as more of each module is covered.
 - The **tier is derived from readiness**: Novice 0-49, Developing 50-69, Proficient 70-84, Advanced 85-100. It follows the score, so it can rise or fall. There is no separate task-count tier counter.
 

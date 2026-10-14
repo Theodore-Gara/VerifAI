@@ -107,6 +107,12 @@ function calculateXp(score, difficulty = 'medium') {
   return Math.max(0, Math.min(100, Math.round((bounded / 100) * maxXp)));
 }
 
+// A practice (repeat) pass earns half the points a first-time pass would, so a
+// hard task (100) gives 50 and a text task scoring 58 gives 29.
+function calculatePracticeXp(score, difficulty = 'medium') {
+  return Math.round(calculateXp(score, difficulty) / 2);
+}
+
 // Cumulative XP required to *reach* a level. Each level costs +60 more XP than
 // the last: L1->L2 250, L2->L3 310, L3->L4 370, ... (250, 560, 930, 1360, ...).
 function xpForLevel(level) {
@@ -193,6 +199,7 @@ module.exports = {
   FIX_POINTS,
   REASON_POINTS,
   calculateXp,
+  calculatePracticeXp,
   xpForLevel,
   calculateLevel,
 };
