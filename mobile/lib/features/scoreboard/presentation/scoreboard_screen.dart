@@ -405,7 +405,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
           Text(
             '${entry.xp} XP',
             style: AppTypography.textTheme.labelSmall?.copyWith(
-              color: AppColors.accentGreen,
+              color: AppColors.textSecondary,
               fontWeight: FontWeight.w800,
               fontSize: 9.5,
             ),
@@ -515,7 +515,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${entry.tier} · ${entry.streak}d streak',
+                  entry.tier,
                   style: AppTypography.textTheme.labelSmall?.copyWith(
                     color: AppColors.textSecondary,
                     fontSize: 11,

@@ -6,9 +6,9 @@
     "semantic_hash": ""
   },
   "backend/package.json": {
-    "mtime": 1791896743.571249,
-    "seen": 1791896960.1480234,
-    "ast_hash": "d33e67ea075c2e86ecac05fe111c279f",
+    "mtime": 1791979300.2176542,
+    "seen": 1791981420.1194937,
+    "ast_hash": "7d35eb55efd3a8444c3255701b26efc5",
     "semantic_hash": ""
   },
   "mobile/lib/main.dart": {
@@ -18,9 +18,9 @@
     "semantic_hash": ""
   },
   "backend/db/schema.sql": {
-    "mtime": 1791970149.6503181,
-    "seen": 1791970575.7856228,
-    "ast_hash": "2fd6c721450f3648ffe89501c742a02e",
+    "mtime": 1791976837.1943703,
+    "seen": 1791981420.1194375,
+    "ast_hash": "916db39922f754d57c9b8a53011eb3ba",
     "semantic_hash": ""
   },
   "backend/db/seed.sql": {
@@ -126,15 +126,15 @@
     "semantic_hash": ""
   },
   "mobile/lib/core/services/api_client.dart": {
-    "mtime": 1791897343.74159,
-    "seen": 1791899323.0136054,
-    "ast_hash": "4b6ffb67e87d98ae878ff61f812963c0",
+    "mtime": 1791977126.1813545,
+    "seen": 1791981420.1196046,
+    "ast_hash": "855fa2fd6fa8bdb61b91380038560378",
     "semantic_hash": ""
   },
   "mobile/lib/core/services/mock_api_client.dart": {
-    "mtime": 1791897361.0045094,
-    "seen": 1791899323.013617,
-    "ast_hash": "f7a901984dabba1e4a0476f11e938fd2",
+    "mtime": 1791977156.4364798,
+    "seen": 1791981420.1196103,
+    "ast_hash": "f5951dd9200c2d32111cab2cbc34d4a2",
     "semantic_hash": ""
   },
   "mobile/lib/core/services/secure_storage_service.dart": {
@@ -270,9 +270,9 @@
     "semantic_hash": ""
   },
   "mobile/lib/features/scoreboard/presentation/scoreboard_screen.dart": {
-    "mtime": 1791882940.1093366,
-    "seen": 1791886039.8499742,
-    "ast_hash": "01dabee0fe6d384d1a7f432908dd59ff",
+    "mtime": 1791981392.762807,
+    "seen": 1791981420.1197004,
+    "ast_hash": "8d06379f62c9f4906134404686aed2c4",
     "semantic_hash": ""
   },
   "mobile/lib/features/track/presentation/track_roadmap_screen.dart": {
@@ -282,9 +282,9 @@
     "semantic_hash": ""
   },
   "mobile/lib/shared/models.dart": {
-    "mtime": 1791886461.4938087,
-    "seen": 1791889850.000882,
-    "ast_hash": "a56c624f3f9a2f77d72d8dcf1b8f5dbd",
+    "mtime": 1791977084.7193904,
+    "seen": 1791981420.1197226,
+    "ast_hash": "cba0e4db6f674daf45d45e84c02d3a6d",
     "semantic_hash": ""
   },
   "mobile/lib/shared/models/auth_state.dart": {
@@ -912,15 +912,15 @@
     "semantic_hash": ""
   },
   "backend/controllers/progressController.js": {
-    "mtime": 1791897940.5039282,
-    "seen": 1791899323.0132375,
-    "ast_hash": "e15fd599bf20624c4ce04f7cebeb0dec",
+    "mtime": 1791979243.330761,
+    "seen": 1791981420.1193855,
+    "ast_hash": "c1866af66a1c0ecba21d76ffdf869a9f",
     "semantic_hash": ""
   },
   "backend/controllers/tasksController.js": {
-    "mtime": 1791899088.3719423,
-    "seen": 1791899323.0132442,
-    "ast_hash": "d3c989f1c0ea909a532bf8c97254a296",
+    "mtime": 1791979751.6154509,
+    "seen": 1791981420.1193893,
+    "ast_hash": "e42129c6e87ba0e9999448ff6c4ff208",
     "semantic_hash": ""
   },
   "backend/controllers/tracksController.js": {
@@ -1032,21 +1032,21 @@
     "semantic_hash": ""
   },
   "backend/tests/api.test.js": {
-    "mtime": 1791899169.0479724,
-    "seen": 1791899323.0135145,
-    "ast_hash": "9c574255c9729ca2246d375b30161ebf",
+    "mtime": 1791977344.3695436,
+    "seen": 1791981420.119554,
+    "ast_hash": "8a27a5ec74ad1b1f6767f84241956cec",
     "semantic_hash": ""
   },
   "backend/tests/scoring.test.js": {
-    "mtime": 1791899154.6478593,
-    "seen": 1791899323.0135405,
-    "ast_hash": "9b818ec29622623779082949b9f6f5d8",
+    "mtime": 1791979282.138981,
+    "seen": 1791981420.1195683,
+    "ast_hash": "de1d6458db760418a9226280f5a6bcbd",
     "semantic_hash": ""
   },
   "backend/API.md": {
-    "mtime": 1791970521.716769,
-    "seen": 1791970575.785945,
-    "ast_hash": "8239e0263571fd175d57caa42805bf39",
+    "mtime": 1791979864.2049258,
+    "seen": 1791981420.1198459,
+    "ast_hash": "773b9366395a42365b41c9c8fb0f61b8",
     "semantic_hash": ""
   },
   "backend/AUDIT_AND_FIXES.md": {
@@ -1104,9 +1104,9 @@
     "semantic_hash": ""
   },
   "mobile/lib/core/services/dio_api_client.dart": {
-    "mtime": 1791975103.0493429,
-    "seen": 1791975489.6834226,
-    "ast_hash": "08521858a2f9d6f5e074d52669ff75b3",
+    "mtime": 1791977134.8984175,
+    "seen": 1791981420.119609,
+    "ast_hash": "5db277ebda6597f36e7ab23a94269c6a",
     "semantic_hash": ""
   },
   "mobile/lib/features/auth/presentation/auth_brand_header.dart": {
@@ -1248,9 +1248,9 @@
     "semantic_hash": ""
   },
   "BACKEND_TASKS.md": {
-    "mtime": 1791718655.4098172,
-    "seen": 1791882174.9170642,
-    "ast_hash": "a4fd572a49a7b55e4d4d65e830e8d203",
+    "mtime": 1791979872.255127,
+    "seen": 1791981420.1198413,
+    "ast_hash": "7d14e5f2f7deba539d2150f9023a09fb",
     "semantic_hash": ""
   },
   "FRONTEND_TASKS.md": {
@@ -1260,9 +1260,9 @@
     "semantic_hash": ""
   },
   "backend/controllers/assistantController.js": {
-    "mtime": 1791882197.168708,
-    "seen": 1791882319.670722,
-    "ast_hash": "d7b6a77d5cf3dd153f5dd82558c718ca",
+    "mtime": 1791977277.127089,
+    "seen": 1791981420.1193674,
+    "ast_hash": "c51c6be7236c3bd3a29f2558ba621a3f",
     "semantic_hash": ""
   },
   "backend/controllers/interviewController.js": {
@@ -1392,9 +1392,9 @@
     "semantic_hash": ""
   },
   "backend/routes/assistant.js": {
-    "mtime": 1791882197.4694068,
-    "seen": 1791882319.6708062,
-    "ast_hash": "1b384cf7aa106ef107e732d6bafafa3d",
+    "mtime": 1791976968.853666,
+    "seen": 1791981420.1194983,
+    "ast_hash": "573b75e3d2323413973dd7ecddc95604",
     "semantic_hash": ""
   },
   "backend/routes/interview.js": {
@@ -1440,9 +1440,9 @@
     "semantic_hash": ""
   },
   "mobile/lib/features/assistant/presentation/learning_assistant_screen.dart": {
-    "mtime": 1791961463.2123353,
-    "seen": 1791962850.4880183,
-    "ast_hash": "aa147ae128738374b2f0a1c64cdaead2",
+    "mtime": 1791977197.8760757,
+    "seen": 1791981420.119623,
+    "ast_hash": "388acfc4c43b203aec291a87011797b6",
     "semantic_hash": ""
   },
   "mobile/lib/features/auth/presentation/recovery_screen.dart": {
@@ -1890,15 +1890,15 @@
     "semantic_hash": ""
   },
   "backend/services/llm/prompts.js": {
-    "mtime": 1791885817.3282688,
-    "seen": 1791886039.8498297,
-    "ast_hash": "08b9921fd33744b9af470b9bca9a6c4e",
+    "mtime": 1791979267.42449,
+    "seen": 1791981420.1195393,
+    "ast_hash": "d978c4ec7398e7b0710f4fcb004a5399",
     "semantic_hash": ""
   },
   "backend/services/readinessService.js": {
-    "mtime": 1791899040.4536366,
-    "seen": 1791899323.0134947,
-    "ast_hash": "754e2fd7214f027e41347e29f3613133",
+    "mtime": 1791979772.3504689,
+    "seen": 1791981420.1195424,
+    "ast_hash": "c3ea781ee463540684cf21eaf0754497",
     "semantic_hash": ""
   },
   "backend/services/rewardTokens.js": {
@@ -1914,9 +1914,9 @@
     "semantic_hash": ""
   },
   "backend/services/veraContext.js": {
-    "mtime": 1791882197.638564,
-    "seen": 1791882319.6708384,
-    "ast_hash": "d429151d7e01abab9fadd51ef57ef9fb",
+    "mtime": 1791979326.5970473,
+    "seen": 1791981420.119551,
+    "ast_hash": "c1f6c3e8b199e3b3a64f4eb21a2a1ef1",
     "semantic_hash": ""
   },
   "backend/services/xpService.js": {
@@ -2313,6 +2313,36 @@
     "mtime": 1791967611.3748746,
     "seen": 1791970575.7858047,
     "ast_hash": "42f54c500a9d92b91a281d725eedf6cf",
+    "semantic_hash": ""
+  },
+  "backend/db/migrations/018_assistant_sessions.sql": {
+    "mtime": 1791977961.832996,
+    "seen": 1791981420.1194322,
+    "ast_hash": "d8334257b8d683fec6ae8659088641ee",
+    "semantic_hash": ""
+  },
+  "backend/scripts/recompute-readiness.js": {
+    "mtime": 1791979765.415284,
+    "seen": 1791981420.1195276,
+    "ast_hash": "355b3e3c105c3df018558042b372b593",
+    "semantic_hash": ""
+  },
+  "backend/services/tiers.js": {
+    "mtime": 1791979155.5977068,
+    "seen": 1791981420.1195498,
+    "ast_hash": "2cf665a990619efd7ee49e42b273abb3",
+    "semantic_hash": ""
+  },
+  "backend/tests/tiers.test.js": {
+    "mtime": 1791979290.9458942,
+    "seen": 1791981420.1195724,
+    "ast_hash": "50ffa82b6c73bfb59a7a6711f6002191",
+    "semantic_hash": ""
+  },
+  "mobile/lib/shared/models/assistant.dart": {
+    "mtime": 1791977070.883484,
+    "seen": 1791981420.119727,
+    "ast_hash": "a831d628ba74e8b7100c5604d2f35327",
     "semantic_hash": ""
   }
 }
