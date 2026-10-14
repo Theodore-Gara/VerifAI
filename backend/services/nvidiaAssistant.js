@@ -11,7 +11,6 @@ const {
   generalSystem,
   coachSystem,
   analysisSystem,
-  veraSystem,
   markerSystem,
   extractorSystem,
   capstoneReportSystem,
@@ -131,32 +130,19 @@ async function analyzeContent({ kind, content, webResults, fetchImpl }) {
 }
 
 // --- Vera: personalised assistant with memory --------------------------------
-async function getVeraReply({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers, webResults, messages, fetchImpl }) {
+// The caller assembles the full message list (system prompt + running summary +
+// recent turns); these just run it through the Vera profile.
+async function getVeraReply({ messages, fetchImpl }) {
   const { content } = await chatWithFallback(
-    {
-      ...resolveProfile('vera'),
-      messages: [
-        { role: 'system', content: veraSystem({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers, webResults }) },
-        ...messages,
-      ],
-    },
+    { ...resolveProfile('vera'), messages },
     fetchImpl,
   );
   if (!content) throw emptyReplyError();
   return content;
 }
 
-async function* streamVeraReply({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers, webResults, messages, fetchImpl }) {
-  yield* streamWithFallback(
-    {
-      ...resolveProfile('vera'),
-      messages: [
-        { role: 'system', content: veraSystem({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers, webResults }) },
-        ...messages,
-      ],
-    },
-    fetchImpl,
-  );
+async function* streamVeraReply({ messages, fetchImpl }) {
+  yield* streamWithFallback({ ...resolveProfile('vera'), messages }, fetchImpl);
 }
 
 // Extracts durable memories from one exchange. Best-effort: any failure yields

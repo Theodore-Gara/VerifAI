@@ -133,6 +133,19 @@ test('POST /api/vera/chat validates messages', async () => {
   assert.equal(response.status, 400);
 });
 
+test('a long assistant reply in the client history no longer blocks the next turn', async () => {
+  const long = 'y'.repeat(8000); // exceeds the per-message cap, as Vera's own replies can
+  const response = await auth(request(app).post('/api/vera/chat')).send({
+    messages: [
+      { role: 'user', content: 'first question' },
+      { role: 'assistant', content: long },
+      { role: 'user', content: 'continue please' },
+    ],
+  });
+  assert.equal(response.status, 200);
+  assert.equal(response.body.reply, 'Hi, I am Vera.');
+});
+
 test('Vera prompt includes app knowledge, rewards and attempt answers, and is ungated', async () => {
   systems = [];
   await auth(request(app).post('/api/vera/chat')).send({ messages: [{ role: 'user', content: 'Which reward should I save for?' }] });

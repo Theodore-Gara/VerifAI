@@ -515,7 +515,9 @@ CREATE TABLE IF NOT EXISTS vera_sessions (
   title VARCHAR(255),
   started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   last_active_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  message_count INTEGER NOT NULL DEFAULT 0 CHECK (message_count >= 0)
+  message_count INTEGER NOT NULL DEFAULT 0 CHECK (message_count >= 0),
+  summary TEXT,
+  summary_upto_message_id INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS vera_messages (

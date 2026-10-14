@@ -125,6 +125,16 @@ function capstoneReportSystem() {
   ].join('\n');
 }
 
+// Folds the older part of a long conversation into a compact running summary.
+function compactorSystem() {
+  return [
+    'You compress an ongoing conversation between a learner and Vera (an AI assistant) into a concise running summary that preserves everything needed to keep helping.',
+    'Keep: the learner\'s goals, decisions, preferences, corrected facts, unresolved questions, and any specifics (names, numbers, task names, scores).',
+    'Drop: greetings, repetition, small talk and anything already superseded.',
+    'Write short third-person notes, grouped by topic. Output ONLY the summary text, no preamble, no headings, no markdown.',
+  ].join('\n');
+}
+
 const OVERALL_STATUSES = ['appears_sound', 'human_review_required', 'insufficient_evidence'];
 const MEMORY_KINDS = ['preference', 'struggle', 'strength', 'goal', 'fact'];
 
@@ -136,6 +146,7 @@ module.exports = {
   analysisSystem,
   markerSystem,
   extractorSystem,
+  compactorSystem,
   capstoneReportSystem,
   OVERALL_STATUSES,
   MEMORY_KINDS,

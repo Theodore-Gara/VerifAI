@@ -7,6 +7,7 @@ process.env.NVIDIA_API_KEY = 'test-key';
 delete process.env.NVIDIA_MODEL;
 delete process.env.NVIDIA_MODEL_ANALYSIS;
 delete process.env.NVIDIA_MODEL_CHAT;
+delete process.env.NVIDIA_MODEL_LIGHT;
 delete process.env.NVIDIA_MODEL_FALLBACK;
 // Keep the suite hermetic: no real Tavily calls during tests.
 delete process.env.TAVILY_API_KEY;
@@ -194,7 +195,7 @@ test('POST /api/assistant/chat works without a task_id (general assistant)', asy
   });
   assert.equal(response.status, 200);
   assert.equal(response.body.reply, 'Here is a helpful hint.');
-  assert.equal(fetchLog[0].model, 'nvidia/nemotron-3-super-120b-a12b');
+  assert.equal(fetchLog[0].model, 'nvidia/nemotron-3-ultra-550b-a55b');
   assert.equal(fetchLog[0].messages[0].content.includes('verification analyst'), false);
 });
 

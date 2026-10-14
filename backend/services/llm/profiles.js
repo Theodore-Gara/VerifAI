@@ -1,11 +1,14 @@
-// Per-use-case model routing. Locked from the live model evaluation
-// (see the eval findings): the strong reasoning model serves both analysis and
-// the conversational surfaces, having matched the smaller model on latency while
-// clearly winning on quality. Every choice is env-overridable and falls back to
-// a proven model on failure.
+// Per-use-case model routing. Conversational surfaces run on the larger frontier
+// model; analysis/marking and background utility work run on the smaller model.
+// Every choice is env-overridable and falls back to a proven model on failure.
 const MODELS = {
   analysis: process.env.NVIDIA_MODEL_ANALYSIS || 'nvidia/nemotron-3-super-120b-a12b',
-  chat: process.env.NVIDIA_MODEL_CHAT || 'nvidia/nemotron-3-super-120b-a12b',
+  // Conversational surfaces (Vera, the Learning Assistant and the coach) use the
+  // larger frontier model; it is slower per token but tighter and higher quality.
+  chat: process.env.NVIDIA_MODEL_CHAT || 'nvidia/nemotron-3-ultra-550b-a55b',
+  // Background/utility work (memory extraction, session compaction) stays on the
+  // cheaper, faster model.
+  light: process.env.NVIDIA_MODEL_LIGHT || 'nvidia/nemotron-3-super-120b-a12b',
   fallback: process.env.NVIDIA_MODEL_FALLBACK || process.env.NVIDIA_MODEL || 'openai/gpt-oss-20b',
 };
 
@@ -67,12 +70,21 @@ const PROFILES = {
     timeoutMs: 60000,
   },
   extractor: {
-    model: MODELS.chat,
+    model: MODELS.light,
     temperature: 0.2,
     topP: 1,
     maxTokens: 800,
     thinking: false,
     timeoutMs: 30000,
+  },
+  // Folds an ageing conversation into a running summary (background, cheap).
+  compactor: {
+    model: MODELS.light,
+    temperature: 0.3,
+    topP: 1,
+    maxTokens: 900,
+    thinking: false,
+    timeoutMs: 45000,
   },
 };
 

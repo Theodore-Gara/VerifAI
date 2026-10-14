@@ -5,6 +5,7 @@ const { test } = require('node:test');
 delete process.env.NVIDIA_MODEL;
 delete process.env.NVIDIA_MODEL_ANALYSIS;
 delete process.env.NVIDIA_MODEL_CHAT;
+delete process.env.NVIDIA_MODEL_LIGHT;
 delete process.env.NVIDIA_MODEL_FALLBACK;
 
 const {
@@ -33,7 +34,7 @@ test('task assistant routes to the chat model with the task guardrail', async ()
 
   assert.equal(reply, 'Check what changed in the market.');
   assert.equal(request.url, 'https://integrate.api.nvidia.com/v1/chat/completions');
-  assert.equal(request.body.model, 'nvidia/nemotron-3-super-120b-a12b');
+  assert.equal(request.body.model, 'nvidia/nemotron-3-ultra-550b-a55b');
   assert.equal(request.body.max_tokens, 1200);
   assert.equal(request.body.chat_template_kwargs.enable_thinking, false);
   assert.match(request.body.messages[0].content, /Do not reveal the expected answer/);
@@ -69,7 +70,7 @@ test('a retryable upstream failure falls back to the proven model', async () => 
     fetchImpl: async (url, options) => {
       const body = JSON.parse(options.body);
       models.push(body.model);
-      if (body.model === 'nvidia/nemotron-3-super-120b-a12b') {
+      if (body.model === 'nvidia/nemotron-3-ultra-550b-a55b') {
         return { ok: false, status: 500, text: async () => 'boom' };
       }
       return { ok: true, json: async () => ({ choices: [{ message: { content: 'Fallback reply.' } }] }) };
@@ -77,7 +78,7 @@ test('a retryable upstream failure falls back to the proven model', async () => 
   });
 
   assert.equal(reply, 'Fallback reply.');
-  assert.deepEqual(models, ['nvidia/nemotron-3-super-120b-a12b', 'openai/gpt-oss-20b']);
+  assert.deepEqual(models, ['nvidia/nemotron-3-ultra-550b-a55b', 'openai/gpt-oss-20b']);
 });
 
 test('NVIDIA assistant rejects use without a server API key', async () => {

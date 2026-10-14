@@ -3,13 +3,22 @@ const { positiveIntegerParam, clampInt } = require('../middleware/validate');
 const { getVeraReply, streamVeraReply, extractMemories } = require('../services/nvidiaAssistant');
 const { buildUserContext, describeContext, buildTips, buildAppKnowledge, buildAttemptAnswers } = require('../services/veraContext');
 const { webSearch } = require('../services/tavily');
-const { MEMORY_KINDS } = require('../services/llm/prompts');
+const { MEMORY_KINDS, veraSystem } = require('../services/llm/prompts');
+const { assembleContext, shouldCompact, compactSession } = require('../services/chatCompaction');
 const { handleAiError } = require('../middleware/aiError');
 const { openStream, sendEvent, endStream } = require('../middleware/sse');
 
-const MAX_MESSAGES = 20;
 const MAX_MESSAGE_LENGTH = 2000;
 const CONTEXTS = new Set(['assistant', 'coach', 'lab', 'verification', 'general']);
+
+// The model's context window for the chat model, and the fraction at which we
+// fold older turns into the running summary. Overridable for other models.
+const CHAT_CONTEXT_TOKENS = Number(process.env.CHAT_CONTEXT_TOKENS) || 262144;
+const COMPACT_AT = 0.9;
+const REPLY_RESERVE_TOKENS = 2000; // room for the reply + safety
+
+// Guard so a session is never compacted twice at once.
+const compactionInFlight = new Set();
 
 async function requireUser(res, req) {
   const result = await pool.query(
@@ -23,32 +32,28 @@ async function requireUser(res, req) {
   return result.rows[0];
 }
 
-function validateMessages(value) {
-  if (!Array.isArray(value) || value.length === 0 || value.length > MAX_MESSAGES) {
-    const error = new Error(`messages must contain 1 to ${MAX_MESSAGES} messages.`);
+// Vera's conversation is rebuilt server-side from the stored session history,
+// so only the newest message matters: it must be the learner's next question.
+// Earlier client entries (which may include long assistant replies) are ignored.
+function validateLatestUserTurn(value) {
+  if (!Array.isArray(value) || value.length === 0) {
+    const error = new Error('messages must contain at least one message.');
     error.status = 400;
     throw error;
   }
-  const messages = value.map((message) => {
-    if (!message || !['user', 'assistant'].includes(message.role)) {
-      const error = new Error('Message role must be user or assistant.');
-      error.status = 400;
-      throw error;
-    }
-    const content = typeof message.content === 'string' ? message.content.trim() : '';
-    if (!content || content.length > MAX_MESSAGE_LENGTH) {
-      const error = new Error(`Each message must be 1 to ${MAX_MESSAGE_LENGTH} characters.`);
-      error.status = 400;
-      throw error;
-    }
-    return { role: message.role, content };
-  });
-  if (messages.at(-1).role !== 'user') {
+  const newest = value[value.length - 1];
+  if (!newest || newest.role !== 'user') {
     const error = new Error('The latest message must be from the user.');
     error.status = 400;
     throw error;
   }
-  return messages;
+  const content = typeof newest.content === 'string' ? newest.content.trim() : '';
+  if (!content || content.length > MAX_MESSAGE_LENGTH) {
+    const error = new Error(`Your message must be 1 to ${MAX_MESSAGE_LENGTH} characters.`);
+    error.status = 400;
+    throw error;
+  }
+  return { role: 'user', content };
 }
 
 async function storeMemories(executor, userId, items) {
@@ -101,13 +106,12 @@ async function chat(req, res, next) {
     const user = await requireUser(res, req);
     if (!user) return undefined;
 
-    const messages = validateMessages(req.body.messages);
+    const lastUser = validateLatestUserTurn(req.body.messages);
     if (!process.env.NVIDIA_API_KEY) {
       return res.status(503).json({ error: 'Vera is not configured.', request_id: req.requestId });
     }
 
     const contextName = CONTEXTS.has(req.body.context) ? req.body.context : 'assistant';
-    const lastUser = messages[messages.length - 1];
 
     let sessionId = null;
     if (req.body.session_id !== undefined && req.body.session_id !== null) {
@@ -125,31 +129,68 @@ async function chat(req, res, next) {
       sessionId = created.rows[0].id;
     }
 
-    // Only the newest user turn is persisted; the client sends the running history.
+    // Persist the newest user turn; the rest of the conversation lives in the DB.
     await pool.query(
       `INSERT INTO vera_messages (session_id, user_id, role, content) VALUES ($1, $2, 'user', $3)`,
       [sessionId, user.id, lastUser.content],
     );
 
     const { contextText, memories, appKnowledge, attemptAnswers } = await loadVeraInputs(user);
-    const wantsStream = req.query.stream === '1' || req.body.stream === true;
 
     // The learner can ask Vera to verify their input: search the web on request.
     const webResults = req.body.web_search === true ? await webSearch(lastUser.content, { maxResults: 5 }) : [];
     const sources = webResults.map((r) => ({ title: r.title, url: r.url }));
 
+    const system = veraSystem({
+      userName: user.display_name,
+      contextText,
+      memories,
+      contextName,
+      appKnowledge,
+      attemptAnswers,
+      webResults,
+    });
+
+    // Rebuild the context from stored history: the running summary covers the
+    // older turns; everything after the cutoff is sent verbatim.
+    const sessionRow = await pool.query(
+      `SELECT summary, summary_upto_message_id FROM vera_sessions WHERE id = $1`,
+      [sessionId],
+    );
+    const summary = sessionRow.rows[0]?.summary || '';
+    const cutoff = sessionRow.rows[0]?.summary_upto_message_id || 0;
+    const historyRows = await pool.query(
+      `SELECT id, role, content FROM vera_messages
+        WHERE session_id = $1 AND id > $2 ORDER BY id`,
+      [sessionId, cutoff],
+    );
+    const recent = historyRows.rows;
+
+    const context = assembleContext({
+      system,
+      summary,
+      recent,
+      budget: CHAT_CONTEXT_TOKENS,
+      reserve: REPLY_RESERVE_TOKENS,
+    });
+    const needsCompaction = shouldCompact({ system, summary, recent, budget: CHAT_CONTEXT_TOKENS, threshold: COMPACT_AT });
+
+    // Compact in the background once the session nears the context window; the
+    // learner never waits for it and never sees it happen.
+    const scheduleCompaction = () => {
+      if (!needsCompaction || compactionInFlight.has(sessionId)) return;
+      compactionInFlight.add(sessionId);
+      compactSession(pool, sessionId)
+        .catch(() => {})
+        .finally(() => compactionInFlight.delete(sessionId));
+    };
+
+    const wantsStream = req.query.stream === '1' || req.body.stream === true;
+
     if (!wantsStream) {
-      const reply = await getVeraReply({
-        userName: user.display_name,
-        contextText,
-        memories,
-        contextName,
-        appKnowledge,
-        attemptAnswers,
-        webResults,
-        messages,
-      });
+      const reply = await getVeraReply({ messages: context });
       await persistAssistantTurn(user, sessionId, lastUser.content, reply, contextText);
+      scheduleCompaction();
       return res.status(200).json({ session_id: sessionId, reply, sources, web_searched: webResults.length > 0, request_id: req.requestId });
     }
 
@@ -157,16 +198,7 @@ async function chat(req, res, next) {
     sendEvent(res, { session_id: sessionId });
     let full = '';
     try {
-      for await (const chunk of streamVeraReply({
-        userName: user.display_name,
-        contextText,
-        memories,
-        contextName,
-        appKnowledge,
-        attemptAnswers,
-        webResults,
-        messages,
-      })) {
+      for await (const chunk of streamVeraReply({ messages: context })) {
         if (chunk.delta) {
           full += chunk.delta;
           sendEvent(res, { delta: chunk.delta });
@@ -178,6 +210,7 @@ async function chat(req, res, next) {
       endStream(res);
     }
     if (full) await persistAssistantTurn(user, sessionId, lastUser.content, full, contextText);
+    scheduleCompaction();
     return undefined;
   } catch (err) {
     return handleAiError(err, req, res, next);
