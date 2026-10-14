@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
+import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/features/auth/providers.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -65,6 +66,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     // The welcome chime/voice runs without blocking launch: navigation stays
     // on a fixed minimum-splash timer so audio problems can never stall it.
     unawaited(_playWelcome());
+    // Wake the backend (Render free tier sleeps when idle) while the splash is
+    // showing, so the first real request - especially an AI call - is not the
+    // one that has to wait ~50s for the instance to boot.
+    unawaited(_warmUpBackend());
     await Future<void>.delayed(const Duration(milliseconds: 2500));
     if (!mounted) return;
     final authState = ref.read(authStateProvider).valueOrNull;
@@ -77,6 +82,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         needsOnboarding: (user, token) => context.go('/industry-select'),
         loading: () => context.go('/login'),
       );
+    }
+  }
+
+  Future<void> _warmUpBackend() async {
+    try {
+      await ref.read(apiClientProvider).ping();
+    } catch (_) {
+      // Best effort: a cold or unreachable backend is handled by each screen.
     }
   }
 

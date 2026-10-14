@@ -16,12 +16,14 @@ typedef _Block = ({bool heading, String text});
 /// Reads one topic, showing all of its subtopics at once (paginated). Arrows
 /// sit at the bottom; on the last page the flow advances to the next topic.
 class LabTopicReaderScreen extends ConsumerStatefulWidget {
-  const LabTopicReaderScreen({super.key, required this.code, required this.index});
+  const LabTopicReaderScreen(
+      {super.key, required this.code, required this.index});
   final String code;
   final int index;
 
   @override
-  ConsumerState<LabTopicReaderScreen> createState() => _LabTopicReaderScreenState();
+  ConsumerState<LabTopicReaderScreen> createState() =>
+      _LabTopicReaderScreenState();
 }
 
 class _LabTopicReaderScreenState extends ConsumerState<LabTopicReaderScreen> {
@@ -110,11 +112,13 @@ class _LabTopicReaderScreenState extends ConsumerState<LabTopicReaderScreen> {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/ai-lab/lessons/${widget.code}'),
+          onPressed: () => context.canPop()
+              ? context.pop()
+              : context.go('/ai-lab/lessons/${widget.code}'),
         ),
         title: Text('Topic ${widget.index + 1}',
-            style: AppTypography.textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+            style: AppTypography.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
         actions: [
           TextButton(
               onPressed: () => context.canPop()
@@ -136,7 +140,9 @@ class _LabTopicReaderScreenState extends ConsumerState<LabTopicReaderScreen> {
           final topics = detail.orderedTopics;
           if (widget.index < 0 || widget.index >= topics.length) {
             return const EmptyState(
-                icon: Icons.article_outlined, title: 'Topic not found', message: '');
+                icon: Icons.article_outlined,
+                title: 'Topic not found',
+                message: '');
           }
           final topic = topics[widget.index];
           final pages = _paginate(topic, detail.subtopicsOf(topic.id));
@@ -161,37 +167,52 @@ class _LabTopicReaderScreenState extends ConsumerState<LabTopicReaderScreen> {
                       }
                     },
                     itemBuilder: (context, i) => SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
-                          AppSpacing.md, AppSpacing.screenPadding, AppSpacing.md),
+                      padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.screenPadding,
+                          AppSpacing.md,
+                          AppSpacing.screenPadding,
+                          AppSpacing.md),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (i == 0) ...[
                             Text(topic.heading,
-                                style: AppTypography.textTheme.headlineSmall?.copyWith(
-                                    fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+                                style: AppTypography.textTheme.headlineSmall
+                                    ?.copyWith(
+                                        fontWeight: FontWeight.w900,
+                                        color: AppColors.primaryNavy)),
                             const SizedBox(height: AppSpacing.md),
                           ],
                           for (final block in pages[i])
                             block.heading
                                 ? Padding(
-                                    padding: EdgeInsets.only(top: block == pages[i].first ? 0 : AppSpacing.md,
+                                    padding: EdgeInsets.only(
+                                        top: block == pages[i].first
+                                            ? 0
+                                            : AppSpacing.md,
                                         bottom: AppSpacing.xs),
                                     child: Text(block.text,
-                                        style: AppTypography.textTheme.titleMedium?.copyWith(
-                                            fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+                                        style: AppTypography
+                                            .textTheme.titleMedium
+                                            ?.copyWith(
+                                                fontWeight: FontWeight.w800,
+                                                color: AppColors.primaryNavy)),
                                   )
                                 : Padding(
-                                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                                    padding: const EdgeInsets.only(
+                                        bottom: AppSpacing.sm),
                                     child: Text(block.text,
-                                        style: AppTypography.textTheme.bodyLarge?.copyWith(height: 1.6)),
+                                        style: AppTypography.textTheme.bodyLarge
+                                            ?.copyWith(height: 1.6)),
                                   ),
+                          const SizedBox(height: AppSpacing.lg),
+                          _pageActions(context, pages.length, isLastTopic,
+                              detail.progress),
                         ],
                       ),
                     ),
                   ),
                 ),
-                _navBar(context, pages.length, isLastTopic, detail.progress),
               ],
             ),
           );
@@ -200,9 +221,11 @@ class _LabTopicReaderScreenState extends ConsumerState<LabTopicReaderScreen> {
     );
   }
 
-  Future<void> _markReadAndAdvance(LabProgress progress, bool isLastTopic) async {
-    final sectionsRead =
-        progress.sectionsCompleted > widget.index + 1 ? progress.sectionsCompleted : widget.index + 1;
+  Future<void> _markReadAndAdvance(
+      LabProgress progress, bool isLastTopic) async {
+    final sectionsRead = progress.sectionsCompleted > widget.index + 1
+        ? progress.sectionsCompleted
+        : widget.index + 1;
     await _recordRead(sectionsRead, progress.activitiesCompleted);
     if (!mounted) return;
     if (isLastTopic) {
@@ -212,44 +235,50 @@ class _LabTopicReaderScreenState extends ConsumerState<LabTopicReaderScreen> {
         context.go('/ai-lab/lessons/${widget.code}');
       }
     } else {
-      context.pushReplacement('/ai-lab/lessons/${widget.code}/topic/${widget.index + 1}');
+      context.pushReplacement(
+          '/ai-lab/lessons/${widget.code}/topic/${widget.index + 1}');
     }
   }
 
-  Widget _navBar(BuildContext context, int pageCount, bool isLastTopic, LabProgress progress) {
+  Widget _pageActions(BuildContext context, int pageCount, bool isLastTopic,
+      LabProgress progress) {
     final onLastPage = _page == pageCount - 1;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.screenPadding, AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.md),
-      decoration: const BoxDecoration(
-          color: Colors.white, border: Border(top: BorderSide(color: AppColors.border))),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Row(
         children: [
           OutlinedButton.icon(
             onPressed: _page > 0
                 ? () => _pageController.previousPage(
-                    duration: const Duration(milliseconds: 260), curve: Curves.easeOut)
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOut)
                 : null,
             icon: const Icon(Icons.arrow_back_rounded, size: 17),
             label: const Text('Back'),
           ),
           const Spacer(),
-          Text('${_page + 1} / $pageCount', style: AppTypography.textTheme.labelMedium),
+          Text('${_page + 1} / $pageCount',
+              style: AppTypography.textTheme.labelMedium),
           const Spacer(),
           FilledButton.icon(
             onPressed: () {
               if (!onLastPage) {
                 _pageController.nextPage(
-                    duration: const Duration(milliseconds: 260), curve: Curves.easeOut);
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOut);
               } else {
                 _markReadAndAdvance(progress, isLastTopic);
               }
             },
             icon: Icon(
-                onLastPage ? Icons.check_circle_outline_rounded : Icons.arrow_forward_rounded,
+                onLastPage
+                    ? Icons.check_circle_outline_rounded
+                    : Icons.arrow_forward_rounded,
                 size: 17),
             label: Text(onLastPage
-                ? (isLastTopic ? 'Mark as read & finish' : 'Mark as read & next topic')
+                ? (isLastTopic
+                    ? 'Mark as read & finish'
+                    : 'Mark as read & next topic')
                 : 'Next'),
           ),
         ],

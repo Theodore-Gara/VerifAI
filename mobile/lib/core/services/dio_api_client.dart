@@ -322,7 +322,12 @@ class DioApiClient implements ApiClient {
         'context': context,
         if (webSearch) 'web_search': true,
       },
-      options: Options(headers: _authHeaders(token), receiveTimeout: const Duration(seconds: 60)),
+      options: Options(
+        headers: _authHeaders(token),
+        connectTimeout: const Duration(seconds: 65),
+        sendTimeout: const Duration(seconds: 65),
+        receiveTimeout: const Duration(seconds: 90),
+      ),
     );
     final data = response.data ?? const {};
     return VeraChatResult(
@@ -344,22 +349,33 @@ class DioApiClient implements ApiClient {
     void Function(int sessionId)? onSessionId,
   }) async* {
     final token = await _idToken();
-    final response = await _dio.post<ResponseBody>(
-      'vera/chat',
-      data: {
-        if (sessionId != null) 'session_id': sessionId,
-        'messages': messages.map((m) => m.toJson()).toList(),
-        'context': context,
-        if (webSearch) 'web_search': true,
-        'stream': true,
-      },
-      queryParameters: {'stream': '1'},
-      options: Options(
-        headers: _authHeaders(token),
-        responseType: ResponseType.stream,
-        receiveTimeout: const Duration(seconds: 90),
-      ),
-    );
+    final body = {
+      if (sessionId != null) 'session_id': sessionId,
+      'messages': messages.map((m) => m.toJson()).toList(),
+      'context': context,
+      if (webSearch) 'web_search': true,
+      'stream': true,
+    };
+    // AI replies can be slow, and the Render free tier sleeps when idle (the
+    // first request after a quiet spell can take ~50s to wake). Give the call a
+    // generous window instead of the shared 10s base timeout, and retry once if
+    // the connection never produced a response.
+    Options options() => Options(
+          headers: _authHeaders(token),
+          responseType: ResponseType.stream,
+          connectTimeout: const Duration(seconds: 65),
+          sendTimeout: const Duration(seconds: 65),
+          receiveTimeout: const Duration(seconds: 120),
+        );
+    Response<ResponseBody> response;
+    try {
+      response = await _dio.post<ResponseBody>('vera/chat',
+          data: body, queryParameters: {'stream': '1'}, options: options());
+    } on DioException catch (e) {
+      if (e.response != null) rethrow;
+      response = await _dio.post<ResponseBody>('vera/chat',
+          data: body, queryParameters: {'stream': '1'}, options: options());
+    }
 
     var buffer = '';
     await for (final chunk in response.data!.stream) {
@@ -372,15 +388,18 @@ class DioApiClient implements ApiClient {
         if (!line.startsWith('data:')) continue;
         final data = line.substring(5).trim();
         if (data == '[DONE]') return;
+        Map<String, dynamic> json;
         try {
-          final json = jsonDecode(data) as Map<String, dynamic>;
-          final sid = json['session_id'];
-          if (sid is int) onSessionId?.call(sid);
-          final delta = json['delta'];
-          if (delta is String && delta.isNotEmpty) yield delta;
+          json = jsonDecode(data) as Map<String, dynamic>;
         } catch (_) {
-          // Ignore partial/unparseable frames.
+          continue; // ignore partial/unparseable frames
         }
+        final sid = json['session_id'];
+        if (sid is int) onSessionId?.call(sid);
+        final error = json['error'];
+        if (error is String && error.isNotEmpty) throw Exception(error);
+        final delta = json['delta'];
+        if (delta is String && delta.isNotEmpty) yield delta;
       }
     }
   }

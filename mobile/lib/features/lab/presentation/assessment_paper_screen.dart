@@ -183,7 +183,6 @@ class _LabAssessmentPaperScreenState
                   ),
                 ),
               ),
-              _navBar(),
             ],
           ),
         ),
@@ -220,14 +219,10 @@ class _LabAssessmentPaperScreenState
     );
   }
 
-  Widget _navBar() {
+  Widget _questionActions() {
     final last = _page == _questions.length - 1;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
-          AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.md),
-      decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: AppColors.border))),
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.md),
       child: Row(
         children: [
           OutlinedButton.icon(
@@ -292,6 +287,7 @@ class _LabAssessmentPaperScreenState
                 height: 1.35)),
         const SizedBox(height: AppSpacing.lg),
         ..._answerWidgets(q),
+        _questionActions(),
       ],
     );
   }
@@ -316,8 +312,9 @@ class _LabAssessmentPaperScreenState
   /// The case-study/scenario card, shown at the top of each question page so the
   /// learner has the facts to hand while answering.
   Widget _caseStudy(Map<String, dynamic> s) {
-    final facts =
-        (s['facts'] as List<dynamic>? ?? const []).map((e) => '• $e').join('\n');
+    final facts = (s['facts'] as List<dynamic>? ?? const [])
+        .map((e) => '• $e')
+        .join('\n');
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -336,18 +333,20 @@ class _LabAssessmentPaperScreenState
           if ((s['title'] as String?)?.isNotEmpty == true) ...[
             const SizedBox(height: 4),
             Text(s['title'] as String,
-                style: AppTypography.textTheme.titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+                style: AppTypography.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
           ],
           if ((s['background'] as String?)?.isNotEmpty == true) ...[
             const SizedBox(height: 4),
             Text(s['background'] as String,
-                style: AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
+                style:
+                    AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
           ],
           if (facts.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(facts,
-                style: AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
+                style:
+                    AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
           ],
         ],
       ),

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -157,7 +158,7 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
         _streaming = '';
       });
       ref.invalidate(veraSessionsProvider);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         _messages.removeLast();
@@ -165,7 +166,7 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
         _streaming = '';
       });
       showFeedback(context, FeedbackKind.error,
-          'Vera could not respond. Try again shortly.');
+          kDebugMode ? 'Vera could not respond: $e' : 'Vera could not respond. Try again shortly.');
     } finally {
       if (mounted) setState(() => _sending = false);
     }
