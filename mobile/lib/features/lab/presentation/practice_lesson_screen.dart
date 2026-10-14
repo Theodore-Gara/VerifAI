@@ -87,9 +87,15 @@ class LabPracticeScreen extends ConsumerWidget {
               children: [
                 CircleAvatar(
                     radius: 13,
-                    backgroundColor: activity.passed ? AppColors.accentGreen : AppColors.primaryNavy,
-                    child: Icon(activity.passed ? Icons.check_rounded : Icons.help_outline_rounded,
-                        size: 15, color: Colors.white)),
+                    backgroundColor: activity.passed
+                        ? AppColors.accentGreen
+                        : (activity.attempted ? AppColors.textSecondary : AppColors.primaryNavy),
+                    child: Icon(
+                        activity.passed
+                            ? Icons.check_rounded
+                            : (activity.attempted ? Icons.replay_rounded : Icons.help_outline_rounded),
+                        size: 15,
+                        color: Colors.white)),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Text(activity.prompt,
@@ -98,7 +104,7 @@ class LabPracticeScreen extends ConsumerWidget {
                       style: AppTypography.textTheme.bodyMedium
                           ?.copyWith(fontWeight: FontWeight.w600, height: 1.35)),
                 ),
-                Text('+${activity.xpReward} XP',
+                Text(activity.attempted ? 'Practice' : '+${activity.xpReward} XP',
                     style: AppTypography.textTheme.labelSmall?.copyWith(color: AppColors.textSecondary)),
               ],
             ),

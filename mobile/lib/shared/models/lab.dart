@@ -60,14 +60,16 @@ class LabLesson {
 
 class LabSection {
   final int id;
+  final int? parentId;
   final String heading;
   final String body;
   final int sortOrder;
 
-  const LabSection({required this.id, required this.heading, required this.body, this.sortOrder = 0});
+  const LabSection({required this.id, this.parentId, required this.heading, required this.body, this.sortOrder = 0});
 
   factory LabSection.fromJson(Map<String, dynamic> json) => LabSection(
         id: int.tryParse('${json['id']}') ?? 0,
+        parentId: json['parent_id'] == null ? null : int.tryParse('${json['parent_id']}'),
         heading: json['heading'] as String? ?? '',
         body: json['body'] as String? ?? '',
         sortOrder: int.tryParse('${json['sort_order']}') ?? 0,
@@ -81,6 +83,7 @@ class LabActivity {
   final Map<String, dynamic> payload;
   final int xpReward;
   final bool passed;
+  final bool attempted;
   final int sortOrder;
 
   const LabActivity({
@@ -90,6 +93,7 @@ class LabActivity {
     this.payload = const {},
     this.xpReward = 10,
     this.passed = false,
+    this.attempted = false,
     this.sortOrder = 0,
   });
 
@@ -105,6 +109,7 @@ class LabActivity {
         payload: (json['payload'] as Map?)?.cast<String, dynamic>() ?? const {},
         xpReward: int.tryParse('${json['xp_reward']}') ?? 10,
         passed: json['passed'] as bool? ?? false,
+        attempted: json['attempted'] as bool? ?? false,
         sortOrder: int.tryParse('${json['sort_order']}') ?? 0,
       );
 }
@@ -209,6 +214,30 @@ class LabLessonDetail {
       progress: LabProgress.fromJson((l['progress'] as Map?)?.cast<String, dynamic>() ?? const {}),
     );
   }
+
+  /// Chapters are top-level sections (no parent).
+  List<LabSection> get chapters => sections.where((s) => s.parentId == null).toList();
+
+  /// Topics are the sections directly under a chapter.
+  List<LabSection> topicsOf(int chapterId) => sections.where((s) => s.parentId == chapterId).toList();
+
+  /// All topics flattened in reading order (chapter by chapter).
+  List<LabSection> get orderedTopics {
+    final result = <LabSection>[];
+    for (final c in chapters) {
+      result.addAll(topicsOf(c.id));
+    }
+    return result;
+  }
+
+  /// Subtopics are the sections under a topic; rendered together on the reader.
+  List<LabSection> subtopicsOf(int topicId) => sections.where((s) => s.parentId == topicId).toList();
+
+  /// Total number of topics (the unit that progress counts).
+  int get topicCount {
+    final chapterIds = chapters.map((c) => c.id).toSet();
+    return sections.where((s) => s.parentId != null && chapterIds.contains(s.parentId)).length;
+  }
 }
 
 class LabActivityResult {
@@ -256,7 +285,7 @@ class LabAssessment {
     required this.title,
     this.summary = '',
     this.totalMarks = 0,
-    this.timeLimitSeconds = 2400,
+    this.timeLimitSeconds = 5400,
     this.passScore = 60,
     this.maxAttempts = 3,
     this.questionCount = 0,
@@ -275,7 +304,7 @@ class LabAssessment {
         title: json['title'] as String? ?? '',
         summary: json['summary'] as String? ?? '',
         totalMarks: int.tryParse('${json['total_marks']}') ?? 0,
-        timeLimitSeconds: int.tryParse('${json['time_limit_seconds']}') ?? 2400,
+        timeLimitSeconds: int.tryParse('${json['time_limit_seconds']}') ?? 5400,
         passScore: int.tryParse('${json['pass_score']}') ?? 60,
         maxAttempts: int.tryParse('${json['max_attempts']}') ?? 3,
         questionCount: int.tryParse('${json['question_count']}') ?? 0,
@@ -292,6 +321,7 @@ class LabAssessment {
 class LabAssessmentQuestion {
   final int id;
   final String type;
+  final String? section;
   final String? scenario;
   final String prompt;
   final Map<String, dynamic> payload;
@@ -306,6 +336,7 @@ class LabAssessmentQuestion {
   const LabAssessmentQuestion({
     required this.id,
     required this.type,
+    this.section,
     this.scenario,
     required this.prompt,
     this.payload = const {},
@@ -329,6 +360,7 @@ class LabAssessmentQuestion {
   factory LabAssessmentQuestion.fromJson(Map<String, dynamic> json) => LabAssessmentQuestion(
         id: int.tryParse('${json['id']}') ?? 0,
         type: json['type'] as String? ?? 'multiple_choice',
+        section: json['section'] as String?,
         scenario: json['scenario'] as String?,
         prompt: json['prompt'] as String? ?? '',
         payload: (json['payload'] as Map?)?.cast<String, dynamic>() ?? const {},
@@ -388,7 +420,7 @@ class LabAssessmentStart {
         attemptId: int.tryParse('${json['attempt_id']}') ?? 0,
         startedAt: json['started_at'] as String? ?? '',
         expiresAt: json['expires_at'] as String? ?? '',
-        timeLimitSeconds: int.tryParse('${json['time_limit_seconds']}') ?? 2400,
+        timeLimitSeconds: int.tryParse('${json['time_limit_seconds']}') ?? 5400,
         passScore: int.tryParse('${json['pass_score']}') ?? 60,
         totalMarks: int.tryParse('${json['total_marks']}') ?? 0,
         scenario: (json['scenario'] as Map?)?.cast<String, dynamic>(),

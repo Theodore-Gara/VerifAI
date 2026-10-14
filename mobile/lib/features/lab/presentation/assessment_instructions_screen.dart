@@ -97,10 +97,6 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
             ],
             const SizedBox(height: AppSpacing.md),
             _metaRow(paper.assessment),
-            if (_scenario(paper.assessment) != null) ...[
-              const SizedBox(height: AppSpacing.lg),
-              _scenarioCard(paper.assessment),
-            ],
             if (paper.assessment.instructions.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.lg),
               _block('RULES', paper.assessment.instructions.map((e) => '• $e').join('\n')),
@@ -121,8 +117,6 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
       ),
     );
   }
-
-  Map<String, dynamic>? _scenario(LabAssessment a) => a.scenario;
 
   Widget _metaRow(LabAssessment a) {
     final chips = [
@@ -151,37 +145,15 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
     );
   }
 
-  Widget _scenarioCard(LabAssessment a) {
-    final s = a.scenario!;
-    final facts = (s['facts'] as List<dynamic>? ?? const []).map((e) => '• $e').join('\n');
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if ((s['title'] as String?)?.isNotEmpty == true)
-            Text(s['title'] as String,
-                style: AppTypography.textTheme.titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
-          if ((s['background'] as String?)?.isNotEmpty == true) ...[
-            const SizedBox(height: 6),
-            Text(s['background'] as String, style: AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
-          ],
-          if (facts.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(facts, style: AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
-          ],
-        ],
-      ),
-    );
-  }
-
   Widget _marksBreakdown(LabAssessmentPaper paper) {
+    // Group the questions under their section (falling back to a single list
+    // when a paper has no sections), with a per-section subtotal.
+    final groups = <String, List<LabAssessmentQuestion>>{};
+    for (final q in paper.questions) {
+      final key = (q.section == null || q.section!.isEmpty) ? '' : q.section!;
+      groups.putIfAbsent(key, () => []).add(q);
+    }
+    var number = 0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -189,33 +161,53 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
             style: AppTypography.textTheme.labelSmall
                 ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: .5)),
         const SizedBox(height: AppSpacing.sm),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            children: [
-              for (var i = 0; i < paper.questions.length; i++)
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text('Q${i + 1}. ${_typeLabel(paper.questions[i].type)}'
-                            '${paper.questions[i].marking == 'rubric' ? ' · rubric-marked' : ''}',
-                            style: AppTypography.textTheme.bodyMedium),
-                      ),
-                      Text('${paper.questions[i].marks} marks',
-                          style: AppTypography.textTheme.labelMedium
-                              ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
-                    ],
+        for (final entry in groups.entries) ...[
+          if (entry.key.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(entry.key,
+                        style: AppTypography.textTheme.labelMedium
+                            ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
                   ),
-                ),
-            ],
+                  Text('${entry.value.fold<int>(0, (s, q) => s + q.marks)} marks',
+                      style: AppTypography.textTheme.labelMedium
+                          ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.textSecondary)),
+                ],
+              ),
+            ),
+          ],
+          Container(
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.card),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              children: [
+                for (final q in entry.value)
+                  Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text('Q${++number}. ${_typeLabel(q.type)}'
+                              '${q.marking == 'rubric' ? ' · rubric-marked' : ''}',
+                              style: AppTypography.textTheme.bodyMedium),
+                        ),
+                        Text('${q.marks} marks',
+                            style: AppTypography.textTheme.labelMedium
+                                ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

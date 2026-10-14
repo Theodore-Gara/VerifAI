@@ -11,10 +11,11 @@ import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
 
-/// The list of topics (lesson sections) for one lesson.
+/// The topics inside one chapter of a textbook.
 class LabTopicsScreen extends ConsumerWidget {
-  const LabTopicsScreen({super.key, required this.code});
+  const LabTopicsScreen({super.key, required this.code, required this.chapterIndex});
   final String code;
+  final int chapterIndex;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -26,7 +27,7 @@ class LabTopicsScreen extends ConsumerWidget {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/ai-lab'),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/ai-lab/lessons/$code'),
         ),
         title: Text('Topics',
             style: AppTypography.textTheme.titleLarge
@@ -39,54 +40,38 @@ class LabTopicsScreen extends ConsumerWidget {
         ),
         error: (e, _) => AsyncErrorView(
           error: e,
-          fallbackMessage: 'Failed to load this lesson.',
+          fallbackMessage: 'Failed to load this chapter.',
           onRetry: () => ref.invalidate(labLessonProvider(code)),
         ),
         data: (detail) {
-          final sections = detail.sections;
+          final chapters = detail.chapters;
+          if (chapterIndex < 0 || chapterIndex >= chapters.length) {
+            return const EmptyState(icon: Icons.menu_book_outlined, title: 'Chapter not found', message: '');
+          }
+          final chapter = chapters[chapterIndex];
+          final topics = detail.topicsOf(chapter.id);
+          var offset = 0;
+          for (var i = 0; i < chapterIndex; i++) {
+            offset += detail.topicsOf(chapters[i].id).length;
+          }
           return ListView(
             padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.sm,
                 AppSpacing.screenPadding, AppSpacing.xxl),
             children: [
-              Text(detail.lesson.title,
+              Text(chapter.heading,
                   style: AppTypography.textTheme.headlineSmall
                       ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
               const SizedBox(height: AppSpacing.xs),
-              Text(detail.lesson.summary,
-                  style: AppTypography.textTheme.bodyMedium
-                      ?.copyWith(color: AppColors.textSecondary, height: 1.45)),
-              const SizedBox(height: AppSpacing.md),
-              _progressChip(detail),
+              Text('${topics.length} topic${topics.length == 1 ? '' : 's'}',
+                  style: AppTypography.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary)),
               const SizedBox(height: AppSpacing.lg),
-              if (sections.isEmpty)
+              if (topics.isEmpty)
                 const EmptyState(
                     icon: Icons.article_outlined,
                     title: 'No topics',
-                    message: 'This lesson has no reading material yet.')
+                    message: 'This chapter has no topics yet.')
               else
-                for (var i = 0; i < sections.length; i++) _topicTile(context, sections[i], i),
-              if (detail.activities.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.sm),
-                OutlinedButton.icon(
-                  onPressed: () => context.push('/ai-lab/practice/$code'),
-                  icon: const Icon(Icons.quiz_outlined),
-                  label: Text('Practise ${detail.activities.length} questions'),
-                ),
-              ],
-              if (detail.attributions.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.xl),
-                Text('Sources',
-                    style: AppTypography.textTheme.labelMedium
-                        ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.textSecondary)),
-                const SizedBox(height: AppSpacing.xs),
-                for (final a in detail.attributions)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Text(a.creditLine,
-                        style: AppTypography.textTheme.bodySmall
-                            ?.copyWith(color: AppColors.textSecondary, height: 1.4)),
-                  ),
-              ],
+                for (var i = 0; i < topics.length; i++) _topicTile(context, topics[i], offset + i, i),
             ],
           );
         },
@@ -94,31 +79,7 @@ class LabTopicsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _progressChip(LabLessonDetail detail) {
-    final done = detail.progress.sectionsCompleted;
-    final total = detail.sections.length;
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 7),
-          decoration: BoxDecoration(
-            color: AppColors.accentLight,
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-            border: Border.all(color: AppColors.accentGreen.withValues(alpha: .4)),
-          ),
-          child: Text('$done / $total topics read',
-              style: AppTypography.textTheme.labelMedium?.copyWith(
-                  color: AppColors.accentGreen, fontWeight: FontWeight.w800)),
-        ),
-        if (detail.shareAlike) ...[
-          const SizedBox(width: 8),
-          Text('CC BY-SA', style: AppTypography.textTheme.labelSmall),
-        ],
-      ],
-    );
-  }
-
-  Widget _topicTile(BuildContext context, LabSection section, int index) {
+  Widget _topicTile(BuildContext context, LabSection section, int globalIndex, int localIndex) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Material(
@@ -126,7 +87,7 @@ class LabTopicsScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(AppRadius.card),
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.card),
-          onTap: () => context.push('/ai-lab/lessons/$code/topic/$index'),
+          onTap: () => context.push('/ai-lab/lessons/$code/topic/$globalIndex'),
           child: Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
@@ -138,7 +99,7 @@ class LabTopicsScreen extends ConsumerWidget {
                 CircleAvatar(
                     radius: 14,
                     backgroundColor: AppColors.primaryNavy,
-                    child: Text('${index + 1}',
+                    child: Text('${localIndex + 1}',
                         style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800))),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(

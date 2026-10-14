@@ -51,7 +51,10 @@ const ASSESSMENT = {
   time_limit_seconds: 2400, pass_score: 60, max_attempts: 3,
   xp_reward: 70, token_reward: 15, achievement_code: 'capstone-finance',
 };
-const START_QUESTIONS = [{ id: 10, type: 'multiple_choice', scenario: null, prompt: 'p', payload: { options: ['A', 'B', 'C'] }, code_lines: null, word_limit: null, competency: 'c', cognitive_level: 'apply', marks: 25, marking: 'auto', sort_order: 1 }];
+const START_QUESTIONS = [
+  { id: 10, type: 'multiple_choice', section: 'Section A · Application', scenario: null, prompt: 'p', payload: { options: ['A', 'B', 'C'] }, code_lines: null, word_limit: null, competency: 'c', cognitive_level: 'apply', marks: 25, marking: 'auto', sort_order: 1 },
+  { id: 12, type: 'multiple_choice', section: 'Section B · Scenario', scenario: null, prompt: 'p2', payload: { options: ['D', 'E'] }, code_lines: null, word_limit: null, competency: 'c', cognitive_level: 'apply', marks: 50, marking: 'auto', sort_order: 2 },
+];
 const AUTO_QUESTIONS = [{ id: 10, type: 'multiple_choice', correct: { answer_index: 1 }, explanation: 'B.', marks: 25, marking: 'auto' }];
 const RUBRIC_QUESTIONS = [
   { id: 10, type: 'multiple_choice', correct: { answer_index: 1 }, explanation: 'B.', marks: 17, marking: 'auto' },
@@ -128,6 +131,15 @@ test('POST start returns a 40-minute timed attempt with the scenario and no answ
   assert.equal(Math.round(span / 1000), 2400);
   assert.equal('correct' in response.body.questions[0], false);
   assert.equal('rubric' in response.body.questions[0], false);
+});
+
+test('start returns questions in section order with their section labels', async () => {
+  usedCount = 0;
+  const response = await auth(request(app).post('/api/lab/assessments/cap-fin/start')).send({});
+  assert.equal(response.status, 201);
+  assert.deepEqual(response.body.questions.map((q) => q.id), [10, 12]);
+  assert.equal(response.body.questions[0].section, 'Section A · Application');
+  assert.equal(response.body.questions[1].section, 'Section B · Scenario');
 });
 
 test('GET /api/lab/assessments/:code is view_only after three attempts', async () => {

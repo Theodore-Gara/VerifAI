@@ -198,9 +198,13 @@ CREATE TABLE IF NOT EXISTS lab_lessons (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Textbook structure: book (lab_lessons) > chapter (parent_id NULL) > topic
+-- (child of a chapter) > subtopic (child of a topic). The topic reader renders
+-- all of a topic's subtopics together.
 CREATE TABLE IF NOT EXISTS lab_lesson_sections (
   id SERIAL PRIMARY KEY,
   lesson_id INTEGER NOT NULL REFERENCES lab_lessons(id) ON DELETE CASCADE,
+  parent_id INTEGER REFERENCES lab_lesson_sections(id) ON DELETE CASCADE,
   heading VARCHAR(255) NOT NULL,
   body TEXT NOT NULL,
   sort_order INTEGER NOT NULL DEFAULT 0
@@ -433,6 +437,7 @@ CREATE TABLE IF NOT EXISTS lab_capstone_questions (
   id SERIAL PRIMARY KEY,
   assessment_id INTEGER NOT NULL REFERENCES lab_capstone_assessments(id) ON DELETE CASCADE,
   type VARCHAR(20) NOT NULL CHECK (type IN ('multiple_choice', 'true_false', 'matching', 'fill_blank', 'ordering', 'numeric', 'multi_select', 'extended_response')),
+  section VARCHAR(40),
   scenario TEXT,
   prompt TEXT NOT NULL,
   payload JSONB NOT NULL DEFAULT '{}'::jsonb,

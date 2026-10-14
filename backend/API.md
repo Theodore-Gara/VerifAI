@@ -148,7 +148,7 @@ Protected. The user's recent analyses (metadata + report), newest first. Optiona
 Protected. The AI Lab lesson catalog available to the user's track (plus global lessons), each with section/activity/question counts and the user's progress.
 
 ### GET /api/lab/lessons/:code
-Protected. One lesson with its textbook `sections`, graded recall `activities` (each with `type`, `prompt`, `payload`, `xp_reward` and whether the user has `passed`) and assessment `questions`, plus the user's progress. Opening a lesson records recency (not completion). The response also includes `sources`, `attributions` (ready-made credit lines) and a `share_alike` flag. **Answer keys are withheld** — activities never return `correct`, and questions never return `correct_index`/`explanation`.
+Protected. One lesson (book) with its textbook `sections`, graded recall `activities` (each with `type`, `prompt`, `payload`, `xp_reward`, `passed` and `attempted`) and assessment `questions`, plus the user's progress. Sections are nested: a **chapter** is a top-level section (`parent_id` null), a **topic** sits under a chapter, and a **subtopic** under a topic; the app renders all of a topic's subtopics together. Opening a lesson records recency (not completion). The response also includes `sources`, `attributions` (ready-made credit lines) and a `share_alike` flag. **Answer keys are withheld** — activities never return `correct`, and questions never return `correct_index`/`explanation`.
 
 ### GET /api/lab/lessons/next
 Protected. Content rotation. Prefers a lesson the learner has not opened yet; when none remain and `include_seen` is true (the default), it serves the lesson gone longest without a revisit, so seen content is never locked away. Optional `?include_seen=true|false` (default true). Response: `{ lesson, revisited }`; `lesson` is `null` when all content is seen and `include_seen=false`.
@@ -163,7 +163,7 @@ Protected. One source plus the lessons that draw on it (`use_type` and `changes_
 Protected. The catalogue grouped by industry: `{ groups: [{ industry, sources: [...] }] }`.
 
 ### POST /api/lab/lessons/:code/progress
-Protected. Body `{ "sections_completed": 3, "activities_completed": 1 }`. Counts are monotonic (never decrease) and completion is recomputed.
+Protected. Body `{ "sections_completed": 3, "activities_completed": 1 }`. `sections_completed` counts **topics read**. Counts are monotonic (never decrease) and completion is recomputed (all topics read, all activities done, assessment passed).
 
 ### POST /api/lab/lessons/:code/assessment
 Protected. Body `{ "answers": [1, 0, 2] }` (one index per question). Graded **server-side** against the stored answer key. Returns `{ result: { score, passed, correct_count, total }, questions: [{ question_id, answered, correct, correct_index, explanation }] }`. Passing threshold is 60.
@@ -178,13 +178,13 @@ Protected. Body `{ "response": <answer>, "practice": false }`. Grades a recall a
 - `ordering` — an array of the items in the chosen order.
 
 ### GET /api/lab/assessments
-Protected. Capstone assessments (module-level, scenario-based) available to the user's track plus cross-industry ones. Each carries `total_marks`, `time_limit_seconds` (default 40 min), `pass_score` (60), `max_attempts` (3), `question_count`, `attempts_used`, `attempts_remaining`, `best_score`, `passed` and `view_only`.
+Protected. Capstone assessments (module-level, scenario-based) available to the user's track plus cross-industry ones. Each carries `total_marks` (75), `time_limit_seconds` (5400 = 90 min), `pass_score` (60), `max_attempts` (3), `question_count`, `attempts_used`, `attempts_remaining`, `best_score`, `passed` and `view_only`.
 
 ### GET /api/lab/assessments/:code
 Protected. The full paper read-only (scenario, instructions, questions with `marks`/`marking` and answers withheld). `view_only` is true once the attempts are exhausted, at which point the learner can still revisit the paper but cannot start again.
 
 ### POST /api/lab/assessments/:code/start
-Protected. Opens a timed attempt. Questions (and multiple-choice / multi-select options) are **shuffled**; answer keys and rubrics are withheld. Returns `{ attempt_id, started_at, expires_at, time_limit_seconds, pass_score, total_marks, scenario, instructions, attempts_remaining, questions }`. `404` if not available, `409` when no attempts remain, `400` if it has no questions.
+Protected. Opens a timed attempt. Questions are returned in **section order** (a paper has `section` labels such as `Section A · Application` / `Section B · Scenario` / `Section C · Case study`; question order is preserved so sections stay in sequence). Multiple-choice / multi-select **options** are shuffled and the permutation stored. Answer keys and rubrics are withheld. Returns `{ attempt_id, started_at, expires_at, time_limit_seconds, pass_score, total_marks, scenario, instructions, attempts_remaining, questions }`. Each question carries `section` and `marks`; the case-study `scenario` is provided here so the app can show it alongside each question. `404` if not available, `409` when no attempts remain, `400` if it has no questions.
 
 ### POST /api/lab/assessments/:code/submit
 Protected. Body `{ attempt_id, answers: { "<question_id>": <response> } }`. Grades the **auto-marked** questions server-side (remapping shuffled options). If the paper contains a **rubric** question (e.g. an extended response), the attempt is held and returns `202` with `{ result: { pending_marking: true, score, auto_marks, total_marks, ... }, results }`. Otherwise it finalises immediately: `{ result: { pending_marking: false, score, passed, timed_out, marks_awarded, total_marks, attempts_remaining }, results, xp_earned, tokens_earned, achievement }`. A **first pass** — even on the third attempt after two failures — awards XP + tokens + a badge and feeds the readiness score. Answers submitted more than 30 s past `expires_at` are marked `timed_out` and fail. Response shapes by type: `multiple_choice` index, `true_false` boolean, `fill_blank` string, `matching` `{left:right}` map, `ordering` array, `numeric` a number (or array for multi-part), `multi_select` an array of selected indices, `extended_response` free text.
@@ -202,7 +202,7 @@ Protected (owner only). Returns Vera's post-capstone performance report, generat
 Protected. One newest-first timeline across scored task attempts, AI Lab practice activities and capstone attempts. Optional `?limit=<1..100>` (default 30). Response: `{ entries: [{ type: task|activity|capstone, id, title, feature, score, passed, xp_earned, created_at }] }`.
 
 ### POST /api/lab/coach
-Protected. Body `{ "lesson_code": "ai-ethics-and-bias", "messages": [...] }` → a Socratic tutor reply. `?stream=1` streams SSE as above. Rate-limited.
+Protected. Body `{ "lesson_code": "ai-literacy-book", "messages": [...] }` → a Socratic tutor reply. `?stream=1` streams SSE as above. Rate-limited.
 
 ### GET /api/workshop/posts
 Protected. Track-scoped community threads, newest first. Optional `?lesson=<code>`, `?limit=<1..50>`, `?offset=<n>`. Each post carries `author_name`, `reply_count`, `reaction_count`, `reacted` and `is_mine`.

@@ -39,12 +39,17 @@ async function findLessonForUser(executor, code, trackId) {
   return result.rows[0] || null;
 }
 
-// Recomputes completion from live counts so status can never drift.
+// Recomputes completion from live counts so status can never drift. Progress
+// counts topics read; a topic is a section whose parent is a chapter (a
+// top-level section with no parent).
 async function recomputeStatus(client, userId, lessonId) {
   await client.query(
     `UPDATE lab_lesson_progress p
      SET status = CASE
-         WHEN p.sections_completed >= (SELECT COUNT(*)::int FROM lab_lesson_sections s WHERE s.lesson_id = $2)
+         WHEN p.sections_completed >= (SELECT COUNT(*)::int
+              FROM lab_lesson_sections s
+              JOIN lab_lesson_sections ch ON ch.id = s.parent_id
+              WHERE s.lesson_id = $2 AND ch.parent_id IS NULL)
           AND p.activities_completed >= (SELECT COUNT(*)::int FROM lab_activities a WHERE a.lesson_id = $2)
           AND p.assessment_best_score >= $3
          THEN 'completed' ELSE 'in_progress' END
@@ -91,7 +96,12 @@ async function listLessons(req, res, next) {
 
     const result = await pool.query(
       `SELECT l.id, l.code, l.title, l.summary, l.estimated_minutes, l.level, l.competency, l.sort_order,
-              (SELECT COUNT(*)::int FROM lab_lesson_sections s WHERE s.lesson_id = l.id) AS sections_count,
+              (SELECT COUNT(*)::int
+               FROM lab_lesson_sections s
+               JOIN lab_lesson_sections ch ON ch.id = s.parent_id
+               WHERE s.lesson_id = l.id AND ch.parent_id IS NULL) AS sections_count,
+              (SELECT COUNT(*)::int FROM lab_lesson_sections s
+               WHERE s.lesson_id = l.id AND s.parent_id IS NULL) AS chapters_count,
               (SELECT COUNT(*)::int FROM lab_activities a WHERE a.lesson_id = l.id) AS activities_count,
               (SELECT COUNT(*)::int FROM lab_questions q WHERE q.lesson_id = l.id) AS questions_count,
               COALESCE(p.sections_completed, 0)::int AS sections_completed,
@@ -174,13 +184,15 @@ async function getLesson(req, res, next) {
 
     const [sections, activities, questions, progress, sources, attributions, shareAlike] = await Promise.all([
       pool.query(
-        `SELECT id, heading, body, sort_order FROM lab_lesson_sections WHERE lesson_id = $1 ORDER BY sort_order, id`,
+        `SELECT id, heading, body, parent_id, sort_order FROM lab_lesson_sections WHERE lesson_id = $1 ORDER BY sort_order, id`,
         [lesson.id],
       ),
       pool.query(
         `SELECT a.id, a.type, a.prompt, a.payload, a.sort_order, a.xp_reward,
                 EXISTS (SELECT 1 FROM lab_activity_attempts aa
-                        WHERE aa.activity_id = a.id AND aa.user_id = $2 AND aa.passed) AS passed
+                        WHERE aa.activity_id = a.id AND aa.user_id = $2 AND aa.passed) AS passed,
+                EXISTS (SELECT 1 FROM lab_activity_attempts aa
+                        WHERE aa.activity_id = a.id AND aa.user_id = $2) AS attempted
          FROM lab_activities a WHERE a.lesson_id = $1 ORDER BY a.sort_order, a.id`,
         [lesson.id, user.id],
       ),
@@ -342,8 +354,9 @@ async function submitAssessment(req, res, next) {
 }
 
 // POST /api/lab/activities/:id/attempt  { response, practice? }
-// Grades a recall activity. A first non-practice pass awards XP (default 10);
-// repeat attempts are practice and earn nothing.
+// Grades a recall activity. XP is only awarded for a pass on the VERY FIRST
+// attempt; any earlier attempt (passed or not) makes this a practice run that
+// earns nothing.
 async function submitActivity(req, res, next) {
   let client = null;
   try {
@@ -370,11 +383,11 @@ async function submitActivity(req, res, next) {
     client = await pool.connect();
     await client.query('BEGIN');
     const prior = await client.query(
-      `SELECT 1 FROM lab_activity_attempts WHERE user_id = $1 AND activity_id = $2 AND passed LIMIT 1`,
+      `SELECT 1 FROM lab_activity_attempts WHERE user_id = $1 AND activity_id = $2 LIMIT 1`,
       [user.id, activityId],
     );
-    const firstPass = passed && prior.rows.length === 0 && !practice;
-    const xpEarned = firstPass ? activity.xp_reward : 0;
+    const isPractice = practice || prior.rows.length > 0;
+    const xpEarned = passed && !isPractice ? activity.xp_reward : 0;
     if (xpEarned > 0) await awardXp(client, user.id, xpEarned);
 
     await client.query(
@@ -385,7 +398,7 @@ async function submitActivity(req, res, next) {
     await client.query('COMMIT');
 
     return res.status(200).json({
-      result: { correct: passed, passed, xp_earned: xpEarned, practice },
+      result: { correct: passed, passed, xp_earned: xpEarned, practice: isPractice },
       explanation: activity.explanation,
       answer: activity.correct,
       request_id: req.requestId,
@@ -428,11 +441,14 @@ async function findCapstone(executor, code, trackId) {
 
 // Full paper minus answer keys: used for both the list and the read-only view.
 const CAPSTONE_QUESTION_COLUMNS =
-  `id, type, scenario, prompt, payload, code_lines, word_limit, competency, cognitive_level, marks, marking, sort_order`;
+  `id, type, section, scenario, prompt, payload, code_lines, word_limit, competency, cognitive_level, marks, marking, sort_order`;
 
+// Presents a paper. Question order is preserved (sections must stay A > B > C);
+// multiple-choice and multi-select options are shuffled per attempt and the
+// permutation is stored so answers can be mapped back before marking.
 function presentQuestions(rows) {
   const byId = new Map(rows.map((q) => [String(q.id), q]));
-  const order = shuffle(rows.map((q) => q.id));
+  const order = rows.map((q) => q.id);
   const presentation = { order, options: {} };
   const questions = order.map((qid) => {
     const q = byId.get(String(qid));
@@ -445,6 +461,7 @@ function presentQuestions(rows) {
     return {
       id: q.id,
       type: q.type,
+      section: q.section,
       scenario: q.scenario,
       prompt: q.prompt,
       payload,

@@ -43,10 +43,16 @@ void main() {
               passScore: 60,
               totalMarks: 2,
               attemptsRemaining: 2,
+              scenario: const {
+                'title': 'Case study X',
+                'background': 'bg',
+                'facts': ['fact one'],
+              },
               questions: const [
                 LabAssessmentQuestion(
                   id: 1,
                   type: 'multiple_choice',
+                  section: 'Section A · Application',
                   prompt: 'First question',
                   marks: 1,
                   payload: {
@@ -68,11 +74,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Question 1 of 2'), findsOneWidget);
+    expect(find.text('Section A · Application'), findsOneWidget);
+    expect(find.text('Case study X'), findsOneWidget);
     await tester.tap(find.text('Next'));
     await tester.pumpAndSettle();
 
     expect(find.text('Question 2 of 2'), findsOneWidget);
     expect(find.text('Submit paper'), findsOneWidget);
+    expect(find.text('Section A · Application'), findsNothing);
+    expect(find.text('Case study X'), findsOneWidget);
   });
 }
 
@@ -82,11 +92,9 @@ class _LabApi extends MockApiClient {
     return LabLessonDetail(
       lesson: LabLesson(id: 1, code: code, title: 'Demo lesson', summary: ''),
       sections: [
-        LabSection(
-          id: 1,
-          heading: 'Topic one',
-          body: '${List.filled(810, 'A').join()}\n\nSecond page',
-        ),
+        const LabSection(id: 1, heading: 'Chapter one', body: ''),
+        const LabSection(id: 2, parentId: 1, heading: 'Topic one', body: ''),
+        LabSection(id: 3, parentId: 2, heading: 'A subtopic', body: List.filled(810, 'A').join()),
       ],
     );
   }

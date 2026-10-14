@@ -1,14 +1,14 @@
--- VerifAI AI Lab — practice activities for the global (cross-industry) lessons.
--- 10 each, same typed recall model as 54. Original wording; concepts drawn from
--- the lesson's linked sources. Idempotent: replaces activities per lesson.
+-- VerifAI AI Lab — practice activities for the AI literacy textbook.
+-- Same typed recall model as the industry books. Runs after 65 (which clears the
+-- ai-literacy-book activities) and after the book seeds (60-64).
 
 -- ---------------------------------------------------------------------------
 -- ai-fundamentals
 -- ---------------------------------------------------------------------------
-DELETE FROM lab_activities WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'ai-fundamentals');
+-- ai-fundamentals (merged into ai-literacy-book)
 INSERT INTO lab_activities (lesson_id, type, prompt, payload, correct, explanation, source_id, sort_order)
 SELECT l.id, v.type, v.prompt, v.payload::jsonb, v.correct::jsonb, v.explanation,
-       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order
+       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order + 0
 FROM lab_lessons l, (VALUES
   ('multiple_choice', 'What does a language model actually do when it answers a question?',
    '{"options":["Looks up facts in a verified database","Predicts the most likely next token given the text before it","Runs a live web search"]}',
@@ -48,15 +48,15 @@ FROM lab_lessons l, (VALUES
    '{}', '{"accepted":["signal","evidence"]}', 'Confident wording tells you nothing about whether the claim is true.',
    'Dive into Deep Learning', 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'ai-fundamentals';
+WHERE l.code = 'ai-literacy-book';
 
 -- ---------------------------------------------------------------------------
 -- fact-checking-with-ai
 -- ---------------------------------------------------------------------------
-DELETE FROM lab_activities WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'fact-checking-with-ai');
+-- fact-checking-with-ai (merged into ai-literacy-book)
 INSERT INTO lab_activities (lesson_id, type, prompt, payload, correct, explanation, source_id, sort_order)
 SELECT l.id, v.type, v.prompt, v.payload::jsonb, v.correct::jsonb, v.explanation,
-       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order
+       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order + 100
 FROM lab_lessons l, (VALUES
   ('multiple_choice', 'Which of these is a checkable claim?',
    '{"options":["Revenue grew 15% in Q3","The outlook is strong","The company is well run"]}',
@@ -97,15 +97,15 @@ FROM lab_lessons l, (VALUES
    '{"answer_index":1}', 'A source that does not match the context cannot confirm the claim; mark it unverified.',
    'NIST AI Risk Management Framework', 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'fact-checking-with-ai';
+WHERE l.code = 'ai-literacy-book';
 
 -- ---------------------------------------------------------------------------
 -- ai-ethics-and-bias
 -- ---------------------------------------------------------------------------
-DELETE FROM lab_activities WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'ai-ethics-and-bias');
+-- ai-ethics-and-bias (merged into ai-literacy-book)
 INSERT INTO lab_activities (lesson_id, type, prompt, payload, correct, explanation, source_id, sort_order)
 SELECT l.id, v.type, v.prompt, v.payload::jsonb, v.correct::jsonb, v.explanation,
-       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order
+       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order + 200
 FROM lab_lessons l, (VALUES
   ('multiple_choice', 'A hiring model rejects more applicants from one group. What is the most responsible first step?',
    '{"options":["Assume the model is neutral","Measure outcomes across groups and involve a human reviewer","Ignore it if overall accuracy is high"]}',
@@ -145,4 +145,4 @@ FROM lab_lessons l, (VALUES
    '{}', '{"accepted":["terms","policy","terms and conditions"]}', 'The tool''s data-handling terms and your policy decide whether it may process the data.',
    'NIST AI Risk Management Framework', 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'ai-ethics-and-bias';
+WHERE l.code = 'ai-literacy-book';

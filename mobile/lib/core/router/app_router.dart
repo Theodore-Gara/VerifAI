@@ -11,6 +11,7 @@ import 'package:verifai/features/vera/presentation/vera_assistant_screen.dart';
 import 'package:verifai/features/verification_studio/presentation/verification_studio_screen.dart';
 import 'package:verifai/features/lab/presentation/lab_home_screen.dart';
 import 'package:verifai/features/lab/presentation/lessons_screen.dart';
+import 'package:verifai/features/lab/presentation/chapters_screen.dart';
 import 'package:verifai/features/lab/presentation/topics_screen.dart';
 import 'package:verifai/features/lab/presentation/topic_reader_screen.dart';
 import 'package:verifai/features/lab/presentation/practice_lesson_screen.dart';
@@ -278,9 +279,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/ai-lab/lessons/:code',
-        name: 'lab-topics',
+        name: 'lab-chapters',
         builder: (context, state) =>
-            LabTopicsScreen(code: state.pathParameters['code'] ?? ''),
+            LabChaptersScreen(code: state.pathParameters['code'] ?? ''),
+      ),
+      GoRoute(
+        path: '/ai-lab/lessons/:code/chapter/:chapterIndex',
+        name: 'lab-topics',
+        builder: (context, state) => LabTopicsScreen(
+          code: state.pathParameters['code'] ?? '',
+          chapterIndex: int.tryParse(state.pathParameters['chapterIndex'] ?? '0') ?? 0,
+        ),
       ),
       GoRoute(
         path: '/ai-lab/lessons/:code/topic/:index',

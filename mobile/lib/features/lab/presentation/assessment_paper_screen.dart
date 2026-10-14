@@ -179,7 +179,7 @@ class _LabAssessmentPaperScreenState
                   itemBuilder: (context, i) => SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
                         AppSpacing.md, AppSpacing.screenPadding, AppSpacing.md),
-                    child: _questionView(_questions[i], i),
+                    child: _questionView(_questions[i]),
                   ),
                 ),
               ),
@@ -262,16 +262,23 @@ class _LabAssessmentPaperScreenState
     );
   }
 
-  Widget _questionView(LabAssessmentQuestion q, int index) {
+  Widget _questionView(LabAssessmentQuestion q) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Question ${index + 1} · ${q.marks} marks',
+        if (q.section != null && q.section!.isNotEmpty) ...[
+          _sectionHeader(q.section!),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        Text('${q.marks} marks',
             style: AppTypography.textTheme.labelMedium?.copyWith(
                 fontWeight: FontWeight.w800, color: AppColors.textSecondary)),
         const SizedBox(height: AppSpacing.sm),
         if (q.scenario != null && q.scenario!.isNotEmpty) ...[
           _scenario(q.scenario!),
+          const SizedBox(height: AppSpacing.md),
+        ] else if (widget.args.start.scenario != null) ...[
+          _caseStudy(widget.args.start.scenario!),
           const SizedBox(height: AppSpacing.md),
         ],
         if (q.codeLines.isNotEmpty) ...[
@@ -286,6 +293,64 @@ class _LabAssessmentPaperScreenState
         const SizedBox(height: AppSpacing.lg),
         ..._answerWidgets(q),
       ],
+    );
+  }
+
+  Widget _sectionHeader(String label) => Row(
+        children: [
+          Container(
+              width: 4,
+              height: 18,
+              decoration: BoxDecoration(
+                  color: AppColors.accentGreen,
+                  borderRadius: BorderRadius.circular(2))),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(label,
+                style: AppTypography.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+          ),
+        ],
+      );
+
+  /// The case-study/scenario card, shown at the top of each question page so the
+  /// learner has the facts to hand while answering.
+  Widget _caseStudy(Map<String, dynamic> s) {
+    final facts =
+        (s['facts'] as List<dynamic>? ?? const []).map((e) => '• $e').join('\n');
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          border: Border.all(color: AppColors.border)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('SCENARIO',
+              style: AppTypography.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textSecondary,
+                  letterSpacing: .5)),
+          if ((s['title'] as String?)?.isNotEmpty == true) ...[
+            const SizedBox(height: 4),
+            Text(s['title'] as String,
+                style: AppTypography.textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+          ],
+          if ((s['background'] as String?)?.isNotEmpty == true) ...[
+            const SizedBox(height: 4),
+            Text(s['background'] as String,
+                style: AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
+          ],
+          if (facts.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(facts,
+                style: AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
+          ],
+        ],
+      ),
     );
   }
 

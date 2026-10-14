@@ -1,6 +1,7 @@
--- VerifAI AI Lab — practice activities (read-and-recall), 10 per lesson.
--- Original wording; concepts drawn from the lesson's sources. Answer keys and
--- grading stay server-side. Idempotent: replaces the activities per lesson.
+-- VerifAI AI Lab — practice activities (read-and-recall), merged per textbook.
+-- Concepts drawn from each book's sources. Answer keys and grading stay
+-- server-side. Idempotent: clears the books' activities, then re-inserts.
+-- Runs after the book seeds (60-64).
 --
 -- Payload shapes (sent to the app, answer withheld):
 --   multiple_choice {"options":[...]}          correct {"answer_index":n}
@@ -9,13 +10,16 @@
 --   matching        {"left":[...],"right":[...]} correct {"mapping":{left:right}}
 --   ordering        {"items":[...]}             correct {"order":[...]}
 
+-- One clear per book; each former lesson's activity set is appended below.
+DELETE FROM lab_activities WHERE lesson_id IN (SELECT id FROM lab_lessons WHERE code IN ('finance-book', 'legal-book', 'it-book', 'business-book', 'ai-literacy-book'));
+
 -- ---------------------------------------------------------------------------
 -- finance-read-the-numbers
 -- ---------------------------------------------------------------------------
-DELETE FROM lab_activities WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'finance-read-the-numbers');
+-- finance-read-the-numbers (merged into finance-book)
 INSERT INTO lab_activities (lesson_id, type, prompt, payload, correct, explanation, source_id, sort_order)
 SELECT l.id, v.type, v.prompt, v.payload::jsonb, v.correct::jsonb, v.explanation,
-       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order
+       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order + 0
 FROM lab_lessons l, (VALUES
   ('multiple_choice', 'An AI summary states "profit up 12%" with no period or source. What is the responsible first step?',
    '{"options":["Accept it - it is a specific number","Find the reporting period and source before relying on it","Round it to the nearest whole number"]}',
@@ -55,15 +59,15 @@ FROM lab_lessons l, (VALUES
    '{}', '{"answer":false}', 'A business can be profitable and still run short of cash if customers pay late or stock is bought upfront.',
    'Financial Management for Small Businesses', 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'finance-read-the-numbers';
+WHERE l.code = 'finance-book';
 
 -- ---------------------------------------------------------------------------
 -- finance-verify-a-forecast
 -- ---------------------------------------------------------------------------
-DELETE FROM lab_activities WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'finance-verify-a-forecast');
+-- finance-verify-a-forecast (merged into finance-book)
 INSERT INTO lab_activities (lesson_id, type, prompt, payload, correct, explanation, source_id, sort_order)
 SELECT l.id, v.type, v.prompt, v.payload::jsonb, v.correct::jsonb, v.explanation,
-       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order
+       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order + 100
 FROM lab_lessons l, (VALUES
   ('true_false', 'Under certainty, a project with a positive net present value (NPV) adds value to the firm and should be accepted.',
    '{}', '{"answer":true}', 'NPV discounts future cash flows at the required return and subtracts the initial cost. Positive means it earns more than required.',
@@ -103,15 +107,15 @@ FROM lab_lessons l, (VALUES
    '{}', '{"accepted":["positive","greater than zero","above zero"]}', 'A positive NPV means the project earns more than the required return.',
    'Corporate Finance', 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'finance-verify-a-forecast';
+WHERE l.code = 'finance-book';
 
 -- ---------------------------------------------------------------------------
 -- legal-primary-sources
 -- ---------------------------------------------------------------------------
-DELETE FROM lab_activities WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'legal-primary-sources');
+-- legal-primary-sources (merged into legal-book)
 INSERT INTO lab_activities (lesson_id, type, prompt, payload, correct, explanation, source_id, sort_order)
 SELECT l.id, v.type, v.prompt, v.payload::jsonb, v.correct::jsonb, v.explanation,
-       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order
+       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order + 0
 FROM lab_lessons l, (VALUES
   ('matching', 'Match each POPIA term to its meaning.',
    '{"left":["Responsible party","Operator","Data subject","Information Regulator"],"right":["Independent body that monitors and enforces POPIA","Decides why and how personal information is processed","The person the information relates to","Processes information on behalf of another"]}',
@@ -153,15 +157,15 @@ FROM lab_lessons l, (VALUES
    '{}', '{"answer":false}', 'Only the wording of the provision is authoritative; a paraphrase that differs is unreliable.',
    'South African legislation and court judgments', 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'legal-primary-sources';
+WHERE l.code = 'legal-book';
 
 -- ---------------------------------------------------------------------------
 -- legal-ai-citation-check
 -- ---------------------------------------------------------------------------
-DELETE FROM lab_activities WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'legal-ai-citation-check');
+-- legal-ai-citation-check (merged into legal-book)
 INSERT INTO lab_activities (lesson_id, type, prompt, payload, correct, explanation, source_id, sort_order)
 SELECT l.id, v.type, v.prompt, v.payload::jsonb, v.correct::jsonb, v.explanation,
-       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order
+       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order + 100
 FROM lab_lessons l, (VALUES
   ('multiple_choice', 'A company believes an unauthorised person accessed personal information it holds. Who must it notify under POPIA section 22?',
    '{"options":["Nobody unless a court orders it","Only the Information Regulator","The Information Regulator and the affected data subjects","Only the police"]}',
@@ -202,15 +206,15 @@ FROM lab_lessons l, (VALUES
    '{}', '{"accepted":["juristic"]}', 'Companies Act s.19 makes a company a juristic person, separate from its shareholders and directors.',
    'South African legislation and court judgments', 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'legal-ai-citation-check';
+WHERE l.code = 'legal-book';
 
 -- ---------------------------------------------------------------------------
 -- it-verify-generated-code
 -- ---------------------------------------------------------------------------
-DELETE FROM lab_activities WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'it-verify-generated-code');
+-- it-verify-generated-code (merged into it-book)
 INSERT INTO lab_activities (lesson_id, type, prompt, payload, correct, explanation, source_id, sort_order)
 SELECT l.id, v.type, v.prompt, v.payload::jsonb, v.correct::jsonb, v.explanation,
-       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order
+       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order + 0
 FROM lab_lessons l, (VALUES
   ('multiple_choice', 'What is the primary defence against SQL injection?',
    '{"options":["Parameterised queries (prepared statements)","Hiding database error messages only","Using a longer database password","Serving the app over HTTPS"]}',
@@ -251,15 +255,15 @@ FROM lab_lessons l, (VALUES
    '{}', '{"answer":true}', 'Overfitting means it fails to generalise to unseen data.',
    'Dive into Deep Learning', 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'it-verify-generated-code';
+WHERE l.code = 'it-book';
 
 -- ---------------------------------------------------------------------------
 -- it-model-limits
 -- ---------------------------------------------------------------------------
-DELETE FROM lab_activities WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'it-model-limits');
+-- it-model-limits (merged into it-book)
 INSERT INTO lab_activities (lesson_id, type, prompt, payload, correct, explanation, source_id, sort_order)
 SELECT l.id, v.type, v.prompt, v.payload::jsonb, v.correct::jsonb, v.explanation,
-       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order
+       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order + 100
 FROM lab_lessons l, (VALUES
   ('true_false', 'A fluent, confident model answer is evidence that it is correct.',
    '{}', '{"answer":false}', 'Fluency describes the text, not the truth of the claim.',
@@ -299,15 +303,15 @@ FROM lab_lessons l, (VALUES
    '{}', '{"answer":true}', 'Models produce likely continuations; confident wording is not evidence of truth.',
    'Dive into Deep Learning', 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'it-model-limits';
+WHERE l.code = 'it-book';
 
 -- ---------------------------------------------------------------------------
 -- business-ai-in-decisions (original)
 -- ---------------------------------------------------------------------------
-DELETE FROM lab_activities WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'business-ai-in-decisions');
+-- business-ai-in-decisions (merged into business-book)
 INSERT INTO lab_activities (lesson_id, type, prompt, payload, correct, explanation, source_id, sort_order)
 SELECT l.id, v.type, v.prompt, v.payload::jsonb, v.correct::jsonb, v.explanation,
-       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order
+       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order + 0
 FROM lab_lessons l, (VALUES
   ('multiple_choice', 'An AI recommends a hiring decision. Who is accountable for the outcome?',
    '{"options":["The model vendor","The accountable person who decides to act","No one, because a model decided"]}',
@@ -347,15 +351,15 @@ FROM lab_lessons l, (VALUES
    '{}', '{"accepted":["evidence","rationale","reasoning"]}', 'The record should show what evidence supported the decision.',
    NULL, 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'business-ai-in-decisions';
+WHERE l.code = 'business-book';
 
 -- ---------------------------------------------------------------------------
 -- business-stakeholder-risk (original)
 -- ---------------------------------------------------------------------------
-DELETE FROM lab_activities WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'business-stakeholder-risk');
+-- business-stakeholder-risk (merged into business-book)
 INSERT INTO lab_activities (lesson_id, type, prompt, payload, correct, explanation, source_id, sort_order)
 SELECT l.id, v.type, v.prompt, v.payload::jsonb, v.correct::jsonb, v.explanation,
-       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order
+       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order + 100
 FROM lab_lessons l, (VALUES
   ('multiple_choice', 'Who should be included in a stakeholder map for an AI tool?',
    '{"options":["Only the direct users of the tool","Everyone affected, including indirect groups","Only the project sponsor"]}',
@@ -395,15 +399,15 @@ FROM lab_lessons l, (VALUES
    '{}', '{"accepted":["disparate","disparate impact"]}', 'Disparate-impact checks surface unfairness that overall accuracy hides.',
    NULL, 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'business-stakeholder-risk';
+WHERE l.code = 'business-book';
 
 -- ---------------------------------------------------------------------------
 -- risk-ai-governance-nist
 -- ---------------------------------------------------------------------------
-DELETE FROM lab_activities WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'risk-ai-governance-nist');
+-- risk-ai-governance-nist (merged into ai-literacy-book)
 INSERT INTO lab_activities (lesson_id, type, prompt, payload, correct, explanation, source_id, sort_order)
 SELECT l.id, v.type, v.prompt, v.payload::jsonb, v.correct::jsonb, v.explanation,
-       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order
+       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order + 300
 FROM lab_lessons l, (VALUES
   ('multiple_choice', 'A risk-based approach to AI starts from which question?',
    '{"options":["Which model is most advanced?","What is the use case and who could be harmed?","How fast can we ship?"]}',
@@ -443,4 +447,459 @@ FROM lab_lessons l, (VALUES
    '{}', '{"answer":false}', 'Risk management is continuous: document, monitor and review as things change.',
    'NIST AI Risk Management Framework', 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'risk-ai-governance-nist';
+WHERE l.code = 'ai-literacy-book';
+
+-- ---------------------------------------------------------------------------
+-- Finance: subject chapters (activities cover the reading material itself)
+-- ---------------------------------------------------------------------------
+INSERT INTO lab_activities (lesson_id, type, prompt, payload, correct, explanation, source_id, sort_order)
+SELECT l.id, v.type, v.prompt, v.payload::jsonb, v.correct::jsonb, v.explanation,
+       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order + 200
+FROM lab_lessons l, (VALUES
+  ('multiple_choice', 'In one line, what is the working objective of the finance function?',
+   '{"options":["To maximise short-term profit","To maximise the long-term value of the owners'' stake","To minimise tax"]}',
+   '{"answer_index":1}', 'Finance balances stakeholders'' claims with a working objective of long-term owner value.',
+   'Corporate Finance', 1),
+  ('true_false', 'A business must stay solvent before it can create value.',
+   '{}', '{"answer":true}', 'Paying bills as they fall due comes before putting capital to work.',
+   'Corporate Finance', 2),
+  ('multiple_choice', 'Which of these is NOT one of the three core financial decisions?',
+   '{"options":["Investment","Financing","Distribution","Marketing"]}',
+   '{"answer_index":3}', 'The core decisions are investment, financing and distribution.',
+   'Corporate Finance', 3),
+  ('fill_blank', 'The ___ problem describes managers acting in their own interest rather than the owners''.',
+   '{}', '{"accepted":["agency"]}', 'Good governance keeps managers'' decisions aligned with owners.',
+   'Corporate Finance', 4),
+  ('multiple_choice', 'A business reports a profit but its bank balance fell. What best explains this?',
+   '{"options":["Profit is non-cash and meaningless","Customers have not yet paid and stock is tied up","The bank made an error"]}',
+   '{"answer_index":1}', 'Sales booked but not collected, and cash in stock, reduce cash without reducing profit.',
+   'Financial Management for Small Businesses', 5),
+  ('true_false', 'Two businesses with the same profit this year must be worth the same.',
+   '{}', '{"answer":false}', 'Value reflects expected future cash flows, their timing and their risk.',
+   'Corporate Finance', 6),
+  ('fill_blank', 'Gross profit is revenue less the cost of ___.',
+   '{}', '{"accepted":["sales","goods sold","sales sold"]}', 'The income statement subtracts cost of sales to reach gross profit.',
+   'Introduction to Financial Analysis', 7),
+  ('multiple_choice', 'Under accrual accounting, income is recorded when...',
+   '{"options":["The cash is received","It is earned","The invoice is printed"]}',
+   '{"answer_index":1}', 'Income is recorded when earned, not when cash arrives.',
+   'Introduction to Financial Analysis', 8),
+  ('multiple_choice', 'Which equation must always hold on the balance sheet?',
+   '{"options":["Assets = liabilities - equity","Assets = liabilities + equity","Equity = assets + liabilities"]}',
+   '{"answer_index":1}', 'Assets always equal liabilities plus equity.',
+   'Introduction to Financial Analysis', 9),
+  ('true_false', 'The balance sheet reports performance over a period, like the income statement.',
+   '{}', '{"answer":false}', 'The balance sheet is a snapshot at a single date.',
+   'Introduction to Financial Analysis', 10),
+  ('multiple_choice', 'Which section of the cash flow statement covers buying and selling long-term assets?',
+   '{"options":["Operating","Investing","Financing"]}',
+   '{"answer_index":1}', 'Investing activities are the purchase and sale of long-term assets.',
+   'Introduction to Financial Analysis', 11),
+  ('true_false', 'The cash flow statement reconciles profit back to actual cash.',
+   '{}', '{"answer":true}', 'It reverses accruals to show the change in cash.',
+   'Introduction to Financial Analysis', 12),
+  ('fill_blank', 'The quick ratio removes ___ from current assets because it is the least liquid.',
+   '{}', '{"accepted":["inventory","stock"]}', 'Inventory is the least liquid current asset, so the quick ratio excludes it.',
+   'Introduction to Financial Analysis', 13),
+  ('multiple_choice', 'Working capital is...',
+   '{"options":["Current assets minus current liabilities","Total assets minus total liabilities","Cash minus debt"]}',
+   '{"answer_index":0}', 'Working capital funds the gap between paying for inputs and collecting from customers.',
+   'Financial Management for Small Businesses', 14),
+  ('multiple_choice', 'Which ratio shows profit as a share of sales?',
+   '{"options":["Current ratio","Net margin","Debt-to-equity ratio"]}',
+   '{"answer_index":1}', 'Net margin is net profit over revenue.',
+   'Introduction to Financial Analysis', 15),
+  ('true_false', 'A very high return on equity always means the business is trading well.',
+   '{}', '{"answer":false}', 'A high figure can come from heavy borrowing rather than good trading.',
+   'Introduction to Financial Analysis', 16),
+  ('fill_blank', '___ cover divides operating profit by interest expense.',
+   '{}', '{"accepted":["interest"]}', 'Interest cover shows how comfortably earnings absorb the interest bill.',
+   'Introduction to Financial Analysis', 17),
+  ('multiple_choice', 'What does more debt do to risk?',
+   '{"options":["Nothing","Magnifies both gains and losses","Reduces risk"]}',
+   '{"answer_index":1}', 'Leverage magnifies both gains and losses and adds a fixed interest obligation.',
+   'Corporate Finance', 18),
+  ('fill_blank', 'Future value: FV = PV x (1 + r)^___',
+   '{}', '{"accepted":["n","the number of periods","number of periods"]}', 'The exponent is the number of compounding periods.',
+   'Introduction to Financial Analysis', 19),
+  ('true_false', 'Compounding more often at the same rate produces a larger future value.',
+   '{}', '{"answer":true}', 'More frequent compounding earns interest on interest sooner.',
+   'Introduction to Financial Analysis', 20),
+  ('multiple_choice', 'Present value answers...',
+   '{"options":["What a future amount is worth today","What today''s money is worth later","The interest earned"]}',
+   '{"answer_index":0}', 'Present value discounts a future amount back to today at the required return.',
+   'Introduction to Financial Analysis', 21),
+  ('true_false', 'A higher discount rate makes future cash more valuable today.',
+   '{}', '{"answer":false}', 'A higher rate makes future cash worth less today.',
+   'Corporate Finance', 22),
+  ('multiple_choice', 'An ordinary annuity is...',
+   '{"options":["A series of equal payments at regular intervals","A single lump sum","A perpetuity"]}',
+   '{"answer_index":0}', 'An annuity is a series of equal payments at regular intervals.',
+   'Introduction to Financial Analysis', 23),
+  ('fill_blank', 'A perpetuity''s present value is the payment divided by the ___.',
+   '{}', '{"accepted":["rate","discount rate"]}', 'PV of a perpetuity equals payment divided by the rate.',
+   'Introduction to Financial Analysis', 24),
+  ('multiple_choice', 'A positive NPV means...',
+   '{"options":["The project earns less than the required return","The project is expected to beat the required return","The project only breaks even"]}',
+   '{"answer_index":1}', 'Positive NPV means the project beats the required return.',
+   'Corporate Finance', 25),
+  ('true_false', 'Payback considers the value of cash flows after the cut-off date.',
+   '{}', '{"answer":false}', 'Payback ignores everything after the cut-off and is blind to value.',
+   'Corporate Finance', 26),
+  ('fill_blank', 'CCC = inventory days + debtor days - ___ days.',
+   '{}', '{"accepted":["creditor","creditors","payables"]}', 'CCC = inventory days + debtor days - creditor days.',
+   'Financial Management for Small Businesses', 27),
+  ('multiple_choice', 'Which action shortens the cash conversion cycle?',
+   '{"options":["Paying suppliers sooner","Negotiating longer supplier terms","Holding more stock"]}',
+   '{"answer_index":1}', 'Longer supplier terms raise days payables, which is subtracted in the CCC.',
+   'Financial Management for Small Businesses', 28),
+  ('multiple_choice', 'Which source of finance carries a repayment obligation with interest?',
+   '{"options":["Equity","Debt"]}',
+   '{"answer_index":1}', 'Debt must be repaid with interest; equity does not carry that obligation.',
+   'Corporate Finance', 29),
+  ('true_false', 'Short-term working-capital needs are best matched with short-term finance.',
+   '{}', '{"answer":true}', 'Matching the term of the finance to the need avoids avoidable risk.',
+   'Corporate Finance', 30)
+) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
+WHERE l.code = 'finance-book';
+
+-- ---------------------------------------------------------------------------
+-- Legal: subject chapters
+-- ---------------------------------------------------------------------------
+INSERT INTO lab_activities (lesson_id, type, prompt, payload, correct, explanation, source_id, sort_order)
+SELECT l.id, v.type, v.prompt, v.payload::jsonb, v.correct::jsonb, v.explanation,
+       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order + 200
+FROM lab_lessons l, (VALUES
+  ('true_false', 'The Constitution is the highest law, and law inconsistent with it is invalid to that extent.',
+   '{}', '{"answer":true}', 'All legislation, common law and conduct must respect the Constitution.',
+   'South African legislation and court judgments', 1),
+  ('multiple_choice', 'How should a statute be read?',
+   '{"options":["In isolation","Consistently with the Constitution where reasonably possible","By the oldest available text"]}',
+   '{"answer_index":1}', 'Statutes must be interpreted consistently with the Constitution where possible.',
+   'South African legislation and court judgments', 2),
+  ('multiple_choice', 'Regulations and municipal by-laws are valid only...',
+   '{"options":["If popular","Within the powers granted by an Act","Always"]}',
+   '{"answer_index":1}', 'Subordinate law is valid only within the powers it was granted.',
+   'South African legislation and court judgments', 3),
+  ('true_false', 'You can rely on a summary of an Act without checking whether it was amended.',
+   '{}', '{"answer":false}', 'Always confirm the wording in force on the date that matters.',
+   'South African legislation and court judgments', 4),
+  ('multiple_choice', 'A decision of a higher court...',
+   '{"options":["Binds lower courts within its jurisdiction","Never binds anyone","Is only advice"]}',
+   '{"answer_index":0}', 'Higher-court decisions bind lower courts in the same jurisdiction.',
+   'South African legislation and court judgments', 5),
+  ('true_false', 'Decisions of other courts may be persuasive but not binding.',
+   '{}', '{"answer":true}', 'Persuasive authority guides but does not bind.',
+   'South African legislation and court judgments', 6),
+  ('true_false', 'The state may act only under authority that the law gives.',
+   '{}', '{"answer":true}', 'This is the rule of law: everyone, including the state, is subject to the law.',
+   'South African legislation and court judgments', 7),
+  ('multiple_choice', 'What is the two-stage test for a right?',
+   '{"options":["Was a right limited, then is the limitation justifiable","Was a law passed, then is it popular","Was harm done, then who paid"]}',
+   '{"answer_index":0}', 'A court asks whether a right was limited, then whether the limit is justifiable.',
+   'South African legislation and court judgments', 8),
+  ('fill_blank', 'A right may be limited by a law of general application only to the extent that is reasonable and ___.',
+   '{}', '{"accepted":["justifiable"]}', 'Only a reasonable and justifiable limitation is allowed.',
+   'South African legislation and court judgments', 9),
+  ('multiple_choice', 'Many rights in the Bill of Rights belong to...',
+   '{"options":["Citizens only","All people in the country","Residents who pay tax"]}',
+   '{"answer_index":1}', 'Many rights protect everyone in the country, not only citizens.',
+   'South African legislation and court judgments', 10),
+  ('true_false', 'A court must give reasons for a decision where the law requires it.',
+   '{}', '{"answer":true}', 'A fair administrative decision must give reasons where required.',
+   'South African legislation and court judgments', 11),
+  ('multiple_choice', 'Administrative action by the state must be...',
+   '{"options":["Lawful, reasonable and procedurally fair","As fast as possible","Unreviewable"]}',
+   '{"answer_index":0}', 'Just administrative action must be lawful, reasonable and procedurally fair.',
+   'South African legislation and court judgments', 12),
+  ('multiple_choice', 'A contract forms from...',
+   '{"options":["Offer and acceptance with intention and capacity","A handshake alone","Registration"]}',
+   '{"answer_index":0}', 'Formation needs offer, acceptance, intention and capacity.',
+   'South African legislation and court judgments', 13),
+  ('true_false', 'An agreement to do something illegal is void.',
+   '{}', '{"answer":true}', 'An unlawful agreement cannot be enforced.',
+   'South African legislation and court judgments', 14),
+  ('multiple_choice', 'When one party breaches, the innocent party may claim...',
+   '{"options":["Specific performance, cancellation or damages","Nothing at all","Only an apology"]}',
+   '{"answer_index":0}', 'The remedy depends on how serious the breach is.',
+   'South African legislation and court judgments', 15),
+  ('true_false', 'Terms stated in the contract and terms implied by law can both apply.',
+   '{}', '{"answer":true}', 'Contract terms may be express or implied by law.',
+   'South African legislation and court judgments', 16),
+  ('multiple_choice', 'Consumer legislation exists to...',
+   '{"options":["Give suppliers more power","Limit unfair terms and protect the weaker party","Remove all contracts"]}',
+   '{"answer_index":1}', 'Consumer law protects the weaker party from unfair terms.',
+   'South African legislation and court judgments', 17),
+  ('true_false', 'A contract can take away a consumer''s statutory cooling-off right.',
+   '{}', '{"answer":false}', 'Statutory rights cannot be contracted away.',
+   'South African legislation and court judgments', 18),
+  ('true_false', 'Consumers may block unsolicited direct marketing.',
+   '{}', '{"answer":true}', 'The CPA gives consumers the right to opt out of direct marketing.',
+   'South African legislation and court judgments', 19),
+  ('multiple_choice', 'The Consumer Protection Act protects consumers...',
+   '{"options":["Only if they read the terms","Whether or not they read the terms","Only for large purchases"]}',
+   '{"answer_index":1}', 'The Act applies regardless of whether the consumer read the terms.',
+   'South African legislation and court judgments', 20),
+  ('fill_blank', 'Under POPIA, the party that decides why and how to process personal information is the ___ party.',
+   '{}', '{"accepted":["responsible"]}', 'The responsible party remains accountable for the processing.',
+   'South African legislation and court judgments', 21),
+  ('multiple_choice', 'An operator processes personal information...',
+   '{"options":["For its own purposes","On the responsible party''s instructions","Without any rules"]}',
+   '{"answer_index":1}', 'An operator acts only on the responsible party''s instructions.',
+   'South African legislation and court judgments', 22),
+  ('true_false', 'On a data breach, the responsible party must notify the Information Regulator and, where there is risk of harm, the data subjects.',
+   '{}', '{"answer":true}', 'Both the regulator and, where harm is likely, the affected people must be told.',
+   'South African legislation and court judgments', 23),
+  ('multiple_choice', 'A good first response to a breach is to...',
+   '{"options":["Wait and see","Contain it, record it and inform those affected","Delete the evidence"]}',
+   '{"answer_index":1}', 'Contain the breach, record what happened, and tell affected people what to do.',
+   'South African legislation and court judgments', 24),
+  ('multiple_choice', 'Incorporation creates...',
+   '{"options":["A separate legal person","A partnership","A trust"]}',
+   '{"answer_index":0}', 'Registration creates a separate legal person.',
+   'South African legislation and court judgments', 25),
+  ('true_false', 'Shareholders are, as a rule, personally liable for the company''s debts.',
+   '{}', '{"answer":false}', 'A company owes its own debts; shareholders are not liable as a rule.',
+   'South African legislation and court judgments', 26),
+  ('multiple_choice', 'A director''s duties are owed to...',
+   '{"options":["The company","The largest shareholder","The government"]}',
+   '{"answer_index":0}', 'Directors owe their duties to the company itself.',
+   'South African legislation and court judgments', 27),
+  ('fill_blank', 'A director must act in the best interests of the company and avoid conflicts of ___.',
+   '{}', '{"accepted":["interest"]}', 'Avoiding conflicts of interest is part of the fiduciary duty.',
+   'South African legislation and court judgments', 28),
+  ('multiple_choice', 'When may a court lift the corporate veil?',
+   '{"options":["Never","In limited cases such as fraud or reckless trading","Whenever a company fails"]}',
+   '{"answer_index":1}', 'In limited cases a court may hold individuals personally liable.',
+   'South African legislation and court judgments', 29),
+  ('true_false', 'Directors may allow a company to keep trading while insolvent.',
+   '{}', '{"answer":false}', 'Reckless trading or trading while insolvent can attract personal liability.',
+   'South African legislation and court judgments', 30)
+) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
+WHERE l.code = 'legal-book';
+
+-- ---------------------------------------------------------------------------
+-- IT / Software: subject chapters
+-- ---------------------------------------------------------------------------
+INSERT INTO lab_activities (lesson_id, type, prompt, payload, correct, explanation, source_id, sort_order)
+SELECT l.id, v.type, v.prompt, v.payload::jsonb, v.correct::jsonb, v.explanation,
+       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order + 200
+FROM lab_lessons l, (VALUES
+  ('true_false', 'Delivering in small increments makes mistakes cheaper to correct.',
+   '{}', '{"answer":true}', 'Small steps bring feedback early, while mistakes are still cheap.',
+   'Critical Infrastructure Cybersecurity', 1),
+  ('multiple_choice', 'Good software starts from...',
+   '{"options":["A clear statement of what it must do and for whom","The fanciest framework","The database schema"]}',
+   '{"answer_index":0}', 'Clear requirements come first; skipping them solves the wrong problem.',
+   'Critical Infrastructure Cybersecurity', 2),
+  ('multiple_choice', 'Version control lets you...',
+   '{"options":["Record who changed what and return to a known-good state","Run the program faster","Encrypt the database"]}',
+   '{"answer_index":0}', 'Version control records changes and supports safe collaboration.',
+   'Critical Infrastructure Cybersecurity', 3),
+  ('true_false', 'Reviewing a change before merge catches design and security problems a test run may miss.',
+   '{}', '{"answer":true}', 'Review catches what a quick test run will not.',
+   'Critical Infrastructure Cybersecurity', 4),
+  ('multiple_choice', 'The most valuable tests check...',
+   '{"options":["Only the happy path","Empty, oversized and hostile inputs","The comments"]}',
+   '{"answer_index":1}', 'Bugs cluster at the boundaries, so test the edges.',
+   'Critical Infrastructure Cybersecurity', 5),
+  ('true_false', 'A test states what the code should do and fails when it does not.',
+   '{}', '{"answer":true}', 'Tests are executable expectations that guard against regressions.',
+   'Critical Infrastructure Cybersecurity', 6),
+  ('true_false', 'External input is untrusted until it is validated.',
+   '{}', '{"answer":true}', 'Values from users, files or other services are untrusted until validated.',
+   'OWASP Cheat Sheet Series', 7),
+  ('multiple_choice', 'To prevent injection you should...',
+   '{"options":["Concatenate strings into queries","Use parameterised queries and safe APIs","Disable logging"]}',
+   '{"answer_index":1}', 'Parameterised queries stop data being read as code.',
+   'OWASP Cheat Sheet Series', 8),
+  ('multiple_choice', 'Authentication and authorisation respectively mean...',
+   '{"options":["Prove identity; check permission","Encrypt; decrypt","Login; logout"]}',
+   '{"answer_index":0}', 'Authentication proves who you are; authorisation decides what you may do.',
+   'OWASP Cheat Sheet Series', 9),
+  ('fill_blank', 'Giving each account only the access it needs is called least ___.',
+   '{}', '{"accepted":["privilege"]}', 'Least privilege limits the damage any compromise can cause.',
+   'OWASP Cheat Sheet Series', 10),
+  ('true_false', 'A secret committed to version control is compromised even if it is later deleted.',
+   '{}', '{"answer":true}', 'History keeps it; rotate any secret that was committed.',
+   'OWASP Cheat Sheet Series', 11),
+  ('multiple_choice', 'Third-party libraries...',
+   '{"options":["Run with your program''s privileges","Are always safe","Cannot be vulnerable"]}',
+   '{"answer_index":0}', 'A dependency runs with your privileges, so pin, watch and prune it.',
+   'OWASP Cheat Sheet Series', 12),
+  ('fill_blank', 'A primary ___ identifies a row; a foreign key links tables.',
+   '{}', '{"accepted":["key"]}', 'A primary key identifies a row; a foreign key links to another table.',
+   'Critical Infrastructure Cybersecurity', 13),
+  ('true_false', 'Constraints such as unique and foreign-key keep invalid data out of the database.',
+   '{}', '{"answer":true}', 'Constraints encode rules the application should not enforce alone.',
+   'Critical Infrastructure Cybersecurity', 14),
+  ('multiple_choice', 'An index...',
+   '{"options":["Scans the whole table","Lets the database find rows without a full scan","Encrypts data"]}',
+   '{"answer_index":1}', 'An index finds rows without scanning the whole table.',
+   'Critical Infrastructure Cybersecurity', 15),
+  ('true_false', 'Indexes speed up reads at the cost of extra storage and slower writes.',
+   '{}', '{"answer":true}', 'Indexes trade space and write speed for faster reads.',
+   'Critical Infrastructure Cybersecurity', 16),
+  ('multiple_choice', 'Defence in depth means...',
+   '{"options":["One strong control","Several layers so one failure is not enough to expose data","Keeping no backups"]}',
+   '{"answer_index":1}', 'Layered controls mean one failure does not expose the data.',
+   'Critical Infrastructure Cybersecurity', 17),
+  ('true_false', 'A backup you have never restored is only a hope.',
+   '{}', '{"answer":true}', 'An untested backup often turns out not to work when needed.',
+   'Critical Infrastructure Cybersecurity', 18),
+  ('multiple_choice', 'Supervised learning fits a mapping using...',
+   '{"options":["Unlabelled data","Labelled examples","Random numbers"]}',
+   '{"answer_index":1}', 'Supervised learning learns from labelled examples.',
+   'Dive into Deep Learning', 19),
+  ('true_false', 'The quality of the labels bounds the quality of the model.',
+   '{}', '{"answer":true}', 'Bad labels produce a bad model, however good the algorithm.',
+   'Dive into Deep Learning', 20),
+  ('multiple_choice', 'Overfitting means...',
+   '{"options":["Performing well on training data and poorly on new data","Underfitting","Training too fast"]}',
+   '{"answer_index":0}', 'A model that memorises training data fails in the world.',
+   'Dive into Deep Learning', 21),
+  ('fill_blank', 'Performance degrades when live data drifts from training data; this is called distribution ___.',
+   '{}', '{"accepted":["shift"]}', 'Distribution shift degrades performance and must be monitored.',
+   'Dive into Deep Learning', 22),
+  ('true_false', 'A model should be judged on data kept out of training.',
+   '{}', '{"answer":true}', 'Testing on held-out data is the only meaningful measure.',
+   'Dive into Deep Learning', 23),
+  ('multiple_choice', 'On unbalanced data, why is accuracy not enough?',
+   '{"options":["It is always wrong","It flatters a model that ignores the rare class","It is too slow"]}',
+   '{"answer_index":1}', 'Use precision and recall that match the cost of each error.',
+   'Dive into Deep Learning', 24),
+  ('multiple_choice', 'The operating system gives each process...',
+   '{"options":["Its own memory and a share of the processor","Unlimited access to everything","No resources"]}',
+   '{"answer_index":0}', 'The OS isolates processes and shares resources between them.',
+   'Critical Infrastructure Cybersecurity', 25),
+  ('true_false', 'Running a service as an unprivileged user limits what a bug can reach.',
+   '{}', '{"answer":true}', 'Unprivileged users reduce the reach of any bug.',
+   'Critical Infrastructure Cybersecurity', 26),
+  ('fill_blank', 'Most traffic should be encrypted with ___ so it cannot be read or altered in transit.',
+   '{}', '{"accepted":["tls","tls/ssl","ssl"]}', 'TLS encrypts traffic in transit.',
+   'Critical Infrastructure Cybersecurity', 27),
+  ('true_false', 'Clients should time out and retry deliberately because failures and delays are normal.',
+   '{}', '{"answer":true}', 'Timeouts and deliberate retries handle the normal failures of networks.',
+   'Critical Infrastructure Cybersecurity', 28),
+  ('multiple_choice', 'A change that can be rolled back quickly...',
+   '{"options":["Turns an incident into a small setback","Makes deployment impossible","Is discouraged"]}',
+   '{"answer_index":0}', 'Fast rollback keeps a bad release from becoming a long outage.',
+   'Critical Infrastructure Cybersecurity', 29),
+  ('true_false', 'Without logs, metrics and alerts, failures are discovered by users rather than by you.',
+   '{}', '{"answer":true}', 'Observability is how you learn the system is failing.',
+   'Critical Infrastructure Cybersecurity', 30)
+) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
+WHERE l.code = 'it-book';
+
+-- ---------------------------------------------------------------------------
+-- Business Consulting: subject chapters
+-- ---------------------------------------------------------------------------
+INSERT INTO lab_activities (lesson_id, type, prompt, payload, correct, explanation, source_id, sort_order)
+SELECT l.id, v.type, v.prompt, v.payload::jsonb, v.correct::jsonb, v.explanation,
+       (SELECT id FROM content_sources cs WHERE cs.title = v.source_title), v.sort_order + 200
+FROM lab_lessons l, (VALUES
+  ('multiple_choice', 'A plan states...',
+   '{"options":["What success looks like so decisions can be judged","Unchangeable predictions","Only a budget"]}',
+   '{"answer_index":0}', 'A plan defines success so later decisions can be measured against it.',
+   'Project Management', 1),
+  ('true_false', 'A plan is a commitment, not a prediction.',
+   '{}', '{"answer":true}', 'When conditions change, the plan is revised deliberately.',
+   'Project Management', 2),
+  ('multiple_choice', 'Every important outcome needs...',
+   '{"options":["One accountable owner","Many owners","No owner"]}',
+   '{"answer_index":0}', 'Shared responsibility with no owner is how tasks are dropped.',
+   'Project Management', 3),
+  ('true_false', 'The structure should serve the work, not the other way round.',
+   '{}', '{"answer":true}', 'Organising should serve the work being done.',
+   'Project Management', 4),
+  ('fill_blank', 'Controlling compares actual results with the plan and corrects the ___.',
+   '{}', '{"accepted":["gap"]}', 'Control closes the gap between plan and actual.',
+   'Project Management', 5),
+  ('true_false', 'Control only works if the information reaches someone who can act on it.',
+   '{}', '{"answer":true}', 'Feedback that arrives too late cannot change anything.',
+   'Project Management', 6),
+  ('multiple_choice', 'The mission states...',
+   '{"options":["Why the organisation exists","This quarter''s sales","The org chart"]}',
+   '{"answer_index":0}', 'The mission gives strategy something to aim at.',
+   'Project Management', 7),
+  ('true_false', 'A goal no one''s daily work advances will still be met.',
+   '{}', '{"answer":false}', 'Every function should support the objectives.',
+   'Project Management', 8),
+  ('true_false', 'SWOT''s value depends on honesty about weaknesses.',
+   '{}', '{"answer":true}', 'A tidy grid with hidden weaknesses is worthless.',
+   'Project Management', 9),
+  ('multiple_choice', 'External analysis looks at...',
+   '{"options":["Customers, competitors, suppliers and regulation","Only competitors","The org chart"]}',
+   '{"answer_index":0}', 'External analysis covers the forces around the organisation.',
+   'Project Management', 10),
+  ('multiple_choice', 'A strategy means choosing...',
+   '{"options":["Everything for everyone","Where to compete and what not to do","Only a slogan"]}',
+   '{"answer_index":1}', 'Choosing where to compete means choosing what not to do.',
+   'Project Management', 11),
+  ('true_false', 'The chosen activities must reinforce one another.',
+   '{}', '{"answer":true}', 'Fit and consistency protect the advantage.',
+   'Project Management', 12),
+  ('multiple_choice', 'The project phases are...',
+   '{"options":["Initiation, planning, execution, closure","Buy, build, sell","Plan, panic, ship"]}',
+   '{"answer_index":0}', 'Each phase produces a decision, not just a document.',
+   'Project Management', 13),
+  ('true_false', 'A project is temporary and produces a specific result.',
+   '{}', '{"answer":true}', 'A project has a defined start, end and result.',
+   'Project Management', 14),
+  ('multiple_choice', 'The triple constraint is...',
+   '{"options":["Scope, time, cost","People, process, tools","Risk, reward, return"]}',
+   '{"answer_index":0}', 'Change one of scope, time or cost and the others move.',
+   'Project Management', 15),
+  ('true_false', 'You can add scope without adjusting time or cost.',
+   '{}', '{"answer":false}', 'Scope changes must be matched by time or cost.',
+   'Project Management', 16),
+  ('multiple_choice', 'Stakeholders are...',
+   '{"options":["Anyone affected by or able to affect the project","Only the sponsor","Only the team"]}',
+   '{"answer_index":0}', 'Knowing stakeholders'' interests early prevents late surprises.',
+   'Project Management', 17),
+  ('fill_blank', 'Identify what could go wrong, judge it, and assign an owner and a response: this is risk ___.',
+   '{}', '{"accepted":["management"]}', 'Risk left unowned becomes a crisis.',
+   'Project Management', 18),
+  ('true_false', 'Segmenting lets you serve a group''s needs well instead of serving everyone poorly.',
+   '{}', '{"answer":true}', 'Segmenting focuses effort where it serves a group well.',
+   'Project Management', 19),
+  ('multiple_choice', 'Targeting means...',
+   '{"options":["Reaching everyone","Choosing the segments worth serving","Ignoring customers"]}',
+   '{"answer_index":1}', 'Trying to reach everyone dilutes message and budget.',
+   'Project Management', 20),
+  ('multiple_choice', 'A value proposition states...',
+   '{"options":["The benefit the customer gets and why it beats the alternative","The price only","The company''s history"]}',
+   '{"answer_index":0}', 'If it could describe a competitor too, it is not specific enough.',
+   'Project Management', 21),
+  ('true_false', 'The promise must match what the organisation can actually deliver.',
+   '{}', '{"answer":true}', 'Marketing a gap between promise and reality destroys trust.',
+   'Project Management', 22),
+  ('multiple_choice', 'Retaining an existing customer usually...',
+   '{"options":["Costs less than winning a new one","Costs more","Is impossible"]}',
+   '{"answer_index":0}', 'Poor service quietly erodes the customer base.',
+   'Project Management', 23),
+  ('true_false', 'Track how customers actually behave, not only what they say.',
+   '{}', '{"answer":true}', 'Action on feedback turns satisfaction into loyalty.',
+   'Project Management', 24),
+  ('multiple_choice', 'Structure defines...',
+   '{"options":["Who reports to whom and who decides","The marketing budget","The product"]}',
+   '{"answer_index":0}', 'A structure that hides the decision-maker slows everything down.',
+   'Project Management', 25),
+  ('true_false', 'Values that are not practised are just words on a wall.',
+   '{}', '{"answer":true}', 'Culture is how people behave when no one is watching.',
+   'Project Management', 26),
+  ('fill_blank', 'A team works best with a clear purpose, defined roles and the authority to ___.',
+   '{}', '{"accepted":["act"]}', 'Without authority to act, a team cannot deliver.',
+   'Project Management', 27),
+  ('true_false', 'Silence from a manager is often read as indifference.',
+   '{}', '{"answer":true}', 'People need timely feedback and fair recognition.',
+   'Project Management', 28),
+  ('multiple_choice', 'Resistance to change is...',
+   '{"options":["A sign of disloyalty","Normal, because change threatens habits and status","Never a problem"]}',
+   '{"answer_index":1}', 'Engaging people early reduces normal resistance.',
+   'Project Management', 29),
+  ('true_false', 'A single announcement is enough to make change stick.',
+   '{}', '{"answer":false}', 'People adopt change when they understand why and are supported through it.',
+   'Project Management', 30)
+) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
+WHERE l.code = 'business-book';

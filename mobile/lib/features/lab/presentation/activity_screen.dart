@@ -122,6 +122,10 @@ class _LabActivityScreenState extends ConsumerState<LabActivityScreen> {
           padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.sm,
               AppSpacing.screenPadding, AppSpacing.xxl),
           children: [
+            if (_activity.attempted) ...[
+              _practiceBanner(),
+              const SizedBox(height: AppSpacing.md),
+            ],
             Text(_activity.prompt,
                 style: AppTypography.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800, color: AppColors.textPrimary, height: 1.3)),
@@ -237,6 +241,27 @@ class _LabActivityScreenState extends ConsumerState<LabActivityScreen> {
     );
   }
 
+  Widget _practiceBanner() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.replay_rounded, size: 18, color: AppColors.textSecondary),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text('Practice run. You already attempted this, so it will not earn XP.',
+                style: AppTypography.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _resultPanel(LabActivityResult result) {
     final ok = result.passed;
     return Container(
@@ -258,9 +283,13 @@ class _LabActivityScreenState extends ConsumerState<LabActivityScreen> {
                   style: AppTypography.textTheme.titleMedium
                       ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
               const Spacer(),
-              if (result.xpEarned > 0) Text('+${result.xpEarned} XP',
-                  style: AppTypography.textTheme.labelMedium
-                      ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.accentGreen)),
+              if (result.xpEarned > 0)
+                Text('+${result.xpEarned} XP',
+                    style: AppTypography.textTheme.labelMedium
+                        ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.accentGreen))
+              else if (result.practice)
+                Text('Practice - no XP',
+                    style: AppTypography.textTheme.labelSmall?.copyWith(color: AppColors.textSecondary)),
             ],
           ),
           if (result.explanation.isNotEmpty) ...[
