@@ -224,7 +224,7 @@ class _LabAssessmentPaperScreenState
   }
 
   Widget _submitButton() {
-    final last = _page == _questions.length - 1;
+    final last = _page == _groups.length - 1;
     if (!last) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, 0, AppSpacing.screenPadding, AppSpacing.md),
