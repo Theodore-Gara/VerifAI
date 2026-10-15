@@ -12,6 +12,7 @@ import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/lab/presentation/assessment_instructions_screen.dart';
 import 'package:verifai/shared/models.dart';
+import 'package:verifai/shared/widgets.dart';
 
 class PaperArgs {
   const PaperArgs({required this.code, required this.start});
@@ -175,7 +176,6 @@ class _LabAssessmentPaperScreenState
               Expanded(
                 child: PageView.builder(
                   controller: _pageController,
-                  physics: const NeverScrollableScrollPhysics(),
                   itemCount: _questions.length,
                   onPageChanged: (i) {
                     if (i != _page) setState(() => _page = i);
@@ -186,6 +186,17 @@ class _LabAssessmentPaperScreenState
                     child: _questionView(_questions[i]),
                   ),
                 ),
+              ),
+              PageIndicator(
+                currentPage: _page,
+                pageCount: _questions.length,
+                onPageSelected: (index) {
+                  _pageController.animateToPage(
+                    index,
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOut,
+                  );
+                },
               ),
             ],
           ),
@@ -223,44 +234,6 @@ class _LabAssessmentPaperScreenState
     );
   }
 
-  Widget _questionActions() {
-    final last = _page == _questions.length - 1;
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.md),
-      child: Row(
-        children: [
-          OutlinedButton.icon(
-            onPressed: _page > 0
-                ? () => _pageController.previousPage(
-                    duration: const Duration(milliseconds: 260),
-                    curve: Curves.easeOut)
-                : null,
-            icon: const Icon(Icons.arrow_back_rounded, size: 17),
-            label: const Text('Back'),
-          ),
-          const Spacer(),
-          FilledButton.icon(
-            onPressed: _submitting
-                ? null
-                : () {
-                    if (last) {
-                      _submit();
-                    } else {
-                      _pageController.nextPage(
-                          duration: const Duration(milliseconds: 260),
-                          curve: Curves.easeOut);
-                    }
-                  },
-            icon: Icon(last ? Icons.check_rounded : Icons.arrow_forward_rounded,
-                size: 17),
-            label: Text(
-                _submitting ? 'Submitting…' : (last ? 'Submit paper' : 'Next')),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _questionView(LabAssessmentQuestion q) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,7 +264,6 @@ class _LabAssessmentPaperScreenState
                 height: 1.35)),
         const SizedBox(height: AppSpacing.lg),
         ..._answerWidgets(q),
-        _questionActions(),
       ],
     );
   }

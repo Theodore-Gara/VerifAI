@@ -8,8 +8,7 @@ import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/lab/providers.dart';
 import 'package:verifai/shared/models.dart';
-import 'package:verifai/shared/widgets/empty_state.dart';
-import 'package:verifai/shared/widgets/shimmer_loader.dart';
+import 'package:verifai/shared/widgets.dart';
 
 typedef _Block = ({bool heading, String text});
 
@@ -146,14 +145,12 @@ class _LabTopicReaderScreenState extends ConsumerState<LabTopicReaderScreen> {
           }
           final topic = topics[widget.index];
           final pages = _paginate(topic, detail.subtopicsOf(topic.id));
-          final isLastTopic = widget.index == topics.length - 1;
           return SafeArea(
             child: Column(
               children: [
                 Expanded(
                   child: PageView.builder(
                     controller: _pageController,
-                    physics: const NeverScrollableScrollPhysics(),
                     itemCount: pages.length,
                     onPageChanged: (i) {
                       if (i != _page) setState(() => _page = i);
@@ -205,83 +202,26 @@ class _LabTopicReaderScreenState extends ConsumerState<LabTopicReaderScreen> {
                                         style: AppTypography.textTheme.bodyLarge
                                             ?.copyWith(height: 1.6)),
                                   ),
-                          const SizedBox(height: AppSpacing.lg),
-                          _pageActions(context, pages.length, isLastTopic,
-                              detail.progress),
                         ],
                       ),
                     ),
                   ),
                 ),
+                PageIndicator(
+                  currentPage: _page,
+                  pageCount: pages.length,
+                  onPageSelected: (index) {
+                    _pageController.animateToPage(
+                      index,
+                      duration: const Duration(milliseconds: 260),
+                      curve: Curves.easeOut,
+                    );
+                  },
+                ),
               ],
             ),
           );
         },
-      ),
-    );
-  }
-
-  Future<void> _markReadAndAdvance(
-      LabProgress progress, bool isLastTopic) async {
-    final sectionsRead = progress.sectionsCompleted > widget.index + 1
-        ? progress.sectionsCompleted
-        : widget.index + 1;
-    await _recordRead(sectionsRead, progress.activitiesCompleted);
-    if (!mounted) return;
-    if (isLastTopic) {
-      if (context.canPop()) {
-        context.pop();
-      } else {
-        context.go('/ai-lab/lessons/${widget.code}');
-      }
-    } else {
-      context.pushReplacement(
-          '/ai-lab/lessons/${widget.code}/topic/${widget.index + 1}');
-    }
-  }
-
-  Widget _pageActions(BuildContext context, int pageCount, bool isLastTopic,
-      LabProgress progress) {
-    final onLastPage = _page == pageCount - 1;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Row(
-        children: [
-          OutlinedButton.icon(
-            onPressed: _page > 0
-                ? () => _pageController.previousPage(
-                    duration: const Duration(milliseconds: 260),
-                    curve: Curves.easeOut)
-                : null,
-            icon: const Icon(Icons.arrow_back_rounded, size: 17),
-            label: const Text('Back'),
-          ),
-          const Spacer(),
-          Text('${_page + 1} / $pageCount',
-              style: AppTypography.textTheme.labelMedium),
-          const Spacer(),
-          FilledButton.icon(
-            onPressed: () {
-              if (!onLastPage) {
-                _pageController.nextPage(
-                    duration: const Duration(milliseconds: 260),
-                    curve: Curves.easeOut);
-              } else {
-                _markReadAndAdvance(progress, isLastTopic);
-              }
-            },
-            icon: Icon(
-                onLastPage
-                    ? Icons.check_circle_outline_rounded
-                    : Icons.arrow_forward_rounded,
-                size: 17),
-            label: Text(onLastPage
-                ? (isLastTopic
-                    ? 'Mark as read & finish'
-                    : 'Mark as read & next topic')
-                : 'Next'),
-          ),
-        ],
       ),
     );
   }

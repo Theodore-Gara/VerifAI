@@ -1,17 +1,17 @@
 # Graph Report - VerifAI  (2026-10-15)
 
 ## Corpus Check
-- 313 files · ~226,848 words
+- 313 files · ~226,876 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 60 file(s) not represented in the graph (top: (none) 14, .xml 9, .plist 8)
 
 ## Summary
-- 3131 nodes · 4608 edges · 245 communities (149 shown, 96 thin omitted)
+- 3132 nodes · 4610 edges · 240 communities (144 shown, 96 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 140 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `135ddf7e`
+- Built from commit: `acdd9839`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -38,7 +38,7 @@
 - auth/providers.dart
 - user.dart
 - win32_window.cpp
-- package:flutter/material.dart
+- app_typography.dart
 - nvidiaAssistant.js
 - VerifAI Backend — Beginner User Manual
 - dashboard_data.dart
@@ -63,7 +63,7 @@
 - leaderboard.dart
 - tasksController.js
 - Endpoints
-- package:verifai/core/theme/app_colors.dart
+- reward_detail_screen.dart
 - manifest.json
 - task_screen.dart
 - MessageHandler
@@ -98,13 +98,13 @@
 - fromJson
 - fromJson
 - String?
-- package:flutter_test/flutter_test.dart
+- login_flow_test.dart
 - client.js
 - industry_practice_screen.dart
 - achievements.js
 - register_screen.dart
 - deploy
-- login_screen.dart
+- track_roadmap_screen.dart
 - package:flutter_riverpod/flutter_riverpod.dart
 - api_error.dart
 - Migrating off `railway.json` to Infrastructure as Code
@@ -122,7 +122,7 @@
 - auth_interceptor.dart
 - api.test.js
 - veraController.js
-- package:go_router/go_router.dart
+- package:flutter/material.dart
 - lab_navigation_test.dart
 - interviewController.js
 - scoringService.js
@@ -143,14 +143,14 @@
 - leaderboard.js
 - vera.dart
 - recovery_screen.dart
-- login_flow_test.dart
+- task_run_screen.dart
 - lab_lessons
 - interview_question.dart
 - VerifAI — Scoring Algorithm Review
 - P0 — Scoring metrics & readiness (canonical)
 - verifai_button.dart
 - usersController.js
-- String?
+- apiClientProvider
 - MessageHandler
 - industry_tracks
 - scoreboard_screen.dart
@@ -167,7 +167,6 @@
 - toJson
 - plugin_registry
 - verification_tasks
-- _ProfileScreenState
 - track_repository.dart
 - Vera — AI assistant with memory
 - lab_capstone_assessments
@@ -181,8 +180,7 @@
 - learning_assistant_screen.dart
 - progress_screen.dart
 - assistantController.js
-- apiClientProvider
-- industry_practice.dart
+- String?
 - verification_result_screen.dart
 - AI Judgement — work items
 - inline_markdown_text.dart
@@ -192,7 +190,6 @@
 - dashboard/providers.dart
 - build
 - yield
-- authNotifierProvider
 - c_users_theod_verifai_backend_services_llm_profiles_resolveprofile
 - package:verifai/features/product_hub/presentation/product_hub_screen.dart
 - @pragma
@@ -200,7 +197,6 @@
 - LabActivity
 - LabActivityResult?
 - LabAssessmentResult
-- Route /dashboard
 - flutter_window.h
 - c_users_theod_verifai_backend_services_llm_prompts_memory_kinds
 - Point
@@ -211,7 +207,6 @@
 - c_users_theod_verifai_backend_services_scoringservice_scorecriteria
 - c_users_theod_verifai_backend_services_scoringservice_scoreflawlines
 - c_users_theod_verifai_backend_services_scoringservice_scoreoptions
-- progress/providers.dart
 - AudioPlayer
 - dart:isolate
 - FlutterTts
@@ -255,7 +250,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (245 total, 96 thin omitted)
+## Communities (240 total, 96 thin omitted)
 
 ### Community 0 - "package.json"
 Cohesion: 0.08
@@ -334,16 +329,16 @@ Cohesion: 0.06
 Nodes (38): AsyncNotifier, core/router/app_router.dart, core/theme/app_theme.dart, firebase_options.dart, FutureProvider, routerProvider, apiClient, auth (+30 more)
 
 ### Community 20 - "user.dart"
-Cohesion: 0.09
-Nodes (22): @freezed, AuthResult, bool get, createdAt, email, hasCompletedOnboarding, hashCode, id (+14 more)
+Cohesion: 0.11
+Nodes (18): bool get, createdAt, email, hasCompletedOnboarding, hashCode, id, name, operator (+10 more)
 
 ### Community 21 - "win32_window.cpp"
 Cohesion: 0.16
 Nodes (15): dwmapi, wchar_t, Scale(), Create, Destroy, SetQuitOnClose, Show, UpdateTheme (+7 more)
 
-### Community 22 - "package:flutter/material.dart"
+### Community 22 - "app_typography.dart"
 Cohesion: 0.15
-Nodes (12): app_colors.dart, app_radius.dart, app_spacing.dart, app_typography.dart, AppTheme, AppTypography, _heading, _inter (+4 more)
+Nodes (11): app_colors.dart, app_radius.dart, app_spacing.dart, app_typography.dart, AppTheme, AppTypography, _heading, _inter (+3 more)
 
 ### Community 23 - "nvidiaAssistant.js"
 Cohesion: 0.09
@@ -354,8 +349,8 @@ Cohesion: 0.08
 Nodes (24): 10. How the attempt flow works, 11. GitHub — safest beginner workflow, 12. Railway deployment, 13. Common problems, 14. What must never be committed, 15. Final pre-submission checklist, 1. What this backend does, 2. Important project rule (+16 more)
 
 ### Community 25 - "dashboard_data.dart"
-Cohesion: 0.08
-Nodes (24): completedTasks, currentXp, dailyTask, dimensionScores, hashCode, level, operator, overallScore (+16 more)
+Cohesion: 0.09
+Nodes (21): completedTasks, currentXp, dailyTask, dimensionScores, hashCode, level, operator, overallScore (+13 more)
 
 ### Community 26 - "api_client.dart"
 Cohesion: 0.03
@@ -390,16 +385,16 @@ Cohesion: 0.04
 Nodes (52): api_client.dart, FirebaseAuth, addVeraMemory, analyzeVerification, _authHeaders, deleteAccount, deleteVeraMemory, _dio (+44 more)
 
 ### Community 34 - "choice_task_screen.dart"
-Cohesion: 0.05
-Nodes (36): build, _buildTask, _canSubmit, categoryLabel, _choiceTile, createState, _decisionId, decisionPrompt (+28 more)
+Cohesion: 0.09
+Nodes (22): build, _buildTask, _canSubmit, categoryLabel, ChoiceTaskScreen, _ChoiceTaskScreenState, _choiceTile, createState (+14 more)
 
 ### Community 35 - "feedback_screen.dart"
 Cohesion: 0.06
-Nodes (32): correctAnswer, _didPass, dimensionScores, feedback, FeedbackResult, _headline, label, matched (+24 more)
+Nodes (38): dashboardProvider, build, correctAnswer, _didPass, dimensionScores, feedback, FeedbackResult, FeedbackScreen (+30 more)
 
 ### Community 36 - "StatelessWidget"
-Cohesion: 0.10
-Nodes (23): _TaskContext, AuthBrandHeader, _ConceptChip, FeedbackEmptyScreen, LabHomeScreen, _WebSearchButton, actionLabel, actionVariant (+15 more)
+Cohesion: 0.07
+Nodes (30): _TaskContext, _ConceptChip, FeedbackEmptyScreen, LabHomeScreen, _WebSearchButton, actionLabel, actionVariant, AsyncErrorView (+22 more)
 
 ### Community 37 - "app.js"
 Cohesion: 0.06
@@ -437,17 +432,17 @@ Nodes (25): awardAchievements(), clampInt(), DIMENSION_FEATURE, FEATURE_DIMENSIO
 Cohesion: 0.04
 Nodes (49): DELETE /api/workshop/posts/:id, Endpoints, GET /api/achievements, GET /api/achievements/me, GET /api/achievements/milestones, GET /api/health, GET /api/history, GET /api/interview/questions (+41 more)
 
-### Community 47 - "package:verifai/core/theme/app_colors.dart"
-Cohesion: 0.06
-Nodes (41): int?, build, subtitle, title, build, build, createState, _info (+33 more)
+### Community 47 - "reward_detail_screen.dart"
+Cohesion: 0.17
+Nodes (12): int?, build, createState, _info, _redeem, _redeeming, _remainingTokens, reward (+4 more)
 
 ### Community 48 - "manifest.json"
 Cohesion: 0.18
 Nodes (10): background_color, description, display, icons, name, orientation, prefer_related_applications, short_name (+2 more)
 
 ### Community 49 - "task_screen.dart"
-Cohesion: 0.07
-Nodes (30): Color, IconData, currentUserProvider, build, _Category, _CategoryCard, color, icon (+22 more)
+Cohesion: 0.11
+Nodes (17): Color, IconData, _Category, _CategoryCard, color, icon, route, subtitle (+9 more)
 
 ### Community 50 - "MessageHandler"
 Cohesion: 0.18
@@ -468,16 +463,16 @@ Cohesion: 0.12
 Nodes (15): app, assert, fakeClient, fetchLog, firebase, LESSON, pool, queries (+7 more)
 
 ### Community 53 - "onboarding/providers.dart"
-Cohesion: 0.15
-Nodes (15): build, _handleContinue, IndustrySelectScreen, _IndustrySelectScreenState, apiClient, getTracks, repository, secureStorage (+7 more)
+Cohesion: 0.16
+Nodes (14): build, _handleContinue, _IndustrySelectScreenState, apiClient, getTracks, repository, secureStorage, selectedTrackProvider (+6 more)
 
 ### Community 55 - "db-setup.js"
 Cohesion: 0.10
 Nodes (23): files, fs, path, roots, { spawnSync }, baseline(), crypto, DB_DIR (+15 more)
 
 ### Community 56 - "DailyTask"
-Cohesion: 0.25
-Nodes (8): @JsonSerializable, _, _, _, _, DailyTask, DailyTask, _DailyTask
+Cohesion: 0.13
+Nodes (15): @freezed, @JsonSerializable, AuthResult, _, _, _, _, DailyTask (+7 more)
 
 ### Community 58 - "generate_app_icons.py"
 Cohesion: 0.29
@@ -488,8 +483,8 @@ Cohesion: 0.13
 Nodes (15): idx_skill_scores_user, idx_task_attempts_user, idx_task_attempts_user_task, idx_tasks_track_difficulty, idx_user_achievements_user, set_updated_at, task_attempts, trg_skill_scores_updated_at (+7 more)
 
 ### Community 60 - "industry_select_screen.dart"
-Cohesion: 0.06
-Nodes (35): _buildDashboard, _buildQuickLaunches, _buildShimmer, createState, initState, _statTile, dashboardProvider, FeedbackScreen (+27 more)
+Cohesion: 0.07
+Nodes (27): _buildDashboard, _buildQuickLaunches, _buildShimmer, createState, initState, _statTile, _buildShimmerList, _buildTracksList (+19 more)
 
 ### Community 61 - "firebase.js"
 Cohesion: 0.12
@@ -519,37 +514,37 @@ Nodes (13): backend_services_veracontext, app, assert, { buildUserContext, descr
 Cohesion: 0.22
 Nodes (8): Core Deliverable 4 flow, Database, Documentation, Git workflow, Quick start, Security, Stack, VerifAI Backend — Deliverable 4
 
-### Community 86 - "package:flutter_test/flutter_test.dart"
-Cohesion: 0.10
-Nodes (20): dart:convert, main, main, main, main, testApp, main, _taskHarness (+12 more)
+### Community 86 - "login_flow_test.dart"
+Cohesion: 0.08
+Nodes (27): dart:convert, main, main, authStateChanges, completeOnboarding, getCurrentUser, _harness, login (+19 more)
 
 ### Community 87 - "client.js"
 Cohesion: 0.19
 Nodes (16): buildBody(), chatCompletion(), chatWithFallback(), llmError(), mapHttpError(), mapTransportError(), requireApiKey(), RETRYABLE_STATUS (+8 more)
 
 ### Community 88 - "industry_practice_screen.dart"
-Cohesion: 0.17
-Nodes (12): industryCasesProvider, _block, build, _card, createState, id, IndustryPracticeScreen, initState (+4 more)
+Cohesion: 0.15
+Nodes (15): industryCaseProvider, industryCasesProvider, _block, build, _card, createState, id, IndustryCaseDetailScreen (+7 more)
 
 ### Community 89 - "achievements.js"
 Cohesion: 0.19
 Nodes (12): buildMilestones(), getAchievements(), getCatalog(), getMilestones(), LEVEL_MILESTONES, pool, STREAK_MILESTONES, XP_MILESTONES (+4 more)
 
 ### Community 90 - "register_screen.dart"
-Cohesion: 0.12
-Nodes (17): _confirmPasswordController, createState, dispose, _emailController, _formKey, label, _nameController, _passwordController (+9 more)
+Cohesion: 0.07
+Nodes (32): AsyncValue, auth_brand_header.dart, auth_error_messages.dart, FormState, createState, dispose, _emailController, _formKey (+24 more)
 
 ### Community 91 - "deploy"
 Cohesion: 0.25
 Nodes (7): deploy, healthcheckPath, healthcheckTimeout, restartPolicyMaxRetries, restartPolicyType, startCommand, $schema
 
-### Community 92 - "login_screen.dart"
-Cohesion: 0.14
-Nodes (14): AsyncValue, auth_brand_header.dart, auth_error_messages.dart, FormState, createState, dispose, _emailController, _formKey (+6 more)
+### Community 92 - "track_roadmap_screen.dart"
+Cohesion: 0.07
+Nodes (31): ConsumerWidget, historyProvider, labLessonProvider, currentUserProvider, build, HistoryScreen, build, LabChaptersScreen (+23 more)
 
 ### Community 93 - "package:flutter_riverpod/flutter_riverpod.dart"
-Cohesion: 0.08
-Nodes (26): historyProvider, industryCaseProvider, industryCasesProvider, watch, judgementTaskProvider, watch, achievementsProvider, apiClient (+18 more)
+Cohesion: 0.07
+Nodes (30): historyProvider, industryCaseProvider, industryCasesProvider, watch, judgementTaskProvider, watch, achievementsProvider, apiClient (+22 more)
 
 ### Community 94 - "api_error.dart"
 Cohesion: 0.06
@@ -560,8 +555,8 @@ Cohesion: 0.15
 Nodes (12): Before deployment, Current state, Deploy, Footguns, Migrating off `railway.json` to Infrastructure as Code, Optional: a real `DATABASE_URL` reference, Production verification, Railway Deployment Checklist (+4 more)
 
 ### Community 96 - "welcome_tutorial_screen.dart"
-Cohesion: 0.10
-Nodes (20): accent, _animationController, build, bullets, _completionKey, createState, description, dispose (+12 more)
+Cohesion: 0.09
+Nodes (21): accent, _animationController, build, bullets, _completionKey, createState, description, dispose (+13 more)
 
 ### Community 98 - "VerifAI Backend Audit — Deliverable 4"
 Cohesion: 0.40
@@ -569,7 +564,7 @@ Nodes (4): Existing gaps found, Quality improvements included, VerifAI Backend A
 
 ### Community 99 - "profile_screen.dart"
 Cohesion: 0.08
-Nodes (25): authNotifierProvider, _Badge, _badgeCatalog, _BadgeSpec, _buildAchievements, _buildBadgeGrid, _buildModernBadgeTile, _buildStatsRow (+17 more)
+Nodes (27): authNotifierProvider, _Badge, _badgeCatalog, _BadgeSpec, _buildAchievements, _buildBadgeGrid, _buildModernBadgeTile, _buildStatsRow (+19 more)
 
 ### Community 100 - "pull_request_template.md"
 Cohesion: 0.40
@@ -580,8 +575,8 @@ Cohesion: 0.14
 Nodes (12): backend_services_activitygrading, ACTIVITY, app, assert, fakeClient, firebase, { gradeActivity }, LESSON (+4 more)
 
 ### Community 108 - "ConsumerState"
-Cohesion: 0.16
-Nodes (17): ConsumerState, ConsumerStatefulWidget, industryCaseProvider, DashboardScreen, _DashboardScreenState, IndustryCaseDetailScreen, _IndustryCaseDetailScreenState, ChoiceTaskScreen (+9 more)
+Cohesion: 0.24
+Nodes (11): ConsumerState, ConsumerStatefulWidget, LoginScreen, _LoginScreenState, RegisterScreen, _RegisterScreenState, DashboardScreen, _DashboardScreenState (+3 more)
 
 ### Community 109 - "auth_interceptor.dart"
 Cohesion: 0.11
@@ -595,9 +590,9 @@ Nodes (31): app, assert, DECISION_OPTIONS, fakeClient, firebase, LEADERBOARD_ROW
 Cohesion: 0.09
 Nodes (33): addMemory(), { assembleContext, shouldCompact, compactSession }, { buildUserContext, describeContext, buildTips, buildAppKnowledge, buildAttemptAnswers }, chat(), compactionInFlight, CONTEXTS, deleteMemory(), getSession() (+25 more)
 
-### Community 112 - "package:go_router/go_router.dart"
-Cohesion: 0.07
-Nodes (40): ConsumerWidget, historyProvider, labLessonProvider, build, _date, HistoryScreen, _label, _tile (+32 more)
+### Community 112 - "package:flutter/material.dart"
+Cohesion: 0.06
+Nodes (51): labAssessmentsProvider, _returnToFeature, AuthBrandHeader, build, subtitle, title, _date, _label (+43 more)
 
 ### Community 113 - "lab_navigation_test.dart"
 Cohesion: 0.25
@@ -620,8 +615,8 @@ Cohesion: 0.14
 Nodes (13): List, activity, ActivityDay, attempts, date, days, fromJson, _int (+5 more)
 
 ### Community 118 - "interview_practice_screen.dart"
-Cohesion: 0.15
-Nodes (14): class, _block, build, _buildCard, _buildList, createState, _expanded, InterviewPracticeScreen (+6 more)
+Cohesion: 0.12
+Nodes (18): class, apiClientProvider, reconnectApp, _block, build, _buildCard, _buildList, createState (+10 more)
 
 ### Community 119 - "capstone.test.js"
 Cohesion: 0.11
@@ -629,11 +624,11 @@ Nodes (17): backend_services_capstonemarking, app, assert, ASSESSMENT, attempt, 
 
 ### Community 120 - "assessment_paper_screen.dart"
 Cohesion: 0.06
-Nodes (33): LabAssessmentStart, _answers, _answerWidgets, args, build, _buildPayload, _caseStudy, code (+25 more)
+Nodes (35): LabAssessmentStart, _answers, _answerWidgets, args, build, _buildPayload, _caseStudy, code (+27 more)
 
 ### Community 121 - "main_nav_shell.dart"
-Cohesion: 0.12
-Nodes (16): dart:ui, build, _buildNavItem, createState, _currentIndex, initialIndex, initState, MainNavShell (+8 more)
+Cohesion: 0.13
+Nodes (14): dart:ui, build, _buildNavItem, createState, _currentIndex, initialIndex, initState, _onItemTapped (+6 more)
 
 ### Community 122 - "scoring.test.js"
 Cohesion: 0.15
@@ -676,12 +671,12 @@ Cohesion: 0.07
 Nodes (29): body, content, context, createdAt, fromAssistant, fromJson, id, kind (+21 more)
 
 ### Community 132 - "recovery_screen.dart"
-Cohesion: 0.15
-Nodes (12): build, _busy, createState, dispose, _email, _error, forgotEmail, _sendReset (+4 more)
+Cohesion: 0.14
+Nodes (14): build, _busy, createState, dispose, _email, _error, forgotEmail, RecoveryScreen (+6 more)
 
-### Community 133 - "login_flow_test.dart"
-Cohesion: 0.17
-Nodes (11): authStateChanges, completeOnboarding, getCurrentUser, _harness, login, logout, main, register (+3 more)
+### Community 133 - "task_run_screen.dart"
+Cohesion: 0.10
+Nodes (20): build, _buildLineTextAnswer, _buildOption, createState, _dimensionLabel, dispose, _fixController, _flawCard (+12 more)
 
 ### Community 134 - "lab_lessons"
 Cohesion: 0.14
@@ -700,16 +695,16 @@ Cohesion: 0.33
 Nodes (6): AI Readiness Passport unlock (FR8), P0 — Scoring metrics & readiness (canonical), Readiness score (the single 0-100 score), Scoring metrics (per feature), Tiers (derived from readiness), XP level curve (cosmetic)
 
 ### Community 138 - "verifai_button.dart"
-Cohesion: 0.12
-Nodes (15): build, createState, height, isFullWidth, isLoading, _isPressed, label, leadingIcon (+7 more)
+Cohesion: 0.08
+Nodes (22): build, DailyTaskCard, isLoading, _maxXp, onStart, task, build, createState (+14 more)
 
 ### Community 139 - "usersController.js"
 Cohesion: 0.08
 Nodes (26): { clampInt }, { findUserByFirebaseUid }, getHistory(), pool, AVATAR_MIME, { findUserByFirebaseUid }, getAvatar(), { getFirebaseAuth } (+18 more)
 
-### Community 140 - "String?"
-Cohesion: 0.22
-Nodes (8): Achievement, code, description, earnedAt, fromJson, id, name, String?
+### Community 140 - "apiClientProvider"
+Cohesion: 0.25
+Nodes (8): apiClientProvider, _continueToNextTask, _loadHistory, _send, _start, _recordRead, _openSession, _send
 
 ### Community 141 - "MessageHandler"
 Cohesion: 0.36
@@ -720,8 +715,8 @@ Cohesion: 0.24
 Nodes (11): idx_interview_questions_track, interview_practice, interview_questions, industry_tracks, seed_choice_task(), seed_interview(), seed_verification(), seed_verification_text() (+3 more)
 
 ### Community 143 - "scoreboard_screen.dart"
-Cohesion: 0.14
-Nodes (13): _buildBoard, _buildEliteSpot, _buildLeaderboardTile, _buildShimmer, _buildStandingBanner, _buildTopPerformersHeader, _buildTopPerformersShowcase, createState (+5 more)
+Cohesion: 0.10
+Nodes (24): achievementsProvider, currentUserProvider, leaderboardProvider, build, build, _buildContent, build, _buildBoard (+16 more)
 
 ### Community 144 - "users"
 Cohesion: 0.16
@@ -744,20 +739,16 @@ Cohesion: 0.20
 Nodes (11): idx_task_attempts_user, idx_task_attempts_user_task, idx_task_options_task, idx_tasks_feature_track, idx_verification_tasks_difficulty, judgement_tasks, risk_governance_tasks, task_attempts (+3 more)
 
 ### Community 149 - "State"
-Cohesion: 0.27
-Nodes (10): RecoveryScreen, _RecoveryScreenState, WelcomeTutorialScreen, _WelcomeTutorialScreenState, VerifAIButton, _VerifAIButtonState, VerifAIInput, _VerifAIInputState (+2 more)
+Cohesion: 0.24
+Nodes (11): MainNavShell, _MainNavShellState, WelcomeTutorialScreen, _WelcomeTutorialScreenState, VerifAIButton, _VerifAIButtonState, VerifAIInput, _VerifAIInputState (+3 more)
 
 ### Community 150 - "VerifAI Backend API"
 Cohesion: 0.20
 Nodes (9): Authentication, Database setup, Error format, GET /api/industry-practice/cases, GET /api/industry-practice/cases/:id, Industry Practice, POST /api/industry-practice/cases/:id/read, Scoring (+1 more)
 
-### Community 173 - "_ProfileScreenState"
-Cohesion: 0.16
-Nodes (18): achievementsProvider, activityProvider, currentUserProvider, dashboardProvider, leaderboardProvider, build, build, ProfileScreen (+10 more)
-
 ### Community 174 - "track_repository.dart"
-Cohesion: 0.13
-Nodes (16): ApiClient, MockApiClient, SecureStorageService, _apiClient, DashboardRepository, getDashboard, MockDashboardRepository, refreshDashboard (+8 more)
+Cohesion: 0.20
+Nodes (10): ApiClient, MockApiClient, SecureStorageService, _apiClient, getTracks, MockTrackRepository, _secureStorage, selectTrack (+2 more)
 
 ### Community 175 - "Vera — AI assistant with memory"
 Cohesion: 0.25
@@ -792,24 +783,20 @@ Cohesion: 0.18
 Nodes (11): dependencies, cors, dotenv, express, express-rate-limit, firebase-admin, helmet, mammoth (+3 more)
 
 ### Community 185 - "learning_assistant_screen.dart"
-Cohesion: 0.09
-Nodes (25): apiClientProvider, _continueToNextTask, build, _composer, _conversation, createState, dispose, initState (+17 more)
+Cohesion: 0.10
+Nodes (19): build, _composer, _conversation, createState, dispose, initState, _input, LearningAssistantScreen (+11 more)
 
 ### Community 186 - "progress_screen.dart"
-Cohesion: 0.20
-Nodes (9): _buildShimmer, _buildWeeklyChart, _leaderboardCard, _statTile, _xpForLevel, package:verifai/features/progress/providers.dart, package:verifai/shared/widgets/dimension_index_card.dart, package:verifai/shared/widgets/xp_bar.dart (+1 more)
+Cohesion: 0.16
+Nodes (13): activityProvider, dashboardProvider, build, _buildShimmer, _buildWeeklyChart, _leaderboardCard, ProgressScreen, _statTile (+5 more)
 
 ### Community 187 - "assistantController.js"
 Cohesion: 0.36
 Nodes (6): { getAssistantReply }, pool, { positiveIntegerParam, requiredString }, sendMessage(), validateMessages(), requiredString()
 
-### Community 189 - "apiClientProvider"
-Cohesion: 0.33
-Nodes (6): apiClientProvider, reconnectApp, _reveal, _submit, _handleSubmit, Route /feedback
-
-### Community 190 - "industry_practice.dart"
-Cohesion: 0.18
-Nodes (10): cause, fromJson, id, IndustryCase, read, scenario, solution, sourceTitle (+2 more)
+### Community 190 - "String?"
+Cohesion: 0.10
+Nodes (18): Achievement, code, description, earnedAt, fromJson, id, name, cause (+10 more)
 
 ### Community 191 - "verification_result_screen.dart"
 Cohesion: 0.20
@@ -820,28 +807,20 @@ Cohesion: 0.29
 Nodes (7): AI Judgement — work items, AJ-B1 — Schema: options table, AJ-B2 — Migration, AJ-B3 — `getNextTask`: dimension filter + options, AJ-B4 — `submitAttempt`: two-part scoring path, AJ-B5 — Content: 5 tasks per track, AJ-B6 — Tests
 
 ### Community 193 - "inline_markdown_text.dart"
-Cohesion: 0.13
-Nodes (13): _align, build, _codeBackground, _codeBorder, data, InlineMarkdownText, style, textAlign (+5 more)
+Cohesion: 0.18
+Nodes (10): _align, build, _codeBackground, _codeBorder, data, InlineMarkdownText, style, textAlign (+2 more)
 
 ### Community 196 - "lab/providers.dart"
-Cohesion: 0.20
-Nodes (9): int get, assessmentAnalysisProvider, AssessmentKey, assessmentPaperProvider, attemptId, code, hashCode, labLessonProvider (+1 more)
+Cohesion: 0.18
+Nodes (10): int get, assessmentAnalysisProvider, AssessmentKey, assessmentPaperProvider, attemptId, code, hashCode, labAssessmentsProvider (+2 more)
 
 ### Community 197 - "dashboard/providers.dart"
-Cohesion: 0.25
-Nodes (7): apiClient, dashboardRepositoryProvider, getDashboard, refreshDashboard, refreshDashboardProvider, repository, package:verifai/features/dashboard/data/dashboard_repository.dart
+Cohesion: 0.15
+Nodes (12): _apiClient, DashboardRepository, getDashboard, MockDashboardRepository, refreshDashboard, apiClient, dashboardRepositoryProvider, getDashboard (+4 more)
 
 ### Community 198 - "build"
 Cohesion: 0.50
 Nodes (4): build, Route /forgot-email, Route /forgot-password, Route /register
-
-### Community 200 - "authNotifierProvider"
-Cohesion: 0.40
-Nodes (5): _handleGoogleSignIn, _handleLogin, _handleGoogleSignIn, _handleRegister, authNotifierProvider
-
-### Community 218 - "Route /dashboard"
-Cohesion: 0.50
-Nodes (4): _returnToFeature, build, _finish, Route /dashboard
 
 ### Community 219 - "flutter_window.h"
 Cohesion: 0.39
@@ -855,13 +834,9 @@ Nodes (3): Point, x, y
 Cohesion: 0.50
 Nodes (3): Size, height, width
 
-### Community 229 - "progress/providers.dart"
-Cohesion: 0.40
-Nodes (4): activityProvider, apiClient, getActivity, ActivityData
-
 ## Knowledge Gaps
-- **1798 isolated node(s):** `RETRYABLE_STATUS`, `MODELS`, `PROFILES`, `assert`, `{ test }` (+1793 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2118 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **1798 isolated node(s):** `PaperArgs`, `code`, `start`, `args`, `_pageController` (+1793 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2117 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **96 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
@@ -870,10 +845,10 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `coach()` connect `nvidiaAssistant.js` to `labController.js`, `verificationController.js`, `assistantController.js`, `Vera — AI assistant with memory`?**
   _High betweenness centrality (0.009) - this node is a cross-community bridge._
 - **Why does `POST /api/vera/chat` connect `Vera — AI assistant with memory` to `nvidiaAssistant.js`?**
-  _High betweenness centrality (0.008) - this node is a cross-community bridge._
+  _High betweenness centrality (0.009) - this node is a cross-community bridge._
 - **Why does `Vera — AI assistant with memory` connect `Vera — AI assistant with memory` to `VerifAI Backend API`?**
-  _High betweenness centrality (0.008) - this node is a cross-community bridge._
-- **What connects `RETRYABLE_STATUS`, `MODELS`, `PROFILES` to the rest of the system?**
+  _High betweenness centrality (0.009) - this node is a cross-community bridge._
+- **What connects `PaperArgs`, `code`, `start` to the rest of the system?**
   _1798 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `package.json` be split into smaller, more focused modules?**
   _Cohesion score 0.08333333333333333 - nodes in this community are weakly interconnected._
