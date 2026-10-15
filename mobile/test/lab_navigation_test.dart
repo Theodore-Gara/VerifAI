@@ -8,7 +8,7 @@ import 'package:verifai/features/lab/presentation/topic_reader_screen.dart';
 import 'package:verifai/shared/models.dart';
 
 void main() {
-  testWidgets('lesson reader next button advances pages', (tester) async {
+  testWidgets('lesson reader advances pages', (tester) async {
     await tester.pumpWidget(ProviderScope(
       overrides: [apiClientProvider.overrideWithValue(_LabApi())],
       child: const MaterialApp(
@@ -17,12 +17,13 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    expect(find.text('1 / 2'), findsOneWidget);
-    await tester.tap(find.text('Next'));
+    expect(find.text('Topic one'), findsOneWidget);
+    expect(find.text('Mark as read & finish'), findsNothing);
+
+    await tester.drag(find.byType(PageView), const Offset(-600, 0));
     await tester.pumpAndSettle();
 
-    expect(find.text('2 / 2'), findsOneWidget);
-    expect(find.text('Back'), findsOneWidget);
+    expect(find.text('Mark as read & finish'), findsOneWidget);
   });
 
   testWidgets('assessment paper next button advances questions',
@@ -56,7 +57,8 @@ void main() {
                   prompt: 'First question',
                   marks: 1,
                   payload: {
-                    'options': ['A', 'B']
+                    'options': ['A', 'B'],
+                    'question_no': 1,
                   },
                 ),
                 LabAssessmentQuestion(
@@ -64,6 +66,7 @@ void main() {
                   type: 'true_false',
                   prompt: 'Second question',
                   marks: 1,
+                  payload: {'question_no': 2},
                 ),
               ],
             ),
@@ -76,7 +79,7 @@ void main() {
     expect(find.text('Question 1 of 2'), findsOneWidget);
     expect(find.text('Section A · Application'), findsOneWidget);
     expect(find.text('Case study X'), findsOneWidget);
-    await tester.tap(find.text('Next'));
+    await tester.drag(find.byType(PageView), const Offset(-600, 0));
     await tester.pumpAndSettle();
 
     expect(find.text('Question 2 of 2'), findsOneWidget);

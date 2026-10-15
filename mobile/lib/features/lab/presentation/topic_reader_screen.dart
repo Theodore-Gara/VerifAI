@@ -202,6 +202,7 @@ class _LabTopicReaderScreenState extends ConsumerState<LabTopicReaderScreen> {
                                         style: AppTypography.textTheme.bodyLarge
                                             ?.copyWith(height: 1.6)),
                                   ),
+                          if (i == pages.length - 1) _markReadButton(detail.progress, widget.index == topics.length - 1),
                         ],
                       ),
                     ),
@@ -224,5 +225,39 @@ class _LabTopicReaderScreenState extends ConsumerState<LabTopicReaderScreen> {
         },
       ),
     );
+  }
+
+  Widget _markReadButton(LabProgress progress, bool isLastTopic) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, 0, AppSpacing.screenPadding, AppSpacing.md),
+      child: FilledButton.icon(
+        onPressed: () => _markReadAndAdvance(progress, isLastTopic),
+        icon: const Icon(Icons.check_circle_outline_rounded, size: 17),
+        label: Text(isLastTopic ? 'Mark as read & finish' : 'Mark as read & next topic'),
+        style: FilledButton.styleFrom(
+          minimumSize: const Size.fromHeight(48),
+          backgroundColor: AppColors.accentGreen,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _markReadAndAdvance(
+      LabProgress progress, bool isLastTopic) async {
+    final sectionsRead = progress.sectionsCompleted > widget.index + 1
+        ? progress.sectionsCompleted
+        : widget.index + 1;
+    await _recordRead(sectionsRead, progress.activitiesCompleted);
+    if (!mounted) return;
+    if (isLastTopic) {
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/ai-lab/lessons/${widget.code}');
+      }
+    } else {
+      context.pushReplacement(
+          '/ai-lab/lessons/${widget.code}/topic/${widget.index + 1}');
+    }
   }
 }
