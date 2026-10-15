@@ -23,6 +23,10 @@ class LabAssessmentsScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.go('/ai-lab'),
+        ),
         title: Text('Assessments',
             style: AppTypography.textTheme.titleLarge
                 ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),

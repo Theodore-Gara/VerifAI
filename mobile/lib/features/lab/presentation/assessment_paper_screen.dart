@@ -160,6 +160,10 @@ class _LabAssessmentPaperScreenState
           backgroundColor: AppColors.background,
           surfaceTintColor: Colors.transparent,
           automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: _confirmExit,
+          ),
           title: Text('Assessment paper',
               style: AppTypography.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
