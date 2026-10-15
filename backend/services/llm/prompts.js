@@ -46,7 +46,7 @@ function coachSystem(lesson) {
 }
 
 // Vera with memory: the learner profile is injected so coaching is personalised.
-function veraSystem({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers, webResults }) {
+function veraSystem({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers, webResults, trackName, accountCreatedAt, leaderboard, tokens }) {
   return [
     'You are Vera, VerifAI\'s friendly, professional AI assistant. You coach people to work with AI responsibly and to build workplace readiness.',
     'Be warm but professional, concise and evidence-first. Never invent sources or citations.',
@@ -57,6 +57,8 @@ function veraSystem({ userName, contextText, memories, contextName, appKnowledge
     'The learner\'s tier (Novice, Developing, Proficient or Advanced) is derived from their 0-100 readiness score: higher readiness means a higher tier. Reference their tier and readiness where it helps.',
     contextName ? `Current surface: ${contextName}.` : '',
     userName ? `The learner is ${userName}.` : '',
+    trackName ? `Industry track: ${trackName}.` : '',
+    accountCreatedAt ? `Account created: ${accountCreatedAt}.` : '',
     'Learner profile:',
     contextText || 'No activity recorded yet.',
     memories && memories.length ? `Remembered about the learner:\n- ${memories.join('\n- ')}` : '',
@@ -64,6 +66,8 @@ function veraSystem({ userName, contextText, memories, contextName, appKnowledge
     attemptAnswers && attemptAnswers.length
       ? `The learner's recent attempts (share the correct answer freely if asked, with no gating):\n${attemptAnswers.join('\n')}`
       : '',
+    leaderboard ? leaderboardSection(leaderboard) : '',
+    tokens ? tokenSection(tokens) : '',
     webResults && webResults.length
       ? `Live web search results for the learner's request (cite these by title/URL):\n${webResults
           .map((r, i) => `${i + 1}. ${r.title} — ${r.url}\n   ${r.content}`)
@@ -73,6 +77,53 @@ function veraSystem({ userName, contextText, memories, contextName, appKnowledge
   ]
     .filter(Boolean)
     .join('\n');
+}
+
+function leaderboardSection(lb) {
+  const lines = [`Leaderboard:`];
+  if (lb.globalRank) lines.push(`- Global rank: ${lb.globalRank}`);
+  if (lb.trackRank && lb.trackTotal) lines.push(`- ${lb.trackName || 'Your industry track'} rank: ${lb.trackRank} of ${lb.trackTotal}`);
+  if (lb.peers && lb.peers.length) {
+    lines.push('- Nearby peers in your track:');
+    for (const p of lb.peers.slice(0, 8)) {
+      lines.push(`  ${p.rank}. ${p.display_name} — ${p.xp} XP, ${p.readiness_score}% readiness, ${p.tier}`);
+    }
+  }
+  return lines.join('\n');
+}
+
+function tokenSection(t) {
+  const lines = [`Token system:`];
+  lines.push('- Tokens are earned when you level up (per level), complete achievements, or finish capstone assessments.');
+  lines.push('- Tokens are spent on rewards in the Rewards catalog.');
+  lines.push(`- Your current balance: ${t.tokens} tokens.`);
+  if (t.events && t.events.length) {
+    lines.push('- Recent token activity:');
+    for (const e of t.events) {
+      const desc = tokenEventDescription(e);
+      lines.push(`  ${new Date(e.created_at).toLocaleDateString()}: ${desc}`);
+    }
+  }
+  return lines.join('\n');
+}
+
+function tokenEventDescription(e) {
+  const absDelta = Math.abs(e.delta);
+  const sign = e.delta > 0 ? '+' : '-';
+  switch (e.reason) {
+    case 'level_up':
+      return `Earned ${sign}${absDelta} tokens for reaching a new level (ref: ${e.ref})`;
+    case 'achievement':
+      return `Earned ${sign}${absDelta} tokens for an achievement (ref: ${e.ref})`;
+    case 'capstone':
+      return `Earned ${sign}${absDelta} tokens for completing a capstone (ref: ${e.ref})`;
+    case 'redemption':
+      return `Spent ${sign}${absDelta} tokens redeeming a reward (ref: ${e.ref})`;
+    case 'adjustment':
+      return `Token adjustment ${sign}${absDelta} (ref: ${e.ref})`;
+    default:
+      return `Token ${sign}${absDelta} (${e.reason}, ref: ${e.ref})`;
+  }
 }
 
 const ANALYSIS_KINDS = {

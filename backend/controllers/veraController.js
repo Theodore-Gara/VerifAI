@@ -1,7 +1,7 @@
 const pool = require('../db/pool');
 const { positiveIntegerParam, clampInt } = require('../middleware/validate');
 const { getVeraReply, streamVeraReply, extractMemories } = require('../services/nvidiaAssistant');
-const { buildUserContext, describeContext, buildTips, buildAppKnowledge, buildAttemptAnswers } = require('../services/veraContext');
+const { buildUserContext, describeContext, buildTips, buildAppKnowledge, buildAttemptAnswers, buildLeaderboardContext, buildTokenContext } = require('../services/veraContext');
 const { webSearch } = require('../services/tavily');
 const { MEMORY_KINDS, veraSystem } = require('../services/llm/prompts');
 const { assembleContext, shouldCompact, compactSession } = require('../services/chatCompaction');
@@ -22,7 +22,11 @@ const compactionInFlight = new Set();
 
 async function requireUser(res, req) {
   const result = await pool.query(
-    `SELECT id, industry_track_id, display_name FROM users WHERE firebase_uid = $1`,
+    `SELECT u.id, u.industry_track_id, u.display_name, u.created_at,
+            t.name AS track_name
+     FROM users u
+     LEFT JOIN industry_tracks t ON t.id = u.industry_track_id
+     WHERE u.firebase_uid = $1`,
     [req.firebaseUser.uid],
   );
   if (!result.rows.length) {
@@ -74,9 +78,11 @@ async function loadVeraInputs(user) {
     `SELECT kind, content FROM vera_memories WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 15`,
     [user.id],
   );
-  const [appKnowledge, attemptAnswers] = await Promise.all([
+  const [appKnowledge, attemptAnswers, leaderboard, tokens] = await Promise.all([
     buildAppKnowledge(pool, user.id, user.industry_track_id),
     buildAttemptAnswers(pool, user.id),
+    buildLeaderboardContext(pool, user.id, user.industry_track_id),
+    buildTokenContext(pool, user.id),
   ]);
   return {
     context,
@@ -84,6 +90,8 @@ async function loadVeraInputs(user) {
     memories: memResult.rows.map((m) => `${m.kind}: ${m.content}`),
     appKnowledge,
     attemptAnswers,
+    leaderboard,
+    tokens,
   };
 }
 
@@ -143,12 +151,16 @@ async function chat(req, res, next) {
 
     const system = veraSystem({
       userName: user.display_name,
+      trackName: user.track_name,
+      accountCreatedAt: user.created_at,
       contextText,
       memories,
       contextName,
       appKnowledge,
       attemptAnswers,
       webResults,
+      leaderboard,
+      tokens,
     });
 
     // Rebuild the context from stored history: the running summary covers the
