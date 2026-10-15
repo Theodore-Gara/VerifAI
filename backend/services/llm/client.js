@@ -40,7 +40,7 @@ function buildBody({ model, messages, temperature, topP, maxTokens, thinking, re
 }
 
 function mapTransportError(cause) {
-  if (cause && cause.name === 'TimeoutError') {
+  if (cause && (cause.name === 'TimeoutError' || cause.name === 'AbortError')) {
     return llmError(504, 'The AI service timed out or is unavailable.');
   }
   return llmError(502, 'The AI service is temporarily unavailable.');
@@ -67,6 +67,10 @@ async function chatCompletion(params, fetchImpl = fetch) {
   if (!response.ok) throw mapHttpError(response.status);
 
   const result = await response.json();
+  if (result && result.error) {
+    const code = Number(result.error.code) || 503;
+    throw llmError(RETRYABLE_STATUS.has(code) ? code : 502, result.error.message || 'The AI service returned an error.');
+  }
   const message = result.choices?.[0]?.message || {};
   return {
     content: typeof message.content === 'string' ? message.content.trim() : '',
@@ -91,19 +95,28 @@ async function chatWithFallback(params, fetchImpl = fetch) {
 }
 
 // Streams server-sent chunks. Yields { delta } for each content token and a
-// final { usage } when the provider reports it.
+// final { usage } when the provider reports it. Unlike the buffered call this
+// must NOT cap the whole response - a reply can stream for over a minute. The
+// timeout applies to the initial response only; after that a per-chunk idle
+// timeout catches a genuinely stalled stream.
 async function* streamChatCompletion(params, fetchImpl = fetch) {
   const key = requireApiKey();
+  const controller = new AbortController();
+  const headerTimeoutMs = params.timeoutMs || 30000;
+  const idleTimeoutMs = params.idleTimeoutMs || 60000;
+  const headerTimer = setTimeout(() => controller.abort(), headerTimeoutMs);
   let response;
   try {
     response = await fetchImpl(CHAT_URL, {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(buildBody({ ...params, stream: true })),
-      signal: AbortSignal.timeout(params.timeoutMs || 30000),
+      signal: controller.signal,
     });
   } catch (cause) {
     throw mapTransportError(cause);
+  } finally {
+    clearTimeout(headerTimer);
   }
   if (!response.ok) throw mapHttpError(response.status);
 
@@ -111,7 +124,22 @@ async function* streamChatCompletion(params, fetchImpl = fetch) {
   const decoder = new TextDecoder();
   let buffer = '';
   for (;;) {
-    const { done, value } = await reader.read();
+    let result;
+    let idleTimer;
+    try {
+      result = await Promise.race([
+        reader.read(),
+        new Promise((_, reject) => {
+          idleTimer = setTimeout(() => {
+            controller.abort();
+            reject(llmError(504, 'The AI service stalled.'));
+          }, idleTimeoutMs);
+        }),
+      ]);
+    } finally {
+      clearTimeout(idleTimer);
+    }
+    const { done, value } = result;
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split('\n');
@@ -127,6 +155,12 @@ async function* streamChatCompletion(params, fetchImpl = fetch) {
       } catch {
         continue;
       }
+      // The upstream can return HTTP 200 and put a failure in the stream body
+      // (e.g. {"error":{"message":"Service temporarily overloaded","code":503}}).
+      if (parsed.error) {
+        const code = Number(parsed.error.code) || 503;
+        throw llmError(RETRYABLE_STATUS.has(code) ? code : 502, parsed.error.message || 'The AI service returned an error.');
+      }
       const delta = parsed.choices?.[0]?.delta?.content;
       if (delta) yield { delta };
       if (parsed.usage) yield { usage: parsed.usage };
@@ -134,25 +168,39 @@ async function* streamChatCompletion(params, fetchImpl = fetch) {
   }
 }
 
-// Streaming fallback is only safe before the first token has been emitted, so
-// a mid-stream failure is surfaced rather than restarted.
+// Streaming fallback. A mid-stream failure after content cannot be restarted
+// (it would duplicate tokens), so it is surfaced. But if the primary produced
+// NO content - a stalled or overloaded upstream that returned an error frame or
+// an empty stream - we retry once on the fallback model instead of leaving the
+// caller with a silent empty reply.
 async function* streamWithFallback(params, fetchImpl = fetch) {
   const { fallbackModel, ...primary } = params;
+  const canFallback = fallbackModel && fallbackModel !== primary.model;
+
   let yielded = false;
+  let error = null;
   try {
     for await (const chunk of streamChatCompletion(primary, fetchImpl)) {
-      yielded = true;
+      if (chunk.delta) yielded = true;
       yield chunk;
     }
+  } catch (err) {
+    error = err;
+  }
+
+  if (yielded) {
+    if (error) throw error; // partial content already sent; surface the failure
     return;
-  } catch (error) {
-    if (yielded || !fallbackModel || fallbackModel === primary.model || !RETRYABLE_STATUS.has(error.status)) {
-      throw error;
-    }
   }
-  for await (const chunk of streamChatCompletion({ ...primary, model: fallbackModel }, fetchImpl)) {
-    yield chunk;
+
+  // Nothing was streamed. Retry on the fallback when the failure is retryable.
+  if (!canFallback) {
+    if (error) throw error;
+    throw llmError(502, 'The AI service returned an empty response.');
   }
+  if (error && !RETRYABLE_STATUS.has(error.status)) throw error;
+
+  yield* streamChatCompletion({ ...primary, model: fallbackModel }, fetchImpl);
 }
 
 module.exports = {

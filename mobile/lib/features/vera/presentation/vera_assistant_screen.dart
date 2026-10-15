@@ -105,8 +105,8 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
     });
     _scrollToBottom();
 
+    final buffer = StringBuffer();
     try {
-      final buffer = StringBuffer();
       await for (final delta in ref.read(apiClientProvider).streamVeraMessage(
             sessionId: _sessionId,
             messages: requestMessages,
@@ -129,12 +129,19 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _messages.removeLast();
-        _input.text = text;
+        // Keep whatever arrived if Vera had started replying; otherwise put the
+        // learner's text back so they can resend it.
+        if (buffer.isNotEmpty) {
+          _messages.add(
+              AssistantMessage(role: 'assistant', content: buffer.toString()));
+        } else {
+          _messages.removeLast();
+          _input.text = text;
+        }
         _streaming = '';
       });
       showFeedback(context, FeedbackKind.error,
-          kDebugMode ? 'Vera could not respond: $e' : 'Vera could not respond. Try again shortly.');
+          kDebugMode ? 'Vera could not respond: $e' : 'Vera could not finish that reply. Try again.');
     } finally {
       if (mounted) setState(() => _sending = false);
     }
