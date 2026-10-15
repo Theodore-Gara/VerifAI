@@ -9,3 +9,4 @@ export 'package:verifai/shared/widgets/daily_task_card.dart';
 export 'package:verifai/shared/widgets/empty_state.dart';
 export 'package:verifai/shared/widgets/xp_bar.dart';
 export 'package:verifai/shared/widgets/sample_data_banner.dart';
+export 'package:verifai/shared/widgets/page_indicator.dart';

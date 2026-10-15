@@ -146,14 +146,12 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
   }
 
   Widget _marksBreakdown(LabAssessmentPaper paper) {
-    // Group the questions under their section (falling back to a single list
-    // when a paper has no sections), with a per-section subtotal.
-    final groups = <String, List<LabAssessmentQuestion>>{};
+    // Group the sub-questions under their numbered Question (1..6) and show
+    // each question's total marks.
+    final groups = <int?, List<LabAssessmentQuestion>>{};
     for (final q in paper.questions) {
-      final key = (q.section == null || q.section!.isEmpty) ? '' : q.section!;
-      groups.putIfAbsent(key, () => []).add(q);
+      groups.putIfAbsent(q.questionNo, () => []).add(q);
     }
-    var number = 0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -161,68 +159,37 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
             style: AppTypography.textTheme.labelSmall
                 ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: .5)),
         const SizedBox(height: AppSpacing.sm),
-        for (final entry in groups.entries) ...[
-          if (entry.key.isNotEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(entry.key,
-                        style: AppTypography.textTheme.labelMedium
-                            ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
-                  ),
-                  Text('${entry.value.fold<int>(0, (s, q) => s + q.marks)} marks',
-                      style: AppTypography.textTheme.labelMedium
-                          ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.textSecondary)),
-                ],
-              ),
-            ),
-          ],
-          Container(
-            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.card),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              children: [
-                for (final q in entry.value)
-                  Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text('Q${++number}. ${_typeLabel(q.type)}'
-                              '${q.marking == 'rubric' ? ' · rubric-marked' : ''}',
-                              style: AppTypography.textTheme.bodyMedium),
-                        ),
-                        Text('${q.marks} marks',
-                            style: AppTypography.textTheme.labelMedium
-                                ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            border: Border.all(color: AppColors.border),
           ),
-        ],
+          child: Column(
+            children: [
+              for (final entry in groups.entries)
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          entry.key == null ? 'Question' : 'Question ${entry.key}',
+                          style: AppTypography.textTheme.bodyMedium,
+                        ),
+                      ),
+                      Text('${entry.value.fold<int>(0, (s, q) => s + q.marks)} marks',
+                          style: AppTypography.textTheme.labelMedium
+                              ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
       ],
     );
   }
-
-  String _typeLabel(String type) => switch (type) {
-        'multiple_choice' => 'Multiple choice',
-        'true_false' => 'True / false',
-        'numeric' => 'Calculation',
-        'multi_select' => 'Select all that apply',
-        'matching' => 'Matching',
-        'ordering' => 'Ordering',
-        'fill_blank' => 'Fill in the blank',
-        'extended_response' => 'Extended response',
-        _ => type,
-      };
 
   Widget _block(String label, String body) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -38,6 +38,10 @@ class LabHomeScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.go('/dashboard'),
+        ),
         title: Text('AI Lab',
             style: AppTypography.textTheme.titleLarge
                 ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),

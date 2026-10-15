@@ -12,6 +12,7 @@ import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/lab/presentation/assessment_instructions_screen.dart';
 import 'package:verifai/shared/models.dart';
+import 'package:verifai/shared/widgets.dart';
 
 class PaperArgs {
   const PaperArgs({required this.code, required this.start});
@@ -40,6 +41,23 @@ class _LabAssessmentPaperScreenState
   bool _submitted = false;
 
   List<LabAssessmentQuestion> get _questions => widget.args.start.questions;
+
+  /// Sub-questions grouped into numbered Questions (1..6). Each group is shown
+  /// on one scrollable page.
+  List<List<LabAssessmentQuestion>> get _groups {
+    final groups = <List<LabAssessmentQuestion>>[];
+    int? current;
+    for (final q in _questions) {
+      if (groups.isEmpty || q.questionNo != current) {
+        groups.add([q]);
+        current = q.questionNo;
+      } else {
+        groups.last.add(q);
+      }
+    }
+    return groups;
+  }
+
   String get _code => widget.args.code;
 
   @override
@@ -160,6 +178,10 @@ class _LabAssessmentPaperScreenState
           backgroundColor: AppColors.background,
           surfaceTintColor: Colors.transparent,
           automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: _confirmExit,
+          ),
           title: Text('Assessment paper',
               style: AppTypography.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
@@ -171,20 +193,50 @@ class _LabAssessmentPaperScreenState
               Expanded(
                 child: PageView.builder(
                   controller: _pageController,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _questions.length,
+                  itemCount: _groups.length,
                   onPageChanged: (i) {
                     if (i != _page) setState(() => _page = i);
                   },
                   itemBuilder: (context, i) => SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
                         AppSpacing.md, AppSpacing.screenPadding, AppSpacing.md),
-                    child: _questionView(_questions[i]),
+                    child: _groupView(_groups[i]),
                   ),
                 ),
               ),
+              PageIndicator(
+                currentPage: _page,
+                pageCount: _groups.length,
+                onPageSelected: (index) {
+                  _pageController.animateToPage(
+                    index,
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOut,
+                  );
+                },
+              ),
+              if (_page == _groups.length - 1) _submitButton(),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _submitButton() {
+    final last = _page == _groups.length - 1;
+    if (!last) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, 0, AppSpacing.screenPadding, AppSpacing.md),
+      child: FilledButton.icon(
+        onPressed: _submitting ? null : _submit,
+        icon: _submitting
+            ? const SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            : const Icon(Icons.check_rounded, size: 17),
+        label: Text(_submitting ? 'Submitting…' : 'Submit paper'),
+        style: FilledButton.styleFrom(
+          minimumSize: const Size.fromHeight(48),
+          backgroundColor: AppColors.primaryNavy,
         ),
       ),
     );
@@ -211,7 +263,7 @@ class _LabAssessmentPaperScreenState
                   color: critical ? AppColors.goldDark : Colors.white,
                   fontWeight: FontWeight.w900)),
           const Spacer(),
-          Text('Question ${_page + 1} of ${_questions.length}',
+          Text('Question ${_page + 1} of ${_groups.length}',
               style: AppTypography.textTheme.labelMedium?.copyWith(
                   color: critical ? AppColors.goldDark : Colors.white70)),
         ],
@@ -219,75 +271,51 @@ class _LabAssessmentPaperScreenState
     );
   }
 
-  Widget _questionActions() {
-    final last = _page == _questions.length - 1;
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.md),
-      child: Row(
-        children: [
-          OutlinedButton.icon(
-            onPressed: _page > 0
-                ? () => _pageController.previousPage(
-                    duration: const Duration(milliseconds: 260),
-                    curve: Curves.easeOut)
-                : null,
-            icon: const Icon(Icons.arrow_back_rounded, size: 17),
-            label: const Text('Back'),
-          ),
-          const Spacer(),
-          FilledButton.icon(
-            onPressed: _submitting
-                ? null
-                : () {
-                    if (last) {
-                      _submit();
-                    } else {
-                      _pageController.nextPage(
-                          duration: const Duration(milliseconds: 260),
-                          curve: Curves.easeOut);
-                    }
-                  },
-            icon: Icon(last ? Icons.check_rounded : Icons.arrow_forward_rounded,
-                size: 17),
-            label: Text(
-                _submitting ? 'Submitting…' : (last ? 'Submit paper' : 'Next')),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _questionView(LabAssessmentQuestion q) {
+  /// One numbered question: its scenario, any code sample(s) shown once, then
+  /// all of its sub-questions with their own answer inputs.
+  Widget _groupView(List<LabAssessmentQuestion> group) {
+    final first = group.first;
+    final groupMarks = group.fold<int>(0, (sum, q) => sum + q.marks);
+    final codes = <String, List<String>>{};
+    for (final q in group) {
+      if (q.codeLines.isNotEmpty) codes[q.codeLines.join('\n')] = q.codeLines;
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (q.section != null && q.section!.isNotEmpty) ...[
-          _sectionHeader(q.section!),
+        if (first.section != null && first.section!.isNotEmpty) ...[
+          _sectionHeader(first.section!),
           const SizedBox(height: AppSpacing.sm),
         ],
-        Text('${q.marks} marks',
+        Text('Question ${first.questionNo ?? ''} · $groupMarks marks',
             style: AppTypography.textTheme.labelMedium?.copyWith(
                 fontWeight: FontWeight.w800, color: AppColors.textSecondary)),
         const SizedBox(height: AppSpacing.sm),
-        if (q.scenario != null && q.scenario!.isNotEmpty) ...[
-          _scenario(q.scenario!),
+        if (first.scenario != null && first.scenario!.isNotEmpty) ...[
+          _scenario(first.scenario!),
           const SizedBox(height: AppSpacing.md),
         ] else if (widget.args.start.scenario != null) ...[
           _caseStudy(widget.args.start.scenario!),
           const SizedBox(height: AppSpacing.md),
         ],
-        if (q.codeLines.isNotEmpty) ...[
-          _codeBlock(q.codeLines),
+        for (final code in codes.values) ...[
+          _codeBlock(code),
           const SizedBox(height: AppSpacing.md),
         ],
-        Text(q.prompt,
-            style: AppTypography.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-                height: 1.35)),
-        const SizedBox(height: AppSpacing.lg),
-        ..._answerWidgets(q),
-        _questionActions(),
+        for (var i = 0; i < group.length; i++) ...[
+          Text(group[i].prompt,
+              style: AppTypography.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                  height: 1.35)),
+          const SizedBox(height: 4),
+          Text('${group[i].marks} marks',
+              style: AppTypography.textTheme.labelSmall
+                  ?.copyWith(color: AppColors.textSecondary)),
+          const SizedBox(height: AppSpacing.sm),
+          ..._answerWidgets(group[i]),
+          if (i < group.length - 1) const SizedBox(height: AppSpacing.lg),
+        ],
       ],
     );
   }

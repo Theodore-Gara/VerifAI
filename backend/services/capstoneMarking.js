@@ -53,10 +53,11 @@ function markQuestion(question, response) {
     case 'matching': {
       const mapping = correct.mapping || {};
       const keys = Object.keys(mapping);
-      const ok =
-        response && typeof response === 'object' && !Array.isArray(response) &&
-        keys.length > 0 && keys.every((key) => response[key] === mapping[key]);
-      return { awarded: ok ? max : 0, max, pending: false };
+      if (!keys.length) return { awarded: 0, max, pending: false };
+      const answered = response && typeof response === 'object' && !Array.isArray(response) ? response : {};
+      // Partial credit per correct pair (a 5-pair matching is worth its 5 marks).
+      const matched = keys.filter((key) => answered[key] === mapping[key]).length;
+      return { awarded: Math.min(max, Math.round((max * matched) / keys.length)), max, pending: false };
     }
     case 'ordering': {
       const order = Array.isArray(correct.order) ? correct.order : [];

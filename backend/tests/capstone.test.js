@@ -17,6 +17,19 @@ test('multi_select scores +2 per correct, -1 per wrong, floor 0', () => {
   assert.equal(markQuestion(q, [1, 3]).awarded, 0);
 });
 
+test('matching earns partial credit per correct pair', () => {
+  const q = {
+    type: 'matching',
+    marking: 'auto',
+    marks: 5,
+    correct: { mapping: { a: 'A', b: 'B', c: 'C', d: 'D', e: 'E' } },
+  };
+  assert.equal(markQuestion(q, { a: 'A', b: 'B', c: 'C', d: 'D', e: 'E' }).awarded, 5);
+  assert.equal(markQuestion(q, { a: 'A', b: 'B', c: 'X', d: 'X', e: 'X' }).awarded, 2);
+  assert.equal(markQuestion(q, {}).awarded, 0);
+  assert.equal(markQuestion(q, { a: 'A', b: 'B', c: 'C' }).awarded, 3);
+});
+
 test('extended_response is returned as pending, never auto-marked', () => {
   const q = { type: 'extended_response', marking: 'rubric', marks: 8, correct: null };
   assert.equal(markQuestion(q, 'anything').pending, true);

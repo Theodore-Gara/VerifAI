@@ -357,6 +357,14 @@ class LabAssessmentQuestion {
       .map((e) => Map<String, dynamic>.from(e as Map))
       .toList();
 
+  /// The numbered question this sub-question belongs to (1..6). Sub-questions
+  /// sharing a number are shown together on one page.
+  int? get questionNo {
+    final v = payload['question_no'];
+    if (v == null) return null;
+    return int.tryParse('$v');
+  }
+
   factory LabAssessmentQuestion.fromJson(Map<String, dynamic> json) => LabAssessmentQuestion(
         id: int.tryParse('${json['id']}') ?? 0,
         type: json['type'] as String? ?? 'multiple_choice',
