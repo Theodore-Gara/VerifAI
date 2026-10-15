@@ -68,6 +68,7 @@ function veraSystem({ userName, contextText, memories, contextName, appKnowledge
       : '',
     leaderboard ? leaderboardSection(leaderboard) : '',
     tokens ? tokenSection(tokens) : '',
+    scoringSection(),
     webResults && webResults.length
       ? `Live web search results for the learner's request (cite these by title/URL):\n${webResults
           .map((r, i) => `${i + 1}. ${r.title} — ${r.url}\n   ${r.content}`)
@@ -124,6 +125,19 @@ function tokenEventDescription(e) {
     default:
       return `Token ${sign}${absDelta} (${e.reason}, ref: ${e.ref})`;
   }
+}
+
+function scoringSection() {
+  return [
+    'Scoring system:',
+    '- Task scores: Verification choice is all-or-nothing (100 or 0). Verification line_text: flaw=30, fix=40, reason=30 (proportional to criteria matched). AI Judgement and Risk & Governance split marks across decision and reason options.',
+    '- Pass thresholds: Verification 60, AI Judgement 50, Risk & Governance 50, Prompt Design 60.',
+    '- XP: score/100 × difficulty max (easy=50, medium=70, hard=100), capped at 100. Score 0 earns nothing. Practice pass earns half XP (only first practice pass counts).',
+    '- Skill scores: coverage = 100% × (tasks passed + 0.5 × practice-only passes) / total tasks in that skill.',
+    '- Readiness score (0-100): weighted mean — Verification 30%, AI Judgement 30%, Risk & Governance 20%, Prompt Design 10%, Interview coverage 10%, Capstone average 20%. Components without data are skipped.',
+    '- Tiers: Novice 0-49, Developing 50-69, Proficient 70-84, Advanced 85-100.',
+    '- Tokens: earned on level up, achievements, and capstone completion; spent on rewards.',
+  ].join('\n');
 }
 
 const ANALYSIS_KINDS = {
