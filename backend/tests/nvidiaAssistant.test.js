@@ -78,7 +78,7 @@ test('a retryable upstream failure falls back to the proven model', async () => 
   });
 
   assert.equal(reply, 'Fallback reply.');
-  assert.deepEqual(models, ['nvidia/nemotron-3-ultra-550b-a55b', 'openai/gpt-oss-20b']);
+  assert.deepEqual(models, ['nvidia/nemotron-3-ultra-550b-a55b', 'nvidia/nemotron-3-super-120b-a12b']);
 });
 
 test('NVIDIA assistant rejects use without a server API key', async () => {

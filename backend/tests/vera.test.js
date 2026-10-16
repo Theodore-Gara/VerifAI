@@ -42,7 +42,7 @@ const writes = [];
 pool.query = async (sql, values = []) => {
   const s = sql.replace(/\s+/g, ' ').trim();
   writes.push({ sql: s, values });
-  if (s.includes('FROM users WHERE firebase_uid')) return { rows: [{ id: 7, industry_track_id: 1, display_name: 'Theo' }] };
+  if (s.includes('WHERE u.firebase_uid')) return { rows: [{ id: 7, industry_track_id: 1, display_name: 'Theo', created_at: '2026-01-01T00:00:00.000Z', track_name: 'Finance' }] };
   if (s.includes('INSERT INTO vera_sessions')) return { rows: [{ id: 11 }] };
   if (s.includes('INSERT INTO vera_messages')) return { rows: [] };
   if (s.includes('UPDATE vera_sessions')) return { rows: [] };

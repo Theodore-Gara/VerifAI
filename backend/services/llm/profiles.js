@@ -27,36 +27,46 @@ const PROFILES = {
   },
   coach: {
     model: MODELS.chat,
+    fallbackModel: MODELS.light,
     temperature: 0.6,
     topP: 1,
     maxTokens: 1200,
     thinking: false,
     timeoutMs: 90000,
+    firstTokenTimeoutMs: 15000,
   },
   general: {
     model: MODELS.chat,
+    fallbackModel: MODELS.light,
     temperature: 0.6,
     topP: 1,
     maxTokens: 1400,
     thinking: false,
     timeoutMs: 90000,
+    firstTokenTimeoutMs: 15000,
   },
   assistant: {
     model: MODELS.chat,
+    fallbackModel: MODELS.light,
     temperature: 0.7,
     topP: 1,
     maxTokens: 1200,
     thinking: false,
     timeoutMs: 90000,
+    firstTokenTimeoutMs: 15000,
   },
-  // Vera: the app-wide assistant. Slightly warmer and roomier for coaching.
+  // Vera: the app-wide assistant. Slightly warmer and roomier for coaching. If
+  // the big model is slow to start (queued/overloaded) it falls back to the
+  // faster super model so the learner is not left waiting.
   vera: {
     model: MODELS.chat,
+    fallbackModel: MODELS.light,
     temperature: 0.65,
     topP: 1,
     maxTokens: 1600,
     thinking: false,
     timeoutMs: 90000,
+    firstTokenTimeoutMs: 15000,
   },
   // Marker/extractor: reasoning model for rubric marking and memory extraction
   // (strict JSON, low temperature).
@@ -95,7 +105,7 @@ function resolveProfile(name) {
     error.status = 500;
     throw error;
   }
-  return { ...profile, fallbackModel: MODELS.fallback };
+  return { ...profile, fallbackModel: profile.fallbackModel || MODELS.fallback };
 }
 
 module.exports = { MODELS, PROFILES, resolveProfile };
