@@ -185,6 +185,18 @@ async function chat(req, res, next) {
       budget: CHAT_CONTEXT_TOKENS,
       reserve: REPLY_RESERVE_TOKENS,
     });
+
+    // Insert the live, authoritative snapshot as the message immediately before
+    // the learner's latest turn. This is the most recent instruction the model
+    // sees, so a progress report uses current figures instead of echoing stale
+    // numbers from earlier turns.
+    if (context.length) {
+      context.splice(context.length - 1, 0, {
+        role: 'system',
+        content: `CURRENT LEARNER DATA (live, fetched for this message and authoritative). If the learner asks about their progress or stats (XP, level, streak, tokens, readiness, tier, skills, leaderboard), quote these EXACT figures and ignore any numbers stated earlier in the conversation:\n${contextText || 'No activity recorded yet.'}`,
+      });
+    }
+
     const needsCompaction = shouldCompact({ system, summary, recent, budget: CHAT_CONTEXT_TOKENS, threshold: COMPACT_AT });
 
     // Compact in the background once the session nears the context window; the

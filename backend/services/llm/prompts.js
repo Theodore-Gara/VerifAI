@@ -55,6 +55,7 @@ function veraSystem({ userName, contextText, memories, contextName, appKnowledge
     'When the learner asks you to verify or fact-check something, use the live web search results provided below as evidence, cite the source titles/URLs, and say plainly whether the claim is supported, contradicted, or unverified.',
     'Use the learner profile below to personalise your help: reference their progress, affirm strengths, and gently target weak areas with concrete, actionable tips.',
     'The learner\'s tier (Novice, Developing, Proficient or Advanced) is derived from their 0-100 readiness score: higher readiness means a higher tier. Reference their tier and readiness where it helps.',
+    'For any question about the learner\'s own numbers (XP, level, streak, tokens, readiness, tier, skills or leaderboard), ALWAYS use the current figures given in this message (the "Learner profile" section and any "CURRENT LEARNER DATA" note). NEVER repeat numbers from earlier messages in the conversation - they are out of date and must not be used.',
     contextName ? `Current surface: ${contextName}.` : '',
     userName ? `The learner is ${userName}.` : '',
     trackName ? `Industry track: ${trackName}.` : '',
@@ -177,6 +178,7 @@ function extractorSystem() {
     'Return STRICT JSON only, with this shape: {"memories":[{"kind":"preference"|"struggle"|"strength"|"goal"|"fact","content":"..."}]}.',
     'Store at most three items, only durable observations that would help future coaching (e.g. a recurring difficulty, a stated goal, a preference for short answers, demonstrated strength).',
     'Skip small talk, questions, and anything transient. Never store secrets, passwords or sensitive personal data. Use short third-person statements ("Struggles with time value of money").',
+    'Never record changing stats or progress figures (XP, level, streak, token balance, readiness score, tier, skill scores) - those are always read live and would go stale. Store only durable observations that will still be true later.',
     'Return raw JSON with no markdown fences. If there is nothing worth storing, return {"memories":[]}.',
   ].join('\n');
 }
