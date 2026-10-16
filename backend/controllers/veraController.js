@@ -143,7 +143,7 @@ async function chat(req, res, next) {
       [sessionId, user.id, lastUser.content],
     );
 
-    const { contextText, memories, appKnowledge, attemptAnswers } = await loadVeraInputs(user);
+    const { contextText, memories, appKnowledge, attemptAnswers, leaderboard, tokens } = await loadVeraInputs(user);
 
     // The learner can ask Vera to verify their input: search the web on request.
     const webResults = req.body.web_search === true ? await webSearch(lastUser.content, { maxResults: 5 }) : [];
