@@ -34,7 +34,7 @@ test('task assistant routes to the chat model with the task guardrail', async ()
 
   assert.equal(reply, 'Check what changed in the market.');
   assert.equal(request.url, 'https://integrate.api.nvidia.com/v1/chat/completions');
-  assert.equal(request.body.model, 'nvidia/nemotron-3-ultra-550b-a55b');
+  assert.equal(request.body.model, 'nvidia/nemotron-3.5-super-vl-120b-a12b');
   assert.equal(request.body.max_tokens, 1200);
   assert.equal(request.body.chat_template_kwargs.enable_thinking, false);
   assert.match(request.body.messages[0].content, /Do not reveal the expected answer/);
@@ -54,7 +54,7 @@ test('analysis routes to the reasoning model with thinking enabled', async () =>
     },
   });
 
-  assert.equal(request.body.model, 'nvidia/nemotron-3-super-120b-a12b');
+  assert.equal(request.body.model, 'nvidia/nemotron-3.5-super-vl-120b-a12b');
   assert.equal(request.body.chat_template_kwargs.enable_thinking, true);
   assert.equal(request.body.reasoning_budget, 2000);
   assert.ok(request.body.max_tokens >= 2000);
@@ -70,7 +70,7 @@ test('a retryable upstream failure falls back to the proven model', async () => 
     fetchImpl: async (url, options) => {
       const body = JSON.parse(options.body);
       models.push(body.model);
-      if (body.model === 'nvidia/nemotron-3-ultra-550b-a55b') {
+      if (body.model === 'nvidia/nemotron-3.5-super-vl-120b-a12b') {
         return { ok: false, status: 500, text: async () => 'boom' };
       }
       return { ok: true, json: async () => ({ choices: [{ message: { content: 'Fallback reply.' } }] }) };
@@ -78,7 +78,7 @@ test('a retryable upstream failure falls back to the proven model', async () => 
   });
 
   assert.equal(reply, 'Fallback reply.');
-  assert.deepEqual(models, ['nvidia/nemotron-3-ultra-550b-a55b', 'nvidia/nemotron-3-super-120b-a12b']);
+  assert.deepEqual(models, ['nvidia/nemotron-3.5-super-vl-120b-a12b', 'nvidia/nemotron-3-super-120b-a12b']);
 });
 
 test('NVIDIA assistant rejects use without a server API key', async () => {
