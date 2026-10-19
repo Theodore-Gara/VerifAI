@@ -74,7 +74,7 @@ async function main() {
   upsertEnvVar('PORT', process.env.PORT || '3000');
   // Local-friendly admin allowlist default so /admin is reachable out of the
   // box; the file remains editable for real accounts.
-  upsertEnvVar('ADMIN_EMAILS', process.env.ADMIN_EMAILS || 'admin@example.com');
+  upsertEnvVar('ADMIN_EMAILS', process.env.ADMIN_EMAILS || 'admin@example.com,vusani@verify.com');
   console.log(`DATABASE_URL written to backend/.env → ${url}`);
 
   // Re-use the standard setup path so local and hosted builds are identical.

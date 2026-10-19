@@ -22,7 +22,7 @@ async function resolveRole(firebaseUser) {
   const email = String(firebaseUser.email || '').toLowerCase();
   if (email) {
     try {
-      const row = await pool.query('SELECT role FROM admin_accounts WHERE email = $1', [email]);
+      const row = await pool.query('SELECT role FROM admin_accounts WHERE lower(email) = $1', [email]);
       if (row.rows[0] && ROLE_LEVEL[row.rows[0].role]) return row.rows[0].role;
     } catch (err) {
       // Registry unavailable (migration not applied) — fall through to env.

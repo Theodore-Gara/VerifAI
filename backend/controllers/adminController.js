@@ -397,12 +397,14 @@ async function listUsers(req, res, next) {
     const result = await pool.query(
       `SELECT u.id, u.email, u.display_name, u.status, u.status_reason, u.status_updated_at,
               u.industry_track_id, tr.name AS track_name, u.created_at,
+              a.role AS admin_role,
               p.xp, p.level, p.streak, p.readiness_score, p.tier,
               (SELECT COUNT(*)::int FROM task_attempts ta WHERE ta.user_id = u.id AND ta.practice = FALSE) AS attempts,
               (SELECT COUNT(*)::int FROM task_attempts ta WHERE ta.user_id = u.id AND ta.practice = FALSE AND ta.passed) AS passed
        FROM users u
        LEFT JOIN industry_tracks tr ON tr.id = u.industry_track_id
        LEFT JOIN user_progress p ON p.user_id = u.id
+       LEFT JOIN admin_accounts a ON lower(a.email) = lower(u.email)
        ${whereSql}
        ORDER BY u.created_at DESC, u.id DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
@@ -432,11 +434,14 @@ async function getUser(req, res, next) {
     }
 
     const userResult = await pool.query(
-      `SELECT u.*, tr.name AS track_name, p.xp, p.level, p.streak, p.tokens,
+      `SELECT u.*, tr.name AS track_name,
+              a.role AS admin_role,
+              p.xp, p.level, p.streak, p.tokens,
               p.readiness_score, p.tier, p.tier_tasks_completed, p.last_activity_date
        FROM users u
        LEFT JOIN industry_tracks tr ON tr.id = u.industry_track_id
        LEFT JOIN user_progress p ON p.user_id = u.id
+       LEFT JOIN admin_accounts a ON lower(a.email) = lower(u.email)
        WHERE u.id = $1`,
       [userId]
     );
@@ -1566,17 +1571,19 @@ async function exportUsersCsv(req, res, next) {
   try {
     const result = await pool.query(
       `SELECT u.id, u.email, u.display_name, u.status, tr.name AS track, u.created_at,
+              a.role AS admin_role,
               p.xp, p.level, p.streak, p.readiness_score, p.tier,
               (SELECT COUNT(*)::int FROM task_attempts ta WHERE ta.user_id = u.id AND ta.practice = FALSE) AS attempts,
               (SELECT COUNT(*)::int FROM task_attempts ta WHERE ta.user_id = u.id AND ta.practice = FALSE AND ta.passed) AS passed
        FROM users u
        LEFT JOIN industry_tracks tr ON tr.id = u.industry_track_id
        LEFT JOIN user_progress p ON p.user_id = u.id
+       LEFT JOIN admin_accounts a ON lower(a.email) = lower(u.email)
        ORDER BY u.id`
     );
     sendCsv(res, 'verifai-users.csv',
-      ['id', 'email', 'display_name', 'status', 'track', 'created_at', 'xp', 'level', 'streak', 'readiness', 'tier', 'attempts', 'passed'],
-      result.rows.map((u) => [u.id, u.email, u.display_name, u.status, u.track, u.created_at, u.xp, u.level, u.streak, u.readiness_score, u.tier, u.attempts, u.passed]));
+      ['id', 'email', 'display_name', 'status', 'track', 'created_at', 'admin_role', 'xp', 'level', 'streak', 'readiness', 'tier', 'attempts', 'passed'],
+      result.rows.map((u) => [u.id, u.email, u.display_name, u.status, u.track, u.created_at, u.admin_role, u.xp, u.level, u.streak, u.readiness_score, u.tier, u.attempts, u.passed]));
   } catch (err) {
     return next(err);
   }

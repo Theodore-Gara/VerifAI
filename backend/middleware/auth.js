@@ -38,7 +38,7 @@ async function verifyFirebaseToken(req, res, next) {
       [req.firebaseUser.uid]
     );
     const status = result.rows[0]?.status || 'active';
-    if (BLOCKED_STATUSES.has(status) && !req.firebaseUser.admin) {
+    if (BLOCKED_STATUSES.has(status) && !req.firebaseUser.admin && !require('./admin').isAdmin(req.firebaseUser)) {
       const http = STATUS_HTTP[status];
       return res.status(http.status).json({
         error: `Your account is ${status}.`,

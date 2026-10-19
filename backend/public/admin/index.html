@@ -69,6 +69,10 @@
   .pill.st-banned { background: #45202a; color: #ff8fa0; }
   .pill.draft { background: #453a1c; color: #ffd66e; }
   .pill.live { background: #1f3d33; color: #6fe0b4; }
+  .pill.admin-super { background: #2c2a52; color: #c0b3ff; }
+  .pill.admin-admin { background: #24365e; color: #9db9ff; }
+  .pill.admin-moderator { background: #42321c; color: #ffcf7a; }
+  .pill.admin-none { background: var(--panel2); color: var(--muted); }
   .statusdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
   .statusdot.active { background: var(--accent2); }
   .statusdot.suspended { background: var(--warn); }
@@ -264,7 +268,7 @@
       <table>
         <thead><tr>
           <th>User</th><th>Status</th><th>Track</th><th>Level / XP</th>
-          <th>Readiness</th><th>Attempts</th><th>Pass rate</th><th>Joined</th><th></th>
+          <th>Readiness</th><th>Attempts</th><th>Pass rate</th><th>Joined</th><th>Admin</th><th></th>
         </tr></thead>
         <tbody id="userRows"></tbody>
       </table>
@@ -1417,13 +1421,14 @@ async function reloadUsers() {
       <td class="muted">${u.attempts}</td>
       <td class="muted">${u.attempts ? Math.round(100 * u.passed / u.attempts) + '%' : '—'}</td>
       <td class="muted">${(u.created_at || '').slice(0, 10)}</td>
+      <td class="muted"><span class="pill admin-${u.admin_role || 'none'}">${u.admin_role || '—'}</span></td>
       <td class="right" style="white-space:nowrap">
         <button class="ghost small" data-user="${u.id}">Details</button>
         ${u.status !== 'banned' ? `<button class="warnbtn small" data-ban="${u.id}" data-email="${escapeHtml(u.email)}">Ban</button>` : ''}
         ${u.status !== 'active' ? `<button class="ghost small" data-activate="${u.id}" data-email="${escapeHtml(u.email)}">Reinstate</button>` : ''}
       </td>
     </tr>`).join('') ||
-    '<tr><td colspan="9" class="muted" style="text-align:center;padding:24px">No users match.</td></tr>';
+    '<tr><td colspan="10" class="muted" style="text-align:center;padding:24px">No users match.</td></tr>';
 
   const from = data.total === 0 ? 0 : usersPage * USERS_PAGE_SIZE + 1;
   const to = Math.min((usersPage + 1) * USERS_PAGE_SIZE, data.total);
@@ -1509,6 +1514,7 @@ async function openUser(userId) {
   $('udName').textContent = u.display_name || '(no name)';
   $('udEmail').textContent = `${u.email} · id ${u.id} · joined ${(u.created_at || '').slice(0, 10)}`;
   $('udStatus').innerHTML = `<span class="statusdot ${u.status}"></span><span class="pill st-${u.status}">${u.status}</span>` +
+    ` <span class="pill admin-${u.admin_role || 'none'}">${u.admin_role ? 'admin: ' + escapeHtml(u.admin_role) : 'not admin'}</span>` +
     (u.status_reason ? ` <span class="muted">— ${escapeHtml(u.status_reason)}</span>` : '');
 
   $('udProgress').innerHTML = [
