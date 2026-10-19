@@ -306,7 +306,7 @@ async function createTask(req, res, next) {
 }
 
 // ---------------------------------------------------------------------------
-// DELETE /api/admin/tasks/:id — removes the task and (via ON DELETE CASCADE)
+// DELETE the /api/admin/tasks/:id — removes the task and (via ON DELETE CASCADE)
 // its content row, options and recorded attempts.
 // ---------------------------------------------------------------------------
 async function deleteTask(req, res, next) {
