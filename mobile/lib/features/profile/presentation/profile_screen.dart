@@ -13,6 +13,7 @@ import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/profile/providers.dart';
+import 'package:verifai/features/navigation/nav_drawer_controller.dart';
 import 'package:verifai/features/scoreboard/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
@@ -37,7 +38,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         content: const Text(
             'This permanently removes your account, your progress and your data. It cannot be undone.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () => Navigator.pop(ctx, true),
@@ -55,8 +58,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       await ref.read(authNotifierProvider.notifier).logout();
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not delete the account. Try again.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Could not delete the account. Try again.')));
     } finally {
       if (mounted) setState(() => _deleting = false);
     }
@@ -110,6 +113,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: const IconButton(
+          tooltip: 'Open navigation menu',
+          icon: Icon(Icons.menu_rounded, color: AppColors.textPrimary),
+          onPressed: openVerifaiNavigationDrawer,
+        ),
         title: Text(
           'Profile',
           style: AppTypography.textTheme.headlineMedium?.copyWith(
@@ -119,6 +127,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
         centerTitle: false,
         actions: [
+          IconButton(
+            tooltip: 'Account & privacy',
+            onPressed: _deleting ? null : () => _showAccountOptions(context),
+            icon: _deleting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(
+                    Icons.manage_accounts_rounded,
+                    color: AppColors.accentGreen,
+                  ),
+          ),
           TextButton(
             onPressed: () => _showLogoutDialog(context, ref),
             style: TextButton.styleFrom(
@@ -374,28 +396,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
-                  Material(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                    child: ListTile(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.card),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      leading:
-                          const Icon(Icons.delete_outline_rounded, color: AppColors.error),
-                      title: const Text(
-                        'Delete account',
-                        style: TextStyle(
-                            color: AppColors.error, fontWeight: FontWeight.w800),
-                      ),
-                      subtitle: const Text(
-                        'Permanently remove your account and all your data.',
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                      onTap: _deleting ? null : _deleteAccount,
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -664,6 +664,71 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         RegExp(r'(\d)(?=(\d{3})+$)'),
         (m) => '${m[1]},',
       );
+
+  void _showAccountOptions(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.modal),
+        ),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.sm,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Account & privacy',
+                style: AppTypography.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              const Text(
+                'Manage your account and personal data.',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(
+                  Icons.delete_forever_outlined,
+                  color: AppColors.error,
+                ),
+                title: const Text(
+                  'Delete account',
+                  style: TextStyle(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Permanently remove your account and data.',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) _deleteAccount();
+                  });
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   void _showLogoutDialog(BuildContext context, WidgetRef ref) {
     showDialog(

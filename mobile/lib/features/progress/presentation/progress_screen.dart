@@ -9,6 +9,7 @@ import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/progress/providers.dart';
 import 'package:verifai/features/scoreboard/providers.dart';
+import 'package:verifai/features/navigation/nav_drawer_controller.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/dimension_index_card.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
@@ -28,6 +29,11 @@ class ProgressScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: const IconButton(
+          tooltip: 'Open navigation menu',
+          icon: Icon(Icons.menu_rounded, color: AppColors.textPrimary),
+          onPressed: openVerifaiNavigationDrawer,
+        ),
         title: Text(
           'Progress',
           style: AppTypography.textTheme.titleMedium?.copyWith(

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/core/theme/app_colors.dart';
@@ -52,10 +53,15 @@ class _State extends ConsumerState<VerificationStudioScreen> {
       final picked = await FilePicker.platform.pickFiles(withData: true);
       final file = picked?.files.single;
       final bytes = file?.bytes;
-      if (file == null || bytes == null) return;
+      if (file == null || bytes == null) {
+        return;
+      }
       const maxBytes = 10 * 1024 * 1024;
       if (bytes.length > maxBytes) {
-        if (mounted) showFeedback(context, FeedbackKind.error, 'Document must be 10MB or smaller.');
+        if (mounted) {
+          showFeedback(
+              context, FeedbackKind.error, 'Document must be 10MB or smaller.');
+        }
         return;
       }
       setState(() => _sources.add(VerificationSourceInput(
@@ -65,13 +71,16 @@ class _State extends ConsumerState<VerificationStudioScreen> {
             base64: base64Encode(bytes),
           )));
     } catch (_) {
-      if (mounted) showFeedback(context, FeedbackKind.error, 'Could not read that file.');
+      if (mounted) {
+        showFeedback(context, FeedbackKind.error, 'Could not read that file.');
+      }
     }
   }
 
   String _mimeFor(String? ext) => switch ((ext ?? '').toLowerCase()) {
         'pdf' => 'application/pdf',
-        'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'docx' =>
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'md' => 'text/markdown',
         _ => 'text/plain',
       };
@@ -96,11 +105,13 @@ class _State extends ConsumerState<VerificationStudioScreen> {
 
   Future<void> _run() async {
     final sources = <VerificationSourceInput>[
-      if (_text.text.trim().isNotEmpty) VerificationSourceInput(type: 'text', text: _text.text.trim()),
+      if (_text.text.trim().isNotEmpty)
+        VerificationSourceInput(type: 'text', text: _text.text.trim()),
       ..._sources,
     ];
     if (sources.isEmpty && _context.text.trim().isEmpty) {
-      showFeedback(context, FeedbackKind.error, 'Add some text, a document, a link or a citation first.');
+      showFeedback(context, FeedbackKind.error,
+          'Add some text, a document, a link or a citation first.');
       return;
     }
     setState(() => _running = true);
@@ -138,24 +149,39 @@ class _State extends ConsumerState<VerificationStudioScreen> {
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         title: Text('Verification Studio',
-            style: AppTypography.textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+            style: AppTypography.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.sm,
-            AppSpacing.screenPadding, AppSpacing.xxl),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+            AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.xxl),
         children: [
-          Text('Vera checks a claim, document, AI answer or source and reports what needs review.',
+          Text(
+              'Vera checks a claim, document, AI answer or source and reports what needs review.',
               style: AppTypography.textTheme.bodyMedium
                   ?.copyWith(color: AppColors.textSecondary, height: 1.45)),
+          const SizedBox(height: AppSpacing.md),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              onPressed: () => context.push('/assistant'),
+              icon: const Icon(Icons.auto_awesome_rounded),
+              label: const Text('Ask Vera'),
+            ),
+          ),
           const SizedBox(height: AppSpacing.lg),
           InputDecorator(
-            decoration: const InputDecoration(labelText: 'What are you verifying?', border: OutlineInputBorder()),
+            decoration: const InputDecoration(
+                labelText: 'What are you verifying?',
+                border: OutlineInputBorder()),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 isExpanded: true,
                 value: _kind,
-                items: [for (final e in _kinds.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
+                items: [
+                  for (final e in _kinds.entries)
+                    DropdownMenuItem(value: e.key, child: Text(e.value))
+                ],
                 onChanged: (v) => setState(() => _kind = v ?? 'document'),
               ),
             ),
@@ -166,8 +192,10 @@ class _State extends ConsumerState<VerificationStudioScreen> {
             minLines: 3,
             maxLines: 8,
             decoration: const InputDecoration(
-                labelText: 'Text to verify', hintText: 'Paste a claim, an AI answer, or content…',
-                border: OutlineInputBorder(), alignLabelWithHint: true),
+                labelText: 'Text to verify',
+                hintText: 'Paste a claim, an AI answer, or content…',
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true),
           ),
           const SizedBox(height: AppSpacing.md),
           Row(
@@ -175,11 +203,17 @@ class _State extends ConsumerState<VerificationStudioScreen> {
               Expanded(
                 child: TextField(
                   controller: _url,
-                  decoration: const InputDecoration(labelText: 'Link', hintText: 'https://…', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                      labelText: 'Link',
+                      hintText: 'https://…',
+                      border: OutlineInputBorder()),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              IconButton.filledTonal(onPressed: _addUrl, icon: const Icon(Icons.add_link_rounded), tooltip: 'Add link'),
+              IconButton.filledTonal(
+                  onPressed: _addUrl,
+                  icon: const Icon(Icons.add_link_rounded),
+                  tooltip: 'Add link'),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
@@ -188,11 +222,17 @@ class _State extends ConsumerState<VerificationStudioScreen> {
               Expanded(
                 child: TextField(
                   controller: _citation,
-                  decoration: const InputDecoration(labelText: 'Citation', hintText: 'e.g. POPIA section 22', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                      labelText: 'Citation',
+                      hintText: 'e.g. POPIA section 22',
+                      border: OutlineInputBorder()),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              IconButton.filledTonal(onPressed: _addCitation, icon: const Icon(Icons.manage_search_rounded), tooltip: 'Look up citation'),
+              IconButton.filledTonal(
+                  onPressed: _addCitation,
+                  icon: const Icon(Icons.manage_search_rounded),
+                  tooltip: 'Look up citation'),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
@@ -217,7 +257,8 @@ class _State extends ConsumerState<VerificationStudioScreen> {
             minLines: 1,
             maxLines: 3,
             decoration: const InputDecoration(
-                labelText: 'Context (optional)', hintText: 'Anything Vera should know',
+                labelText: 'Context (optional)',
+                hintText: 'Anything Vera should know',
                 border: OutlineInputBorder()),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -232,33 +273,48 @@ class _State extends ConsumerState<VerificationStudioScreen> {
           FilledButton.icon(
             onPressed: _running ? null : _run,
             icon: _running
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.fact_check_rounded),
             label: Text(_running ? 'Verifying…' : 'Run verification'),
           ),
           const SizedBox(height: AppSpacing.xl),
           Text('RECENT VERIFICATIONS',
-              style: AppTypography.textTheme.labelSmall
-                  ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: .5)),
+              style: AppTypography.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textSecondary,
+                  letterSpacing: .5)),
           const SizedBox(height: AppSpacing.sm),
           historyAsync.when(
-            loading: () => const Padding(padding: EdgeInsets.all(AppSpacing.md), child: CircularProgressIndicator()),
+            loading: () => const Padding(
+                padding: EdgeInsets.all(AppSpacing.md),
+                child: CircularProgressIndicator()),
             error: (e, _) => Text('History unavailable.',
-                style: AppTypography.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
+                style: AppTypography.textTheme.bodySmall
+                    ?.copyWith(color: AppColors.textSecondary)),
             data: (items) => items.isEmpty
                 ? Text('No verifications yet.',
-                    style: AppTypography.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary))
+                    style: AppTypography.textTheme.bodySmall
+                        ?.copyWith(color: AppColors.textSecondary))
                 : Column(
                     children: [
                       for (final r in items)
                         ListTile(
                           contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.description_outlined, color: AppColors.primaryNavy),
-                          title: Text(r.documentName ?? _kinds[r.kind] ?? r.kind),
-                          subtitle: Text(r.summary, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          leading: const Icon(Icons.description_outlined,
+                              color: AppColors.primaryNavy),
+                          title:
+                              Text(r.documentName ?? _kinds[r.kind] ?? r.kind),
+                          subtitle: Text(r.summary,
+                              maxLines: 1, overflow: TextOverflow.ellipsis),
                           trailing: const Icon(Icons.chevron_right_rounded),
-                          onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                              builder: (_) => VerificationResultScreen(result: r))),
+                          onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) =>
+                                      VerificationResultScreen(result: r))),
                         ),
                     ],
                   ),

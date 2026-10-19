@@ -8,6 +8,7 @@ import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/dashboard/providers.dart';
+import 'package:verifai/features/navigation/nav_drawer_controller.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets.dart';
 
@@ -34,6 +35,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: const IconButton(
+          tooltip: 'Open navigation menu',
+          icon: Icon(Icons.menu_rounded, color: AppColors.textPrimary),
+          onPressed: openVerifaiNavigationDrawer,
+        ),
         title: Row(
           children: [
             CircleAvatar(
