@@ -7,3 +7,5 @@ coverage/
 db/prototype-backup-*.sql
 .DS_Store
 npm-debug.log*
+.pgdata/
+scratch-*.js

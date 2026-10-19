@@ -140,7 +140,7 @@ async function getNextTask(req, res, next) {
         `SELECT t.id, v.format, v.title, v.scenario, v.embedded_flaw, v.difficulty, v.ai_output_lines
          FROM tasks t
          JOIN verification_tasks v ON v.task_id = t.id
-         WHERE t.feature = 'verification' AND t.track_id = $1 AND ${seenFilter('$2')}${difficultyFilter}
+         WHERE t.feature = 'verification' AND t.track_id = $1 AND t.published AND ${seenFilter('$2')}${difficultyFilter}
          ORDER BY ${order}
          LIMIT 1`,
         params
@@ -157,7 +157,7 @@ async function getNextTask(req, res, next) {
            FROM tasks t
            JOIN verification_tasks v ON v.task_id = t.id
            LEFT JOIN task_attempts ta ON ta.task_id = t.id AND ta.user_id = $2
-           WHERE t.feature = 'verification' AND t.track_id = $1 AND v.difficulty = $3
+           WHERE t.feature = 'verification' AND t.track_id = $1 AND t.published AND v.difficulty = $3
            GROUP BY t.id, v.format, v.title, v.scenario, v.embedded_flaw, v.difficulty, v.ai_output_lines
            ORDER BY last_submitted ASC, t.id ASC
            LIMIT 1`,
@@ -199,7 +199,7 @@ async function getNextTask(req, res, next) {
         `SELECT t.id, t.feature, f.title, f.scenario
          FROM tasks t
          JOIN ${table} f ON f.task_id = t.id
-         WHERE t.feature = $1 AND t.track_id = $2 AND ${seenFilter('$3')}
+         WHERE t.feature = $1 AND t.track_id = $2 AND t.published AND ${seenFilter('$3')}
          ORDER BY t.id ASC
          LIMIT 1`,
         [feature, user.industry_track_id, user.id]
@@ -215,7 +215,7 @@ async function getNextTask(req, res, next) {
            FROM tasks t
            JOIN ${table} f ON f.task_id = t.id
            LEFT JOIN task_attempts ta ON ta.task_id = t.id AND ta.user_id = $3
-           WHERE t.feature = $1 AND t.track_id = $2
+           WHERE t.feature = $1 AND t.track_id = $2 AND t.published
            GROUP BY t.id, t.feature, f.title, f.scenario
            ORDER BY last_submitted ASC, t.id ASC
            LIMIT 1`,
@@ -275,12 +275,16 @@ async function submitAttempt(req, res, next) {
     }
 
     const taskResult = await client.query(
-      `SELECT id, feature, track_id FROM tasks WHERE id = $1 FOR SHARE`,
+      `SELECT id, feature, track_id, published FROM tasks WHERE id = $1 FOR SHARE`,
       [taskId]
     );
     if (!taskResult.rows.length) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Task not found.', request_id: req.requestId });
+    }
+    if (!taskResult.rows[0].published) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Task is not available.', request_id: req.requestId });
     }
 
     const task = taskResult.rows[0];
@@ -328,6 +332,21 @@ async function submitAttempt(req, res, next) {
         user.id, task.id, scored.answer, scored.rationale, scored.answerOptionId,
         scored.decisionOptionId, scored.reasonOptionId, scored.selectedLines, content.title,
         scored.score, passed, practice, content.feedback, xpEarned,
+      ]
+    );
+
+    // Denormalised answer log: one row per graded answer, keyed to the user's
+    // department and the task's feature for per-department analytics.
+    await client.query(
+      `INSERT INTO answer_logs
+         (attempt_id, user_id, task_id, department_id, feature, score, passed, practice, answer_summary)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        attemptResult.rows[0].id, user.id, task.id, user.industry_track_id, task.feature,
+        scored.score, passed, practice,
+        scored.answer || scored.rationale ||
+          [scored.answerOptionId, scored.decisionOptionId, scored.reasonOptionId]
+            .filter(Boolean).map(String).join(',') || null,
       ]
     );
 
@@ -521,7 +540,7 @@ async function updateSkillScore(client, userId, feature, trackId) {
                SELECT 1 FROM task_attempts fp
                WHERE fp.user_id = $1 AND fp.task_id = ta.task_id
                  AND fp.practice = FALSE AND fp.passed)) AS practice_passed,
-         (SELECT COUNT(*)::int FROM tasks t WHERE t.feature = $2 AND t.track_id = $3) AS total,
+         (SELECT COUNT(*)::int FROM tasks t WHERE t.feature = $2 AND t.track_id = $3 AND t.published) AS total,
          (SELECT COUNT(*)::int
             FROM task_attempts ta
             JOIN tasks t ON t.id = ta.task_id

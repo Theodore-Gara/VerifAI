@@ -21,6 +21,8 @@ const rewardsRoutes = require('./routes/rewards');
 const veraRoutes = require('./routes/vera');
 const industryPracticeRoutes = require('./routes/industryPractice');
 const historyRoutes = require('./routes/history');
+const adminRoutes = require('./routes/admin');
+const { maintenanceGate } = require('./middleware/adminRoles');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -39,6 +41,22 @@ app.use((req, res, next) => {
 });
 
 app.use(helmet());
+
+// The admin dashboard is a single-page app with an inline script, so it needs
+// a CSP that allows same-origin + inline scripts. Scoped to /admin only; the
+// API keeps helmet's strict default.
+app.use('/admin', helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      connectSrc: ["'self'", 'https://*.googleapis.com', 'https://*.firebaseapp.com'],
+      imgSrc: ["'self'", 'data:'],
+    },
+  },
+  crossOriginResourcePolicy: false,
+}));
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
@@ -120,6 +138,11 @@ app.get('/', (req, res) => {
   });
 });
 
+// Maintenance mode: when switched on from the admin dashboard, learner-facing
+// API traffic is refused with 503. Health, auth (so admins can still sign in
+// to turn it off) and admin routes stay live.
+app.use(maintenanceGate);
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/tracks', trackRoutes);
@@ -136,6 +159,11 @@ app.use('/api/rewards', rewardsRoutes);
 app.use('/api/vera', veraRoutes);
 app.use('/api/industry-practice', industryPracticeRoutes);
 app.use('/api/history', historyRoutes);
+app.use('/api/admin', adminRoutes);
+
+// Admin dashboard: a static single-page app served by the API itself.
+const path = require('path');
+app.use('/admin', express.static(path.join(__dirname, 'public', 'admin')));
 
 app.get('/api/docs', (req, res) => {
   res.json({
@@ -200,6 +228,29 @@ app.get('/api/docs', (req, res) => {
       'GET /api/industry-practice/cases/:id',
       'POST /api/industry-practice/cases/:id/read',
       'GET /api/history',
+      'GET /api/admin/overview',
+      'GET /api/admin/tasks',
+      'GET /api/admin/tasks/:id',
+      'GET /api/admin/tasks/:id/answers',
+      'POST /api/admin/tasks',
+      'PUT /api/admin/tasks/:id',
+      'POST /api/admin/tasks/import',
+      'POST /api/admin/tasks/:id/approval',
+      'DELETE /api/admin/tasks/:id',
+      'GET /api/admin/approvals',
+      'GET /api/admin/answers/summary',
+      'GET /api/admin/answers',
+      'GET /api/admin/analytics',
+      'GET /api/admin/track-progress',
+      'GET /api/admin/users',
+      'GET /api/admin/users/:id',
+      'POST /api/admin/users/:id/status',
+      'GET /api/admin/moderation',
+      'GET /api/admin/workshop',
+      'GET /api/admin/lab',
+      'GET /api/admin/system',
+      'GET /api/admin/config',
+      'PUT /api/admin/config',
     ],
   });
 });

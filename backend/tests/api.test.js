@@ -129,7 +129,7 @@ const fakeClient = {
     const s = sql.replace(/\s+/g, ' ').trim();
     if (s === 'BEGIN' || s === 'COMMIT' || s === 'ROLLBACK') return { rows: [] };
     if (s.includes('FROM users WHERE firebase_uid')) return { rows: [{ id: 7, industry_track_id: 1, level: 1 }] };
-    if (s.includes('FROM tasks WHERE id') && s.includes('FOR SHARE')) return { rows: [{ id: 5, feature: 'judgement', track_id: 1 }] };
+    if (s.includes('FROM tasks WHERE id') && s.includes('FOR SHARE')) return { rows: [{ id: 5, feature: 'judgement', track_id: 1, published: true }] };
     if (s.includes('FROM task_options')) return { rows: SCORED_OPTIONS };
     if (s.includes('FROM judgement_tasks')) return { rows: [{ title: 'The Month-End Agenda', feedback: 'Good call.' }] };
     if (s.includes('INSERT INTO task_attempts')) {

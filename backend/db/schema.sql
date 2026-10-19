@@ -17,8 +17,32 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(255) NOT NULL,
   display_name VARCHAR(255),
   industry_track_id INTEGER REFERENCES industry_tracks(id) ON DELETE SET NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'banned')),
+  status_reason TEXT,
+  status_updated_at TIMESTAMP,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Audit trail of admin actions (account moderation + task management).
+CREATE TABLE IF NOT EXISTS moderation_events (
+  id SERIAL PRIMARY KEY,
+  admin_email VARCHAR(255) NOT NULL,
+  target_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  target_email VARCHAR(255),
+  action VARCHAR(30) NOT NULL CHECK (action IN ('suspend', 'ban', 'activate',
+    'task_create', 'task_update', 'task_delete', 'task_import', 'task_publish',
+    'task_approve', 'task_reject',
+    'user_grant', 'user_export', 'user_delete', 'user_firebase',
+    'workshop_delete', 'workshop_hide',
+    'lab_update',
+    'config_update',
+    'admin_add', 'admin_remove')),
+  reason TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_moderation_events_target
+  ON moderation_events (target_user_id, created_at DESC);
 
 -- ---------------------------------------------------------------------------
 -- Task anchor
@@ -31,6 +55,29 @@ CREATE TABLE IF NOT EXISTS tasks (
   code VARCHAR(120) NOT NULL UNIQUE,
   feature VARCHAR(30) NOT NULL CHECK (feature IN ('verification', 'judgement', 'risk_governance', 'prompt_design')),
   track_id INTEGER NOT NULL REFERENCES industry_tracks(id) ON DELETE CASCADE,
+  published BOOLEAN NOT NULL DEFAULT TRUE,
+  approval VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (approval IN ('pending', 'approved', 'rejected')),
+  approved_by VARCHAR(255),
+  approved_at TIMESTAMP,
+  approval_note TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Runtime platform configuration (maintenance mode, feature flags), editable
+-- from the admin dashboard without a redeploy.
+CREATE TABLE IF NOT EXISTS app_config (
+  key VARCHAR(80) PRIMARY KEY,
+  value TEXT,
+  updated_by VARCHAR(255),
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Admin panel role registry. ADMIN_EMAILS grants baseline access; a row here
+-- can raise the role to 'super' or scope it to 'moderator'.
+CREATE TABLE IF NOT EXISTS admin_accounts (
+  email VARCHAR(255) PRIMARY KEY,
+  role VARCHAR(20) NOT NULL DEFAULT 'admin' CHECK (role IN ('super', 'admin', 'moderator')),
+  added_by VARCHAR(255),
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -119,6 +166,29 @@ CREATE TABLE IF NOT EXISTS task_attempts (
   xp_earned INTEGER NOT NULL DEFAULT 0 CHECK (xp_earned >= 0),
   submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ---------------------------------------------------------------------------
+-- Answer log (per-department answer tracking)
+-- ---------------------------------------------------------------------------
+-- One denormalised row per graded answer so department analytics never join
+-- through task_attempts at query time. Written by the attempt scorer.
+
+CREATE TABLE IF NOT EXISTS answer_logs (
+  id SERIAL PRIMARY KEY,
+  attempt_id INTEGER REFERENCES task_attempts(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  department_id INTEGER REFERENCES industry_tracks(id) ON DELETE SET NULL,
+  feature VARCHAR(30) NOT NULL,
+  score INTEGER NOT NULL CHECK (score BETWEEN 0 AND 100),
+  passed BOOLEAN NOT NULL,
+  practice BOOLEAN NOT NULL DEFAULT FALSE,
+  answer_summary TEXT,
+  submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_answer_logs_dept ON answer_logs (department_id, submitted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_answer_logs_feature ON answer_logs (feature, submitted_at DESC);
 
 -- ---------------------------------------------------------------------------
 -- Progression

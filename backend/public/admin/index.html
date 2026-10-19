@@ -1,0 +1,2005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VerifAI Admin</title>
+<!-- Firebase compat SDK (vendored locally, no CDN dependency): sign in with
+     the same Firebase project as the app, then call the API with the ID token
+     as a Bearer header. -->
+<script src="vendor/firebase-app-compat.js"></script>
+<script src="vendor/firebase-auth-compat.js"></script>
+<style>
+  :root {
+    --bg: #0d1220; --panel: #151b2e; --panel2: #1b2340; --line: #2a3352;
+    --text: #e8ecf7; --muted: #8e97b3; --accent: #6c8cff; --accent2: #38c793;
+    --danger: #ff5c72; --warn: #ffb84d;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; align-items: center; gap: 14px; padding: 14px 22px;
+           border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font-size: 17px; margin: 0; letter-spacing: .3px; }
+  header h1 span { color: var(--accent); }
+  header .spacer { flex: 1; }
+  #userEmail { color: var(--muted); font-size: 13px; }
+  #roleBadge { font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 20px;
+               background: #2c2a52; color: #c0b3ff; text-transform: uppercase; letter-spacing: .5px; }
+  button { cursor: pointer; border: 1px solid var(--line); background: var(--panel2);
+           color: var(--text); border-radius: 8px; padding: 7px 14px; font-size: 13px; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.danger { background: transparent; border-color: var(--danger); color: var(--danger); padding: 4px 10px; }
+  button.danger:hover { background: var(--danger); color: #fff; }
+  button.warnbtn { background: transparent; border-color: var(--warn); color: var(--warn); padding: 4px 10px; }
+  button.warnbtn:hover { background: var(--warn); color: #21283f; }
+  button.ghost { background: transparent; }
+  button.small { padding: 3px 9px; font-size: 12px; }
+  button:disabled { opacity: .4; cursor: default; }
+  nav.tabs { display: flex; gap: 4px; padding: 0 22px; background: var(--panel);
+             border-bottom: 1px solid var(--line); overflow-x: auto; }
+  nav.tabs button { border: none; background: transparent; color: var(--muted);
+                    padding: 11px 16px; border-bottom: 2px solid transparent; border-radius: 0; white-space: nowrap; }
+  nav.tabs button.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+  main { max-width: 1180px; margin: 0 auto; padding: 22px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 22px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .card .n { font-size: 26px; font-weight: 700; }
+  .card .l { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .6px; }
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  select, input, textarea {
+    background: var(--panel2); border: 1px solid var(--line); color: var(--text);
+    border-radius: 8px; padding: 7px 10px; font: inherit;
+  }
+  select:focus, input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; background: var(--panel);
+          border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 13px; }
+  th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; background: var(--panel2); }
+  tr:last-child td { border-bottom: none; }
+  td.title-cell { max-width: 420px; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .pill.verification { background: #24365e; color: #9db9ff; }
+  .pill.judgement { background: #1f3d33; color: #6fe0b4; }
+  .pill.risk_governance { background: #42321c; color: #ffcf7a; }
+  .pill.prompt_design { background: #3a2440; color: #e0a0f0; }
+  .pill.st-active { background: #1f3d33; color: #6fe0b4; }
+  .pill.st-suspended { background: #42321c; color: #ffcf7a; }
+  .pill.st-banned { background: #45202a; color: #ff8fa0; }
+  .pill.draft { background: #453a1c; color: #ffd66e; }
+  .pill.live { background: #1f3d33; color: #6fe0b4; }
+  .statusdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .statusdot.active { background: var(--accent2); }
+  .statusdot.suspended { background: var(--warn); }
+  .statusdot.banned { background: var(--danger); }
+  .muted { color: var(--muted); }
+  .right { text-align: right; }
+  dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line);
+           border-radius: 14px; padding: 22px; width: min(720px, 94vw);
+           max-height: 90vh; margin-top: 5vh; overflow-y: auto; }
+  dialog.wide { width: min(940px, 96vw); }
+  dialog::backdrop { background: rgba(5, 8, 18, .7); }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-grid .full { grid-column: 1 / -1; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  input.wide, textarea.wide, select.wide { width: 100%; }
+  textarea { min-height: 70px; resize: vertical; }
+  .opt-row { display: grid; grid-template-columns: 90px 1fr 90px 34px; gap: 8px; margin-bottom: 8px; align-items: center; }
+  .section-title { font-weight: 600; margin: 16px 0 8px; }
+  .error { color: var(--danger); font-size: 13px; margin-top: 10px; white-space: pre-wrap; }
+  .ok { color: var(--accent2); font-size: 13px; margin-top: 10px; }
+  #loginView { max-width: 360px; margin: 12vh auto; background: var(--panel);
+               border: 1px solid var(--line); border-radius: 14px; padding: 28px; }
+  #loginView h2 { margin-top: 0; }
+  #loginView input { width: 100%; margin-bottom: 10px; }
+  #loginView button { width: 100%; }
+  .hidden { display: none !important; }
+  .toast { position: fixed; bottom: 20px; right: 20px; background: var(--panel2);
+           border: 1px solid var(--line); border-radius: 10px; padding: 12px 18px;
+           opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 50; }
+  .toast.show { opacity: 1; }
+  .toast.err { border-color: var(--danger); }
+  .bar { height: 10px; background: var(--panel2); border-radius: 6px; overflow: hidden; min-width: 70px; display: inline-block; }
+  .bar > div { height: 100%; background: var(--accent); border-radius: 6px; }
+  .chart { display: flex; align-items: flex-end; gap: 6px; height: 130px; margin: 10px 0 4px; min-width: 0; overflow: hidden; }
+  .chart .col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; height: 100%; min-width: 0; overflow: hidden; }
+  .chart .stack { width: 100%; max-width: 42px; flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: flex-end; }
+  .chart .pass { background: var(--accent2); border-radius: 4px 4px 0 0; width: 100%; }
+  .chart .fail { background: #3a466e; width: 100%; }
+  .chart .lbl { font-size: 10px; color: var(--muted); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .panel h3 { margin: 0 0 10px; font-size: 14px; }
+  .kv { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 13px; gap: 12px; }
+  .kv:last-child { border-bottom: none; }
+  .detail-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .detail-head h2 { margin: 0; }
+  .pager { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+  .funnel-step { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .funnel-step .bar { flex: 1; height: 18px; }
+  .funnel-step .bar > div { background: linear-gradient(90deg, var(--accent), #8f6cff); }
+  .heatmap { width: 100%; border-collapse: collapse; }
+  .heatmap td, .heatmap th { border: 1px solid var(--line); padding: 8px 10px; font-size: 13px; text-align: center; }
+  .heatmap td:first-child, .heatmap th:first-child { text-align: left; }
+  .banner { background: #42321c; color: #ffcf7a; border: 1px solid #5c4526; border-radius: 10px;
+            padding: 10px 16px; margin-bottom: 16px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- Sign-in -->
+<div id="loginView">
+  <h2><span style="color:var(--accent)">Verif</span>AI Admin</h2>
+  <p class="muted">Sign in with an admin account (listed in ADMIN_EMAILS).</p>
+  <input id="loginEmail" type="email" placeholder="Email" autocomplete="username">
+  <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password">
+  <button class="primary" id="loginBtn">Sign in</button>
+  <div class="error" id="loginError"></div>
+</div>
+
+<!-- Dashboard -->
+<div id="appView" class="hidden">
+  <header>
+    <h1><span style="color:var(--accent)">Verif</span>AI Admin</h1>
+    <span id="roleBadge"></span>
+    <span class="spacer"></span>
+    <span id="userEmail"></span>
+    <button class="ghost" id="logoutBtn">Sign out</button>
+  </header>
+  <main>
+    <div id="maintenanceBanner" class="banner hidden">Maintenance mode is ON — learner API traffic is being refused with 503.</div>
+
+    <nav class="tabs">
+      <button data-tab="overview" class="active">Overview</button>
+      <button data-tab="tasks">Tasks</button>
+      <button data-tab="approvals">Approvals</button>
+      <button data-tab="content">Content</button>
+      <button data-tab="workshop">Workshop</button>
+      <button data-tab="users">Users</button>
+      <button data-tab="progress">Track Progress</button>
+      <button data-tab="analytics">Analytics</button>
+      <button data-tab="system">System</button>
+      <button data-tab="moderation">Audit Log</button>
+    </nav>
+
+    <!-- ============== Overview ============== -->
+    <section id="tab-overview">
+      <div class="cards" id="statCards"></div>
+      <div class="grid2">
+        <div class="panel">
+          <h3>Signup → competence funnel</h3>
+          <div id="funnelRows"></div>
+        </div>
+        <div class="panel">
+          <h3>Attempts — last 14 days</h3>
+          <div class="chart" id="miniChart"></div>
+          <div class="muted" style="font-size:12px">Green = passed · grey-blue = failed</div>
+        </div>
+        <div class="panel">
+          <h3>Tasks per track</h3>
+          <div id="trackSummary"></div>
+        </div>
+        <div class="panel">
+          <h3>Recent admin activity</h3>
+          <div id="recentAdmin"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== Tasks ============== -->
+    <section id="tab-tasks" class="hidden">
+      <div class="toolbar">
+        <select id="filterFeature">
+          <option value="">All features</option>
+          <option value="verification">Verification</option>
+          <option value="judgement">AI Judgement</option>
+          <option value="risk_governance">Risk & Governance</option>
+        </select>
+        <select id="filterTrack"><option value="">All tracks</option></select>
+        <button class="ghost" id="refreshBtn">Refresh</button>
+        <span class="spacer" style="flex:1"></span>
+        <button class="ghost" id="importBtn">Import…</button>
+        <button class="primary" id="addBtn">+ Add task</button>
+      </div>
+      <table>
+        <thead><tr>
+          <th>ID</th><th>Feature</th><th>Track</th><th>Title / scenario</th>
+          <th>State</th><th>Difficulty</th><th>Options</th><th>Attempts</th><th></th>
+        </tr></thead>
+        <tbody id="taskRows"></tbody>
+      </table>
+      <p class="muted" id="taskCount" style="margin-top:10px"></p>
+    </section>
+
+    <!-- ============== Content (lab/textbook) ============== -->
+    <section id="tab-content" class="hidden">
+      <div class="toolbar">
+        <select id="filterTrack3"><option value="">All tracks</option></select>
+        <button class="ghost" id="labRefreshBtn">Refresh</button>
+      </div>
+      <table>
+        <thead><tr>
+          <th>ID</th><th>Code</th><th>Title</th><th>Track</th><th>Level</th><th>Sections</th><th>Activities</th><th></th>
+        </tr></thead>
+        <tbody id="labRows"></tbody>
+      </table>
+      <p class="muted" id="labCount" style="margin-top:10px"></p>
+    </section>
+
+    <!-- ============== Workshop ============== -->
+    <section id="tab-workshop" class="hidden">
+      <div class="toolbar">
+        <input id="wsSearch" placeholder="Search post text…" style="min-width:220px">
+        <label style="display:flex;align-items:center;gap:6px;margin:0">
+          <input type="checkbox" id="wsReportedOnly" style="width:auto"> Reported only
+        </label>
+        <button class="ghost" id="wsRefreshBtn">Search / Refresh</button>
+        <button class="ghost" id="wsReportsBtn">Reports queue (<span id="wsReportCount">0</span>)</button>
+      </div>
+      <table>
+        <thead><tr>
+          <th>ID</th><th>Author</th><th>Track</th><th>Post</th><th>Reports</th><th>State</th><th></th>
+        </tr></thead>
+        <tbody id="wsRows"></tbody>
+      </table>
+    </section>
+
+    <!-- ============== Users ============== -->
+    <section id="tab-users" class="hidden">
+      <div class="toolbar">
+        <input id="userSearch" placeholder="Search email or name…" style="min-width:230px">
+        <select id="filterStatus">
+          <option value="">All statuses</option>
+          <option value="active">Active</option>
+          <option value="suspended">Suspended</option>
+          <option value="banned">Banned</option>
+        </select>
+        <select id="filterTrack2"><option value="">All tracks</option></select>
+        <button class="ghost" id="userRefreshBtn">Search / Refresh</button>
+        <span class="spacer" style="flex:1"></span>
+        <button class="ghost" id="exportUsersBtn" title="Download all users as CSV">⬇ users.csv</button>
+        <button class="ghost" id="exportAttemptsBtn" title="Download all attempts as CSV">⬇ attempts.csv</button>
+      </div>
+      <table>
+        <thead><tr>
+          <th>User</th><th>Status</th><th>Track</th><th>Level / XP</th>
+          <th>Readiness</th><th>Attempts</th><th>Pass rate</th><th>Joined</th><th></th>
+        </tr></thead>
+        <tbody id="userRows"></tbody>
+      </table>
+      <div class="pager">
+        <button class="ghost small" id="usersPrev">‹ Prev</button>
+        <span class="muted" id="usersPageInfo"></span>
+        <button class="ghost small" id="usersNext">Next ›</button>
+      </div>
+    </section>
+
+    <!-- ============== Approvals ============== -->
+    <section id="tab-approvals" class="hidden">
+      <div class="toolbar">
+        <select id="approvalStatus">
+          <option value="pending">Pending review</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <button class="ghost" id="approvalRefreshBtn">Refresh</button>
+        <span class="muted" style="font-size:12px">Tasks must be approved here before they can be published to learners.</span>
+      </div>
+      <table>
+        <thead><tr>
+          <th>ID</th><th>Feature</th><th>Track</th><th>Title</th><th>State</th><th>Reviewer / note</th><th></th>
+        </tr></thead>
+        <tbody id="approvalRows"></tbody>
+      </table>
+    </section>
+
+    <!-- ============== Analytics ============== -->
+    <section id="tab-analytics" class="hidden">
+      <div class="toolbar">
+        <button class="ghost" id="analyticsRefreshBtn">Refresh</button>
+      </div>
+      <div class="cards" id="anCards"></div>
+      <div class="grid2">
+        <div class="panel">
+          <h3>Weekly signups (12 weeks)</h3>
+          <div class="chart" id="anSignupChart"></div>
+        </div>
+        <div class="panel">
+          <h3>Attempts — last 30 days</h3>
+          <div class="chart" id="anActivityChart"></div>
+          <div class="muted" style="font-size:12px">Green = passed · grey-blue = failed</div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="panel">
+          <h3>Feature performance</h3>
+          <table><thead><tr>
+            <th>Feature</th><th>Attempts</th><th>Users</th><th>Avg score</th><th>Pass rate</th>
+          </tr></thead><tbody id="anFeatureRows"></tbody></table>
+        </div>
+        <div class="panel">
+          <h3>Workshop & community</h3>
+          <div id="anWorkshop"></div>
+        </div>
+        <div class="panel">
+          <h3>Token economy</h3>
+          <div id="anTokens"></div>
+        </div>
+        <div class="panel">
+          <h3>AI feature usage (30 days)</h3>
+          <div id="anLlm"></div>
+        </div>
+        <div class="panel">
+          <h3>Admin actions (30 days)</h3>
+          <div id="anMod"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Answers by department</h3>
+        <table><thead><tr>
+          <th>Department</th><th>Users</th><th>Answers</th><th>Graded</th><th>Passed</th><th>Pass rate</th><th>Avg score</th>
+        </tr></thead><tbody id="anDeptRows"></tbody></table>
+      </div>
+      <div class="panel">
+        <h3>Per-department feature breakdown</h3>
+        <table><thead><tr>
+          <th>Department</th><th>Feature</th><th>Answers</th><th>Avg score</th><th>Pass rate</th>
+        </tr></thead><tbody id="anDeptFeatureRows"></tbody></table>
+      </div>
+    </section>
+
+    <!-- ============== Track Progress ============== -->
+    <section id="tab-progress" class="hidden">
+      <div class="toolbar">
+        <button class="ghost" id="exportTracksBtn">⬇ tracks.csv</button>
+      </div>
+      <div class="panel">
+        <h3>Signup → competence funnel</h3>
+        <div id="funnelRows2"></div>
+      </div>
+      <div class="panel">
+        <h3>Attempts — last 14 days</h3>
+        <div class="chart" id="activityChart"></div>
+        <div class="muted" style="font-size:12px">Green = passed · grey-blue = failed</div>
+      </div>
+      <div id="trackCards"></div>
+      <div class="panel">
+        <h3>Content balance (feature × track)</h3>
+        <div id="balanceHeatmap"></div>
+      </div>
+      <div class="panel">
+        <h3>Cohorts (signup month)</h3>
+        <table><thead><tr>
+          <th>Cohort</th><th>Users</th><th>With progress</th><th>Active 30d</th><th>Avg readiness</th><th>Avg XP</th>
+        </tr></thead><tbody id="cohortRows"></tbody></table>
+      </div>
+      <div class="panel">
+        <h3>Average skill score by dimension</h3>
+        <div id="dimRows"></div>
+      </div>
+      <div class="panel">
+        <h3>Hardest tasks (lowest pass rate, min 3 attempts)</h3>
+        <table><thead><tr>
+          <th>ID</th><th>Feature</th><th>Track</th><th>Title</th><th>Attempts</th><th>Pass rate</th>
+        </tr></thead><tbody id="hardestRows"></tbody></table>
+      </div>
+    </section>
+
+    <!-- ============== System ============== -->
+    <section id="tab-system" class="hidden">
+      <div class="grid2">
+        <div class="panel">
+          <h3>Platform health</h3>
+          <div id="sysHealth"><p class="muted">Loading…</p></div>
+          <button class="ghost small" id="sysRefresh" style="margin-top:10px">Refresh</button>
+        </div>
+        <div class="panel">
+          <h3>Runtime configuration</h3>
+          <div id="configRows"><p class="muted">Loading…</p></div>
+        </div>
+        <div class="panel">
+          <h3>Admin roles (registry)</h3>
+          <div id="adminRows"><p class="muted">Loading…</p></div>
+          <div class="toolbar" style="margin-top:12px">
+            <input id="adminEmail" placeholder="admin@email.com" style="min-width:200px">
+            <select id="adminRole">
+              <option value="admin">admin</option>
+              <option value="super">super</option>
+              <option value="moderator">moderator</option>
+            </select>
+            <button class="primary small" id="adminAddBtn">Add / update</button>
+          </div>
+          <p class="muted" style="font-size:12px">ADMIN_EMAILS entries ("email" or "email:role") still work; registry rows take precedence. Only super admins manage this list.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== Audit log ============== -->
+    <section id="tab-moderation" class="hidden">
+      <div class="toolbar">
+        <button class="ghost" id="modRefreshBtn">Refresh</button>
+      </div>
+      <table>
+        <thead><tr><th>When</th><th>Admin</th><th>Action</th><th>Target</th><th>Reason</th></tr></thead>
+        <tbody id="modRows"></tbody>
+      </table>
+    </section>
+  </main>
+</div>
+
+<!-- Add / Edit task -->
+<dialog id="addDialog">
+  <h2 style="margin-top:0" id="addDialogTitle">Add task</h2>
+  <div class="form-grid">
+    <div>
+      <label>Feature</label>
+      <select id="fFeature" class="wide">
+        <option value="verification">Verification</option>
+        <option value="judgement">AI Judgement</option>
+        <option value="risk_governance">Risk & Governance</option>
+      </select>
+    </div>
+    <div>
+      <label>Industry track</label>
+      <select id="fTrack" class="wide"></select>
+    </div>
+    <div id="fFormatWrap">
+      <label>Format</label>
+      <select id="fFormat" class="wide">
+        <option value="choice">Choice (pick an option)</option>
+        <option value="line_text">Line text (find the flawed lines)</option>
+      </select>
+    </div>
+    <div>
+      <label>Difficulty</label>
+      <select id="fDifficulty" class="wide">
+        <option value="easy">Easy</option>
+        <option value="medium" selected>Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+    </div>
+    <div class="full">
+      <p class="muted" style="font-size:12px;margin:2px 0">New tasks start as drafts and must be approved by a moderator (Approvals tab) before they can be published to learners.</p>
+    </div>
+    <div class="full">
+      <label>Title</label>
+      <input id="fTitle" class="wide" maxlength="255" placeholder="Short headline">
+    </div>
+    <div class="full">
+      <label>Scenario (the AI output / situation shown to the learner)</label>
+      <textarea id="fScenario" class="wide"></textarea>
+    </div>
+    <div class="full" id="fFlawWrap">
+      <label>Embedded flaw</label>
+      <textarea id="fFlaw" class="wide"></textarea>
+    </div>
+    <div class="full" id="fExpectedWrap">
+      <label>Expected answer (shown as the model correction)</label>
+      <textarea id="fExpected" class="wide"></textarea>
+    </div>
+    <div class="full">
+      <label>Feedback (shown after submission)</label>
+      <textarea id="fFeedback" class="wide"></textarea>
+    </div>
+
+    <!-- line_text fields -->
+    <div class="full hidden" id="lineTextFields">
+      <label>AI output lines (one per line; line numbers start at 1)</label>
+      <textarea id="fLines" class="wide" rows="6" placeholder="Line 1&#10;Line 2&#10;Line 3"></textarea>
+      <div class="form-grid" style="margin-top:10px">
+        <div>
+          <label>Flawed line numbers (comma-separated)</label>
+          <input id="fFlawLines" class="wide" placeholder="e.g. 2, 5">
+        </div>
+        <div>
+          <label>Fix keywords (comma-separated)</label>
+          <input id="fFixKeywords" class="wide">
+        </div>
+        <div class="full">
+          <label>Reason keywords (comma-separated)</label>
+          <input id="fReasonKeywords" class="wide">
+        </div>
+      </div>
+    </div>
+
+    <!-- choice options -->
+    <div class="full hidden" id="choiceFields">
+      <div class="section-title">Answer options (100 = correct)</div>
+      <div id="answerRows"></div>
+      <button class="ghost" id="addAnswerRow">+ Add option</button>
+    </div>
+
+    <!-- judgement / risk options -->
+    <div class="full hidden" id="decisionFields">
+      <div class="section-title">Decision options (100 = best)</div>
+      <div id="decisionRows"></div>
+      <button class="ghost" id="addDecisionRow">+ Add decision</button>
+      <div class="section-title">Reason options (100 = best)</div>
+      <div id="reasonRows"></div>
+      <button class="ghost" id="addReasonRow">+ Add reason</button>
+    </div>
+  </div>
+  <div class="error" id="addError"></div>
+  <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:16px">
+    <button class="ghost" id="cancelAdd">Cancel</button>
+    <button class="primary" id="saveTask">Create task</button>
+  </div>
+</dialog>
+
+<!-- Learner-view task preview -->
+<dialog id="previewDialog" class="wide">
+  <div class="detail-head">
+    <h2 id="pvTitle"></h2>
+    <span id="pvMeta"></span>
+    <span class="spacer" style="flex:1"></span>
+    <button class="ghost" id="pvClose">✕ Close</button>
+  </div>
+  <p class="muted" id="pvScenarioLabel" style="margin:14px 0 4px">SCENARIO — what the learner sees</p>
+  <div class="panel" id="pvScenario" style="white-space:pre-wrap; margin-bottom:10px"></div>
+  <div id="pvBody"></div>
+  <div class="panel" style="margin-top:10px">
+    <h3>Feedback shown after submission</h3>
+    <div id="pvFeedback" style="white-space:pre-wrap"></div>
+  </div>
+</dialog>
+
+<!-- Per-task answer drill-down: right/wrong totals, option pick distribution,
+     and every recorded answer with the learner, score and submitted answer. -->
+<dialog id="answersDialog" class="wide">
+  <div class="detail-head">
+    <h2 id="ansTitle">Answers</h2>
+    <span id="ansMeta"></span>
+    <span class="spacer" style="flex:1"></span>
+    <button class="ghost" id="ansClose">✕ Close</button>
+  </div>
+  <div class="cards" id="ansStats" style="margin-top:14px"></div>
+  <div class="panel">
+    <h3>Option picks (graded attempts)</h3>
+    <p class="muted" style="font-size:12px;margin:0 0 8px">How many learners chose each option. ✓ marks the correct/best option.</p>
+    <div id="ansOptions"></div>
+  </div>
+  <div class="panel">
+    <h3>Recent answers</h3>
+    <table>
+      <thead><tr>
+        <th>Learner</th><th>Department</th><th>Result</th><th>Score</th><th>Answer</th><th>When</th>
+      </tr></thead>
+      <tbody id="ansRows"></tbody>
+    </table>
+  </div>
+</dialog>
+
+<!-- Bulk import -->
+<dialog id="importDialog" class="wide">
+  <h2 style="margin-top:0">Bulk import tasks</h2>
+  <p class="muted">Paste JSON — an array of task objects in the same shape as the seed files. Use <em>Dry run</em> first to validate without writing.</p>
+  <textarea id="importText" class="wide" rows="14" placeholder='[{"feature":"verification","track_id":1,"format":"choice","title":"...","scenario":"...","embedded_flaw":"...","expected_answer":"...","feedback":"...","difficulty":"easy","options":[{"label":"...","score":0},{"label":"...","score":100}]}]'></textarea>
+  <div class="toolbar" style="margin-top:12px">
+    <button class="ghost" id="importDryBtn">Dry run</button>
+    <button class="primary" id="importRunBtn">Import valid tasks</button>
+    <span class="spacer" style="flex:1"></span>
+    <button class="ghost" id="importCancel">Close</button>
+  </div>
+  <div class="error" id="importError"></div>
+  <div class="ok" id="importOk"></div>
+</dialog>
+
+<!-- Lab lesson editor -->
+<dialog id="labDialog" class="wide">
+  <div class="detail-head">
+    <h2 id="labTitle"></h2>
+    <span class="muted" id="labMeta"></span>
+    <span class="spacer" style="flex:1"></span>
+    <button class="ghost" id="labClose">✕ Close</button>
+  </div>
+  <div id="labSections"></div>
+</dialog>
+
+<!-- User detail -->
+<dialog id="userDialog" class="wide">
+  <input type="hidden" id="udDialogUserId">
+  <div class="detail-head">
+    <h2 id="udName"></h2>
+    <span id="udStatus"></span>
+    <span class="spacer" style="flex:1"></span>
+    <button class="ghost" id="udClose">✕ Close</button>
+  </div>
+  <p class="muted" id="udEmail" style="margin:4px 0 14px"></p>
+  <div class="grid2">
+    <div class="panel" style="margin:0">
+      <h3>Progress</h3>
+      <div id="udProgress"></div>
+    </div>
+    <div class="panel" style="margin:0">
+      <h3>Skill scores</h3>
+      <div id="udSkills"></div>
+    </div>
+    <div class="panel" style="margin:0">
+      <h3>Moderate</h3>
+      <div id="udActions"></div>
+      <div class="section-title">Grant XP / tokens</div>
+      <div class="opt-row" style="grid-template-columns:1fr 1fr 110px">
+        <input id="udGrantXp" type="number" min="0" value="0" title="XP to grant">
+        <input id="udGrantTokens" type="number" min="0" value="0" title="Tokens to grant">
+        <button class="primary small" id="udGrantBtn">Grant</button>
+      </div>
+      <label style="margin-top:6px">Reason (recorded in the audit log)</label>
+      <input id="udGrantReason" class="wide" placeholder="e.g. compensation for outage bug">
+      <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
+      <div class="section-title">Data tools</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="ghost small" id="udExportBtn">⬇ Export data (GDPR)</button>
+        <button class="ghost small" id="udFirebaseBtn">Firebase: disable</button>
+        <button class="danger small" id="udDeleteBtn">Hard delete (GDPR)</button>
+      </div>
+      <div class="error" id="udError"></div>
+    </div>
+    <div class="panel" style="margin:0">
+      <h3>Achievements</h3>
+      <div id="udAchievements"></div>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <h3>Recent attempts</h3>
+    <table><thead><tr>
+      <th>When</th><th>Feature</th><th>Task</th><th>Score</th><th>Result</th><th>XP</th>
+    </tr></thead><tbody id="udAttempts"></tbody></table>
+  </div>
+  <div class="panel">
+    <h3>Moderation history</h3>
+    <div id="udModeration"></div>
+  </div>
+</dialog>
+
+<!-- Status change confirm -->
+<dialog id="statusDialog">
+  <h2 style="margin-top:0" id="sdTitle"></h2>
+  <p class="muted" id="sdText"></p>
+  <label>Reason (optional, recorded in the audit log)</label>
+  <input id="sdReason" class="wide" placeholder="Why is this account being moderated?">
+  <div class="error" id="sdError"></div>
+  <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:16px">
+    <button class="ghost" id="sdCancel">Cancel</button>
+    <button id="sdConfirm">Confirm</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Same Firebase project as the Flutter app (mobile/lib/firebase_options.dart,
+// Android entrypoint values).
+firebase.initializeApp({
+  apiKey: 'AIzaSyABa2VQB4aN9ExXa-yDHD-YIhR9Cu572P0',
+  authDomain: 'verif-ai-5a435.firebaseapp.com',
+  projectId: 'verif-ai-5a435',
+});
+
+const $ = (id) => document.getElementById(id);
+let tracks = [];
+let myRole = 'admin';
+let usersPage = 0;
+const USERS_PAGE_SIZE = 50;
+let editingTaskId = null; // set when the add dialog edits an existing task
+
+function toast(message, isError) {
+  const el = $('toast');
+  el.textContent = message;
+  el.className = 'toast show' + (isError ? ' err' : '');
+  setTimeout(() => { el.className = 'toast' + (isError ? ' err' : ''); }, 3200);
+}
+
+async function api(path, options = {}) {
+  const token = await firebase.auth().currentUser.getIdToken();
+  const res = await fetch('/api/admin' + path, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + token,
+      ...(options.headers || {}),
+    },
+  });
+  if (path.endsWith('.csv')) {
+    if (!res.ok) throw new Error('Export failed.');
+    return res.text();
+  }
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || ('HTTP ' + res.status));
+  return body;
+}
+
+function downloadText(filename, text) {
+  const blob = new Blob([text], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ---------------------------------------------------------------- sign-in
+firebase.auth().onAuthStateChanged(async (user) => {
+  if (!user) {
+    $('loginView').classList.remove('hidden');
+    $('appView').classList.add('hidden');
+    return;
+  }
+  $('loginView').classList.add('hidden');
+  $('appView').classList.remove('hidden');
+  $('userEmail').textContent = user.email || '';
+  await loadAll().catch((err) => {
+    toast(err.message, true);
+    if (/Admin access required|requires/i.test(err.message)) firebase.auth().signOut();
+  });
+});
+
+$('loginBtn').onclick = async () => {
+  $('loginError').textContent = '';
+  try {
+    await firebase.auth().signInWithEmailAndPassword($('loginEmail').value, $('loginPassword').value);
+  } catch (err) {
+    $('loginError').textContent = err.message;
+  }
+};
+$('loginPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('loginBtn').click(); });
+$('logoutBtn').onclick = () => firebase.auth().signOut();
+
+// ---------------------------------------------------------------- tabs
+for (const btn of document.querySelectorAll('nav.tabs button')) {
+  btn.onclick = async () => {
+    for (const b of document.querySelectorAll('nav.tabs button')) b.classList.toggle('active', b === btn);
+    for (const s of document.querySelectorAll('main > section')) s.classList.toggle('hidden', s.id !== 'tab-' + btn.dataset.tab);
+    try {
+      if (btn.dataset.tab === 'tasks') await reloadTasks();
+      if (btn.dataset.tab === 'users') await reloadUsers();
+      if (btn.dataset.tab === 'progress') await loadTrackProgress();
+      if (btn.dataset.tab === 'moderation') await loadModeration();
+      if (btn.dataset.tab === 'content') await loadLab();
+      if (btn.dataset.tab === 'workshop') await loadWorkshop();
+      if (btn.dataset.tab === 'system') await loadSystem();
+      if (btn.dataset.tab === 'approvals') await loadApprovals();
+      if (btn.dataset.tab === 'analytics') await loadAnalytics();
+      if (btn.dataset.tab === 'overview') await loadAll();
+    } catch (err) { toast(err.message, true); }
+  };
+}
+
+// ---------------------------------------------------------------- overview
+async function loadAll() {
+  const [overview, tasks, progress, moderation, config] = await Promise.all([
+    api('/overview'), api('/tasks'), api('/track-progress'), api('/moderation?limit=8'), api('/config'),
+  ]);
+  try {
+    const system = await api('/system');
+    $('roleBadge').textContent = system.role || 'admin';
+  } catch { /* non-fatal */ }
+  $('maintenanceBanner').classList.toggle('hidden', config.config.maintenance_mode !== 'on');
+  tracks = overview.tracks;
+  fillTrackSelects();
+  renderStats(overview);
+  renderTasks(tasks.tasks);
+  renderChart(progress.activity, 'miniChart');
+  renderTrackSummary(tracks);
+  renderFunnel(progress.funnel, 'funnelRows');
+  renderRecentAdmin(moderation.events);
+}
+
+function renderFunnel(f, containerId) {
+  if (!f) { $(containerId).innerHTML = '<p class="muted">No data yet.</p>'; return; }
+  const steps = [
+    ['Signed up', f.signed_up], ['Track selected', f.track_selected],
+    ['First attempt', f.first_attempt], ['Five attempts', f.five_attempts],
+    ['First pass', f.first_pass], ['Active (30d)', f.active_30d],
+  ];
+  const max = Math.max(...steps.map(([, v]) => v), 1);
+  $(containerId).innerHTML = steps.map(([label, v]) => `
+    <div class="funnel-step">
+      <span style="min-width:110px" class="muted">${label}</span>
+      <span class="bar"><div style="width:${Math.round(100 * v / max)}%"></div></span>
+      <strong style="min-width:40px;text-align:right">${v}</strong>
+    </div>`).join('');
+}
+
+function renderRecentAdmin(events) {
+  $('recentAdmin').innerHTML = events.length
+    ? events.slice(0, 6).map((m) => `
+      <div class="kv"><span><span class="pill">${m.action}</span>
+        <span class="muted">${escapeHtml((m.reason || '').slice(0, 70))}</span></span>
+      <span class="muted" style="white-space:nowrap">${(m.created_at || '').slice(0, 10)}</span></div>`).join('')
+    : '<p class="muted">No admin actions yet.</p>';
+}
+
+function renderStats(data) {
+  const byFeature = data.tasks_by_feature || {};
+  $('statCards').innerHTML = [
+    ['Tasks', data.tasks_total],
+    ['Verification', byFeature.verification || 0],
+    ['AI Judgement', byFeature.judgement || 0],
+    ['Risk & Governance', byFeature.risk_governance || 0],
+    ['Users', data.users_total],
+    ['Attempts', data.attempts_total],
+    ['Avg score', data.avg_attempt_score + '%'],
+  ].map(([label, value]) =>
+    `<div class="card"><div class="n">${value}</div><div class="l">${label}</div></div>`
+  ).join('');
+}
+
+function renderTrackSummary(rows) {
+  $('trackSummary').innerHTML = rows.map((t) => `
+    <div class="kv"><span>${escapeHtml(t.name)}</span><span class="muted">${t.task_count} tasks</span></div>`).join('');
+}
+
+function renderChart(rows, containerId) {
+  const max = Math.max(...rows.map((r) => r.attempts), 1);
+  // Thin date labels on dense charts (30 days) so they don't overlap; every
+  // bar keeps its full-detail tooltip regardless.
+  const labelEvery = rows.length > 20 ? 5 : rows.length > 14 ? 3 : rows.length > 7 ? 2 : 1;
+  $(containerId).innerHTML = rows.map((r, i) => {
+    const h = (n) => Math.max(0, Math.min(100, Math.round(100 * n / max)));
+    // Build the bar as one total height split into pass/fail so the segments
+    // always sum to <= 100% — independent rounding used to clip the top.
+    const totalH = r.attempts ? Math.max(h(r.attempts), 2) : 0;
+    const passH = r.attempts ? Math.round(totalH * r.passed / r.attempts) : 0;
+    const failH = r.attempts ? totalH - passH : 0;
+    const label = r.label != null ? r.label : String(r.day).slice(5); // MM-DD
+    return `<div class="col">
+      <div class="stack" title="${r.day}: ${r.attempts} attempts, ${r.passed} passed">
+        ${passH ? `<div class="pass" style="height:${passH}%"></div>` : ''}
+        ${failH ? `<div class="fail" style="height:${failH}%"></div>` : ''}
+      </div>
+      ${r.attempts ? `<div class="lbl">${r.attempts}</div>` : '<div class="lbl">&nbsp;</div>'}
+      <div class="lbl">${i % labelEvery === 0 || i === rows.length - 1 ? label : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ---------------------------------------------------------------- tracks select
+function fillTrackSelects() {
+  const options = tracks.map((t) => `<option value="${t.id}">${escapeHtml(t.name)} (${t.task_count})</option>`).join('');
+  const plain = tracks.map((t) => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+  $('filterTrack').innerHTML = '<option value="">All tracks</option>' + options;
+  $('filterTrack2').innerHTML = '<option value="">All tracks</option>' + plain;
+  $('filterTrack3').innerHTML = '<option value="">All tracks</option>' + plain;
+  $('fTrack').innerHTML = options;
+}
+
+// ---------------------------------------------------------------- tasks
+async function reloadTasks() {
+  const params = new URLSearchParams();
+  if ($('filterFeature').value) params.set('feature', $('filterFeature').value);
+  if ($('filterTrack').value) params.set('track_id', $('filterTrack').value);
+  const data = await api('/tasks' + (params.toString() ? '?' + params : ''));
+  renderTasks(data.tasks);
+}
+
+function renderTasks(tasks) {
+  $('taskRows').innerHTML = tasks.map((t) => `
+    <tr>
+      <td class="muted">${t.id}</td>
+      <td><span class="pill ${t.feature}">${featureLabel(t.feature)}</span></td>
+      <td>${escapeHtml(t.track_name)}</td>
+      <td class="title-cell">
+        <strong>${escapeHtml(t.title || '(untitled)')}</strong><br>
+        <span class="muted">${escapeHtml((t.scenario || '').slice(0, 100))}${(t.scenario || '').length > 100 ? '…' : ''}</span>
+      </td>
+      <td>${t.published === false ? (t.approval === 'pending' ? '<span class="pill draft">pending approval</span>' : t.approval === 'rejected' ? '<span class="pill" style="background:#45202a;color:#ff8fa0">rejected</span>' : '<span class="pill draft">draft</span>') : '<span class="pill live">live</span>'}</td>
+      <td>${t.difficulty ? escapeHtml(t.difficulty) : '<span class="muted">—</span>'}</td>
+      <td class="muted">${t.option_count}</td>
+      <td class="muted">${t.attempt_count}</td>
+      <td class="right" style="white-space:nowrap">
+        <button class="ghost small" data-answers="${t.id}" title="Who answered right/wrong, and which options they picked">Answers</button>
+        <button class="ghost small" data-preview="${t.id}" title="Preview as the learner sees it">Preview</button>
+        <button class="ghost small" data-edit="${t.id}">Edit</button>
+        <button class="danger small" data-delete="${t.id}" data-title="${escapeHtml(t.title || '')}">Delete</button>
+      </td>
+    </tr>`).join('') ||
+    '<tr><td colspan="9" class="muted" style="text-align:center;padding:24px">No tasks match the current filters.</td></tr>';
+  $('taskCount').textContent = `${tasks.length} task${tasks.length === 1 ? '' : 's'} shown`;
+  for (const btn of $('taskRows').querySelectorAll('[data-delete]')) {
+    btn.onclick = () => confirmDelete(btn.dataset.delete, btn.dataset.title);
+  }
+  for (const btn of $('taskRows').querySelectorAll('[data-edit]')) {
+    btn.onclick = () => openTaskEditor(btn.dataset.edit);
+  }
+  for (const btn of $('taskRows').querySelectorAll('[data-preview]')) {
+    btn.onclick = () => openTaskPreview(btn.dataset.preview);
+  }
+  for (const btn of $('taskRows').querySelectorAll('[data-answers]')) {
+    btn.onclick = () => openTaskAnswers(btn.dataset.answers);
+  }
+}
+
+async function confirmDelete(id, title) {
+  if (!confirm(`Delete task #${id}${title ? ' — "' + title + '"' : ''}?\n\nThis also removes its options and every recorded attempt. This cannot be undone.`)) return;
+  try {
+    await api('/tasks/' + id, { method: 'DELETE' });
+    toast('Task #' + id + ' deleted.');
+    await loadAll();
+  } catch (err) {
+    toast(err.message, true);
+  }
+}
+
+$('refreshBtn').onclick = () => reloadTasks().catch((e) => toast(e.message, true));
+$('filterFeature').onchange = () => reloadTasks().catch((e) => toast(e.message, true));
+$('filterTrack').onchange = () => reloadTasks().catch((e) => toast(e.message, true));
+
+// ---------------------------------------------------------------- preview
+async function openTaskPreview(taskId) {
+  const data = await api('/tasks/' + taskId);
+  const t = data.task, c = data.content;
+  $('pvTitle').textContent = c.title || '(untitled)';
+  $('pvMeta').innerHTML =
+    `<span class="pill ${t.feature}">${featureLabel(t.feature)}</span>` +
+    `<span class="muted">${escapeHtml(t.track_name || '')}</span>` +
+    (c.difficulty ? `<span class="muted">${escapeHtml(c.difficulty)}</span>` : '') +
+    (t.published ? '<span class="pill live">live</span>' : '<span class="pill draft">draft — hidden from learners</span>');
+  $('pvScenario').textContent = c.scenario || '';
+  $('pvFeedback').textContent = c.feedback || '';
+
+  if (t.feature === 'verification' && c.format === 'line_text') {
+    $('pvScenarioLabel').textContent = 'SCENARIO — tap the flawed line(s), then fix and explain';
+    const flawLines = c.flaw_lines || [];
+    const lines = c.ai_output_lines || [];
+    $('pvBody').innerHTML = `
+      <div class="panel">
+        <h3>AI output (tap flawed lines)</h3>
+        ${lines.map((line, i) => `
+          <div class="kv" style="${flawLines.includes(i + 1) ? 'background:#453a1c;border-radius:6px;padding:5px 8px' : ''}">
+            <span><span class="muted">${i + 1}.</span> ${escapeHtml(line)}</span>
+            ${flawLines.includes(i + 1) ? '<span class="pill draft">flaw</span>' : ''}
+          </div>`).join('')}
+      </div>
+      <div class="panel"><h3>Fix keywords</h3><p class="muted">${(c.fix_keywords || []).map(escapeHtml).join(' · ')}</p></div>
+      <div class="panel"><h3>Reason keywords</h3><p class="muted">${(c.reason_keywords || []).map(escapeHtml).join(' · ')}</p></div>`;
+  } else if (t.feature === 'verification') {
+    $('pvScenarioLabel').textContent = 'SCENARIO — pick the answer that fixes the flaw';
+    const answerOptions = data.options.filter((o) => o.kind === 'answer');
+    $('pvBody').innerHTML = `
+      <div class="panel">
+        <h3>Embedded flaw (internal — not shown to learners)</h3>
+        <p>${escapeHtml(c.embedded_flaw || '')}</p>
+        <h3>Options (scores are internal)</h3>
+        ${answerOptions.map((o) => `
+          <div class="kv"><span>${o.score >= 100 ? '✓ ' : ''}${escapeHtml(o.label)}</span>
+          <span class="muted">${o.score}</span></div>`).join('')}
+      </div>`;
+  } else {
+    $('pvScenarioLabel').textContent = 'SCENARIO — choose a decision and a reason';
+    const decisions = data.options.filter((o) => o.kind === 'decision');
+    const reasons = data.options.filter((o) => o.kind === 'reason');
+    $('pvBody').innerHTML = `
+      <div class="panel">
+        <h3>Decision options (scores are internal)</h3>
+        ${decisions.map((o) => `
+          <div class="kv"><span>${o.score >= Math.max(...decisions.map((d) => d.score)) ? '✓ ' : ''}${escapeHtml(o.label)}</span>
+          <span class="muted">${o.score}</span></div>`).join('')}
+        <h3>Reason options</h3>
+        ${reasons.map((o) => `
+          <div class="kv"><span>${o.score >= Math.max(...reasons.map((r) => r.score)) ? '✓ ' : ''}${escapeHtml(o.label)}</span>
+          <span class="muted">${o.score}</span></div>`).join('')}
+      </div>`;
+  }
+  $('previewDialog').showModal();
+}
+$('pvClose').onclick = () => $('previewDialog').close();
+
+// ---------------------------------------------------------------- answers drill-down
+async function openTaskAnswers(taskId) {
+  $('ansTitle').textContent = 'Answers';
+  $('ansMeta').innerHTML = '<span class="muted">Loading…</span>';
+  $('ansStats').innerHTML = '';
+  $('ansOptions').innerHTML = '';
+  $('ansRows').innerHTML = '';
+  $('answersDialog').showModal();
+
+  let data;
+  try {
+    data = await api('/tasks/' + taskId + '/answers');
+  } catch (err) {
+    $('ansMeta').innerHTML = `<span class="error">${escapeHtml(err.message)}</span>`;
+    return;
+  }
+
+  const t = data.task, s = data.stats;
+  const passRate = s.graded ? Math.round(100 * s.right / s.graded) : null;
+  $('ansTitle').textContent = 'Answers — task #' + t.id;
+  $('ansMeta').innerHTML =
+    `<span class="pill ${t.feature}">${featureLabel(t.feature)}</span>` +
+    `<span class="muted">${escapeHtml(t.track_name || '')}</span>` +
+    (t.published ? '<span class="pill live">live</span>' : '<span class="pill draft">draft</span>');
+
+  $('ansStats').innerHTML = [
+    ['Graded answers', s.graded],
+    ['Right', s.right],
+    ['Wrong', s.wrong],
+    ['Pass rate', passRate == null ? '—' : passRate + '%'],
+    ['Avg score', s.avg_score + '%'],
+    ['Practice runs', s.practice],
+  ].map(([label, value]) =>
+    `<div class="card"><div class="n">${value}</div><div class="l">${label}</div></div>`
+  ).join('');
+
+  // Option pick distribution. Options come back with their internal score, so
+  // the best-scoring option per kind is marked correct (100 for verification;
+  // the top decision/reason for judgement & risk tasks). Picks are share-of-
+  // kind: judgement attempts pick one decision AND one reason, so shares must
+  // not be summed across kinds.
+  const maxByKind = {};
+  const totalByKind = {};
+  for (const o of data.options) {
+    maxByKind[o.kind] = Math.max(maxByKind[o.kind] ?? -1, o.score);
+    totalByKind[o.kind] = (totalByKind[o.kind] || 0) + o.picked;
+  }
+  $('ansOptions').innerHTML = data.options.length
+    ? data.options.map((o) => {
+      const correct = o.score >= 100 || (maxByKind[o.kind] > 0 && o.score === maxByKind[o.kind]);
+      const pct = Math.round(100 * o.picked / (totalByKind[o.kind] || 1));
+      return `<div class="kv">
+        <span>${correct ? '✓ ' : ''}<span class="pill ${t.feature}" style="margin-right:6px">${o.kind}</span>${escapeHtml(o.label)}</span>
+        <span style="display:flex; align-items:center; gap:8px; white-space:nowrap">
+          <span class="bar" style="width:90px"><div style="width:${pct}%"></div></span>
+          <span class="muted" style="min-width:64px; text-align:right">${o.picked} pick${o.picked === 1 ? '' : 's'}</span>
+        </span>
+      </div>`;
+    }).join('')
+    : '<p class="muted">No options recorded for this task.</p>';
+
+  // Recent answers (up to 200, newest first).
+  $('ansRows').innerHTML = data.answers.length
+    ? data.answers.map((a) => `
+      <tr>
+        <td>${escapeHtml(a.user_name || a.user_email || 'Unknown')}</td>
+        <td class="muted">${escapeHtml(a.practice ? '—' : (t.track_name || '—'))}</td>
+        <td>${a.practice
+          ? '<span class="pill draft">practice</span>'
+          : (a.passed ? '<span class="pill live">right</span>' : '<span class="pill st-banned">wrong</span>')}</td>
+        <td>${a.score}%</td>
+        <td class="title-cell muted">${escapeHtml((a.answer_summary || '').slice(0, 140))}${(a.answer_summary || '').length > 140 ? '…' : ''}</td>
+        <td class="muted" style="white-space:nowrap">${(a.submitted_at || '').slice(0, 16).replace('T', ' ')}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="6" class="muted" style="text-align:center;padding:20px">No answers recorded yet.</td></tr>';
+}
+$('ansClose').onclick = () => $('answersDialog').close();
+
+// ---------------------------------------------------------------- add / edit task
+const FEATURE_FIELDS = {
+  verification: { format: true, flaw: true, expected: true, choice: true, decision: false, lineText: true },
+  judgement: { format: false, flaw: false, expected: false, choice: false, decision: true, lineText: false },
+  risk_governance: { format: false, flaw: false, expected: false, choice: false, decision: true, lineText: false },
+};
+
+function syncFieldVisibility() {
+  const cfg = FEATURE_FIELDS[$('fFeature').value];
+  const format = $('fFormat').value;
+  $('fFormatWrap').style.display = cfg.format ? '' : 'none';
+  $('fFlawWrap').style.display = cfg.flaw ? '' : 'none';
+  $('fExpectedWrap').style.display = cfg.expected ? '' : 'none';
+  $('choiceFields').classList.toggle('hidden', !(cfg.choice && format === 'choice'));
+  $('lineTextFields').classList.toggle('hidden', !(cfg.choice && format === 'line_text'));
+  $('decisionFields').classList.toggle('hidden', !cfg.decision);
+}
+
+function addOptionRow(containerId, kinds, values) {
+  const row = document.createElement('div');
+  row.className = 'opt-row';
+  const kindCell = kinds.length > 1
+    ? `<select class="kind">${kinds.map((k) => `<option value="${k}" ${values?.kind === k ? 'selected' : ''}>${k}</option>`).join('')}</select>`
+    : `<span class="muted" style="font-size:12px">${kinds[0]}</span><input type="hidden" class="kind" value="${kinds[0]}">`;
+  row.innerHTML = `${kindCell}
+    <input class="label" placeholder="Option text" maxlength="2000" value="${escapeHtml(values?.label || '')}">
+    <input class="score" type="number" min="0" max="100" value="${values?.score ?? 0}" title="Score 0-100">
+    <button class="ghost" title="Remove option">✕</button>`;
+  row.querySelector('button').onclick = () => row.remove();
+  $(containerId).appendChild(row);
+}
+
+$('addBtn').onclick = () => {
+  editingTaskId = null;
+  $('addDialogTitle').textContent = 'Add task';
+  $('saveTask').textContent = 'Create task';
+  $('fFeature').disabled = false;
+  $('fTrack').disabled = false;
+  $('addError').textContent = '';
+  $('addDialog').showModal();
+  syncFieldVisibility();
+};
+$('fFeature').onchange = syncFieldVisibility;
+$('fFormat').onchange = syncFieldVisibility;
+$('addAnswerRow').onclick = () => addOptionRow('answerRows', ['answer']);
+$('addDecisionRow').onclick = () => addOptionRow('decisionRows', ['decision']);
+$('addReasonRow').onclick = () => addOptionRow('reasonRows', ['reason']);
+$('cancelAdd').onclick = () => $('addDialog').close();
+
+async function openTaskEditor(taskId) {
+  let data;
+  try {
+    data = await api('/tasks/' + taskId);
+  } catch (err) { toast(err.message, true); return; }
+  const t = data.task, c = data.content;
+  editingTaskId = taskId;
+  $('addDialogTitle').textContent = `Edit task #${taskId}`;
+  $('saveTask').textContent = 'Save changes';
+  $('fFeature').value = t.feature;
+  $('fFeature').disabled = true; // feature cannot change after creation
+  $('fTrack').value = t.track_id;
+  if (c.difficulty) $('fDifficulty').value = c.difficulty;
+  $('fTitle').value = c.title || '';
+  $('fScenario').value = c.scenario || '';
+  $('fFeedback').value = c.feedback || '';
+  $('fFlaw').value = c.embedded_flaw || '';
+  $('fExpected').value = c.expected_answer || '';
+  $('fFormat').value = c.format || 'choice';
+  $('fLines').value = (c.ai_output_lines || []).join('\n');
+  $('fFlawLines').value = (c.flaw_lines || []).join(', ');
+  $('fFixKeywords').value = (c.fix_keywords || []).join(', ');
+  $('fReasonKeywords').value = (c.reason_keywords || []).join(', ');
+
+  // Rebuild option rows from stored data.
+  $('answerRows').innerHTML = '';
+  $('decisionRows').innerHTML = '';
+  $('reasonRows').innerHTML = '';
+  const byKind = { answer: [], decision: [], reason: [] };
+  for (const o of data.options) (byKind[o.kind] = byKind[o.kind] || []).push(o);
+  (byKind.answer.length ? byKind.answer : [null]).forEach((o) => addOptionRow('answerRows', ['answer'], o));
+  (byKind.decision.length ? byKind.decision : [null]).forEach((o) => addOptionRow('decisionRows', ['decision'], o));
+  (byKind.reason.length ? byKind.reason : [null]).forEach((o) => addOptionRow('reasonRows', ['reason'], o));
+
+  $('addError').textContent = '';
+  $('addDialog').showModal();
+  syncFieldVisibility();
+}
+
+$('saveTask').onclick = async () => {
+  $('addError').textContent = '';
+  const feature = $('fFeature').value;
+
+  if (editingTaskId) {
+    // ---- update path ----
+    const body = {
+      track_id: Number($('fTrack').value),
+      title: $('fTitle').value.trim(),
+      scenario: $('fScenario').value.trim(),
+      feedback: $('fFeedback').value.trim(),
+    };
+    if (feature === 'verification') {
+      body.format = $('fFormat').value;
+      body.difficulty = $('fDifficulty').value;
+      body.embedded_flaw = $('fFlaw').value.trim();
+      body.expected_answer = $('fExpected').value.trim();
+      if (body.format === 'choice') {
+        body.options = collectRows('answerRows', ['answer']);
+      } else {
+        body.ai_output_lines = $('fLines').value.split('\n').map((l) => l.trim()).filter(Boolean);
+        body.flaw_lines = $('fFlawLines').value.split(',').map((n) => Number(n.trim())).filter((n) => Number.isInteger(n) && n > 0);
+        body.fix_keywords = $('fFixKeywords').value.split(',').map((k) => k.trim()).filter(Boolean);
+        body.reason_keywords = $('fReasonKeywords').value.split(',').map((k) => k.trim()).filter(Boolean);
+      }
+    } else {
+      body.decisions = collectRows('decisionRows', ['decision']);
+      body.reasons = collectRows('reasonRows', ['reason']);
+    }
+    try {
+      await api('/tasks/' + editingTaskId, { method: 'PUT', body: JSON.stringify(body) });
+      $('addDialog').close();
+      toast(`Task #${editingTaskId} updated.`);
+      await loadAll();
+    } catch (err) {
+      $('addError').textContent = err.message;
+    }
+    return;
+  }
+
+  // ---- create path ----
+  const body = {
+    feature,
+    track_id: Number($('fTrack').value),
+    title: $('fTitle').value.trim(),
+    scenario: $('fScenario').value.trim(),
+    feedback: $('fFeedback').value.trim(),
+  };
+
+  if (feature === 'verification') {
+    body.format = $('fFormat').value;
+    body.difficulty = $('fDifficulty').value;
+    body.embedded_flaw = $('fFlaw').value.trim();
+    body.expected_answer = $('fExpected').value.trim();
+    if (body.format === 'choice') {
+      body.options = collectRows('answerRows', ['answer']);
+    } else {
+      body.ai_output_lines = $('fLines').value.split('\n').map((l) => l.trim()).filter(Boolean);
+      body.flaw_lines = $('fFlawLines').value.split(',').map((n) => Number(n.trim())).filter((n) => Number.isInteger(n) && n > 0);
+      body.fix_keywords = $('fFixKeywords').value.split(',').map((k) => k.trim()).filter(Boolean);
+      body.reason_keywords = $('fReasonKeywords').value.split(',').map((k) => k.trim()).filter(Boolean);
+    }
+  } else {
+    body.decisions = collectRows('decisionRows', ['decision']);
+    body.reasons = collectRows('reasonRows', ['reason']);
+  }
+
+  try {
+    const result = await api('/tasks', { method: 'POST', body: JSON.stringify(body) });
+    $('addDialog').close();
+    toast(`Task #${result.task.id} created${published ? '' : ' as draft'}.`);
+    await loadAll();
+  } catch (err) {
+    $('addError').textContent = err.message;
+  }
+};
+
+function collectRows(containerId, kinds) {
+  return [...$(containerId).querySelectorAll('.opt-row')].map((row) => ({
+    kind: kinds.length > 1 ? (row.querySelector('.kind').value || kinds[0]) : kinds[0],
+    label: row.querySelector('.label').value.trim(),
+    score: Number(row.querySelector('.score').value),
+  })).filter((o) => o.label);
+}
+
+// ---------------------------------------------------------------- bulk import
+$('importBtn').onclick = () => {
+  $('importError').textContent = '';
+  $('importOk').textContent = '';
+  $('importDialog').showModal();
+};
+$('importCancel').onclick = () => $('importDialog').close();
+
+async function runImport(dryRun) {
+  $('importError').textContent = '';
+  $('importOk').textContent = '';
+  let tasks;
+  try {
+    tasks = JSON.parse($('importText').value);
+  } catch (err) {
+    $('importError').textContent = 'Invalid JSON: ' + err.message;
+    return;
+  }
+  if (!Array.isArray(tasks)) {
+    $('importError').textContent = 'The JSON must be an array of task objects.';
+    return;
+  }
+  try {
+    const result = await api('/tasks/import', {
+      method: 'POST',
+      body: JSON.stringify({ tasks, dry_run: dryRun }),
+    });
+    const summary = dryRun
+      ? `${result.valid} valid / ${result.invalid} invalid (nothing was written).`
+      : `Imported ${result.imported} of ${result.total} tasks (${result.failed} failed).`;
+    (dryRun ? $('importOk') : $('importOk')).textContent = summary;
+    const failures = result.results.filter((r) => !r.ok);
+    if (failures.length) {
+      $('importError').textContent = failures.slice(0, 8)
+        .map((f) => `#${f.index} "${f.title}": ${f.error}`).join('\n') +
+        (failures.length > 8 ? `\n… and ${failures.length - 8} more` : '');
+    }
+    if (!dryRun) { $('importDialog').close(); await loadAll(); }
+  } catch (err) {
+    $('importError').textContent = err.message;
+  }
+}
+$('importDryBtn').onclick = () => runImport(true);
+$('importRunBtn').onclick = () => runImport(false);
+
+// ---------------------------------------------------------------- content (lab)
+async function loadLab() {
+  const params = new URLSearchParams();
+  if ($('filterTrack3').value) params.set('track_id', $('filterTrack3').value);
+  const data = await api('/lab' + (params.toString() ? '?' + params : ''));
+  $('labRows').innerHTML = data.lessons.map((l) => `
+    <tr>
+      <td class="muted">${l.id}</td>
+      <td class="muted">${escapeHtml(l.code)}</td>
+      <td class="title-cell"><strong>${escapeHtml(l.title)}</strong><br>
+        <span class="muted">${escapeHtml((l.summary || '').slice(0, 90))}…</span></td>
+      <td>${escapeHtml(l.track_name || '—')}</td>
+      <td class="muted">${l.level}</td>
+      <td class="muted">${l.section_count}</td>
+      <td class="muted">${l.activity_count}</td>
+      <td><button class="ghost small" data-lab="${l.id}">Edit sections</button></td>
+    </tr>`).join('') ||
+    '<tr><td colspan="8" class="muted" style="text-align:center;padding:24px">No lessons found.</td></tr>';
+  $('labCount').textContent = `${data.lessons.length} lessons`;
+  for (const btn of $('labRows').querySelectorAll('[data-lab]')) {
+    btn.onclick = () => openLabLesson(btn.dataset.lab);
+  }
+}
+$('labRefreshBtn').onclick = () => loadLab().catch((e) => toast(e.message, true));
+$('filterTrack3').onchange = () => loadLab().catch((e) => toast(e.message, true));
+
+async function openLabLesson(lessonId) {
+  const data = await api('/lab/' + lessonId);
+  $('labTitle').textContent = data.lesson.title;
+  $('labMeta').textContent = `${data.lesson.code} · ${data.lesson.track_name || '—'} · ${data.sections.length} sections`;
+  $('labSections').innerHTML = data.sections.map((s) => `
+    <div class="panel" style="margin-bottom:10px">
+      <div class="kv"><strong>${escapeHtml(s.heading)}</strong>
+        <span class="muted">section #${s.id}${s.parent_id ? ` (child of #${s.parent_id})` : ''}</span></div>
+      <textarea class="wide lab-body" data-section="${s.id}" rows="4">${escapeHtml(s.body)}</textarea>
+      <div style="text-align:right;margin-top:6px">
+        <button class="primary small" data-save-section="${s.id}">Save</button>
+      </div>
+    </div>`).join('') || '<p class="muted">This lesson has no sections.</p>';
+  for (const btn of $('labSections').querySelectorAll('[data-save-section]')) {
+    btn.onclick = async () => {
+      const sectionId = btn.dataset.saveSection;
+      const body = $(`labSections`).querySelector(`[data-section="${sectionId}"]`).value;
+      try {
+        await api('/lab/sections/' + sectionId, { method: 'PUT', body: JSON.stringify({ body }) });
+        toast('Section saved.');
+      } catch (err) { toast(err.message, true); }
+    };
+  }
+  $('labDialog').showModal();
+}
+$('labClose').onclick = () => $('labDialog').close();
+
+// ---------------------------------------------------------------- workshop
+async function loadWorkshop() {
+  const params = new URLSearchParams();
+  if ($('wsSearch').value.trim()) params.set('q', $('wsSearch').value.trim());
+  if ($('wsReportedOnly').checked) params.set('reported', '1');
+  const data = await api('/workshop' + (params.toString() ? '?' + params : ''));
+  renderWorkshop(data.posts);
+  // Report count for the queue button
+  try {
+    const reports = await api('/workshop/reports');
+    $('wsReportCount').textContent = reports.reports.length;
+  } catch { /* non-fatal */ }
+}
+
+function renderWorkshop(posts) {
+  $('wsRows').innerHTML = posts.map((p) => `
+    <tr>
+      <td class="muted">#${p.id}</td>
+      <td><strong>${escapeHtml(p.author_name || '(no name)')}</strong><br>
+        <span class="muted">${escapeHtml(p.author_email)}</span>
+        ${p.author_status !== 'active' ? `<br><span class="pill st-${p.author_status}">${p.author_status}</span>` : ''}</td>
+      <td>${escapeHtml(p.track_name || '—')}</td>
+      <td class="title-cell">${escapeHtml(p.body.slice(0, 160))}${p.body.length > 160 ? '…' : ''}</td>
+      <td>${p.report_count ? `<strong style="color:var(--danger)">${p.report_count}</strong>` : '<span class="muted">0</span>'}</td>
+      <td>${p.hidden ? '<span class="pill draft">hidden</span>' : '<span class="pill live">visible</span>'}</td>
+      <td class="right" style="white-space:nowrap">
+        <button class="warnbtn small" data-ws="hide" data-id="${p.id}" data-hidden="${p.hidden}">${p.hidden ? 'Unhide' : 'Hide'}</button>
+        <button class="danger small" data-ws="delete" data-id="${p.id}">Delete</button>
+      </td>
+    </tr>`).join('') ||
+    '<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No posts match.</td></tr>';
+  for (const btn of $('wsRows').querySelectorAll('[data-ws]')) {
+    btn.onclick = () => moderateWorkshop(btn.dataset.ws, btn.dataset.id, btn.dataset.hidden === 'true');
+  }
+}
+
+async function moderateWorkshop(action, postId, currentlyHidden) {
+  if (action === 'delete' && !confirm(`Delete post #${postId} and all of its replies? This cannot be undone.`)) return;
+  try {
+    await api('/workshop/' + postId, {
+      method: 'POST',
+      body: JSON.stringify({ action: action === 'hide' ? (currentlyHidden ? 'unhide' : 'hide') : action }),
+    });
+    toast(`Post #${postId}: ${action} applied.`);
+    await loadWorkshop();
+  } catch (err) {
+    toast(err.message, true);
+  }
+}
+$('wsRefreshBtn').onclick = () => loadWorkshop().catch((e) => toast(e.message, true));
+$('wsReportsBtn').onclick = async () => {
+  try {
+    const data = await api('/workshop/reports');
+    if (!data.reports.length) { toast('No open reports.'); return; }
+    const lines = data.reports.slice(0, 15).map((r) =>
+      `#${r.post_id} — ${r.reason} by ${r.reporter_email} — author ${r.author_email}${r.author_status !== 'active' ? ` (${r.author_status})` : ''}`).join('\n');
+    alert('Reports (newest first):\n\n' + lines);
+  } catch (err) { toast(err.message, true); }
+};
+
+// ---------------------------------------------------------------- users
+async function reloadUsers() {
+  const params = new URLSearchParams();
+  params.set('limit', USERS_PAGE_SIZE);
+  params.set('offset', usersPage * USERS_PAGE_SIZE);
+  const q = $('userSearch').value.trim();
+  if (q) params.set('q', q);
+  if ($('filterStatus').value) params.set('status', $('filterStatus').value);
+  if ($('filterTrack2').value) params.set('track_id', $('filterTrack2').value);
+
+  const data = await api('/users?' + params);
+  const rows = data.users;
+  $('userRows').innerHTML = rows.map((u) => `
+    <tr>
+      <td><strong>${escapeHtml(u.display_name || '(no name)')}</strong><br>
+          <span class="muted">${escapeHtml(u.email)}</span></td>
+      <td><span class="statusdot ${u.status}"></span><span class="pill st-${u.status}">${u.status}</span></td>
+      <td>${escapeHtml(u.track_name || '—')}</td>
+      <td>${u.level ?? 1} / ${u.xp ?? 0}</td>
+      <td>${u.readiness_score ?? 0}</td>
+      <td class="muted">${u.attempts}</td>
+      <td class="muted">${u.attempts ? Math.round(100 * u.passed / u.attempts) + '%' : '—'}</td>
+      <td class="muted">${(u.created_at || '').slice(0, 10)}</td>
+      <td class="right" style="white-space:nowrap">
+        <button class="ghost small" data-user="${u.id}">Details</button>
+        ${u.status !== 'banned' ? `<button class="warnbtn small" data-ban="${u.id}" data-email="${escapeHtml(u.email)}">Ban</button>` : ''}
+        ${u.status !== 'active' ? `<button class="ghost small" data-activate="${u.id}" data-email="${escapeHtml(u.email)}">Reinstate</button>` : ''}
+      </td>
+    </tr>`).join('') ||
+    '<tr><td colspan="9" class="muted" style="text-align:center;padding:24px">No users match.</td></tr>';
+
+  const from = data.total === 0 ? 0 : usersPage * USERS_PAGE_SIZE + 1;
+  const to = Math.min((usersPage + 1) * USERS_PAGE_SIZE, data.total);
+  $('usersPageInfo').textContent = data.total ? `${from}–${to} of ${data.total}` : '0 users';
+  $('usersPrev').disabled = usersPage === 0;
+  $('usersNext').disabled = to >= data.total;
+
+  for (const btn of $('userRows').querySelectorAll('[data-user]')) {
+    btn.onclick = () => openUser(btn.dataset.user);
+  }
+  for (const btn of $('userRows').querySelectorAll('[data-ban]')) {
+    btn.onclick = () => confirmStatus('ban', btn.dataset.ban, btn.dataset.email);
+  }
+  for (const btn of $('userRows').querySelectorAll('[data-activate]')) {
+    btn.onclick = () => confirmStatus('activate', btn.dataset.activate, btn.dataset.email);
+  }
+}
+
+$('userRefreshBtn').onclick = () => { usersPage = 0; reloadUsers().catch((e) => toast(e.message, true)); };
+$('userSearch').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('userRefreshBtn').click(); });
+$('filterStatus').onchange = () => $('userRefreshBtn').click();
+$('filterTrack2').onchange = () => $('userRefreshBtn').click();
+$('usersPrev').onclick = () => { if (usersPage > 0) { usersPage -= 1; reloadUsers().catch((e) => toast(e.message, true)); } };
+$('usersNext').onclick = () => { usersPage += 1; reloadUsers().catch((e) => toast(e.message, true)); };
+$('exportUsersBtn').onclick = async () => {
+  try { downloadText('verifai-users.csv', await api('/export/users.csv')); }
+  catch (err) { toast(err.message, true); }
+};
+$('exportAttemptsBtn').onclick = async () => {
+  try { downloadText('verifai-attempts.csv', await api('/export/attempts.csv')); }
+  catch (err) { toast(err.message, true); }
+};
+$('exportTracksBtn').onclick = async () => {
+  try { downloadText('verifai-tracks.csv', await api('/export/tracks.csv')); }
+  catch (err) { toast(err.message, true); }
+};
+
+// --- status change (suspend / ban / activate) with confirm + reason ---
+let pendingStatus = null;
+function confirmStatus(action, userId, email) {
+  pendingStatus = { action, userId, email };
+  $('sdError').textContent = '';
+  $('sdReason').value = '';
+  if (action === 'ban') {
+    $('sdTitle').textContent = `Ban ${email}?`;
+    $('sdText').textContent = 'A banned account is locked out of the app immediately and permanently. Its data is kept, but the user cannot sign in or use any feature.';
+    $('sdConfirm').className = 'danger';
+  } else if (action === 'suspend') {
+    $('sdTitle').textContent = `Suspend ${email}?`;
+    $('sdText').textContent = 'A suspended account is locked out temporarily. You can reinstate it at any time; its data is kept.';
+    $('sdConfirm').className = 'warnbtn';
+  } else {
+    $('sdTitle').textContent = `Reinstate ${email}?`;
+    $('sdText').textContent = 'The account returns to active and can use the app again.';
+    $('sdConfirm').className = 'primary';
+  }
+  $('statusDialog').showModal();
+}
+$('sdCancel').onclick = () => $('statusDialog').close();
+$('sdConfirm').onclick = async () => {
+  try {
+    await api(`/users/${pendingStatus.userId}/status`, {
+      method: 'POST',
+      body: JSON.stringify({ action: pendingStatus.action, reason: $('sdReason').value }),
+    });
+    $('statusDialog').close();
+    toast(`${pendingStatus.email}: ${pendingStatus.action} applied.`);
+    const shownUserId = $('udDialogUserId') ? $('udDialogUserId').value : null;
+    await reloadUsers().catch(() => {});
+    if ($('userDialog').open && shownUserId) await openUser(shownUserId);
+  } catch (err) {
+    $('sdError').textContent = err.message;
+  }
+};
+
+// --- user detail drawer ---
+let currentUser = null;
+async function openUser(userId) {
+  const data = await api('/users/' + userId);
+  const u = data.user;
+  currentUser = u;
+  $('udDialogUserId').value = userId;
+  $('udName').textContent = u.display_name || '(no name)';
+  $('udEmail').textContent = `${u.email} · id ${u.id} · joined ${(u.created_at || '').slice(0, 10)}`;
+  $('udStatus').innerHTML = `<span class="statusdot ${u.status}"></span><span class="pill st-${u.status}">${u.status}</span>` +
+    (u.status_reason ? ` <span class="muted">— ${escapeHtml(u.status_reason)}</span>` : '');
+
+  $('udProgress').innerHTML = [
+    ['Track', u.track_name || '—'],
+    ['Level', u.level ?? 1],
+    ['XP', u.xp ?? 0],
+    ['Streak', u.streak ?? 0],
+    ['Tokens', u.tokens ?? 0],
+    ['Readiness', `${u.readiness_score ?? 0}/100 (${u.tier || '—'})`],
+    ['Last activity', u.last_activity_date || 'never'],
+  ].map(([k, v]) => `<div class="kv"><span class="muted">${k}</span><span>${escapeHtml(String(v))}</span></div>`).join('');
+
+  $('udSkills').innerHTML = data.skills.length
+    ? data.skills.map((s) => `
+      <div class="kv"><span>${escapeHtml(s.dimension)}</span>
+        <span style="min-width:120px;display:inline-flex;align-items:center;gap:8px">
+          <span class="bar" style="flex:1"><div style="width:${s.score}%"></div></span>${s.score}%
+        </span></div>`).join('')
+    : '<p class="muted">No attempts yet.</p>';
+
+  $('udActions').innerHTML = [
+    u.status === 'active'
+      ? `<button class="warnbtn" data-do="suspend">Suspend account</button>
+         <button class="danger" data-do="ban">Ban account</button>`
+      : `<button class="primary" data-do="activate">Reinstate account</button>
+         ${u.status === 'suspended' ? '<button class="danger" data-do="ban">Ban account</button>' : ''}`,
+  ].join('');
+  for (const btn of $('udActions').querySelectorAll('[data-do]')) {
+    btn.onclick = () => { $('userDialog').close(); confirmStatus(btn.dataset.do, userId, u.email); };
+  }
+
+  $('udAchievements').innerHTML = data.achievements.length
+    ? data.achievements.map((a) => `<div class="kv"><span>${escapeHtml(a.name)}</span><span class="muted">${(a.earned_at || '').slice(0, 10)}</span></div>`).join('')
+    : '<p class="muted">None yet.</p>';
+
+  $('udAttempts').innerHTML = data.attempts.length
+    ? data.attempts.map((a) => `
+      <tr>
+        <td class="muted">${(a.submitted_at || '').slice(0, 16).replace('T', ' ')}</td>
+        <td><span class="pill ${a.feature || ''}">${featureLabel(a.feature) || '—'}</span></td>
+        <td class="title-cell">${escapeHtml(a.task_title)}</td>
+        <td>${a.score}%</td>
+        <td>${a.passed ? '<span style="color:var(--accent2)">Passed</span>' : '<span style="color:var(--danger)">Failed</span>'}${a.practice ? ' <span class="muted">(practice)</span>' : ''}</td>
+        <td class="muted">${a.xp_earned}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="6" class="muted">No attempts yet.</td></tr>';
+
+  $('udModeration').innerHTML = data.moderation.length
+    ? data.moderation.map((m) => `
+      <div class="kv"><span><span class="pill">${m.action}</span> <span class="muted">${escapeHtml(m.reason || '')}</span></span>
+      <span class="muted">${escapeHtml(m.admin_email)} · ${(m.created_at || '').slice(0, 16).replace('T', ' ')}</span></div>`).join('')
+    : '<p class="muted">No moderation history.</p>';
+
+  $('udError').textContent = '';
+  $('userDialog').showModal();
+}
+$('udClose').onclick = () => $('userDialog').close();
+
+$('udGrantBtn').onclick = async () => {
+  if (!currentUser) return;
+  const xp = Number($('udGrantXp').value) || 0;
+  const tokens = Number($('udGrantTokens').value) || 0;
+  const reason = $('udGrantReason').value.trim();
+  $('udError').textContent = '';
+  if (xp <= 0 && tokens <= 0) { $('udError').textContent = 'Enter an XP or token amount.'; return; }
+  try {
+    await api(`/users/${currentUser.id}/grant`, {
+      method: 'POST',
+      body: JSON.stringify({ xp, tokens, reason: reason || 'Admin grant from dashboard' }),
+    });
+    toast(`Granted ${xp || 0} XP, ${tokens || 0} tokens to ${currentUser.email}.`);
+    await openUser(currentUser.id);
+  } catch (err) {
+    $('udError').textContent = err.message;
+  }
+};
+
+$('udExportBtn').onclick = async () => {
+  if (!currentUser) return;
+  try {
+    const token = await firebase.auth().currentUser.getIdToken();
+    const res = await fetch(`/api/admin/users/${currentUser.id}/export`, {
+      headers: { Authorization: 'Bearer ' + token },
+    });
+    if (!res.ok) throw new Error('Export failed.');
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `verifai-user-${currentUser.id}-export.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('Data export downloaded.');
+  } catch (err) {
+    $('udError').textContent = err.message;
+  }
+};
+
+let firebaseDisabled = false;
+$('udFirebaseBtn').onclick = async () => {
+  if (!currentUser) return;
+  $('udError').textContent = '';
+  const action = firebaseDisabled ? 're-enable' : 'disable';
+  if (!confirm(`${action} this user's Firebase Auth account?\n\nDisabling blocks all sign-ins and token refreshes (stronger than a DB suspension).`)) return;
+  try {
+    await api(`/users/${currentUser.id}/firebase`, {
+      method: 'POST',
+      body: JSON.stringify({ disabled: !firebaseDisabled }),
+    });
+    firebaseDisabled = !firebaseDisabled;
+    $('udFirebaseBtn').textContent = firebaseDisabled ? 'Firebase: re-enable' : 'Firebase: disable';
+    toast(`Firebase account ${firebaseDisabled ? 'disabled' : 're-enabled'}.`);
+  } catch (err) {
+    $('udError').textContent = err.message;
+  }
+};
+
+$('udDeleteBtn').onclick = async () => {
+  if (!currentUser) return;
+  $('udError').textContent = '';
+  if (!confirm(`HARD DELETE ${currentUser.email}?\n\nEvery trace of this account is removed: attempts, skills, posts, tokens, moderation history. This is permanent and cannot be undone.`)) return;
+  if (!confirm('Final confirmation — type nothing, just confirm. This GDPR deletion is irreversible.')) return;
+  try {
+    await api('/users/' + currentUser.id, { method: 'DELETE' });
+    $('userDialog').close();
+    toast(`${currentUser.email} deleted.`);
+    await reloadUsers().catch(() => {});
+  } catch (err) {
+    $('udError').textContent = err.message;
+  }
+};
+
+// ---------------------------------------------------------------- track progress
+async function loadTrackProgress() {
+  const data = await api('/track-progress');
+  renderChart(data.activity, 'activityChart');
+  renderFunnel(data.funnel, 'funnelRows2');
+
+  $('trackCards').innerHTML = data.tracks.map((t) => {
+    const passRate = t.attempts ? Math.round(100 * t.passed / t.attempts) : null;
+    return `<div class="panel">
+      <h3>${escapeHtml(t.name)}</h3>
+      <div class="cards" style="margin-bottom:10px">
+        ${[['Users', t.users], ['Active 7d', t.active_7d], ['Active 30d', t.active_30d],
+           ['Avg readiness', t.avg_readiness], ['Avg level', t.avg_level],
+           ['Tasks', t.task_count], ['Attempts', t.attempts],
+           ['Pass rate', passRate == null ? '—' : passRate + '%']]
+          .map(([k, v]) => `<div class="card"><div class="n">${v}</div><div class="l">${k}</div></div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Content balance heatmap
+  const bal = data.content_balance || [];
+  const maxCount = Math.max(...bal.flatMap((r) => [r.verification, r.judgement, r.risk_governance]), 1);
+  $('balanceHeatmap').innerHTML = `<table class="heatmap">
+    <thead><tr><th>Track</th><th>Verification</th><th>AI Judgement</th><th>Risk & Gov.</th><th>Drafts</th></tr></thead>
+    <tbody>${bal.map((r) => `
+      <tr>
+        <td>${escapeHtml(r.track)}</td>
+        ${[r.verification, r.judgement, r.risk_governance].map((n) => `
+          <td style="background:rgba(108,140,255,${(0.08 + 0.5 * n / maxCount).toFixed(2)})">${n}</td>`).join('')}
+        <td>${r.drafts ? `<span class="pill draft">${r.drafts}</span>` : '<span class="muted">0</span>'}</td>
+      </tr>`).join('')}</tbody></table>`;
+
+  $('cohortRows').innerHTML = (data.cohorts || []).map((c) => `
+    <tr>
+      <td><strong>${escapeHtml(c.cohort)}</strong></td>
+      <td class="muted">${c.users}</td>
+      <td class="muted">${c.with_progress}</td>
+      <td class="muted">${c.active_30d}</td>
+      <td>${c.avg_readiness}</td>
+      <td class="muted">${c.avg_xp}</td>
+    </tr>`).join('') || '<tr><td colspan="6" class="muted">No cohort data yet.</td></tr>';
+
+  const byTrack = {};
+  for (const d of data.skill_dimensions) {
+    (byTrack[d.track_name] = byTrack[d.track_name] || []).push(d);
+  }
+  $('dimRows').innerHTML = Object.entries(byTrack).map(([track, dims]) => `
+    <div style="margin-bottom:12px">
+      <strong>${escapeHtml(track)}</strong>
+      ${dims.map((d) => `
+        <div class="kv"><span>${escapeHtml(d.dimension)}</span>
+          <span style="min-width:140px;display:inline-flex;align-items:center;gap:8px">
+            <span class="bar" style="flex:1"><div style="width:${d.avg_score}%"></div></span>${d.avg_score}%
+          </span></div>`).join('')}
+    </div>`).join('') || '<p class="muted">No skill data yet.</p>';
+
+  $('hardestRows').innerHTML = data.hardest_tasks.length
+    ? data.hardest_tasks.map((t) => `
+      <tr>
+        <td class="muted">${t.id}</td>
+        <td><span class="pill ${t.feature}">${featureLabel(t.feature)}</span></td>
+        <td>${escapeHtml(t.track_name)}</td>
+        <td class="title-cell">${escapeHtml(t.title)}</td>
+        <td class="muted">${t.attempts}</td>
+        <td style="min-width:140px"><span class="bar"><div style="width:${t.pass_rate}%; background:${t.pass_rate < 40 ? 'var(--danger)' : 'var(--accent)'}"></div></span> ${t.pass_rate}%</td>
+      </tr>`).join('')
+    : '<tr><td colspan="6" class="muted">Not enough attempt data yet (min 3 attempts per task).</td></tr>';
+}
+
+// ---------------------------------------------------------------- system
+async function loadSystem() {
+  try {
+    const sys = await api('/system');
+    $('sysHealth').innerHTML = [
+      ['Status', `<span style="color:var(--accent2)">OK</span>`],
+      ['DB latency', `${sys.db.latency_ms} ms`],
+      ['DB pool', `${sys.db.pool_total} total · ${sys.db.pool_idle} idle · ${sys.db.pool_waiting} waiting`],
+      ['Uptime', `${Math.floor(sys.process.uptime_seconds / 3600)}h ${Math.floor((sys.process.uptime_seconds % 3600) / 60)}m`],
+      ['Memory', `${sys.process.memory_mb} MB`],
+      ['Node', sys.process.node],
+      ['Users', sys.usage.users_total],
+      ['Attempts 7d', sys.usage.attempts_7d],
+      ['Assistant sessions 7d', sys.usage.assistant_sessions_7d],
+      ['Vera sessions 7d', sys.usage.vera_sessions_7d],
+      ['Verification analyses 7d', sys.usage.verification_analyses_7d],
+    ].map(([k, v]) => `<div class="kv"><span class="muted">${k}</span><span>${v}</span></div>`).join('');
+  } catch (err) {
+    $('sysHealth').innerHTML = `<p class="error">${escapeHtml(err.message)}</p>`;
+  }
+
+  try {
+    const config = await api('/config');
+    renderConfig(config.config);
+  } catch (err) {
+    $('configRows').innerHTML = `<p class="error">${escapeHtml(err.message)}</p>`;
+  }
+
+  try {
+    const admins = await api('/admins');
+    renderAdmins(admins);
+  } catch (err) {
+    $('adminRows').innerHTML = `<p class="muted">Admin registry needs super privileges: ${escapeHtml(err.message)}</p>`;
+  }
+}
+$('sysRefresh').onclick = () => loadSystem().catch((e) => toast(e.message, true));
+
+function renderConfig(config) {
+  const entries = Object.entries(config);
+  $('configRows').innerHTML = entries.map(([key, value]) => {
+    if (key === 'maintenance_message') {
+      return `<label style="margin-top:8px">${key}</label>
+        <input class="wide" data-config="${key}" value="${escapeHtml(value)}">`;
+    }
+    if (key.startsWith('flag_') || key === 'maintenance_mode') {
+      const isOn = value === 'on';
+      return `<div class="kv" style="margin-top:8px">
+        <span class="muted">${key}</span>
+        <span style="display:inline-flex;gap:8px;align-items:center">
+          <button class="small ${isOn ? 'primary' : 'ghost'}" data-config-toggle="${key}" data-value="on">On</button>
+          <button class="small ${!isOn ? 'primary' : 'ghost'}" data-config-toggle="${key}" data-value="off">Off</button>
+        </span></div>`;
+    }
+    return `<div class="kv"><span class="muted">${key}</span><span>${escapeHtml(value)}</span></div>`;
+  }).join('');
+  // message input saves on change
+  const msg = $('configRows').querySelector('[data-config="maintenance_message"]');
+  if (msg) {
+    msg.addEventListener('change', async () => {
+      try {
+        await api('/config', { method: 'PUT', body: JSON.stringify({ maintenance_message: msg.value }) });
+        toast('Maintenance message saved.');
+      } catch (err) { toast(err.message, true); }
+    });
+  }
+  for (const btn of $('configRows').querySelectorAll('[data-config-toggle]')) {
+    btn.onclick = async () => {
+      try {
+        const key = btn.dataset.configToggle;
+        const result = await api('/config', { method: 'PUT', body: JSON.stringify({ [key]: btn.dataset.value }) });
+        renderConfig(result.config);
+        $('maintenanceBanner').classList.toggle('hidden', result.config.maintenance_mode !== 'on');
+        toast(`${key} = ${btn.dataset.value}`);
+      } catch (err) { toast(err.message, true); }
+    };
+  }
+}
+
+function renderAdmins(data) {
+  const rows = [
+    ...data.db_admins.map((a) => ({ ...a, source: 'registry' })),
+    ...data.env_admins.filter((e) => !data.db_admins.some((d) => d.email === e.email)),
+  ];
+  $('adminRows').innerHTML = rows.map((a) => `
+    <div class="kv">
+      <span>${escapeHtml(a.email)} ${a.source === 'env' ? '<span class="muted">(env)</span>' : ''}</span>
+      <span style="display:inline-flex;gap:8px;align-items:center">
+        <span class="pill">${a.role}</span>
+        ${a.source === 'registry' ? `<button class="danger small" data-remove-admin="${escapeHtml(a.email)}">Remove</button>` : ''}
+      </span>
+    </div>`).join('');
+  for (const btn of $('adminRows').querySelectorAll('[data-remove-admin]')) {
+    btn.onclick = async () => {
+      if (!confirm(`Remove ${btn.dataset.removeAdmin} from the admin registry?`)) return;
+      try {
+        await api('/admins/' + encodeURIComponent(btn.dataset.removeAdmin), { method: 'DELETE' });
+        toast('Admin removed.');
+        await loadSystem();
+      } catch (err) { toast(err.message, true); }
+    };
+  }
+}
+
+$('adminAddBtn').onclick = async () => {
+  const email = $('adminEmail').value.trim();
+  try {
+    await api('/admins', { method: 'POST', body: JSON.stringify({ email, role: $('adminRole').value }) });
+    toast(`${email} saved as ${$('adminRole').value}.`);
+    $('adminEmail').value = '';
+    await loadSystem();
+  } catch (err) { toast(err.message, true); }
+};
+
+// ---------------------------------------------------------------- approvals
+async function loadApprovals() {
+  const status = $('approvalStatus').value;
+  const data = await api('/approvals?status=' + status);
+  $('approvalRows').innerHTML = data.tasks.map((t) => `
+    <tr>
+      <td class="muted">#${t.id}</td>
+      <td><span class="pill ${t.feature}">${featureLabel(t.feature)}</span></td>
+      <td>${escapeHtml(t.track_name)}</td>
+      <td class="title-cell">${escapeHtml(t.title)}</td>
+      <td>${t.approval === 'pending' ? '<span class="pill draft">pending</span>'
+            : t.approval === 'approved' ? '<span class="pill live">approved</span>'
+            : '<span class="pill" style="background:#45202a;color:#ff8fa0">rejected</span>'}
+          ${t.published ? '<span class="pill live">live</span>' : ''}</td>
+      <td class="title-cell muted">${escapeHtml(t.approved_by || '—')}${t.approval_note ? '<br>' + escapeHtml(t.approval_note) : ''}</td>
+      <td class="right" style="white-space:nowrap">
+        ${t.approval === 'pending' ? `
+          <button class="primary small" data-approve="${t.id}">Approve</button>
+          <button class="danger small" data-reject="${t.id}">Reject</button>`
+          : t.approval === 'rejected' ? `<button class="ghost small" data-approve="${t.id}">Approve</button>`
+          : ''}
+        ${t.approval === 'approved' && !t.published ? `<button class="primary small" data-publish="${t.id}">Publish</button>
+          <button class="danger small" data-reject="${t.id}">Reject</button>` : ''}
+      </td>
+    </tr>`).join('') ||
+    `<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No ${status} tasks.</td></tr>`;
+
+  for (const btn of $('approvalRows').querySelectorAll('[data-approve]')) {
+    btn.onclick = () => reviewTaskFlow(btn.dataset.approve, 'approve');
+  }
+  for (const btn of $('approvalRows').querySelectorAll('[data-reject]')) {
+    btn.onclick = () => reviewTaskFlow(btn.dataset.reject, 'reject');
+  }
+  for (const btn of $('approvalRows').querySelectorAll('[data-publish]')) {
+    btn.onclick = async () => {
+      try {
+        await api('/tasks/' + btn.dataset.publish, { method: 'PUT', body: JSON.stringify({ published: true }) });
+        toast(`Task #${btn.dataset.publish} published.`);
+        await loadApprovals();
+      } catch (err) { toast(err.message, true); }
+    };
+  }
+}
+
+async function reviewTaskFlow(taskId, action) {
+  const note = prompt(
+    action === 'approve'
+      ? `Approve task #${taskId}?\n\nOptional note for the audit log:`
+      : `Reject task #${taskId}?\n\nReason (helps the author rework it):`,
+    ''
+  );
+  if (note === null) return; // cancelled
+  try {
+    await api(`/tasks/${taskId}/approval`, {
+      method: 'POST',
+      body: JSON.stringify({ action, note }),
+    });
+    toast(`Task #${taskId} ${action === 'approve' ? 'approved' : 'rejected'}.`);
+    await loadApprovals();
+  } catch (err) { toast(err.message, true); }
+}
+
+$('approvalRefreshBtn').onclick = () => loadApprovals().catch((e) => toast(e.message, true));
+$('approvalStatus').onchange = () => loadApprovals().catch((e) => toast(e.message, true));
+
+// ---------------------------------------------------------------- analytics
+async function loadAnalytics() {
+  const data = await api('/analytics');
+  const u = data.users;
+
+  $('anCards').innerHTML = [
+    ['Total users', u.total], ['New (7d)', u.new_7d], ['New (30d)', u.new_30d],
+    ['Active today', u.active_1d], ['Active (7d)', u.active_7d], ['Active (30d)', u.active_30d],
+    ['Workshop posts', data.workshop.posts], ['Open reports', data.workshop.posts_with_reports],
+  ].map(([label, value]) =>
+    `<div class="card"><div class="n">${value}</div><div class="l">${label}</div></div>`).join('');
+
+  // Weekly signups bar chart — the backend zero-fills all 12 weeks, so empty
+  // weeks still render a labelled slot instead of silently shrinking the chart.
+  const signups = (u.weekly_signups || []).map((w) => ({
+    day: w.week_start || w.week, label: w.week, attempts: w.signups, passed: w.signups,
+  }));
+  if (signups.length) renderChart(signups, 'anSignupChart');
+  else $('anSignupChart').innerHTML = '<p class="muted">No signup data yet.</p>';
+
+  renderChart(data.activity, 'anActivityChart');
+
+  $('anFeatureRows').innerHTML = data.features.length
+    ? data.features.map((f) => `
+      <tr>
+        <td><span class="pill ${f.feature}">${featureLabel(f.feature)}</span></td>
+        <td class="muted">${f.attempts}</td>
+        <td class="muted">${f.users}</td>
+        <td>${f.avg_score}%</td>
+        <td style="min-width:120px"><span class="bar"><div style="width:${f.pass_rate}%"></div></span> ${f.pass_rate}%</td>
+      </tr>`).join('')
+    : '<tr><td colspan="5" class="muted">No graded attempts yet.</td></tr>';
+
+  const w = data.workshop;
+  $('anWorkshop').innerHTML = [
+    ['Posts', w.posts], ['Posts (7d)', w.posts_7d], ['Hidden posts', w.hidden],
+    ['Reports (all time)', w.reports_total], ['Posts with reports', w.posts_with_reports],
+  ].map(([k, v]) => `<div class="kv"><span class="muted">${k}</span><span>${v}</span></div>`).join('');
+
+  const t = data.tokens;
+  $('anTokens').innerHTML = [
+    ['Tokens issued', t.issued], ['Tokens spent', t.spent],
+    ['Outstanding balance', t.outstanding_balance], ['Admin adjustments', t.admin_adjusted],
+  ].map(([k, v]) => `<div class="kv"><span class="muted">${k}</span><span>${v}</span></div>`).join('');
+
+  const l = data.llm_30d;
+  $('anLlm').innerHTML = [
+    ['Assistant sessions', l.assistant_30d], ['Vera sessions', l.vera_30d],
+    ['Verification analyses', l.verification_30d],
+  ].map(([k, v]) => `<div class="kv"><span class="muted">${k}</span><span>${v}</span></div>`).join('');
+
+  $('anMod').innerHTML = data.moderation_30d.length
+    ? data.moderation_30d.map((m) => `<div class="kv"><span class="pill">${m.action}</span><span class="muted">${m.count}</span></div>`).join('')
+    : '<p class="muted">No admin actions in the last 30 days.</p>';
+
+  // Department answers: summary + per-feature drill-down
+  const summary = await api('/answers/summary');
+  const passRate = (d) => d.graded_answers ? Math.round(100 * d.passed / d.graded_answers) : null;
+  $('anDeptRows').innerHTML = summary.departments.length
+    ? summary.departments.map((d) => `
+      <tr>
+        <td><strong>${escapeHtml(d.department)}</strong></td>
+        <td class="muted">${d.users}</td>
+        <td class="muted">${d.answers}</td>
+        <td class="muted">${d.graded_answers}</td>
+        <td class="muted">${d.passed}</td>
+        <td>${passRate(d) == null ? '—' : passRate(d) + '%'}</td>
+        <td>${d.avg_score}%</td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" class="muted">No answers logged yet.</td></tr>';
+
+  $('anDeptFeatureRows').innerHTML = summary.per_feature.length
+    ? summary.per_feature.map((d) => `
+      <tr>
+        <td>${escapeHtml(d.department)}</td>
+        <td><span class="pill ${d.feature}">${featureLabel(d.feature)}</span></td>
+        <td class="muted">${d.answers}</td>
+        <td>${d.avg_score}%</td>
+        <td>${d.pass_rate}%</td>
+      </tr>`).join('')
+    : '<tr><td colspan="5" class="muted">No answers logged yet.</td></tr>';
+}
+$('analyticsRefreshBtn').onclick = () => loadAnalytics().catch((e) => toast(e.message, true));
+
+// ---------------------------------------------------------------- audit log
+async function loadModeration() {
+  const data = await api('/moderation?limit=100');
+  $('modRows').innerHTML = data.events.length
+    ? data.events.map((m) => `
+      <tr>
+        <td class="muted">${(m.created_at || '').slice(0, 16).replace('T', ' ')}</td>
+        <td>${escapeHtml(m.admin_email)}</td>
+        <td><span class="pill">${m.action}</span></td>
+        <td>${m.target_email ? escapeHtml(m.target_email) : (m.target_user_id ? 'user #' + m.target_user_id : '—')}</td>
+        <td class="title-cell muted">${escapeHtml(m.reason || '')}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="5" class="muted" style="text-align:center;padding:24px">No admin actions recorded yet.</td></tr>';
+}
+$('modRefreshBtn').onclick = () => loadModeration().catch((e) => toast(e.message, true));
+
+function featureLabel(f) {
+  return { verification: 'Verification', judgement: 'AI Judgement', risk_governance: 'Risk & Governance', prompt_design: 'Prompt Design' }[f] || f;
+}
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#39;' }[c]));
+}
+
+// Seed one row of each option kind so the form is never empty.
+addOptionRow('answerRows', ['answer']);
+addOptionRow('decisionRows', ['decision']);
+addOptionRow('reasonRows', ['reason']);
+</script>
+</body>
+</html>
