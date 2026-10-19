@@ -46,7 +46,7 @@ function coachSystem(lesson) {
 }
 
 // Vera with memory: the learner profile is injected so coaching is personalised.
-function veraSystem({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers, webResults }) {
+function veraSystem({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers, webResults, trackName, accountCreatedAt, leaderboard, tokens }) {
   return [
     'You are Vera, VerifAI\'s friendly, professional AI assistant. You coach people to work with AI responsibly and to build workplace readiness.',
     'Be warm but professional, concise and evidence-first. Never invent sources or citations.',
@@ -55,8 +55,11 @@ function veraSystem({ userName, contextText, memories, contextName, appKnowledge
     'When the learner asks you to verify or fact-check something, use the live web search results provided below as evidence, cite the source titles/URLs, and say plainly whether the claim is supported, contradicted, or unverified.',
     'Use the learner profile below to personalise your help: reference their progress, affirm strengths, and gently target weak areas with concrete, actionable tips.',
     'The learner\'s tier (Novice, Developing, Proficient or Advanced) is derived from their 0-100 readiness score: higher readiness means a higher tier. Reference their tier and readiness where it helps.',
+    'For any question about the learner\'s own numbers (XP, level, streak, tokens, readiness, tier, skills or leaderboard), ALWAYS use the current figures given in this message (the "Learner profile" section and any "CURRENT LEARNER DATA" note). NEVER repeat numbers from earlier messages in the conversation - they are out of date and must not be used.',
     contextName ? `Current surface: ${contextName}.` : '',
     userName ? `The learner is ${userName}.` : '',
+    trackName ? `Industry track: ${trackName}.` : '',
+    accountCreatedAt ? `Account created: ${accountCreatedAt}.` : '',
     'Learner profile:',
     contextText || 'No activity recorded yet.',
     memories && memories.length ? `Remembered about the learner:\n- ${memories.join('\n- ')}` : '',
@@ -64,6 +67,9 @@ function veraSystem({ userName, contextText, memories, contextName, appKnowledge
     attemptAnswers && attemptAnswers.length
       ? `The learner's recent attempts (share the correct answer freely if asked, with no gating):\n${attemptAnswers.join('\n')}`
       : '',
+    leaderboard ? leaderboardSection(leaderboard) : '',
+    tokens ? tokenSection(tokens) : '',
+    scoringSection(),
     webResults && webResults.length
       ? `Live web search results for the learner's request (cite these by title/URL):\n${webResults
           .map((r, i) => `${i + 1}. ${r.title} — ${r.url}\n   ${r.content}`)
@@ -73,6 +79,66 @@ function veraSystem({ userName, contextText, memories, contextName, appKnowledge
   ]
     .filter(Boolean)
     .join('\n');
+}
+
+function leaderboardSection(lb) {
+  const lines = [`Leaderboard:`];
+  if (lb.globalRank) lines.push(`- Global rank: ${lb.globalRank}`);
+  if (lb.trackRank && lb.trackTotal) lines.push(`- ${lb.trackName || 'Your industry track'} rank: ${lb.trackRank} of ${lb.trackTotal}`);
+  if (lb.peers && lb.peers.length) {
+    lines.push('- Nearby peers in your track:');
+    for (const p of lb.peers.slice(0, 8)) {
+      lines.push(`  ${p.rank}. ${p.display_name} — ${p.xp} XP, ${p.readiness_score}% readiness, ${p.tier}`);
+    }
+  }
+  return lines.join('\n');
+}
+
+function tokenSection(t) {
+  const lines = [`Token system:`];
+  lines.push('- Tokens are earned when you level up (per level), complete achievements, or finish capstone assessments.');
+  lines.push('- Tokens are spent on rewards in the Rewards catalog.');
+  lines.push(`- Your current balance: ${t.tokens} tokens.`);
+  if (t.events && t.events.length) {
+    lines.push('- Recent token activity:');
+    for (const e of t.events) {
+      const desc = tokenEventDescription(e);
+      lines.push(`  ${new Date(e.created_at).toLocaleDateString()}: ${desc}`);
+    }
+  }
+  return lines.join('\n');
+}
+
+function tokenEventDescription(e) {
+  const absDelta = Math.abs(e.delta);
+  const sign = e.delta > 0 ? '+' : '-';
+  switch (e.reason) {
+    case 'level_up':
+      return `Earned ${sign}${absDelta} tokens for reaching a new level (ref: ${e.ref})`;
+    case 'achievement':
+      return `Earned ${sign}${absDelta} tokens for an achievement (ref: ${e.ref})`;
+    case 'capstone':
+      return `Earned ${sign}${absDelta} tokens for completing a capstone (ref: ${e.ref})`;
+    case 'redemption':
+      return `Spent ${sign}${absDelta} tokens redeeming a reward (ref: ${e.ref})`;
+    case 'adjustment':
+      return `Token adjustment ${sign}${absDelta} (ref: ${e.ref})`;
+    default:
+      return `Token ${sign}${absDelta} (${e.reason}, ref: ${e.ref})`;
+  }
+}
+
+function scoringSection() {
+  return [
+    'Scoring system:',
+    '- Task scores: Verification choice is all-or-nothing (100 or 0). Verification line_text: flaw=30, fix=40, reason=30 (proportional to criteria matched). AI Judgement and Risk & Governance split marks across decision and reason options.',
+    '- Pass thresholds: Verification 60, AI Judgement 50, Risk & Governance 50, Prompt Design 60.',
+    '- XP: score/100 × difficulty max (easy=50, medium=70, hard=100), capped at 100. Score 0 earns nothing. Practice pass earns half XP (only first practice pass counts).',
+    '- Skill scores: coverage = 100% × (tasks passed + 0.5 × practice-only passes) / total tasks in that skill.',
+    '- Readiness score (0-100): weighted mean — Verification 30%, AI Judgement 30%, Risk & Governance 20%, Prompt Design 10%, Interview coverage 10%, Capstone average 20%. Components without data are skipped.',
+    '- Tiers: Novice 0-49, Developing 50-69, Proficient 70-84, Advanced 85-100.',
+    '- Tokens: earned on level up, achievements, and capstone completion; spent on rewards.',
+  ].join('\n');
 }
 
 const ANALYSIS_KINDS = {
@@ -112,6 +178,7 @@ function extractorSystem() {
     'Return STRICT JSON only, with this shape: {"memories":[{"kind":"preference"|"struggle"|"strength"|"goal"|"fact","content":"..."}]}.',
     'Store at most three items, only durable observations that would help future coaching (e.g. a recurring difficulty, a stated goal, a preference for short answers, demonstrated strength).',
     'Skip small talk, questions, and anything transient. Never store secrets, passwords or sensitive personal data. Use short third-person statements ("Struggles with time value of money").',
+    'Never record changing stats or progress figures (XP, level, streak, token balance, readiness score, tier, skill scores) - those are always read live and would go stale. Store only durable observations that will still be true later.',
     'Return raw JSON with no markdown fences. If there is nothing worth storing, return {"memories":[]}.',
   ].join('\n');
 }

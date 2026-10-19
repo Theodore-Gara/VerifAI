@@ -117,7 +117,7 @@ test('POST /api/verification/analyze stores metadata + report and never the raw 
 
   assert.equal(response.status, 201);
   assert.equal(response.body.analysis.overall_status, 'insufficient_evidence');
-  assert.equal(fetchLog[0].model, 'nvidia/nemotron-3-super-120b-a12b');
+  assert.equal(fetchLog[0].model, 'nvidia/nemotron-3.5-super-vl-120b-a12b');
 
   const insert = queries.find((q) => q.sql.startsWith('INSERT INTO verification_analyses'));
   assert.ok(insert);
@@ -195,7 +195,7 @@ test('POST /api/assistant/chat works without a task_id (general assistant)', asy
   });
   assert.equal(response.status, 200);
   assert.equal(response.body.reply, 'Here is a helpful hint.');
-  assert.equal(fetchLog[0].model, 'nvidia/nemotron-3-ultra-550b-a55b');
+  assert.equal(fetchLog[0].model, 'nvidia/nemotron-3.5-super-vl-120b-a12b');
   assert.equal(fetchLog[0].messages[0].content.includes('verification analyst'), false);
 });
 

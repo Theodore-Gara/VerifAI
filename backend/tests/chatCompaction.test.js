@@ -15,11 +15,16 @@ test('estimateTokens approximates ~4 characters per token', () => {
   assert.equal(estimateTokens('abcde'), 2);
 });
 
-test('systemWithSummary folds the running summary into the system prompt', () => {
-  assert.equal(systemWithSummary('SYS', ''), 'SYS');
+test('systemWithSummary returns system message(s), summary as separate message', () => {
+  const noSummary = systemWithSummary('SYS', '');
+  assert.deepEqual(noSummary, [{ role: 'system', content: 'SYS' }]);
+
   const withSummary = systemWithSummary('SYS', 'the learner wants to pass finance');
-  assert.match(withSummary, /^SYS/);
-  assert.match(withSummary, /the learner wants to pass finance/);
+  assert.equal(withSummary[0].role, 'system');
+  assert.equal(withSummary[0].content, 'SYS');
+  assert.equal(withSummary[1].role, 'system');
+  assert.match(withSummary[1].content, /the learner wants to pass finance/);
+  assert.match(withSummary[1].content, /reference only/);
 });
 
 test('assembleContext puts the system first and includes the recent turns', () => {
@@ -32,8 +37,9 @@ test('assembleContext puts the system first and includes the recent turns', () =
   });
   assert.equal(messages[0].role, 'system');
   assert.match(messages[0].content, /SYS/);
-  assert.match(messages[0].content, /earlier stuff/);
-  assert.deepEqual(messages.slice(1), [{ role: 'user', content: 'hi' }]);
+  assert.equal(messages[1].role, 'system');
+  assert.match(messages[1].content, /earlier stuff/);
+  assert.deepEqual(messages.slice(2), [{ role: 'user', content: 'hi' }]);
 });
 
 test('assembleContext trims the oldest recent turns to fit the budget', () => {

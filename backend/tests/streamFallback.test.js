@@ -83,6 +83,37 @@ test('an empty primary stream retries on the fallback model', async () => {
   assert.deepEqual(models, ['primary', 'fallback']);
 });
 
+test('a primary that is slow to start is aborted and the fallback answers', async () => {
+  const models = [];
+  const text = await collect(
+    streamWithFallback(
+      { ...requestParams(), firstTokenTimeoutMs: 40 },
+      async (url, options) => {
+        const model = JSON.parse(options.body).model;
+        models.push(model);
+        if (model === 'primary') {
+          // Headers arrive, but no token is ever produced: block until aborted.
+          const signal = options.signal;
+          return {
+            ok: true,
+            status: 200,
+            body: {
+              getReader: () => ({
+                read: () => new Promise((_, reject) => {
+                  signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+                }),
+              }),
+            },
+          };
+        }
+        return good();
+      },
+    ),
+  );
+  assert.equal(text, 'Hello world');
+  assert.deepEqual(models, ['primary', 'fallback']);
+});
+
 test('a mid-stream failure after content is surfaced, not restarted', async () => {
   let calls = 0;
   await assert.rejects(

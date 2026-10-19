@@ -1,7 +1,7 @@
 const pool = require('../db/pool');
 const { positiveIntegerParam, clampInt } = require('../middleware/validate');
 const { getVeraReply, streamVeraReply, extractMemories } = require('../services/nvidiaAssistant');
-const { buildUserContext, describeContext, buildTips, buildAppKnowledge, buildAttemptAnswers } = require('../services/veraContext');
+const { buildUserContext, describeContext, buildTips, buildAppKnowledge, buildAttemptAnswers, buildLeaderboardContext, buildTokenContext } = require('../services/veraContext');
 const { webSearch } = require('../services/tavily');
 const { MEMORY_KINDS, veraSystem } = require('../services/llm/prompts');
 const { assembleContext, shouldCompact, compactSession } = require('../services/chatCompaction');
@@ -22,7 +22,11 @@ const compactionInFlight = new Set();
 
 async function requireUser(res, req) {
   const result = await pool.query(
-    `SELECT id, industry_track_id, display_name FROM users WHERE firebase_uid = $1`,
+    `SELECT u.id, u.industry_track_id, u.display_name, u.created_at,
+            t.name AS track_name
+     FROM users u
+     LEFT JOIN industry_tracks t ON t.id = u.industry_track_id
+     WHERE u.firebase_uid = $1`,
     [req.firebaseUser.uid],
   );
   if (!result.rows.length) {
@@ -74,9 +78,11 @@ async function loadVeraInputs(user) {
     `SELECT kind, content FROM vera_memories WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 15`,
     [user.id],
   );
-  const [appKnowledge, attemptAnswers] = await Promise.all([
+  const [appKnowledge, attemptAnswers, leaderboard, tokens] = await Promise.all([
     buildAppKnowledge(pool, user.id, user.industry_track_id),
     buildAttemptAnswers(pool, user.id),
+    buildLeaderboardContext(pool, user.id, user.industry_track_id),
+    buildTokenContext(pool, user.id),
   ]);
   return {
     context,
@@ -84,6 +90,8 @@ async function loadVeraInputs(user) {
     memories: memResult.rows.map((m) => `${m.kind}: ${m.content}`),
     appKnowledge,
     attemptAnswers,
+    leaderboard,
+    tokens,
   };
 }
 
@@ -135,7 +143,7 @@ async function chat(req, res, next) {
       [sessionId, user.id, lastUser.content],
     );
 
-    const { contextText, memories, appKnowledge, attemptAnswers } = await loadVeraInputs(user);
+    const { contextText, memories, appKnowledge, attemptAnswers, leaderboard, tokens } = await loadVeraInputs(user);
 
     // The learner can ask Vera to verify their input: search the web on request.
     const webResults = req.body.web_search === true ? await webSearch(lastUser.content, { maxResults: 5 }) : [];
@@ -143,12 +151,16 @@ async function chat(req, res, next) {
 
     const system = veraSystem({
       userName: user.display_name,
+      trackName: user.track_name,
+      accountCreatedAt: user.created_at,
       contextText,
       memories,
       contextName,
       appKnowledge,
       attemptAnswers,
       webResults,
+      leaderboard,
+      tokens,
     });
 
     // Rebuild the context from stored history: the running summary covers the
@@ -173,6 +185,18 @@ async function chat(req, res, next) {
       budget: CHAT_CONTEXT_TOKENS,
       reserve: REPLY_RESERVE_TOKENS,
     });
+
+    // Insert the live, authoritative snapshot as the message immediately before
+    // the learner's latest turn. This is the most recent instruction the model
+    // sees, so a progress report uses current figures instead of echoing stale
+    // numbers from earlier turns.
+    if (context.length) {
+      context.splice(context.length - 1, 0, {
+        role: 'system',
+        content: `CURRENT LEARNER DATA (live, fetched for this message and authoritative). If the learner asks about their progress or stats (XP, level, streak, tokens, readiness, tier, skills, leaderboard), quote these EXACT figures and ignore any numbers stated earlier in the conversation:\n${contextText || 'No activity recorded yet.'}`,
+      });
+    }
+
     const needsCompaction = shouldCompact({ system, summary, recent, budget: CHAT_CONTEXT_TOKENS, threshold: COMPACT_AT });
 
     // Compact in the background once the session nears the context window; the

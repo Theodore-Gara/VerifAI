@@ -115,7 +115,7 @@ Request:
 
 Pass `?stream=1` (or `"stream": true`) to receive a Server-Sent Events stream: each `data:` frame is `{"delta":"..."}`, terminated by `data: [DONE]`, or `{"error":"..."}` on failure.
 
-Requires `NVIDIA_API_KEY` in the backend environment. Model routing is per use case: `NVIDIA_MODEL_CHAT` (default `nvidia/nemotron-3.5-lightning-30b-a3b`) for the assistant, coach and general surfaces, with a retryable failure falling back to `NVIDIA_MODEL_FALLBACK`.
+Requires `NVIDIA_API_KEY` in the backend environment. Model routing is per use case: `NVIDIA_MODEL_CHAT` and `NVIDIA_MODEL_ANALYSIS` (default `nvidia/nemotron-3.5-super-vl-120b-a12b`) serve every generative surface — the assistant, coach, learning assistant, verification analysis and capstone marking; `NVIDIA_MODEL_LIGHT` (default `nvidia/nemotron-3-super-120b-a12b`) handles background session compaction and memory extraction; and a retryable failure falls back to `NVIDIA_MODEL_FALLBACK` (default `nvidia/nemotron-3-super-120b-a12b`).
 
 ### POST /api/verification/analyze
 Protected. Vera assesses submitted material and returns a structured report. **The submitted content is never stored** — only metadata and the report are persisted.

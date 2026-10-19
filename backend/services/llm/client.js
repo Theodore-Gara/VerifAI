@@ -98,13 +98,20 @@ async function chatWithFallback(params, fetchImpl = fetch) {
 // final { usage } when the provider reports it. Unlike the buffered call this
 // must NOT cap the whole response - a reply can stream for over a minute. The
 // timeout applies to the initial response only; after that a per-chunk idle
-// timeout catches a genuinely stalled stream.
+// timeout catches a genuinely stalled stream. `firstTokenTimeoutMs` aborts a
+// model that is slow to START (queued/overloaded) so the caller can fall back.
 async function* streamChatCompletion(params, fetchImpl = fetch) {
   const key = requireApiKey();
   const controller = new AbortController();
   const headerTimeoutMs = params.timeoutMs || 30000;
   const idleTimeoutMs = params.idleTimeoutMs || 60000;
-  const headerTimer = setTimeout(() => controller.abort(), headerTimeoutMs);
+  const firstTokenMs = Number(params.firstTokenTimeoutMs) || 0;
+  // When a first-token budget is set it also caps the wait for the response
+  // headers, so a model that is slow to START is abandoned quickly.
+  const headerTimer = setTimeout(
+    () => controller.abort(),
+    firstTokenMs > 0 ? firstTokenMs : headerTimeoutMs,
+  );
   let response;
   try {
     response = await fetchImpl(CHAT_URL, {
@@ -123,48 +130,69 @@ async function* streamChatCompletion(params, fetchImpl = fetch) {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
-  for (;;) {
-    let result;
-    let idleTimer;
-    try {
-      result = await Promise.race([
-        reader.read(),
-        new Promise((_, reject) => {
-          idleTimer = setTimeout(() => {
-            controller.abort();
-            reject(llmError(504, 'The AI service stalled.'));
-          }, idleTimeoutMs);
-        }),
-      ]);
-    } finally {
-      clearTimeout(idleTimer);
-    }
-    const { done, value } = result;
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop();
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed.startsWith('data:')) continue;
-      const data = trimmed.slice(5).trim();
-      if (data === '[DONE]') continue;
-      let parsed;
+  let firstTokenTimer = null;
+  let firstTokenExpired = false;
+  const clearFirstTokenTimer = () => {
+    if (firstTokenTimer) { clearTimeout(firstTokenTimer); firstTokenTimer = null; }
+  };
+  if (firstTokenMs > 0) {
+    firstTokenTimer = setTimeout(() => {
+      firstTokenExpired = true;
+      controller.abort();
+    }, firstTokenMs);
+  }
+  try {
+    for (;;) {
+      let result;
+      let idleTimer;
       try {
-        parsed = JSON.parse(data);
-      } catch {
-        continue;
+        result = await Promise.race([
+          reader.read(),
+          new Promise((_, reject) => {
+            idleTimer = setTimeout(() => {
+              controller.abort();
+              reject(llmError(504, 'The AI service stalled.'));
+            }, idleTimeoutMs);
+          }),
+        ]);
+      } finally {
+        clearTimeout(idleTimer);
       }
-      // The upstream can return HTTP 200 and put a failure in the stream body
-      // (e.g. {"error":{"message":"Service temporarily overloaded","code":503}}).
-      if (parsed.error) {
-        const code = Number(parsed.error.code) || 503;
-        throw llmError(RETRYABLE_STATUS.has(code) ? code : 502, parsed.error.message || 'The AI service returned an error.');
+      const { done, value } = result;
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        const data = trimmed.slice(5).trim();
+        if (data === '[DONE]') continue;
+        let parsed;
+        try {
+          parsed = JSON.parse(data);
+        } catch {
+          continue;
+        }
+        // The upstream can return HTTP 200 and put a failure in the stream body
+        // (e.g. {"error":{"message":"Service temporarily overloaded","code":503}}).
+        if (parsed.error) {
+          const code = Number(parsed.error.code) || 503;
+          throw llmError(RETRYABLE_STATUS.has(code) ? code : 502, parsed.error.message || 'The AI service returned an error.');
+        }
+        const delta = parsed.choices?.[0]?.delta?.content;
+        if (delta) {
+          clearFirstTokenTimer();
+          yield { delta };
+        }
+        if (parsed.usage) yield { usage: parsed.usage };
       }
-      const delta = parsed.choices?.[0]?.delta?.content;
-      if (delta) yield { delta };
-      if (parsed.usage) yield { usage: parsed.usage };
     }
+  } catch (err) {
+    if (firstTokenExpired) throw llmError(504, 'The AI service was too slow to start.');
+    throw err;
+  } finally {
+    clearFirstTokenTimer();
   }
 }
 

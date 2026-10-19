@@ -57,6 +57,85 @@ async function buildUserContext(executor, userId) {
   return { progress, skills, weak, strengths, recent, failuresByFeature, lessons, capstones };
 }
 
+// Leaderboard context: user's global and track rank, plus nearby peers.
+async function buildLeaderboardContext(executor, userId, industryTrackId) {
+  const meResult = await executor.query(
+    `SELECT COALESCE(xp, 0)::int AS xp, COALESCE(readiness_score, 0)::int AS readiness_score
+     FROM user_progress WHERE user_id = $1`,
+    [userId],
+  );
+  const me = meResult.rows[0] || { xp: 0, readiness_score: 0 };
+
+  const globalRankResult = await executor.query(
+    `SELECT (COUNT(*)::int + 1) AS global_rank
+     FROM users u
+     LEFT JOIN user_progress p ON p.user_id = u.id
+     WHERE (COALESCE(p.xp, 0), COALESCE(p.readiness_score, 0), u.id) > ($1, $2, $3)`,
+    [me.xp, me.readiness_score, userId],
+  );
+
+  let trackRank = null;
+  let trackTotal = null;
+  if (industryTrackId) {
+    const trackResult = await executor.query(
+      `SELECT (COUNT(*)::int + 1) AS track_rank
+       FROM users u
+       LEFT JOIN user_progress p ON p.user_id = u.id
+       WHERE u.industry_track_id = $1
+         AND (COALESCE(p.xp, 0), COALESCE(p.readiness_score, 0), u.id) > ($2, $3, $4)`,
+      [industryTrackId, me.xp, me.readiness_score, userId],
+    );
+    trackRank = trackResult.rows[0]?.track_rank;
+
+    const trackTotalResult = await executor.query(
+      `SELECT COUNT(*)::int AS track_total
+       FROM users WHERE industry_track_id = $1`,
+      [industryTrackId],
+    );
+    trackTotal = trackTotalResult.rows[0]?.track_total || 0;
+  }
+
+  let peers = [];
+  if (industryTrackId) {
+    const peersResult = await executor.query(
+      `SELECT u.display_name, COALESCE(p.xp, 0) AS xp,
+              COALESCE(p.readiness_score, 0) AS readiness_score,
+              COALESCE(p.tier, 'Novice') AS tier,
+              ROW_NUMBER() OVER (ORDER BY COALESCE(p.xp, 0) DESC, COALESCE(p.readiness_score, 0) DESC, u.id ASC) AS rank
+       FROM users u
+       LEFT JOIN user_progress p ON p.user_id = u.id
+       WHERE u.industry_track_id = $1
+       ORDER BY rank ASC
+       LIMIT 20`,
+      [industryTrackId],
+    );
+    peers = peersResult.rows;
+  }
+
+  return { globalRank: globalRankResult.rows[0]?.global_rank, trackRank, trackTotal, peers };
+}
+
+// Token context: current balance and recent earning/spending history.
+async function buildTokenContext(executor, userId) {
+  const progressResult = await executor.query(
+    `SELECT COALESCE(tokens, 0)::int AS tokens FROM user_progress WHERE user_id = $1`,
+    [userId],
+  );
+  const tokens = progressResult.rows[0]?.tokens ?? 0;
+
+  const eventsResult = await executor.query(
+    `SELECT delta, reason, ref, created_at
+     FROM reward_token_events
+     WHERE user_id = $1
+     ORDER BY created_at DESC, id DESC
+     LIMIT 10`,
+    [userId],
+  );
+  const events = eventsResult.rows;
+
+  return { tokens, events };
+}
+
 // Compact text injected into Vera's system prompt.
 function describeContext(ctx) {
   const lines = [];
@@ -183,5 +262,5 @@ async function buildAttemptAnswers(executor, userId) {
   });
 }
 
-module.exports = { buildUserContext, describeContext, buildTips, buildAppKnowledge, buildAttemptAnswers };
+module.exports = { buildUserContext, describeContext, buildTips, buildAppKnowledge, buildAttemptAnswers, buildLeaderboardContext, buildTokenContext };
 

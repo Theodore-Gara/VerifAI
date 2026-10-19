@@ -22,22 +22,31 @@ function estimateMessagesTokens(messages) {
   );
 }
 
-// The system message, with the running summary folded in when there is one.
+// Returns system message(s). When a summary exists it is appended as a separate
+// "previous conversation" message so it never competes with the live learner
+// profile data in the primary system prompt.
 function systemWithSummary(system, summary) {
   return summary
-    ? `${system}\n\nSummary of the earlier conversation (older turns, condensed):\n${summary}`
-    : system;
+    ? [
+        { role: 'system', content: system },
+        {
+          role: 'system',
+          content: `Previous conversation context (older turns, for reference only — current learner profile data in the "Learner profile" section takes precedence):\n${summary}`,
+        },
+      ]
+    : [{ role: 'system', content: system }];
 }
 
-// Assembles the model context from the system prompt, the running summary and
+// Assembles the model context from system message(s), the running summary and
 // the recent verbatim messages. The oldest recent messages are dropped until
 // the total fits within `budget` minus `reserve` (room for the reply), so a
 // request can never overflow even before a summary exists.
 function assembleContext({ system, summary, recent, budget, reserve }) {
   const limit = Math.max(1, Number(budget) - Number(reserve || 0));
   const kept = [...(recent || [])];
+  const systemMessages = systemWithSummary(system, summary);
   const build = () => [
-    { role: 'system', content: systemWithSummary(system, summary) },
+    ...systemMessages,
     ...kept.map((m) => ({ role: m.role, content: m.content })),
   ];
   let messages = build();
@@ -50,8 +59,9 @@ function assembleContext({ system, summary, recent, budget, reserve }) {
 
 // True once the assembled context reaches `threshold` (default 90%) of budget.
 function shouldCompact({ system, summary, recent, budget, threshold = 0.9 }) {
+  const systemMessages = systemWithSummary(system, summary);
   const messages = [
-    { role: 'system', content: systemWithSummary(system, summary) },
+    ...systemMessages,
     ...(recent || []).map((m) => ({ role: m.role, content: m.content })),
   ];
   return estimateMessagesTokens(messages) >= threshold * Number(budget);

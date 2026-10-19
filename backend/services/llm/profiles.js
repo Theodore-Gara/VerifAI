@@ -1,15 +1,15 @@
-// Per-use-case model routing. Conversational surfaces run on the larger frontier
-// model; analysis/marking and background utility work run on the smaller model.
-// Every choice is env-overridable and falls back to a proven model on failure.
+// Per-use-case model routing. The main model serves every generative surface
+// (chat, coach, learning assistant, analysis/verification, marking reports); the
+// smaller 3 super model handles background utility work and is the fallback.
+// Every choice is env-overridable.
 const MODELS = {
-  analysis: process.env.NVIDIA_MODEL_ANALYSIS || 'nvidia/nemotron-3-super-120b-a12b',
-  // Conversational surfaces (Vera, the Learning Assistant and the coach) use the
-  // larger frontier model; it is slower per token but tighter and higher quality.
-  chat: process.env.NVIDIA_MODEL_CHAT || 'nvidia/nemotron-3-ultra-550b-a55b',
-  // Background/utility work (memory extraction, session compaction) stays on the
-  // cheaper, faster model.
+  // Main model: the fast 3.5 super VL model, for analysis AND conversational use.
+  analysis: process.env.NVIDIA_MODEL_ANALYSIS || 'nvidia/nemotron-3.5-super-vl-120b-a12b',
+  chat: process.env.NVIDIA_MODEL_CHAT || 'nvidia/nemotron-3.5-super-vl-120b-a12b',
+  // Background/utility work (session compaction, memory extraction).
   light: process.env.NVIDIA_MODEL_LIGHT || 'nvidia/nemotron-3-super-120b-a12b',
-  fallback: process.env.NVIDIA_MODEL_FALLBACK || process.env.NVIDIA_MODEL || 'openai/gpt-oss-20b',
+  // Everything falls back to the reliable 3 super model.
+  fallback: process.env.NVIDIA_MODEL_FALLBACK || process.env.NVIDIA_MODEL || 'nvidia/nemotron-3-super-120b-a12b',
 };
 
 // NOTE: reasoning models spend `max_tokens` on their trace before emitting any
@@ -27,36 +27,46 @@ const PROFILES = {
   },
   coach: {
     model: MODELS.chat,
+    fallbackModel: MODELS.light,
     temperature: 0.6,
     topP: 1,
     maxTokens: 1200,
     thinking: false,
     timeoutMs: 90000,
+    firstTokenTimeoutMs: 15000,
   },
   general: {
     model: MODELS.chat,
+    fallbackModel: MODELS.light,
     temperature: 0.6,
     topP: 1,
     maxTokens: 1400,
     thinking: false,
     timeoutMs: 90000,
+    firstTokenTimeoutMs: 15000,
   },
   assistant: {
     model: MODELS.chat,
+    fallbackModel: MODELS.light,
     temperature: 0.7,
     topP: 1,
     maxTokens: 1200,
     thinking: false,
     timeoutMs: 90000,
+    firstTokenTimeoutMs: 15000,
   },
-  // Vera: the app-wide assistant. Slightly warmer and roomier for coaching.
+  // Vera: the app-wide assistant. Slightly warmer and roomier for coaching. If
+  // the big model is slow to start (queued/overloaded) it falls back to the
+  // faster super model so the learner is not left waiting.
   vera: {
     model: MODELS.chat,
+    fallbackModel: MODELS.light,
     temperature: 0.65,
     topP: 1,
     maxTokens: 1600,
     thinking: false,
     timeoutMs: 90000,
+    firstTokenTimeoutMs: 15000,
   },
   // Marker/extractor: reasoning model for rubric marking and memory extraction
   // (strict JSON, low temperature).
@@ -95,7 +105,7 @@ function resolveProfile(name) {
     error.status = 500;
     throw error;
   }
-  return { ...profile, fallbackModel: MODELS.fallback };
+  return { ...profile, fallbackModel: profile.fallbackModel || MODELS.fallback };
 }
 
 module.exports = { MODELS, PROFILES, resolveProfile };
