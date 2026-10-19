@@ -577,4 +577,61 @@ class MockApiClient implements ApiClient {
     await _delay();
     return const [];
   }
+
+  // --- Wellness ---
+  final List<MoodCheckin> _moodCheckins = [];
+  final List<JournalEntry> _journalEntries = [];
+  final List<String> _wellnessActivities = [];
+
+  String get _todayIso => DateTime.now().toIso8601String().substring(0, 10);
+
+  @override
+  Future<List<MoodCheckin>> getMoodCheckins({int limit = 30}) async {
+    await _delay();
+    final sorted = [..._moodCheckins]..sort((a, b) => b.date.compareTo(a.date));
+    return sorted.take(limit).toList();
+  }
+
+  @override
+  Future<void> saveMoodCheckin(String mood, {String? date}) async {
+    await _delay();
+    final day = date ?? _todayIso;
+    _moodCheckins.removeWhere((entry) => entry.date == day);
+    _moodCheckins.add(MoodCheckin(date: day, mood: mood));
+  }
+
+  @override
+  Future<List<JournalEntry>> getJournalEntries({int limit = 30}) async {
+    await _delay();
+    final sorted = [..._journalEntries]..sort((a, b) => b.date.compareTo(a.date));
+    return sorted.take(limit).toList();
+  }
+
+  @override
+  Future<void> saveJournalEntry(String content, {String? date}) async {
+    await _delay();
+    final day = date ?? _todayIso;
+    _journalEntries.removeWhere((entry) => entry.date == day);
+    _journalEntries.add(JournalEntry(date: day, content: content));
+  }
+
+  @override
+  Future<WellnessWeek> getWellnessWeek({int days = 7}) async {
+    await _delay();
+    final counts = <String, int>{};
+    for (final activity in _wellnessActivities) {
+      counts[activity] = (counts[activity] ?? 0) + 1;
+    }
+    return WellnessWeek(
+      days: days,
+      total: _wellnessActivities.length,
+      counts: counts,
+    );
+  }
+
+  @override
+  Future<void> logWellnessActivity(String activity) async {
+    await _delay();
+    _wellnessActivities.add(activity);
+  }
 }

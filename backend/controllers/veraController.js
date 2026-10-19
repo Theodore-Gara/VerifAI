@@ -1,9 +1,9 @@
 const pool = require('../db/pool');
 const { positiveIntegerParam, clampInt } = require('../middleware/validate');
 const { getVeraReply, streamVeraReply, extractMemories } = require('../services/nvidiaAssistant');
-const { buildUserContext, describeContext, buildTips, buildAppKnowledge, buildAttemptAnswers, buildLeaderboardContext, buildTokenContext } = require('../services/veraContext');
+const { buildUserContext, describeContext, buildTips, buildAppKnowledge, buildAttemptAnswers, buildLeaderboardContext, buildTokenContext, buildWellnessContext } = require('../services/veraContext');
 const { webSearch } = require('../services/tavily');
-const { MEMORY_KINDS, veraSystem } = require('../services/llm/prompts');
+const { MEMORY_KINDS, veraSystem, wellnessSection } = require('../services/llm/prompts');
 const { assembleContext, shouldCompact, compactSession } = require('../services/chatCompaction');
 const { handleAiError } = require('../middleware/aiError');
 const { openStream, sendEvent, endStream } = require('../middleware/sse');
@@ -78,11 +78,12 @@ async function loadVeraInputs(user) {
     `SELECT kind, content FROM vera_memories WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 15`,
     [user.id],
   );
-  const [appKnowledge, attemptAnswers, leaderboard, tokens] = await Promise.all([
+  const [appKnowledge, attemptAnswers, leaderboard, tokens, wellness] = await Promise.all([
     buildAppKnowledge(pool, user.id, user.industry_track_id),
     buildAttemptAnswers(pool, user.id),
     buildLeaderboardContext(pool, user.id, user.industry_track_id),
     buildTokenContext(pool, user.id),
+    buildWellnessContext(pool, user.id),
   ]);
   return {
     context,
@@ -92,6 +93,7 @@ async function loadVeraInputs(user) {
     attemptAnswers,
     leaderboard,
     tokens,
+    wellness,
   };
 }
 
@@ -143,7 +145,7 @@ async function chat(req, res, next) {
       [sessionId, user.id, lastUser.content],
     );
 
-    const { contextText, memories, appKnowledge, attemptAnswers, leaderboard, tokens } = await loadVeraInputs(user);
+    const { contextText, memories, appKnowledge, attemptAnswers, leaderboard, tokens, wellness } = await loadVeraInputs(user);
 
     // The learner can ask Vera to verify their input: search the web on request.
     const webResults = req.body.web_search === true ? await webSearch(lastUser.content, { maxResults: 5 }) : [];
@@ -161,6 +163,7 @@ async function chat(req, res, next) {
       webResults,
       leaderboard,
       tokens,
+      wellness,
     });
 
     // Rebuild the context from stored history: the running summary covers the
@@ -191,9 +194,10 @@ async function chat(req, res, next) {
     // sees, so a progress report uses current figures instead of echoing stale
     // numbers from earlier turns.
     if (context.length) {
+      const wellnessText = wellness ? `\n\n${wellnessSection(wellness)}` : '';
       context.splice(context.length - 1, 0, {
         role: 'system',
-        content: `CURRENT LEARNER DATA (live, fetched for this message and authoritative). If the learner asks about their progress or stats (XP, level, streak, tokens, readiness, tier, skills, leaderboard), quote these EXACT figures and ignore any numbers stated earlier in the conversation:\n${contextText || 'No activity recorded yet.'}`,
+        content: `CURRENT LEARNER DATA (live, fetched for this message and authoritative). If the learner asks about their progress or stats (XP, level, streak, tokens, readiness, tier, skills, leaderboard) or their recent mood, quote these EXACT figures and ignore any numbers stated earlier in the conversation:\n${contextText || 'No activity recorded yet.'}${wellnessText}`,
       });
     }
 

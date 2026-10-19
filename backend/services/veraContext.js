@@ -136,6 +136,41 @@ async function buildTokenContext(executor, userId) {
   return { tokens, events };
 }
 
+// Wellness context: recent mood check-ins, this week's self-care activity
+// counts and how many journal entries exist. Journal content is deliberately
+// never loaded — it stays private to the learner.
+async function buildWellnessContext(executor, userId) {
+  const moodResult = await executor.query(
+    `SELECT check_in_date::text AS date, mood, (check_in_date = CURRENT_DATE) AS today
+     FROM wellness_mood_checkins
+     WHERE user_id = $1
+     ORDER BY check_in_date DESC
+     LIMIT 7`,
+    [userId],
+  );
+
+  const activityResult = await executor.query(
+    `SELECT activity, COUNT(*)::int AS count
+     FROM wellness_activities
+     WHERE user_id = $1 AND completed_at >= now() - interval '7 days'
+     GROUP BY activity`,
+    [userId],
+  );
+
+  const journalResult = await executor.query(
+    `SELECT COUNT(*)::int AS count
+     FROM wellness_journal_entries
+     WHERE user_id = $1 AND entry_date >= CURRENT_DATE - 6`,
+    [userId],
+  );
+
+  return {
+    moods: moodResult.rows,
+    activities: activityResult.rows,
+    journalEntriesThisWeek: journalResult.rows[0]?.count ?? 0,
+  };
+}
+
 // Compact text injected into Vera's system prompt.
 function describeContext(ctx) {
   const lines = [];
@@ -262,5 +297,5 @@ async function buildAttemptAnswers(executor, userId) {
   });
 }
 
-module.exports = { buildUserContext, describeContext, buildTips, buildAppKnowledge, buildAttemptAnswers, buildLeaderboardContext, buildTokenContext };
+module.exports = { buildUserContext, describeContext, buildTips, buildAppKnowledge, buildAttemptAnswers, buildLeaderboardContext, buildTokenContext, buildWellnessContext };
 

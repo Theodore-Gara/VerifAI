@@ -21,6 +21,7 @@ const rewardsRoutes = require('./routes/rewards');
 const veraRoutes = require('./routes/vera');
 const industryPracticeRoutes = require('./routes/industryPractice');
 const historyRoutes = require('./routes/history');
+const wellnessRoutes = require('./routes/wellness');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -136,6 +137,7 @@ app.use('/api/rewards', rewardsRoutes);
 app.use('/api/vera', veraRoutes);
 app.use('/api/industry-practice', industryPracticeRoutes);
 app.use('/api/history', historyRoutes);
+app.use('/api/wellness', wellnessRoutes);
 
 app.get('/api/docs', (req, res) => {
   res.json({
@@ -200,6 +202,12 @@ app.get('/api/docs', (req, res) => {
       'GET /api/industry-practice/cases/:id',
       'POST /api/industry-practice/cases/:id/read',
       'GET /api/history',
+      'GET /api/wellness/mood',
+      'PUT /api/wellness/mood',
+      'GET /api/wellness/journal',
+      'PUT /api/wellness/journal',
+      'GET /api/wellness/activities',
+      'POST /api/wellness/activities',
     ],
   });
 });

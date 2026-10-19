@@ -46,7 +46,7 @@ function coachSystem(lesson) {
 }
 
 // Vera with memory: the learner profile is injected so coaching is personalised.
-function veraSystem({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers, webResults, trackName, accountCreatedAt, leaderboard, tokens }) {
+function veraSystem({ userName, contextText, memories, contextName, appKnowledge, attemptAnswers, webResults, trackName, accountCreatedAt, leaderboard, tokens, wellness }) {
   return [
     'You are Vera, VerifAI\'s friendly, professional AI assistant. You coach people to work with AI responsibly and to build workplace readiness.',
     'Be warm but professional, concise and evidence-first. Never invent sources or citations.',
@@ -56,6 +56,9 @@ function veraSystem({ userName, contextText, memories, contextName, appKnowledge
     'Use the learner profile below to personalise your help: reference their progress, affirm strengths, and gently target weak areas with concrete, actionable tips.',
     'The learner\'s tier (Novice, Developing, Proficient or Advanced) is derived from their 0-100 readiness score: higher readiness means a higher tier. Reference their tier and readiness where it helps.',
     'For any question about the learner\'s own numbers (XP, level, streak, tokens, readiness, tier, skills or leaderboard), ALWAYS use the current figures given in this message (the "Learner profile" section and any "CURRENT LEARNER DATA" note). NEVER repeat numbers from earlier messages in the conversation - they are out of date and must not be used.',
+    'The learner also has a private Wellness area with daily mood check-ins, a journal only they can read, and self-care activities. Their recent mood check-ins and self-care counts appear below. You CANNOT see the contents of their journal and must never claim to have read it.',
+    'If the learner talks about stress, burnout, anxiety, low mood, exam pressure or feeling overwhelmed, respond with warmth and practical, kind support, and connect it to small next steps (a breathing exercise, a short walk, rest, or talking to someone they trust).',
+    'You are not a therapist, doctor or counsellor. Never diagnose or give medical advice. If someone describes serious distress, self-harm or a crisis, gently encourage them to contact a professional or their local emergency/crisis service right away.',
     contextName ? `Current surface: ${contextName}.` : '',
     userName ? `The learner is ${userName}.` : '',
     trackName ? `Industry track: ${trackName}.` : '',
@@ -69,6 +72,7 @@ function veraSystem({ userName, contextText, memories, contextName, appKnowledge
       : '',
     leaderboard ? leaderboardSection(leaderboard) : '',
     tokens ? tokenSection(tokens) : '',
+    wellness ? wellnessSection(wellness) : '',
     scoringSection(),
     webResults && webResults.length
       ? `Live web search results for the learner's request (cite these by title/URL):\n${webResults
@@ -128,6 +132,28 @@ function tokenEventDescription(e) {
   }
 }
 
+const ACTIVITY_LABELS = {
+  breathing: 'breathing exercises',
+  journal: 'journal entries',
+  step_outside: 'time outside',
+};
+
+function wellnessSection(w) {
+  const lines = ['Wellness (private to the learner):'];
+  const today = (w.moods || []).find((m) => m.today);
+  if (today) lines.push(`- Today's mood check-in: ${today.mood}.`);
+  const recent = (w.moods || []).filter((m) => !m.today).slice(0, 6);
+  if (recent.length) {
+    lines.push(`- Recent mood check-ins: ${recent.map((m) => `${m.date} ${m.mood}`).join('; ')}.`);
+  } else if (!today) {
+    lines.push('- No mood check-ins yet.');
+  }
+  const counts = (w.activities || []).map((a) => `${ACTIVITY_LABELS[a.activity] || a.activity}: ${a.count}`);
+  if (w.journalEntriesThisWeek) counts.push(`journal entries this week: ${w.journalEntriesThisWeek}`);
+  lines.push(`- Self-care this week: ${counts.length ? counts.join(', ') : 'nothing logged yet'}.`);
+  return lines.join('\n');
+}
+
 function scoringSection() {
   return [
     'Scoring system:',
@@ -179,6 +205,7 @@ function extractorSystem() {
     'Store at most three items, only durable observations that would help future coaching (e.g. a recurring difficulty, a stated goal, a preference for short answers, demonstrated strength).',
     'Skip small talk, questions, and anything transient. Never store secrets, passwords or sensitive personal data. Use short third-person statements ("Struggles with time value of money").',
     'Never record changing stats or progress figures (XP, level, streak, token balance, readiness score, tier, skill scores) - those are always read live and would go stale. Store only durable observations that will still be true later.',
+    'Never record anything from the learner\'s private Wellness area (mood check-ins, journal contents, self-care activity, health or mental-health details).',
     'Return raw JSON with no markdown fences. If there is nothing worth storing, return {"memories":[]}.',
   ].join('\n');
 }
@@ -211,6 +238,7 @@ module.exports = {
   generalSystem,
   coachSystem,
   veraSystem,
+  wellnessSection,
   analysisSystem,
   markerSystem,
   extractorSystem,

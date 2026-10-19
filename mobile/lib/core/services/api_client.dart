@@ -88,6 +88,14 @@ abstract class ApiClient {
 
   // --- History ---
   Future<List<HistoryEntry>> getHistory({int limit = 30});
+
+  // --- Wellness ---
+  Future<List<MoodCheckin>> getMoodCheckins({int limit = 30});
+  Future<void> saveMoodCheckin(String mood, {String? date});
+  Future<List<JournalEntry>> getJournalEntries({int limit = 30});
+  Future<void> saveJournalEntry(String content, {String? date});
+  Future<WellnessWeek> getWellnessWeek({int days = 7});
+  Future<void> logWellnessActivity(String activity);
 }
 
 class AssistantMessage {

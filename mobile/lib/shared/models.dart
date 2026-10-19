@@ -14,4 +14,5 @@ export 'models/industry_practice.dart';
 export 'models/rewards.dart';
 export 'models/history.dart';
 export 'models/interview_question.dart';
+export 'models/wellness.dart';
 export 'models/assistant.dart';

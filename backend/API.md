@@ -243,7 +243,7 @@ Protected. Returns the caller's avatar image, or `404` when none is set.
 Vera is the app-wide, friendly professional assistant. She keeps track of the learner's progress (skill scores, task outcomes, lab and capstone results), remembers durable observations, and personalises coaching. Sessions and messages are stored per user.
 
 ### POST /api/vera/chat
-Protected. Body `{ session_id?, messages, context? }`. Only the **newest** entry of `messages` is used (role `user`, up to 2,000 chars); older entries are ignored because the server rebuilds the conversation from the stored session history. `context` is one of `assistant`, `coach`, `lab`, `verification`, `general`. Creates a session when `session_id` is omitted. Vera's system prompt is built from the learner profile, stored memories, **app-wide knowledge** (task types, lessons, capstones and the rewards catalogue with the learner's token balance) and the learner's own recent attempts **including the correct answers**, so she can recommend what to do or which reward to save for, and is **not gated** — she will state the correct answer to a task or assessment the learner attempted if asked. The turn is stored and durable memories are extracted from the exchange. Long sessions are compacted in the background once the context nears ~90% of the model's window (`CHAT_CONTEXT_TOKENS`, default 262144): older turns are folded into a running summary and only the recent turns are sent verbatim. Returns `{ session_id, reply }`. Pass `"web_search": true` to have Vera search the web (Tavily) for the request — useful for "verify this claim" — which adds `sources` and `web_searched` to the response and injects the results into her prompt. `?stream=1` streams SSE; the first event is `{"session_id": <id>}` followed by `{"delta": "..."}` frames and `[DONE]`. Rate-limited (8/min).
+Protected. Body `{ session_id?, messages, context? }`. Only the **newest** entry of `messages` is used (role `user`, up to 2,000 chars); older entries are ignored because the server rebuilds the conversation from the stored session history. `context` is one of `assistant`, `coach`, `lab`, `verification`, `general`. Creates a session when `session_id` is omitted. Vera's system prompt is built from the learner profile, stored memories, **app-wide knowledge** (task types, lessons, capstones and the rewards catalogue with the learner's token balance), a **wellness snapshot** (recent mood check-ins, 7-day self-care activity counts and the number of journal entries — never journal content) and the learner's own recent attempts **including the correct answers**, so she can recommend what to do or which reward to save for, and is **not gated** — she will state the correct answer to a task or assessment the learner attempted if asked. The turn is stored and durable memories are extracted from the exchange. Long sessions are compacted in the background once the context nears ~90% of the model's window (`CHAT_CONTEXT_TOKENS`, default 262144): older turns are folded into a running summary and only the recent turns are sent verbatim. Returns `{ session_id, reply }`. Pass `"web_search": true` to have Vera search the web (Tavily) for the request — useful for "verify this claim" — which adds `sources` and `web_searched` to the response and injects the results into her prompt. `?stream=1` streams SSE; the first event is `{"session_id": <id>}` followed by `{"delta": "..."}` frames and `[DONE]`. Rate-limited (8/min).
 
 ### GET /api/vera/sessions
 Protected. The user's recent chat sessions.
@@ -275,6 +275,28 @@ Protected. The full case (`scenario`, `cause`, `solution`, `source_title`, `sour
 
 ### POST /api/industry-practice/cases/:id/read
 Protected. Marks a case as read (idempotent).
+
+## Wellness
+
+Private, per-user wellbeing tools. Mood check-ins and journal entries are **one per day**: re-saving the same date updates that row. Dates are `YYYY-MM-DD` supplied by the client (its own local date), defaulting to the server's `CURRENT_DATE` when omitted. Journal content is **never** shared with Vera — she only sees the number of entries.
+
+### GET /api/wellness/mood
+Protected. The caller's check-ins, newest first. Optional `?limit=<1..90>` (default 30). Response: `{ checkins: [{ date, mood, updated_at }] }`, `mood` ∈ `Great|Calm|Okay|Stressed|Tired|Low`.
+
+### PUT /api/wellness/mood
+Protected. Body `{ "mood": "Calm", "date": "2026-10-19" }` (`date` optional). Upserts the day's check-in and returns `{ checkin: { date, mood, updated_at } }`. `400` for an unknown mood or a malformed date.
+
+### GET /api/wellness/journal
+Protected. The caller's journal entries, newest first. Optional `?limit=<1..90>` (default 30). Response: `{ entries: [{ date, content, updated_at }] }`.
+
+### PUT /api/wellness/journal
+Protected. Body `{ "content": "...", "date": "2026-10-19" }` (`date` optional). Upserts the day's entry and returns `{ entry: { date, content, updated_at } }`. `content` is required and ≤ 1,200 characters.
+
+### GET /api/wellness/activities
+Protected. Self-care completions in the window. Optional `?days=<1..30>` (default 7). Response: `{ days, total, activities: [{ activity, count, last_at }] }`, `activity` ∈ `breathing|journal|step_outside`.
+
+### POST /api/wellness/activities
+Protected. Body `{ "activity": "breathing" }`. Logs one completion and returns `201 { activity: { id, activity, completed_at } }`. `400` for an unknown activity.
 
 ## Scoring
 
