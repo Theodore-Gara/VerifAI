@@ -1,4 +1,5 @@
 const pool = require('../db/pool');
+const { resolveRole } = require('../middleware/adminRoles');
 
 const USER_COLUMNS = 'id, firebase_uid, email, display_name, created_at';
 
@@ -50,4 +51,46 @@ async function syncUser(req, res, next) {
   }
 }
 
-module.exports = { syncUser };
+// GET /api/auth/me — who the signed-in user is, plus their admin status and
+// role so the app can show a profile role badge and an Admin Panel entry
+// point. Admin status resolves the same way the panel gates it: the
+// admin_accounts registry (database-driven, e.g. vusani@verify.com = super),
+// an admin_role Firebase claim, or the ADMIN_EMAILS env bootstrap.
+async function me(req, res, next) {
+  try {
+    const { uid, email } = req.firebaseUser;
+    if (!uid) {
+      return res.status(401).json({ error: 'Firebase token does not contain a user ID.', request_id: req.requestId });
+    }
+    const updated = await pool.query(
+      `UPDATE users
+       SET email = $2, display_name = COALESCE(display_name, $3)
+       WHERE firebase_uid = $1
+       RETURNING ${USER_COLUMNS}`,
+      [uid, email || '', req.firebaseUser.name || null],
+    );
+    let user = updated.rows[0];
+    if (!user) {
+      // Not synced yet — create the row so the profile has an identity.
+      const inserted = await pool.query(
+        `INSERT INTO users (firebase_uid, email, display_name)
+         VALUES ($1, $2, $3)
+         RETURNING ${USER_COLUMNS}`,
+        [uid, email || '', req.firebaseUser.name || null],
+      );
+      user = inserted.rows[0];
+    }
+
+    const role = await resolveRole(req.firebaseUser);
+    return res.status(200).json({
+      user,
+      is_admin: !!role,
+      role: role || null,
+      request_id: req.requestId,
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+module.exports = { syncUser, me };

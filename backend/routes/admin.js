@@ -76,11 +76,13 @@ router.get('/export/users.csv', requireRole('admin'), exportUsersCsv);
 router.get('/export/attempts.csv', requireRole('admin'), exportAttemptsCsv);
 router.get('/export/tracks.csv', requireRole('admin'), exportTracksCsv);
 
-// System config + admin registry
+// System config + admin registry. Granting panel privileges is available to
+// any admin (that is how new admins are appointed); only supers may remove
+// admins or view the registry.
 router.get('/config', getConfigValues);
 router.put('/config', requireRole('admin'), updateConfigValues);
-router.get('/admins', requireRole('super'), listAdmins);
-router.post('/admins', requireRole('super'), addAdmin);
+router.post('/admins', requireRole('admin'), addAdmin);
+router.get('/admins', requireRole('admin'), listAdmins);
 router.delete('/admins/:email', requireRole('super'), removeAdmin);
 
 module.exports = router;

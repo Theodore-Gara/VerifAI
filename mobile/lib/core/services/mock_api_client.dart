@@ -137,6 +137,13 @@ class MockApiClient implements ApiClient {
   }
 
   @override
+  Future<AdminIdentity> getMe() async {
+    return const AdminIdentity(
+        user: User(id: 'mock', email: 'demo@verifai.app', createdAt: ''),
+        isAdmin: false);
+  }
+
+  @override
   Future<void> deleteAccount() async {}
 
   @override

@@ -42,11 +42,11 @@
   nav.tabs button { border: none; background: transparent; color: var(--muted);
                     padding: 11px 16px; border-bottom: 2px solid transparent; border-radius: 0; white-space: nowrap; }
   nav.tabs button.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
-  main { max-width: 1180px; margin: 0 auto; padding: 22px; }
+  main { max-width: 1180px; margin: 0 auto; padding: 22px; overflow-x: clip; }
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 22px; }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
   .card .n { font-size: 26px; font-weight: 700; }
-  .card .l { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .6px; }
+  .card .l { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
   .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
   select, input, textarea {
     background: var(--panel2); border: 1px solid var(--line); color: var(--text);
@@ -56,7 +56,7 @@
   table { width: 100%; border-collapse: collapse; background: var(--panel);
           border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
   th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 13px; }
-  th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; background: var(--panel2); }
+  th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; background: var(--panel2); white-space: nowrap; }
   tr:last-child td { border-bottom: none; }
   td.title-cell { max-width: 420px; }
   .pill { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
@@ -106,7 +106,7 @@
   .toast.err { border-color: var(--danger); }
   .bar { height: 10px; background: var(--panel2); border-radius: 6px; overflow: hidden; min-width: 70px; display: inline-block; }
   .bar > div { height: 100%; background: var(--accent); border-radius: 6px; }
-  .chart { display: flex; align-items: flex-end; gap: 6px; height: 130px; margin: 10px 0 4px; min-width: 0; overflow: hidden; }
+  .chart { display: flex; align-items: flex-end; gap: 6px; height: 130px; margin: 10px 0 4px; min-width: 0; overflow: hidden; padding-right: 8px; }
   .chart .col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; height: 100%; min-width: 0; overflow: hidden; }
   .chart .stack { width: 100%; max-width: 42px; flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: flex-end; }
   .chart .pass { background: var(--accent2); border-radius: 4px 4px 0 0; width: 100%; }
@@ -405,7 +405,14 @@
         <div class="panel">
           <h3>Admin roles (registry)</h3>
           <div id="adminRows"><p class="muted">Loading…</p></div>
-          <div class="toolbar" style="margin-top:12px">
+          <div class="section-title" style="margin-top:14px">Find an account to grant or remove admin</div>
+          <div class="toolbar">
+            <input id="adminSearch" placeholder="Search all accounts by name or email…" style="min-width:240px">
+            <button class="ghost small" id="adminSearchBtn">Search</button>
+          </div>
+          <div id="adminSearchResults"><p class="muted" style="font-size:12px">Search matches every account in the database — results show their current panel role.</p></div>
+          <div class="section-title" style="margin-top:14px">Add by email directly</div>
+          <div class="toolbar">
             <input id="adminEmail" placeholder="admin@email.com" style="min-width:200px">
             <select id="adminRole">
               <option value="admin">admin</option>
@@ -414,7 +421,7 @@
             </select>
             <button class="primary small" id="adminAddBtn">Add / update</button>
           </div>
-          <p class="muted" style="font-size:12px">ADMIN_EMAILS entries ("email" or "email:role") still work; registry rows take precedence. Only super admins manage this list.</p>
+          <p class="muted" style="font-size:12px">ADMIN_EMAILS entries ("email" or "email:role") still work; registry rows take precedence. Removing an admin requires a super admin.</p>
         </div>
       </div>
     </section>
@@ -776,7 +783,8 @@ async function loadAll() {
   ]);
   try {
     const system = await api('/system');
-    $('roleBadge').textContent = system.role || 'admin';
+    myRole = system.role || 'admin';
+    $('roleBadge').textContent = myRole;
   } catch { /* non-fatal */ }
   $('maintenanceBanner').classList.toggle('hidden', config.config.maintenance_mode !== 'on');
   tracks = overview.tracks;
@@ -847,12 +855,13 @@ function renderChart(rows, containerId) {
     const passH = r.attempts ? Math.round(totalH * r.passed / r.attempts) : 0;
     const failH = r.attempts ? totalH - passH : 0;
     const label = r.label != null ? r.label : String(r.day).slice(5); // MM-DD
+    // Single label row: the count lives in the tooltip only; the date shows
+    // on every nth column (plus the last) so dense charts stay readable.
     return `<div class="col">
-      <div class="stack" title="${r.day}: ${r.attempts} attempts, ${r.passed} passed">
+      <div class="stack" title="${label}: ${r.attempts} attempts, ${r.passed} passed">
         ${passH ? `<div class="pass" style="height:${passH}%"></div>` : ''}
         ${failH ? `<div class="fail" style="height:${failH}%"></div>` : ''}
       </div>
-      ${r.attempts ? `<div class="lbl">${r.attempts}</div>` : '<div class="lbl">&nbsp;</div>'}
       <div class="lbl">${i % labelEvery === 0 || i === rows.length - 1 ? label : ''}</div>
     </div>`;
   }).join('');
@@ -1799,6 +1808,10 @@ function renderAdmins(data) {
     ...data.db_admins.map((a) => ({ ...a, source: 'registry' })),
     ...data.env_admins.filter((e) => !data.db_admins.some((d) => d.email === e.email)),
   ];
+  // Role map used by the account search below to show each account's
+  // current panel role next to the search results.
+  for (const k of Object.keys(adminRoleByEmail)) delete adminRoleByEmail[k];
+  for (const a of rows) adminRoleByEmail[a.email.toLowerCase()] = { role: a.role, source: a.source };
   $('adminRows').innerHTML = rows.map((a) => `
     <div class="kv">
       <span>${escapeHtml(a.email)} ${a.source === 'env' ? '<span class="muted">(env)</span>' : ''}</span>
@@ -1826,8 +1839,87 @@ $('adminAddBtn').onclick = async () => {
     toast(`${email} saved as ${$('adminRole').value}.`);
     $('adminEmail').value = '';
     await loadSystem();
+    await runAdminSearch();
   } catch (err) { toast(err.message, true); }
 };
+
+// ------------------------------------------------------------ account search
+// Search ALL accounts in the database (GET /users searches every user by
+// name/email substring) and grant, change or revoke their panel role from the
+// results. Removal buttons appear only for super admins.
+const adminRoleByEmail = {};
+
+async function runAdminSearch() {
+  const q = $('adminSearch').value.trim();
+  if (!q) {
+    $('adminSearchResults').innerHTML = '<p class="muted" style="font-size:12px">Search matches every account in the database — results show their current panel role.</p>';
+    return;
+  }
+  $('adminSearchResults').innerHTML = '<p class="muted">Searching…</p>';
+  let data;
+  try {
+    data = await api('/users?q=' + encodeURIComponent(q) + '&limit=10');
+  } catch (err) {
+    $('adminSearchResults').innerHTML = `<p class="error">${escapeHtml(err.message)}</p>`;
+    return;
+  }
+  if (!data.users.length) {
+    $('adminSearchResults').innerHTML = `<p class="muted">No accounts match "${escapeHtml(q)}".</p>`;
+    return;
+  }
+  const canRemove = myRole === 'super';
+  $('adminSearchResults').innerHTML = data.users.map((u) => {
+    const reg = adminRoleByEmail[u.email.toLowerCase()];
+    const current = reg
+      ? `<span class="pill">${reg.role}</span>${reg.source === 'env' ? ' <span class="muted">(env)</span>' : ''}`
+      : '<span class="muted" style="font-size:12px">no admin role</span>';
+    const grantBtns = ['admin', 'moderator'].concat(myRole === 'super' ? ['super'] : [])
+      .map((r) => `<button class="primary small" data-grant="${escapeHtml(u.email)}|${r}" ${reg && reg.role === r ? 'disabled' : ''}>Make ${r}</button>`)
+      .join(' ');
+    const removeBtn = reg && reg.source === 'registry' && canRemove
+      ? `<button class="danger small" data-revoke="${escapeHtml(u.email)}">Remove admin</button>` : '';
+    return `<div class="kv">
+      <span><strong>${escapeHtml(u.display_name || '(no name)')}</strong>
+        <span class="muted">${escapeHtml(u.email)}</span> ${current}</span>
+      <span style="display:inline-flex;gap:6px;align-items:center;flex-wrap:nowrap">
+        ${grantBtns} ${removeBtn}
+      </span>
+    </div>`;
+  }).join('');
+
+  for (const btn of $('adminSearchResults').querySelectorAll('[data-grant]')) {
+    btn.onclick = async () => {
+      const [email, role] = btn.dataset.grant.split('|');
+      try {
+        await api('/admins', { method: 'POST', body: JSON.stringify({ email, role }) });
+        toast(`${email} is now ${role === 'super' ? 'a super admin' : 'an ' + role}.`);
+        await loadSystem();
+        await runAdminSearch();
+      } catch (err) { toast(err.message, true); }
+    };
+  }
+  for (const btn of $('adminSearchResults').querySelectorAll('[data-revoke]')) {
+    btn.onclick = async () => {
+      if (!confirm(`Remove ${btn.dataset.revoke} from the admin registry?`)) return;
+      try {
+        await api('/admins/' + encodeURIComponent(btn.dataset.revoke), { method: 'DELETE' });
+        toast('Admin removed.');
+        await loadSystem();
+        await runAdminSearch();
+      } catch (err) { toast(err.message, true); }
+    };
+  }
+}
+
+$('adminSearchBtn').onclick = () => runAdminSearch().catch((e) => toast(e.message, true));
+let adminSearchTimer = null;
+$('adminSearch').addEventListener('input', () => {
+  clearTimeout(adminSearchTimer);
+  adminSearchTimer = setTimeout(() => runAdminSearch().catch((e) => toast(e.message, true)), 350);
+});
+$('adminSearch').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { clearTimeout(adminSearchTimer); runAdminSearch().catch((er) => toast(er.message, true)); }
+});
 
 // ---------------------------------------------------------------- approvals
 async function loadApprovals() {

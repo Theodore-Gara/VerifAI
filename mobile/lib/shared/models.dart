@@ -15,3 +15,4 @@ export 'models/rewards.dart';
 export 'models/history.dart';
 export 'models/interview_question.dart';
 export 'models/assistant.dart';
+export 'models/admin_identity.dart';

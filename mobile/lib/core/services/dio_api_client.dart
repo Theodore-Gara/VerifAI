@@ -65,6 +65,12 @@ class DioApiClient implements ApiClient {
   }
 
   @override
+  Future<AdminIdentity> getMe() async {
+    final response = await _dio.get<Map<String, dynamic>>('auth/me');
+    return AdminIdentity.fromJson(Map<String, dynamic>.from(response.data ?? {}));
+  }
+
+  @override
   Future<void> deleteAccount() async {
     final token = await _idToken();
     await _dio.delete<void>('users/me', options: Options(headers: _authHeaders(token)));
