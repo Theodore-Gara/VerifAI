@@ -6,6 +6,9 @@ abstract class ApiClient {
   Future<AuthSyncResponse> syncUser(User user);
   Future<void> updateProfile(int trackId);
   Future<void> deleteAccount();
+
+  /// Who the signed-in user is on the staff side (GET /api/auth/me).
+  Future<AdminIdentity> getMe();
   Future<DashboardData> getDashboard();
   Future<DailyTask?> getNextTask({String? feature, String? difficulty});
   Future<List<Achievement>> getAchievements();

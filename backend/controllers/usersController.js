@@ -11,9 +11,11 @@ async function getMe(req, res, next) {
     const result = await pool.query(
       `SELECT u.id, u.firebase_uid, u.email, u.display_name, u.created_at,
               u.industry_track_id,
-              t.name AS industry_track_name
+              t.name AS industry_track_name,
+               a.role AS admin_role
        FROM users u
        LEFT JOIN industry_tracks t ON t.id = u.industry_track_id
+       LEFT JOIN admin_accounts a ON lower(a.email) = lower(u.email)
        WHERE u.firebase_uid = $1`,
       [req.firebaseUser.uid]
     );

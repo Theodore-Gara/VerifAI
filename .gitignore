@@ -15,6 +15,7 @@ firebase-service-account.json
 *.log
 *.err.log
 npm-debug.log*
+scratch-localdb.log*
 
 # Dart / Flutter
 .dart_tool/

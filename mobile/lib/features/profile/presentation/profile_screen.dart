@@ -12,6 +12,7 @@ import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/dashboard/providers.dart';
+import 'package:verifai/features/profile/presentation/admin_panel_screen.dart';
 import 'package:verifai/features/profile/providers.dart';
 import 'package:verifai/features/navigation/nav_drawer_controller.dart';
 import 'package:verifai/features/scoreboard/providers.dart';
@@ -29,6 +30,31 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Uint8List? _localProfileImage;
   bool _deleting = false;
+
+  /// Human label for the staff role badge on the profile.
+  String _adminRoleLabel(String role) {
+    switch (role) {
+      case 'super':
+        return 'SUPER ADMIN';
+      case 'moderator':
+        return 'MODERATOR';
+      default:
+        return 'ADMIN';
+    }
+  }
+
+  /// Admin dashboard URL derived from the app's API base URL
+  /// (.../api/ becomes .../admin/). Same backend that serves the app.
+  String _adminPanelUrl() {
+    const base = String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: 'https://verifai-2wnm.onrender.com/api/',
+    );
+    final trimmed = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+    return trimmed.endsWith('/api')
+        ? '${trimmed.substring(0, trimmed.length - 4)}/admin/'
+        : '$trimmed/admin/';
+  }
 
   Future<void> _deleteAccount() async {
     final confirmed = await showDialog<bool>(
@@ -107,6 +133,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final displayName = userName ?? user?.email ?? '';
     final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
     final trackName = user?.trackName;
+    final adminRole = ref.watch(adminIdentityProvider).valueOrNull?.role;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -336,10 +363,70 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ),
                           ),
                         ],
+                        if (adminRole != null) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.35)),
+                            ),
+                            child: Text(
+                              _adminRoleLabel(adminRole),
+                              style: AppTypography.textTheme.labelSmall
+                                  ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
+
+                  // Staff entry point: opens the admin dashboard in an in-app
+                  // browser view. Hidden for regular learners.
+                  if (adminRole != null) ...[
+                    Material(
+                      color: Colors.white.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      child: ListTile(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                          side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.35)),
+                        ),
+                        leading: const Icon(Icons.admin_panel_settings,
+                            color: Colors.white),
+                        title: const Text(
+                          'Open Admin Panel',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700),
+                        ),
+                        subtitle: Text(
+                          'Task approvals, users, analytics',
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.75)),
+                        ),
+                        trailing: const Icon(Icons.chevron_right,
+                            color: Colors.white),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => AdminPanelScreen(
+                                panelUrl: _adminPanelUrl()),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                  ],
 
                   // Bento Stat Metrics Row
                   dashboardAsync.when(
