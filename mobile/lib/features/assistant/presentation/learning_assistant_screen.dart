@@ -150,10 +150,10 @@ class _LearningAssistantScreenState
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
         const SizedBox(height: AppSpacing.xl),
-        const CircleAvatar(
+        CircleAvatar(
           radius: 25,
           backgroundColor: AppColors.primaryNavy,
-          child: Icon(Icons.support_agent_rounded, color: Colors.white),
+          child: const Icon(Icons.support_agent_rounded, color: Colors.white),
         ),
         const SizedBox(height: AppSpacing.md),
         Text(
@@ -184,7 +184,7 @@ class _LearningAssistantScreenState
                 label: Text(prompt),
                 onPressed: _sending ? null : () => _send(prompt),
                 backgroundColor: AppColors.surface,
-                side: const BorderSide(color: AppColors.border),
+                side: BorderSide(color: AppColors.border),
                 labelStyle: AppTypography.textTheme.labelMedium,
               ),
             ),
@@ -257,11 +257,11 @@ class _LearningAssistantScreenState
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppRadius.card),
-                  borderSide: const BorderSide(color: AppColors.border),
+                  borderSide: BorderSide(color: AppColors.border),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppRadius.card),
-                  borderSide: const BorderSide(color: AppColors.border),
+                  borderSide: BorderSide(color: AppColors.border),
                 ),
               ),
             ),
@@ -306,7 +306,7 @@ class _TaskContext extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.fact_check_outlined, color: AppColors.primaryNavy),
+          Icon(Icons.fact_check_outlined, color: AppColors.primaryNavy),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(

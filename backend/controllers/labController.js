@@ -10,6 +10,9 @@ const { refreshReadiness } = require('../services/readinessService');
 const { validateMessages } = require('./assistantController');
 const { handleAiError } = require('../middleware/aiError');
 const { openStream, sendEvent, endStream } = require('../middleware/sse');
+const { activityDate } = require('../utils/dates');
+const { contentCache } = require('../utils/ttlCache');
+const { sendJsonWithEtag } = require('../utils/httpCache');
 
 const PASS_SCORE = 60;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -391,9 +394,9 @@ async function submitActivity(req, res, next) {
     if (xpEarned > 0) await awardXp(client, user.id, xpEarned);
 
     await client.query(
-      `INSERT INTO lab_activity_attempts (user_id, activity_id, passed, xp_awarded)
-       VALUES ($1, $2, $3, $4)`,
-      [user.id, activityId, passed, xpEarned],
+      `INSERT INTO lab_activity_attempts (user_id, activity_id, passed, xp_awarded, submitted_date)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [user.id, activityId, passed, xpEarned, activityDate()],
     );
     await client.query('COMMIT');
 
@@ -716,9 +719,10 @@ async function submitCapstone(req, res, next) {
       const provisional = totalMarks > 0 ? Math.round((100 * autoMarks) / totalMarks) : 0;
       await client.query(
         `UPDATE lab_capstone_attempts
-         SET answers = $1, auto_marks = $2, timed_out = $3, status = 'pending_marking', submitted_at = now()
+         SET answers = $1, auto_marks = $2, timed_out = $3, status = 'pending_marking',
+             submitted_at = now(), submitted_date = $5
          WHERE id = $4`,
-        [JSON.stringify(answers), autoMarks, timedOut, attemptId],
+        [JSON.stringify(answers), autoMarks, timedOut, attemptId, activityDate()],
       );
       await client.query('COMMIT');
       const usedAfter = await attemptsUsed(pool, user.id, assessment.id);
@@ -743,9 +747,9 @@ async function submitCapstone(req, res, next) {
     await client.query(
       `UPDATE lab_capstone_attempts
        SET answers = $1, score = $2, passed = $3, status = 'marked', auto_marks = $4,
-           marks_awarded = $4, timed_out = $5, submitted_at = now()
+           marks_awarded = $4, timed_out = $5, submitted_at = now(), submitted_date = $7
        WHERE id = $6`,
-      [JSON.stringify(answers), score, passed, autoMarks, timedOut, attemptId],
+      [JSON.stringify(answers), score, passed, autoMarks, timedOut, attemptId, activityDate()],
     );
 
     const usedAfter = await attemptsUsed(client, user.id, assessment.id);
@@ -1089,13 +1093,16 @@ async function getAssessmentAnalysis(req, res, next) {
 // GET /api/lab/sources — the "where our material comes from" catalogue.
 async function listSources(req, res, next) {
   try {
-    const result = await pool.query(
-      `SELECT id, title, author, publisher, edition, source_url, license, license_url,
-              industry, checked_on, notes
-       FROM content_sources
-       ORDER BY industry, title`,
-    );
-    return res.status(200).json({ sources: result.rows, request_id: req.requestId });
+    const sources = await contentCache.wrap('sources', async () => {
+      const result = await pool.query(
+        `SELECT id, title, author, publisher, edition, source_url, license, license_url,
+                industry, checked_on, notes
+         FROM content_sources
+         ORDER BY industry, title`,
+      );
+      return result.rows;
+    });
+    return sendJsonWithEtag(req, res, { sources, request_id: req.requestId });
   } catch (err) {
     return next(err);
   }
@@ -1132,25 +1139,28 @@ async function getSource(req, res, next) {
 // GET /api/lab/library — sources grouped by industry.
 async function getLibrary(req, res, next) {
   try {
-    const result = await pool.query(
-      `SELECT id, title, author, publisher, edition, source_url, license, license_url,
-              industry, checked_on, notes
-       FROM content_sources
-       ORDER BY industry, title`,
-    );
+    const groups = await contentCache.wrap('library', async () => {
+      const result = await pool.query(
+        `SELECT id, title, author, publisher, edition, source_url, license, license_url,
+                industry, checked_on, notes
+         FROM content_sources
+         ORDER BY industry, title`,
+      );
 
-    const groups = [];
-    const byIndustry = new Map();
-    for (const source of result.rows) {
-      if (!byIndustry.has(source.industry)) {
-        const group = { industry: source.industry, sources: [] };
-        byIndustry.set(source.industry, group);
-        groups.push(group);
+      const built = [];
+      const byIndustry = new Map();
+      for (const source of result.rows) {
+        if (!byIndustry.has(source.industry)) {
+          const group = { industry: source.industry, sources: [] };
+          byIndustry.set(source.industry, group);
+          built.push(group);
+        }
+        byIndustry.get(source.industry).sources.push(source);
       }
-      byIndustry.get(source.industry).sources.push(source);
-    }
+      return built;
+    });
 
-    return res.status(200).json({ groups, request_id: req.requestId });
+    return sendJsonWithEtag(req, res, { groups, request_id: req.requestId });
   } catch (err) {
     return next(err);
   }
@@ -1179,15 +1189,17 @@ async function coach(req, res, next) {
       return res.status(200).json({ reply, request_id: req.requestId });
     }
 
-    openStream(res);
+    const signal = openStream(res);
     try {
-      for await (const chunk of streamCoachReply({ lesson, messages })) {
+      for await (const chunk of streamCoachReply({ lesson, messages, signal })) {
         if (chunk.delta) sendEvent(res, { delta: chunk.delta });
       }
       endStream(res);
     } catch (error) {
-      sendEvent(res, { error: error.message });
-      endStream(res);
+      if (!signal.aborted) {
+        sendEvent(res, { error: error.message });
+        endStream(res);
+      }
     }
     return undefined;
   } catch (err) {

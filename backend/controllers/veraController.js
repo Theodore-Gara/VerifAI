@@ -240,11 +240,11 @@ async function chat(req, res, next) {
       return res.status(200).json({ session_id: sessionId, reply, sources, web_searched: webResults.length > 0, request_id: req.requestId });
     }
 
-    openStream(res);
+    const signal = openStream(res);
     sendEvent(res, { session_id: sessionId });
     let full = '';
     try {
-      for await (const chunk of streamVeraReply({ messages: context })) {
+      for await (const chunk of streamVeraReply({ messages: context, signal })) {
         if (chunk.delta) {
           full += chunk.delta;
           sendEvent(res, { delta: chunk.delta });
@@ -252,8 +252,11 @@ async function chat(req, res, next) {
       }
       endStream(res);
     } catch (error) {
-      sendEvent(res, { error: error.message });
-      endStream(res);
+      // The client is gone: there is nobody to send the error frame to.
+      if (!signal.aborted) {
+        sendEvent(res, { error: error.message });
+        endStream(res);
+      }
     }
     if (full) await persistAssistantTurn(user, sessionId, lastUser.content, full, contextText, profile);
     scheduleCompaction();

@@ -119,7 +119,7 @@ class _ChoiceTaskScreenState extends ConsumerState<ChoiceTaskScreen> {
           if (task != null)
             IconButton(
               tooltip: 'Ask the Learning Assistant',
-              icon: const Icon(Icons.support_agent_rounded,
+              icon: Icon(Icons.support_agent_rounded,
                   color: AppColors.primaryNavy),
               onPressed: () => context.push('/assistant', extra: task),
             ),

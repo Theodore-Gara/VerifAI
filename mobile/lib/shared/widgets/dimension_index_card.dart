@@ -68,11 +68,11 @@ class DimensionIndexCard extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: AppColors.border),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
             color: AppColors.shadow,
             blurRadius: 8,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -120,7 +120,7 @@ class DimensionIndexCard extends StatelessWidget {
               ],
             ),
           ),
-          const Divider(height: 1, thickness: 1, color: AppColors.border),
+          Divider(height: 1, thickness: 1, color: AppColors.border),
 
           // Skill Rows with Hairline Dividers
           ListView.separated(
@@ -158,28 +158,28 @@ class _SkillRow extends StatelessWidget {
 
   _TierInfo get _tier {
     if (value >= 85) {
-      return const _TierInfo(
+      return _TierInfo(
         label: 'Expert',
         textColor: AppColors.accentGreen,
         bgColor: AppColors.accentLight,
       );
     } else if (value >= 70) {
-      return const _TierInfo(
+      return _TierInfo(
         label: 'Proficient',
         textColor: AppColors.primaryNavy,
-        bgColor: Color(0xFFF1F5F9),
+        bgColor: const Color(0xFFF1F5F9),
       );
     } else if (value >= 50) {
-      return const _TierInfo(
+      return _TierInfo(
         label: 'Developing',
         textColor: AppColors.textSecondary,
-        bgColor: Color(0xFFF8FAFC),
+        bgColor: const Color(0xFFF8FAFC),
       );
     } else {
-      return const _TierInfo(
+      return _TierInfo(
         label: 'Foundational',
         textColor: AppColors.textSecondary,
-        bgColor: Color(0xFFF8FAFC),
+        bgColor: const Color(0xFFF8FAFC),
       );
     }
   }
@@ -256,7 +256,7 @@ class _SkillRow extends StatelessWidget {
                 widthFactor: progress,
                 child: Container(
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
+                    gradient: LinearGradient(
                       colors: [
                         AppColors.accentGreen,
                         AppColors.accentCyan,

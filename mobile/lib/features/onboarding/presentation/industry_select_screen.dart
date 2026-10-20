@@ -88,7 +88,7 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.error_outline_rounded,
+                            Icon(Icons.error_outline_rounded,
                                 size: 18, color: AppColors.error),
                             const SizedBox(width: AppSpacing.sm),
                             Expanded(
@@ -278,11 +278,11 @@ class _TrackCard extends StatelessWidget {
             color: isSelected ? AppColors.accentGreen : AppColors.border,
             width: isSelected ? 1.5 : 1,
           ),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
               color: AppColors.shadow,
               blurRadius: 6,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),

@@ -76,7 +76,7 @@ class FeedbackScreen extends ConsumerWidget {
             child: Container(
               width: 220,
               height: 220,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.ambientGreen,
               ),
@@ -88,7 +88,7 @@ class FeedbackScreen extends ConsumerWidget {
             child: Container(
               width: 200,
               height: 200,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.ambientCyan,
               ),
@@ -114,11 +114,11 @@ class FeedbackScreen extends ConsumerWidget {
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(AppRadius.card),
                       border: Border.all(color: AppColors.border),
-                      boxShadow: const [
+                      boxShadow: [
                         BoxShadow(
                           color: AppColors.shadow,
                           blurRadius: 10,
-                          offset: Offset(0, 2),
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
@@ -187,7 +187,7 @@ class FeedbackScreen extends ConsumerWidget {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.bolt_rounded,
                                     color: AppColors.primaryNavy,
                                     size: 13,
@@ -284,7 +284,7 @@ class FeedbackScreen extends ConsumerWidget {
                             ),
                             child: Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.workspace_premium_rounded,
                                   color: AppColors.accentGreen,
                                   size: 15,

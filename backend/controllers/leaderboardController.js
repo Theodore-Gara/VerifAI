@@ -1,4 +1,5 @@
 const pool = require('../db/pool');
+const { leaderboardCache } = require('../utils/ttlCache');
 
 // GET /api/leaderboard
 //
@@ -34,7 +35,12 @@ async function getLeaderboard(req, res, next) {
     const trackFilter = buildTrackFilter(boardParams, req.query.track);
     boardParams.push(limit);
 
-    const board = await pool.query(
+    // The board is a full RANK() over every learner, and it changes slowly, so
+    // it is cached per (track, limit) for a minute. The caller's own rank below
+    // stays live: that is the row a learner actually notices.
+    const cacheKey = `board:${trackFilter ? boardParams[0] : 'all'}:${limit}`;
+    const board = await leaderboardCache.wrap(cacheKey, async () => {
+      const result = await pool.query(
       `SELECT r.rank, r.user_id, r.display_name, r.level, r.xp,
               r.streak, r.readiness_score, r.tier
        FROM (
@@ -56,8 +62,10 @@ async function getLeaderboard(req, res, next) {
        ) r
        ORDER BY r.rank ASC
        LIMIT $${boardParams.length}`,
-      boardParams
-    );
+        boardParams
+      );
+      return result.rows;
+    });
 
     // ---- Requesting user --------------------------------------------------
     const me = await pool.query(
@@ -102,7 +110,7 @@ async function getLeaderboard(req, res, next) {
 
     return res.status(200).json({
       track_id: trackFilter ? boardParams[0] : null,
-      leaderboard: board.rows,
+      leaderboard: board,
       me: { ...meRow, rank: rank.rows[0].rank },
       request_id: req.requestId,
     });

@@ -37,7 +37,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
               height: 76,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                       colors: [AppColors.accentGreen, AppColors.accentCyan]),
                   borderRadius: BorderRadius.circular(24)),
               child: Icon(
@@ -48,7 +48,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
                   color: AppColors.primaryNavy)),
           const SizedBox(height: 22),
           Text(forgotEmail ? 'Forgot your email?' : 'Reset your password',
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w900,
                   color: AppColors.primaryNavy)),
@@ -58,7 +58,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
                   ? 'For your privacy, VerifAI cannot reveal account email addresses here. Try the email accounts you may have registered with, check your inbox for earlier VerifAI messages, or contact your organisation’s support team.'
                   : 'Enter the email address associated with your account. If it is registered, Firebase will send a password-reset link.',
               style:
-                  const TextStyle(height: 1.5, color: AppColors.textSecondary)),
+                  TextStyle(height: 1.5, color: AppColors.textSecondary)),
           if (!forgotEmail) ...[
             const SizedBox(height: 24),
             TextField(
@@ -73,11 +73,11 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: AppColors.border)),
+                        borderSide: BorderSide(color: AppColors.border)),
                     enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
                         borderSide:
-                            const BorderSide(color: AppColors.border)))),
+                            BorderSide(color: AppColors.border)))),
             const SizedBox(height: 14),
             SizedBox(
                 width: double.infinity,

@@ -251,7 +251,7 @@ class _LabActivityScreenState extends ConsumerState<LabActivityScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.replay_rounded, size: 18, color: AppColors.textSecondary),
+          Icon(Icons.replay_rounded, size: 18, color: AppColors.textSecondary),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text('Practice run. You already attempted this, so it will not earn XP.',

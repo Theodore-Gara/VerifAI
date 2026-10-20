@@ -105,7 +105,7 @@ class _InterviewPracticeScreenState
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.check_circle_outline_rounded,
+              Icon(Icons.check_circle_outline_rounded,
                   size: 16, color: AppColors.accentGreen),
               const SizedBox(width: 6),
               Text(
@@ -161,8 +161,8 @@ class _InterviewPracticeScreenState
                     ),
                   ),
                   if (question.practiced)
-                    const Padding(
-                      padding: EdgeInsets.only(left: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
                       child: Icon(Icons.check_circle_rounded,
                           size: 16, color: AppColors.accentGreen),
                     ),

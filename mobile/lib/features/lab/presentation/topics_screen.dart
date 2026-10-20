@@ -107,7 +107,7 @@ class LabTopicsScreen extends ConsumerWidget {
                       style: AppTypography.textTheme.titleSmall
                           ?.copyWith(fontWeight: FontWeight.w700, color: AppColors.primaryNavy)),
                 ),
-                const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
               ],
             ),
           ),

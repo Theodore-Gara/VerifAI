@@ -125,7 +125,7 @@ class _VerifAIInputState extends State<VerifAIInput> {
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.input),
-              borderSide: const BorderSide(color: AppColors.border, width: 1),
+              borderSide: BorderSide(color: AppColors.border, width: 1),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.input),
@@ -137,19 +137,19 @@ class _VerifAIInputState extends State<VerifAIInput> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.input),
               borderSide:
-                  const BorderSide(color: AppColors.primaryNavy, width: 2),
+                  BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.input),
-              borderSide: const BorderSide(color: AppColors.error, width: 1),
+              borderSide: BorderSide(color: AppColors.error, width: 1),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.input),
-              borderSide: const BorderSide(color: AppColors.error, width: 2),
+              borderSide: BorderSide(color: AppColors.error, width: 2),
             ),
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.input),
-              borderSide: const BorderSide(color: AppColors.border, width: 1),
+              borderSide: BorderSide(color: AppColors.border, width: 1),
             ),
             errorStyle: AppTypography.textTheme.bodySmall?.copyWith(
               color: AppColors.error,

@@ -580,9 +580,26 @@ class MockApiClient implements ApiClient {
 
   // --- History ---
   @override
-  Future<List<HistoryEntry>> getHistory({int limit = 30}) async {
+  Future<List<HistoryEntry>> getHistory({
+    int limit = 30,
+    int offset = 0,
+    String? type,
+    String? query,
+  }) async {
     await _delay();
     return const [];
+  }
+
+  @override
+  Future<AttemptFeedback> getAttemptFeedback(int attemptId) async {
+    await _delay();
+    return const AttemptFeedback(
+      id: 1,
+      title: 'The Gross Profit Trap',
+      score: 72,
+      passed: true,
+      feedback: 'You caught the duplicated line and explained the fix.',
+    );
   }
 
   // --- Wellness ---

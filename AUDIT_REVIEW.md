@@ -2,13 +2,35 @@
 
 **Date:** 20 October 2026
 **Scope:** `backend/` (Node/Express/PostgreSQL, ~8,400 LOC of controllers+services) and `mobile/` (Flutter, ~22,800 LOC), plus schema, migrations and seeds.
-**Method:** full read of the request pipeline, every controller and service, the schema/index set, the Flutter API layer, router, shell and the main feature screens; ran the backend suite (`npm test` → **182 passed, 0 failed**). `flutter analyze` / `flutter test` could not be run in the first pass (Flutter SDK not on PATH); the fix round below was verified with both.
+**Method:** full read of the request pipeline, every controller and service, the schema/index set, the Flutter API layer, router, shell and the main feature screens; ran the backend suite (`npm test` → **182 passed, 0 failed**). `flutter analyze` / `flutter test` could not be run in the first pass (Flutter SDK not on PATH); both fix rounds below were verified with them.
 
 ---
 
-## 0. Fix round — what changed
+## 0. Fix rounds — what changed
 
-Verified after the fixes: **backend `npm test` → 186 passed, 0 failed**; **`flutter analyze` → no issues**; **`flutter test` → 46 passed, 0 failed**.
+Verified after the second round: **backend `npm test` → 186 passed, 0 failed**; **`flutter analyze` → no issues**; **`flutter test` → 49 passed, 0 failed**.
+
+### Round 2 — layout restructure, scalability, theming
+
+| Finding | Fix |
+|---|---|
+| **7.2** navigation tripled | The dock is now **Home · Learn · Practice · Progress · Profile** with a hub inside each: `LearnHubScreen` (lessons, recall practice, capstones, skill roadmap, Vera) and `PracticeHubScreen` (next task, the three skill flows, interview, Verification Studio, industry cases, history). The old `TaskScreen` and the `Track` tab are gone; `/tasks` redirects to `/practice` and `/track` now opens the roadmap from the Learn hub. The drawer is kept as the **secondary** index (grouped by area, opened from Home's low-emphasis action). Widget tests pin the five tabs, hub switching and the drawer. |
+| **7.1** Home had no next action | Home still leads with the recommended task (start/practise, difficulty, dimension), the XP bar, streak/completed tiles, readiness and the dimension index; its quick-launch grid now points at the Learn and Practice hubs instead of scattering routes, and shell links use `go` so they switch the dock instead of stacking a second shell. |
+| **5.1** single-instance rate limiting | `utils/pgRateStore.js` is an `express-rate-limit` store backed by a new `rate_limit_hits` table (migration 027), used by the global limiter and by the AI/write per-account limiters (each with its own key prefix). It falls back to an in-process counter if a query fails, so a database blip cannot 500 every request. |
+| **5.2** two extra queries per request | `verifyFirebaseToken` caches moderation status for 60 s (`AUTH_STATUS_CACHE_MS`); `invalidateStatusCache` is called from the admin status change, the admin hard delete and self-delete, so a suspension is visible on the user's next request. |
+| **5.4** non-sargable analytics | `task_attempts`, `answer_logs`, `lab_activity_attempts` and `lab_capstone_attempts` carry a plain `submitted_date` written by the API (`utils/dates.js`, using `STREAK_TIMEZONE`) with indexes; the timezone conversion is gone from the 30-day chart queries. (A STORED generated column is impossible here: `AT TIME ZONE` is STABLE, not IMMUTABLE.) `/api/admin/analytics` and `/track-progress` are cached for 60 s (`ANALYTICS_CACHE_MS`). |
+| **5.5** leaderboard scans every user | The board is cached per `(track, limit)` for 60 s (`LEADERBOARD_CACHE_MS`) and `user_progress` gets a covering `(xp DESC, readiness_score DESC, user_id)` index; the caller's own rank stays live. |
+| **5.7** static content queried every render | Tracks, lab sources, the library and the rewards catalogue are cached for 60 s and served with a strong `ETag` + `private, max-age=60`, answering `If-None-Match` with 304 (`utils/httpCache.js`). |
+| **5.8** stream kept writing after disconnect | `openStream` now returns an `AbortSignal` tied to a premature socket close; the signal is threaded through Vera, the learning assistant and the Lab coach into the LLM transport, which aborts upstream, skips the fallback retry and reports 499 instead of an error frame nobody can receive. |
+| **6.4 / 7.10** no pagination or search | `/api/history` takes `limit`/`offset`/`type`/`q` and returns `has_more`; the history screen has search, type chips and infinite scroll, and task rows open `/feedback/:attemptId`. The admin task list and answer log take `q` plus `limit`/`offset` with a real total. The lesson catalogue filters by title, summary and competency. |
+| **6.7** fonts downloaded at runtime | Inter and Manrope are bundled: static weights are instanced from the official variable sources into `assets/fonts/` (OFL 1.1, licences included) and declared in `pubspec.yaml`; `google_fonts` is removed, so typography no longer depends on the network and first paint does not reflow. |
+| **7.5** no dark mode, colours hardcoded | `AppColors` now resolves through an `AppPalette` (light + dark) and `AppTheme.themeFor(palette)` builds one theme from those tokens. Profile has a Light/System/Dark control persisted with `shared_preferences`. Existing `AppColors.x` call sites follow the active palette, so no screen is left light-on-dark. |
+| **7.6** feedback was route-local | New `GET /api/history/attempts/:id` (owner-scoped) and `/feedback/:attemptId`, which re-fetches score/pass/feedback — a restart or deep link now lands on real feedback instead of the empty state. |
+| **Seeds** | `69_approve_seeded_tasks.sql` and `70_demo_activity.sql` (demo users/attempts) removed; `71_admin_seed.sql` renumbered to `69_admin_seed.sql` so the pipeline no longer writes demo activity or approvals to a production database. |
+
+### Round 1 — integrity, correctness, first load
+
+Verified after that round: **backend `npm test` → 186 passed, 0 failed**; **`flutter analyze` → no issues**; **`flutter test` → 46 passed, 0 failed**.
 
 ### Integrity & correctness
 
@@ -47,11 +69,20 @@ Verified after the fixes: **backend `npm test` → 186 passed, 0 failed**; **`fl
 | **7.4** fixed-height grid overflow | Home's explore grid uses `mainAxisExtent` with wrapping/ellipsised labels instead of `childAspectRatio`; captions moved from 9.5–11 px to 11–12.5 px. |
 | **7.9** inconsistent error handling | All 12 direct `showSnackBar` call sites (6 files) now use the shared `showFeedback` banner; `FeedbackOverlay` is mounted once in `MaterialApp.builder`, so nothing renders a raw Material snackbar anymore. |
 
-### Still open (unchanged by this round)
+### Still open (not covered by either round)
 
-Fonts are still fetched at runtime: only variable-font TTFs are published upstream, and bundling them needs a `pubspec` font-family migration plus a visual check that this environment cannot do. `AppTypography.textTheme` is now built once and cached, and the banner inherits the ambient text style, which removes the repeated lookups — but the app still depends on a network call for its typography.
+These were listed in the original report but are outside what the two fix rounds changed:
 
-Also open: `submitted_date` generated columns + analytics caching (5.4), leaderboard materialisation (5.5), the shared rate-limit store and auth-status cache (5.1–5.2), aborting the upstream LLM request on client disconnect (5.8's second half), static-content ETag caching (5.7), pagination and search (6.4/7.10), dark mode and theme tokens (7.5), and route param for feedback (7.6).
+- **2.7** document parsing still runs on the request thread (needs a worker/queue plus a byte cap before parsing).
+- **3.6** the streak rule is documented in `awardXp` but still counts any graded attempt rather than only passes; the product decision is yours.
+- **5.3** the scored-attempt path is still ~12 round trips in one transaction.
+- **5.9** admin CSV exports still build the whole file in memory.
+- **6.5** some providers are still non-`autoDispose` globals without a refresh-on-resume hook.
+- **6.6** ~20 API methods still pass `Authorization` manually alongside the interceptor.
+- **7.3 / 7.4** touch targets and semantics are fixed on the dock, Home and hubs; the text-scale audit across every secondary screen has not been done.
+- **7.7, 7.8, 7.11** continue-button busy state, device-clock wellness dates, and the small polish items.
+- **§8** no Postgres integration suite; `google-services.json` is still tracked; README/`/api/docs` drift.
+- **§4** the duplication inventory (shared `requireUser`, user lookup, `createTask`/`insertTask`, activity view) is untouched.
 
 ---
 

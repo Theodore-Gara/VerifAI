@@ -7,6 +7,10 @@
 // error, so every helper checks `writableEnded` / a tracked closed flag first.
 const HEARTBEAT_MS = 15000;
 
+// Returns an AbortSignal that fires when the client goes away before the
+// response is finished. Callers pass it to the upstream model request so a
+// closed tab stops the LLM stream (and its cost) instead of writing into a
+// dead socket until the model finishes.
 function openStream(res) {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
@@ -27,17 +31,25 @@ function openStream(res) {
   // Never hold the process open for a client that went away.
   if (typeof heartbeat.unref === 'function') heartbeat.unref();
 
+  const controller = new AbortController();
   const finish = () => {
     closed = true;
     clearInterval(heartbeat);
   };
-  res.on('close', finish);
+  // `close` also fires after a normal finish; only a request that ends without
+  // the response completing means the client disconnected.
+  const disconnected = () => {
+    if (!res.writableEnded) controller.abort();
+    finish();
+  };
+  res.on('close', disconnected);
   res.on('finish', finish);
   res.on('error', finish);
 
   // Lets sendEvent/endStream stop writing to a dead socket.
   res.locals = res.locals || {};
   res.locals.sseClosed = () => closed || res.writableEnded;
+  return controller.signal;
 }
 
 function sendEvent(res, data) {

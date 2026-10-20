@@ -81,9 +81,9 @@ class IndustryPracticeScreen extends ConsumerWidget {
                             ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy, height: 1.3)),
                   ),
                   if (c.read)
-                    const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.accentGreen)
+                    Icon(Icons.check_circle_rounded, size: 18, color: AppColors.accentGreen)
                   else
-                    const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                    Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
                 ],
               ),
             ),

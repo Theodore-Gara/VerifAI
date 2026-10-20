@@ -90,7 +90,16 @@ abstract class ApiClient {
   Future<TokenHistory> getTokenHistory({int limit = 20});
 
   // --- History ---
-  Future<List<HistoryEntry>> getHistory({int limit = 30});
+  /// A page of the unified timeline. A short page means there is no more.
+  Future<List<HistoryEntry>> getHistory({
+    int limit = 30,
+    int offset = 0,
+    String? type,
+    String? query,
+  });
+
+  /// One attempt by id, so feedback survives a restart or a deep link.
+  Future<AttemptFeedback> getAttemptFeedback(int attemptId);
 
   // --- Wellness ---
   Future<List<MoodCheckin>> getMoodCheckins({int limit = 30});

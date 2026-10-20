@@ -56,7 +56,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
             child: Container(
               width: 220,
               height: 220,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.ambientCyan,
               ),
@@ -68,7 +68,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
             child: Container(
               width: 200,
               height: 200,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.ambientGreen,
               ),

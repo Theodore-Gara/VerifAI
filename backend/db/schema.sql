@@ -164,7 +164,10 @@ CREATE TABLE IF NOT EXISTS task_attempts (
   practice BOOLEAN NOT NULL DEFAULT FALSE,
   feedback TEXT NOT NULL,
   xp_earned INTEGER NOT NULL DEFAULT 0 CHECK (xp_earned >= 0),
-  submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- Calendar day in STREAK_TIMEZONE, written by the API (utils/dates.js) so
+  -- analytics can group on an indexed column instead of converting per row.
+  submitted_date DATE
 );
 
 -- ---------------------------------------------------------------------------
@@ -184,7 +187,8 @@ CREATE TABLE IF NOT EXISTS answer_logs (
   passed BOOLEAN NOT NULL,
   practice BOOLEAN NOT NULL DEFAULT FALSE,
   answer_summary TEXT,
-  submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  submitted_date DATE
 );
 
 CREATE INDEX IF NOT EXISTS idx_answer_logs_dept ON answer_logs (department_id, submitted_at DESC);
@@ -302,7 +306,8 @@ CREATE TABLE IF NOT EXISTS lab_activity_attempts (
   activity_id INTEGER NOT NULL REFERENCES lab_activities(id) ON DELETE CASCADE,
   passed BOOLEAN NOT NULL,
   xp_awarded INTEGER NOT NULL DEFAULT 0 CHECK (xp_awarded >= 0),
-  submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  submitted_date DATE
 );
 
 CREATE TABLE IF NOT EXISTS lab_questions (
@@ -545,7 +550,8 @@ CREATE TABLE IF NOT EXISTS lab_capstone_attempts (
   analyzed_at TIMESTAMPTZ,
   timed_out BOOLEAN NOT NULL DEFAULT FALSE,
   started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  submitted_at TIMESTAMPTZ
+  submitted_at TIMESTAMPTZ,
+  submitted_date DATE
 );
 
 -- ---------------------------------------------------------------------------
@@ -711,6 +717,28 @@ CREATE INDEX IF NOT EXISTS idx_wellness_mood_user ON wellness_mood_checkins(user
 CREATE INDEX IF NOT EXISTS idx_wellness_journal_user ON wellness_journal_entries(user_id, entry_date DESC);
 CREATE INDEX IF NOT EXISTS idx_wellness_journal_live ON wellness_journal_entries(user_id, entry_date DESC) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_wellness_activities_user ON wellness_activities(user_id, completed_at DESC);
+
+-- Activity-day indexes: analytics group on the stored calendar day, and the
+-- leaderboard reads the progress table in rank order.
+CREATE INDEX IF NOT EXISTS idx_task_attempts_submitted_date ON task_attempts(submitted_date);
+CREATE INDEX IF NOT EXISTS idx_answer_logs_submitted_date ON answer_logs(submitted_date);
+CREATE INDEX IF NOT EXISTS idx_lab_activity_attempts_submitted_date ON lab_activity_attempts(submitted_date);
+CREATE INDEX IF NOT EXISTS idx_task_attempts_user_graded ON task_attempts(user_id, submitted_at DESC) WHERE practice = FALSE;
+CREATE INDEX IF NOT EXISTS idx_lab_activity_attempts_user_submitted ON lab_activity_attempts(user_id, submitted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_progress_leaderboard ON user_progress(xp DESC, readiness_score DESC, user_id);
+
+-- ---------------------------------------------------------------------------
+-- Shared rate-limit counters (see utils/pgRateStore.js)
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS rate_limit_hits (
+  key          VARCHAR(200) NOT NULL,
+  window_start TIMESTAMP NOT NULL,
+  hits         INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (key, window_start)
+);
+
+CREATE INDEX IF NOT EXISTS idx_rate_limit_hits_window ON rate_limit_hits(window_start);
 
 -- ---------------------------------------------------------------------------
 -- updated_at triggers

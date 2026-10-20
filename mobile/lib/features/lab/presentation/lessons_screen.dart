@@ -12,12 +12,42 @@ import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
 
 /// Lesson catalogue. Used for both Learning material and Practice entry points.
-class LabLessonsScreen extends ConsumerWidget {
+///
+/// The catalogue is filtered locally by title, summary and competency, so a
+/// learner can find a topic without scrolling the whole book list (the audit's
+/// "no search anywhere" finding).
+class LabLessonsScreen extends ConsumerStatefulWidget {
   const LabLessonsScreen({super.key, this.practice = false});
   final bool practice;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LabLessonsScreen> createState() => _LabLessonsScreenState();
+}
+
+class _LabLessonsScreenState extends ConsumerState<LabLessonsScreen> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  bool get practice => widget.practice;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<LabLesson> _filter(List<LabLesson> lessons) {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return lessons;
+    return lessons.where((l) {
+      return l.title.toLowerCase().contains(q) ||
+          l.summary.toLowerCase().contains(q) ||
+          (l.competency ?? '').toLowerCase().contains(q);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final lessonsAsync = ref.watch(labLessonsProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -44,16 +74,58 @@ class LabLessonsScreen extends ConsumerWidget {
           fallbackMessage: 'Failed to load lessons.',
           onRetry: () => ref.invalidate(labLessonsProvider),
         ),
-        data: (lessons) => lessons.isEmpty
-            ? const EmptyState(
+        data: (lessons) {
+          if (lessons.isEmpty) {
+            return const EmptyState(
                 icon: Icons.menu_book_outlined,
                 title: 'No lessons yet',
-                message: 'Lessons for your track are coming soon.')
-            : ListView(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.sm,
-                    AppSpacing.screenPadding, AppSpacing.xxl),
-                children: [for (final l in lessons) _lessonCard(context, l)],
+                message: 'Lessons for your track are coming soon.');
+          }
+          final filtered = _filter(lessons);
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+                    AppSpacing.sm, AppSpacing.screenPadding, 0),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (value) => setState(() => _query = value),
+                  decoration: InputDecoration(
+                    hintText: 'Search lessons',
+                    prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                    suffixIcon: _query.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: 'Clear search',
+                            icon: const Icon(Icons.close_rounded, size: 18),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _query = '');
+                            },
+                          ),
+                  ),
+                ),
               ),
+              Expanded(
+                child: filtered.isEmpty
+                    ? EmptyState(
+                        icon: Icons.search_off_rounded,
+                        title: 'No matches',
+                        message: 'No lesson matches "$_query".')
+                    : ListView(
+                        padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.screenPadding,
+                            AppSpacing.md,
+                            AppSpacing.screenPadding,
+                            AppSpacing.xxl),
+                        children: [
+                          for (final l in filtered) _lessonCard(context, l)
+                        ],
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -97,9 +169,9 @@ class LabLessonsScreen extends ConsumerWidget {
                   ),
                 ),
                 if (lesson.completed)
-                  const Icon(Icons.check_circle_rounded, color: AppColors.accentGreen, size: 20)
+                  Icon(Icons.check_circle_rounded, color: AppColors.accentGreen, size: 20)
                 else
-                  const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                  Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
               ],
             ),
           ),

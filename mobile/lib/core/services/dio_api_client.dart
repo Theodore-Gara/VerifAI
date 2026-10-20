@@ -626,12 +626,32 @@ class DioApiClient implements ApiClient {
 
   // --- History ---
   @override
-  Future<List<HistoryEntry>> getHistory({int limit = 30}) async {
+  Future<List<HistoryEntry>> getHistory({
+    int limit = 30,
+    int offset = 0,
+    String? type,
+    String? query,
+  }) async {
     final token = await _idToken();
     final response = await _dio.get<Map<String, dynamic>>('history',
-        queryParameters: {'limit': limit}, options: Options(headers: _authHeaders(token)));
+        queryParameters: {
+          'limit': limit,
+          'offset': offset,
+          if (type != null) 'type': type,
+          if (query != null && query.trim().isNotEmpty) 'q': query.trim(),
+        },
+        options: Options(headers: _authHeaders(token)));
     final list = response.data?['entries'] as List<dynamic>? ?? const [];
     return list.map((e) => HistoryEntry.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+  }
+
+  @override
+  Future<AttemptFeedback> getAttemptFeedback(int attemptId) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>('history/attempts/$attemptId',
+        options: Options(headers: _authHeaders(token)));
+    final attempt = (response.data?['attempt'] as Map?)?.cast<String, dynamic>() ?? const {};
+    return AttemptFeedback.fromJson(attempt);
   }
 
   // --- Wellness ---

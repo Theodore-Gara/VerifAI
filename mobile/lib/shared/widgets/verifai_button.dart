@@ -82,7 +82,7 @@ class _VerifAIButtonState extends State<VerifAIButton> {
         backgroundColor = AppColors.surface;
         foregroundColor = AppColors.primaryNavy;
         bottomDepthColor = AppColors.buttonDepthWhite;
-        borderSide = const BorderSide(color: AppColors.border, width: 1.5);
+        borderSide = BorderSide(color: AppColors.border, width: 1.5);
       case VerifAIButtonVariant.ghost:
         backgroundColor = Colors.transparent;
         foregroundColor = AppColors.textSecondary;

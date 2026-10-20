@@ -9,8 +9,9 @@ class PageIndicator extends StatelessWidget {
     required this.currentPage,
     required this.pageCount,
     required this.onPageSelected,
-    this.activeColor = AppColors.primaryNavy,
-    this.inactiveColor = AppColors.border,
+    // Resolved in build so the indicator follows the active palette.
+    this.activeColor,
+    this.inactiveColor,
     this.dotSize = 8.0,
     this.spacing = 8.0,
   });
@@ -18,8 +19,8 @@ class PageIndicator extends StatelessWidget {
   final int currentPage;
   final int pageCount;
   final ValueChanged<int> onPageSelected;
-  final Color activeColor;
-  final Color inactiveColor;
+  final Color? activeColor;
+  final Color? inactiveColor;
   final double dotSize;
   final double spacing;
 
@@ -43,7 +44,9 @@ class PageIndicator extends StatelessWidget {
                 width: isActive ? dotSize * 2.5 : dotSize,
                 height: dotSize,
                 decoration: BoxDecoration(
-                  color: isActive ? activeColor : inactiveColor,
+                  color: isActive
+                      ? (activeColor ?? AppColors.primaryNavy)
+                      : (inactiveColor ?? AppColors.border),
                   borderRadius: BorderRadius.circular(dotSize),
                 ),
               ),

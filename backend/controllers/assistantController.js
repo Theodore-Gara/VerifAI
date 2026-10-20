@@ -122,12 +122,12 @@ async function sendMessage(req, res, next) {
       return res.status(200).json({ reply, session_id: sessionId, request_id: req.requestId });
     }
 
-    openStream(res);
+    const signal = openStream(res);
     let fullReply = '';
     try {
       const stream = task
-        ? streamAssistantReply({ task, messages: fullMessages })
-        : streamGeneralReply({ trackName: user.track_name, messages: fullMessages });
+        ? streamAssistantReply({ task, messages: fullMessages, signal })
+        : streamGeneralReply({ trackName: user.track_name, messages: fullMessages, signal });
       for await (const chunk of stream) {
         if (chunk.delta) {
           fullReply += chunk.delta;
@@ -136,8 +136,10 @@ async function sendMessage(req, res, next) {
       }
       endStream(res);
     } catch (error) {
-      sendEvent(res, { error: error.message });
-      endStream(res);
+      if (!signal.aborted) {
+        sendEvent(res, { error: error.message });
+        endStream(res);
+      }
     }
     if (sessionId && fullReply) await persistTurn(sessionId, user.id, messages[messages.length - 1].content, fullReply);
     return undefined;

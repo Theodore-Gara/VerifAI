@@ -90,7 +90,7 @@ class _RewardDetailScreenState extends ConsumerState<RewardDetailScreen> {
               ]),
               borderRadius: BorderRadius.circular(AppRadius.card),
             ),
-            child: const Center(child: Icon(Icons.card_giftcard_rounded, size: 60, color: AppColors.primaryNavy)),
+            child: Center(child: Icon(Icons.card_giftcard_rounded, size: 60, color: AppColors.primaryNavy)),
           ),
           const SizedBox(height: AppSpacing.lg),
           Text(r.title,

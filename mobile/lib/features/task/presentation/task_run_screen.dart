@@ -135,7 +135,7 @@ class _TaskRunScreenState extends ConsumerState<TaskRunScreen> {
         actions: [
           IconButton(
             tooltip: 'Ask the Learning Assistant',
-            icon: const Icon(Icons.support_agent_rounded,
+            icon: Icon(Icons.support_agent_rounded,
                 color: AppColors.primaryNavy),
             onPressed: () => context.push('/assistant', extra: widget.task),
           ),
@@ -222,7 +222,7 @@ class _TaskRunScreenState extends ConsumerState<TaskRunScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.psychology_rounded,
+              Icon(Icons.psychology_rounded,
                   size: 18, color: AppColors.primaryNavy),
               const SizedBox(width: 6),
               Text(
@@ -256,11 +256,11 @@ class _TaskRunScreenState extends ConsumerState<TaskRunScreen> {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: AppColors.border),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
             color: AppColors.shadow,
             blurRadius: 4,
-            offset: Offset(0, 1),
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -313,11 +313,11 @@ class _TaskRunScreenState extends ConsumerState<TaskRunScreen> {
                       offset: const Offset(0, 3),
                     ),
                   ]
-                : const [
+                : [
                     BoxShadow(
                       color: AppColors.shadow,
                       blurRadius: 4,
-                      offset: Offset(0, 1),
+                      offset: const Offset(0, 1),
                     ),
                   ],
           ),

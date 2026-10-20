@@ -2,6 +2,8 @@ const pool = require('../db/pool');
 const { awardXp } = require('../services/xpService');
 const { purgeAccount } = require('../services/accountPurge');
 const { STREAK_TIMEZONE } = require('../services/streak');
+const { analyticsCache } = require('../utils/ttlCache');
+const { invalidateStatusCache } = require('../middleware/auth');
 
 // Analytics day boundaries are anchored to the same timezone the streak logic
 // uses, imported rather than hardcoded so admin stats and learner stats can
@@ -80,7 +82,31 @@ async function listTasks(req, res, next) {
       where.push(`t.track_id = $${params.length}`);
     }
 
+    // Search across the code and the feature-specific title so the panel can
+    // find a task without paging through the whole catalogue.
+    const q = typeof req.query.q === 'string' && req.query.q.trim()
+      ? req.query.q.trim().slice(0, 120)
+      : null;
+    if (q) {
+      params.push(`%${q}%`);
+      where.push(`(t.code ILIKE $${params.length} OR v.title ILIKE $${params.length}
+                   OR j.title ILIKE $${params.length} OR r.title ILIKE $${params.length})`);
+    }
+
+    const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 100, 1), 500);
+    const offset = Math.max(Number.parseInt(req.query.offset, 10) || 0, 0);
+
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const count = await pool.query(
+      `SELECT COUNT(*)::int AS total
+       FROM tasks t
+       LEFT JOIN verification_tasks v ON v.task_id = t.id
+       LEFT JOIN judgement_tasks j ON j.task_id = t.id
+       LEFT JOIN risk_governance_tasks r ON r.task_id = t.id
+       ${whereSql}`,
+      params,
+    );
+    const pageParams = [...params, limit, offset];
     const result = await pool.query(
       `SELECT t.id, t.code, t.feature, t.track_id, tr.name AS track_name, t.created_at,
          t.approval, t.approved_by,
@@ -96,8 +122,8 @@ async function listTasks(req, res, next) {
        LEFT JOIN risk_governance_tasks r ON r.task_id = t.id
        ${whereSql}
        ORDER BY t.id ASC
-       LIMIT 500`,
-      params
+       LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
+      pageParams
     );
 
     const tasks = result.rows.map((row) => {
@@ -125,7 +151,14 @@ async function listTasks(req, res, next) {
       return task;
     });
 
-    return res.status(200).json({ tasks, total: tasks.length, request_id: req.requestId });
+    return res.status(200).json({
+      tasks,
+      total: count.rows[0]?.total ?? tasks.length,
+      limit,
+      offset,
+      q,
+      request_id: req.requestId,
+    });
   } catch (err) {
     return next(err);
   }
@@ -528,12 +561,13 @@ async function setUserStatus(req, res, next) {
       `UPDATE users
        SET status = $1, status_reason = $2, status_updated_at = CURRENT_TIMESTAMP
        WHERE id = $3
-       RETURNING id, email, status, status_reason`,
+       RETURNING id, email, firebase_uid, status, status_reason`,
       [status, reason, userId]
     );
     if (!result.rows.length) {
       return res.status(404).json({ error: 'User not found.', request_id: req.requestId });
     }
+    invalidateStatusCache(result.rows[0].firebase_uid);
 
     await logModeration(req.firebaseUser, {
       action,
@@ -573,6 +607,11 @@ async function listModeration(req, res, next) {
 // ---------------------------------------------------------------------------
 async function trackProgress(req, res, next) {
   try {
+    // Analytics rollups are expensive and nobody needs second-level freshness on
+    // a 14-day chart, so the payload is served from a short-lived cache.
+    const cached = analyticsCache.get('track-progress');
+    if (cached) return res.status(200).json({ ...cached, request_id: req.requestId });
+
     const [tracks, activity, dims] = await Promise.all([
       pool.query(
         `SELECT t.id, t.name,
@@ -604,8 +643,7 @@ async function trackProgress(req, res, next) {
                 COALESCE(COUNT(ta.id) FILTER (WHERE ta.passed), 0)::int AS passed
          FROM generate_series(0, 13) AS d(day)
          LEFT JOIN task_attempts ta
-           ON (ta.submitted_at AT TIME ZONE ${TZ})::date
-              = (NOW() AT TIME ZONE ${TZ})::date - d.day
+           ON ta.submitted_date = (NOW() AT TIME ZONE ${TZ})::date - d.day
          GROUP BY d.day ORDER BY d.day`,
       ),
       pool.query(
@@ -678,7 +716,7 @@ async function trackProgress(req, res, next) {
        LIMIT 10`
     );
 
-    return res.status(200).json({
+    const payload = {
       tracks: tracks.rows,
       activity: activity.rows,
       skill_dimensions: dims.rows,
@@ -686,8 +724,9 @@ async function trackProgress(req, res, next) {
       funnel: funnel.rows[0],
       cohorts: cohorts.rows,
       content_balance: balance.rows,
-      request_id: req.requestId,
-    });
+    };
+    analyticsCache.set('track-progress', payload);
+    return res.status(200).json({ ...payload, request_id: req.requestId });
   } catch (err) {
     return next(err);
   }
@@ -1383,6 +1422,7 @@ async function hardDeleteUser(req, res, next) {
     if (!purge.hadProfile) {
       return res.status(404).json({ error: 'User not found.', request_id: req.requestId });
     }
+    invalidateStatusCache(purge.firebaseUid);
 
     await logModeration(req.firebaseUser, {
       action: 'user_delete', targetUserId: userId, targetEmail: purge.email,
@@ -1743,8 +1783,7 @@ async function answerSummary(req, res, next) {
          CROSS JOIN (SELECT DISTINCT department_id FROM answer_logs) dd
          LEFT JOIN answer_logs al
            ON al.department_id = dd.department_id
-          AND (al.submitted_at AT TIME ZONE ${TZ})::date
-              = (NOW() AT TIME ZONE ${TZ})::date - d.day
+          AND al.submitted_date = (NOW() AT TIME ZONE ${TZ})::date - d.day
          LEFT JOIN industry_tracks tr ON tr.id = dd.department_id
          GROUP BY dd.department_id, tr.name, d.day
          ORDER BY department, d.day`
@@ -1785,11 +1824,27 @@ async function listAnswers(req, res, next) {
       params.push(String(req.query.practice) === 'true');
       where.push(`al.practice = $${params.length}`);
     }
+    const q = typeof req.query.q === 'string' && req.query.q.trim()
+      ? req.query.q.trim().slice(0, 120)
+      : null;
+    if (q) {
+      params.push(`%${q}%`);
+      where.push(`(ta.task_title ILIKE $${params.length}
+                   OR u.email ILIKE $${params.length}
+                   OR u.display_name ILIKE $${params.length})`);
+    }
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 100, 1), 500);
     const offset = Math.max(Number.parseInt(req.query.offset, 10) || 0, 0);
 
-    const count = await pool.query(`SELECT COUNT(*)::int AS total FROM answer_logs al ${whereSql}`, params);
+    const count = await pool.query(
+      `SELECT COUNT(*)::int AS total
+       FROM answer_logs al
+       LEFT JOIN users u ON u.id = al.user_id
+       LEFT JOIN task_attempts ta ON ta.id = al.attempt_id
+       ${whereSql}`,
+      params,
+    );
     params.push(limit, offset);
     const result = await pool.query(
       `SELECT al.id, al.score, al.passed, al.practice, al.answer_summary, al.submitted_at,
@@ -1805,7 +1860,7 @@ async function listAnswers(req, res, next) {
       params
     );
     return res.status(200).json({
-      answers: result.rows, total: count.rows[0].total, limit, offset,
+      answers: result.rows, total: count.rows[0].total, limit, offset, q,
       request_id: req.requestId,
     });
   } catch (err) {
@@ -1818,6 +1873,9 @@ async function listAnswers(req, res, next) {
 // ---------------------------------------------------------------------------
 async function getAnalytics(req, res, next) {
   try {
+    const cached = analyticsCache.get('analytics');
+    if (cached) return res.status(200).json({ ...cached, request_id: req.requestId });
+
     const [growth, activity, features, workshop, tokens, moderation, llm] = await Promise.all([
       // User growth: new signups per week (last 12 weeks) + totals. The weekly
       // series is zero-filled with generate_series so weeks without signups
@@ -1853,8 +1911,7 @@ async function getAnalytics(req, res, next) {
                 COALESCE(ROUND(AVG(ta.score)), 0)::int AS avg_score
          FROM generate_series(0, 29) AS d(day)
          LEFT JOIN task_attempts ta
-           ON (ta.submitted_at AT TIME ZONE ${TZ})::date
-              = (NOW() AT TIME ZONE ${TZ})::date - d.day
+           ON ta.submitted_date = (NOW() AT TIME ZONE ${TZ})::date - d.day
          GROUP BY d.day ORDER BY d.day`
       ),
       // Per-feature: attempts, avg score, pass rate.
@@ -1896,7 +1953,7 @@ async function getAnalytics(req, res, next) {
       ),
     ]);
 
-    return res.status(200).json({
+    const payload = {
       users: growth.rows[0],
       activity: activity.rows,
       features: features.rows,
@@ -1904,8 +1961,9 @@ async function getAnalytics(req, res, next) {
       tokens: tokens.rows[0],
       moderation_30d: moderation.rows,
       llm_30d: llm.rows[0],
-      request_id: req.requestId,
-    });
+    };
+    analyticsCache.set('analytics', payload);
+    return res.status(200).json({ ...payload, request_id: req.requestId });
   } catch (err) {
     return next(err);
   }

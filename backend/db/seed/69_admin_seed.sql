@@ -1,4 +1,4 @@
--- 71_admin_seed.sql — bootstrap the super-admin account.
+-- 69_admin_seed.sql — bootstrap the super-admin account.
 --
 -- Inserts vusani@verify.com into admin_accounts with the 'super' role so the
 -- account can sign in with normal Firebase credentials (same flow as learners)

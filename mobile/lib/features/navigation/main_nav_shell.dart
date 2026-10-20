@@ -7,15 +7,43 @@ import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:verifai/features/hubs/presentation/learn_hub_screen.dart';
+import 'package:verifai/features/hubs/presentation/practice_hub_screen.dart';
 import 'package:verifai/features/navigation/nav_drawer_controller.dart';
-import 'package:verifai/features/progress/presentation/progress_screen.dart';
-import 'package:verifai/features/task/presentation/task_screen.dart';
-import 'package:verifai/features/track/presentation/track_roadmap_screen.dart';
 import 'package:verifai/features/profile/presentation/profile_screen.dart';
+import 'package:verifai/features/progress/presentation/progress_screen.dart';
 
 /// Routes hosted by [MainNavShell]. These must stay `go` (never `push`) —
 /// stacking a second shell would duplicate [verifaiMainScaffoldKey].
-const shellTabRoutes = {'/dashboard', '/track', '/tasks', '/progress', '/profile'};
+const shellTabRoutes = {
+  '/dashboard',
+  '/learn',
+  '/practice',
+  '/progress',
+  '/profile',
+};
+
+/// Five top-level areas, with each area's destinations gathered in a hub.
+///
+/// The previous layout had three overlapping navigation systems: a 13-link
+/// drawer, a five-item dock whose tabs were Home/Track/Tasks/Progress/Profile,
+/// and separate full-screen routes for things like rewards and history. A
+/// learner could reach the same screen three ways and could not tell which one
+/// was canonical. Now the dock is the only top-level navigation and every hub
+/// owns the screens that belong to it.
+const _navTabs = <_NavTab>[
+  _NavTab(label: 'Home', icon: Icons.home_rounded),
+  _NavTab(label: 'Learn', icon: Icons.menu_book_rounded),
+  _NavTab(label: 'Practice', icon: Icons.play_circle_outline_rounded),
+  _NavTab(label: 'Progress', icon: Icons.insights_rounded),
+  _NavTab(label: 'Profile', icon: Icons.person_rounded),
+];
+
+class _NavTab {
+  final String label;
+  final IconData icon;
+  const _NavTab({required this.label, required this.icon});
+}
 
 class MainNavShell extends StatefulWidget {
   final int initialIndex;
@@ -37,8 +65,8 @@ class _MainNavShellState extends State<MainNavShell> {
   // requests before the learner tapped anything).
   static final List<Widget Function()> _tabBuilders = <Widget Function()>[
     () => const DashboardScreen(),
-    () => const TrackRoadmapScreen(),
-    () => const TaskScreen(),
+    () => const LearnHubScreen(),
+    () => const PracticeHubScreen(),
     () => const ProgressScreen(),
     () => const ProfileScreen(),
   ];
@@ -69,6 +97,9 @@ class _MainNavShellState extends State<MainNavShell> {
     return Scaffold(
       key: verifaiMainScaffoldKey,
       extendBody: true,
+      // Secondary navigation: the dock is primary, the drawer is the complete
+      // index of destinations. Hub routes are shell tabs (`go`) and everything
+      // else is pushed, so Back always returns to the hub it was opened from.
       drawer: Drawer(
         backgroundColor: AppColors.background,
         child: SafeArea(
@@ -77,7 +108,7 @@ class _MainNavShellState extends State<MainNavShell> {
             children: [
               Container(
                 padding: const EdgeInsets.fromLTRB(22, 26, 22, 24),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [AppColors.primaryNavy, AppColors.accentGreen],
                     begin: Alignment.topLeft,
@@ -85,7 +116,6 @@ class _MainNavShellState extends State<MainNavShell> {
                   ),
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Image.asset(
                       'assets/images/wordmarkwhite.png',
@@ -101,36 +131,44 @@ class _MainNavShellState extends State<MainNavShell> {
                   ],
                 ),
               ),
-              _drawerLink(context, Icons.home_rounded, 'Home', '/dashboard'),
+              _drawerSection('Home'),
+              _drawerLink(context, Icons.home_rounded, 'Dashboard', '/dashboard'),
+              _drawerSection('Learn'),
+              _drawerLink(context, Icons.menu_book_rounded, 'Learn hub', '/learn'),
               _drawerLink(
-                  context, Icons.route_rounded, 'Skill roadmap', '/track'),
-              _drawerLink(context, Icons.task_alt_rounded, 'Tasks', '/tasks'),
-              _drawerLink(context, Icons.verified_rounded,
+                  context, Icons.science_rounded, 'AI Lab lessons', '/ai-lab/lessons'),
+              _drawerLink(
+                  context, Icons.quiz_rounded, 'Recall practice', '/ai-lab/practice'),
+              _drawerLink(context, Icons.workspace_premium_rounded,
+                  'Capstone assessments', '/ai-lab/assessments'),
+              _drawerLink(
+                  context, Icons.alt_route_rounded, 'Skill roadmap', '/track'),
+              _drawerSection('Practice'),
+              _drawerLink(
+                  context, Icons.play_circle_outline_rounded, 'Practice hub', '/practice'),
+              _drawerLink(context, Icons.fact_check_rounded,
                   'Verification Studio', '/verification-studio'),
-              _drawerLink(context, Icons.auto_awesome_rounded, 'Ask Vera',
-                  '/assistant'),
-              _drawerLink(context, Icons.science_rounded, 'AI Lab', '/ai-lab'),
-              _drawerLink(context, Icons.fitness_center_rounded, 'Practice',
-                  '/industry-practice'),
+              _drawerLink(context, Icons.business_center_rounded,
+                  'Industry practice', '/industry-practice'),
+              _drawerLink(context, Icons.history_rounded, 'Task history', '/task-history'),
+              _drawerSection('Progress'),
+              _drawerLink(context, Icons.insights_rounded, 'Progress', '/progress'),
               _drawerLink(
-                  context, Icons.insights_rounded, 'Progress', '/progress'),
-              _drawerLink(context, Icons.leaderboard_rounded, 'Leaderboard',
-                  '/scoreboard'),
+                  context, Icons.leaderboard_rounded, 'Leaderboard', '/scoreboard'),
+              _drawerSection('Profile'),
+              _drawerLink(
+                  context, Icons.person_rounded, 'Profile & settings', '/profile'),
               _drawerLink(
                   context, Icons.emoji_events_rounded, 'Rewards', '/rewards'),
-              _drawerLink(context, Icons.history_rounded, 'Task history',
-                  '/task-history'),
               _drawerLink(
-                  context, Icons.spa_rounded, 'Wellness Centre', '/wellness'),
-              _drawerLink(context, Icons.person_rounded, 'Profile & settings',
-                  '/profile'),
+                  context, Icons.spa_rounded, 'Wellness centre', '/wellness'),
+              _drawerLink(context, Icons.auto_awesome_rounded, 'Ask Vera', '/assistant'),
               const Divider(indent: 18, endIndent: 18),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
                 child: Text(
                   'AI assists. Humans verify.',
-                  style:
-                      TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
                 ),
               ),
             ],
@@ -181,36 +219,32 @@ class _MainNavShellState extends State<MainNavShell> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildNavItem(
-                      index: 0,
-                      icon: Icons.home_rounded,
-                      label: 'Home',
-                    ),
-                    _buildNavItem(
-                      index: 1,
-                      icon: Icons.alt_route_rounded,
-                      label: 'Track',
-                    ),
-                    _buildNavItem(
-                      index: 2,
-                      icon: Icons.task_alt_rounded,
-                      label: 'Tasks',
-                    ),
-                    _buildNavItem(
-                      index: 3,
-                      icon: Icons.insights_rounded,
-                      label: 'Progress',
-                    ),
-                    _buildNavItem(
-                      index: 4,
-                      icon: Icons.person_rounded,
-                      label: 'Profile',
-                    ),
+                    for (var index = 0; index < _navTabs.length; index++)
+                      _buildNavItem(
+                        index: index,
+                        icon: _navTabs[index].icon,
+                        label: _navTabs[index].label,
+                      ),
                   ],
                 ),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _drawerSection(String label) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(22, 14, 22, 4),
+      child: Text(
+        label.toUpperCase(),
+        style: AppTypography.textTheme.labelSmall?.copyWith(
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.1,
+          fontSize: 10.5,
         ),
       ),
     );
@@ -223,13 +257,13 @@ class _MainNavShellState extends State<MainNavShell> {
     String route,
   ) {
     return ListTile(
-      leading: Icon(icon, color: AppColors.accentGreen),
-      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+      dense: true,
+      leading: Icon(icon, color: AppColors.accentGreen, size: 20),
+      title: Text(label,
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
       trailing: const Icon(Icons.chevron_right_rounded, size: 18),
       onTap: () {
         Navigator.of(context).pop();
-        // Everything that isn't a shell tab is pushed, so the route it came
-        // from stays on the stack and Back returns to it.
         if (shellTabRoutes.contains(route)) {
           context.go(route);
         } else {
@@ -260,12 +294,15 @@ class _MainNavShellState extends State<MainNavShell> {
           borderRadius: BorderRadius.circular(AppRadius.pill),
           onTap: () => _onItemTapped(index),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 56, minHeight: 48),
+            constraints: const BoxConstraints(minWidth: 52, minHeight: 48),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutBack,
+              // easeOutCubic, not an overshooting curve: a partly-negated
+              // shadow lerp trips Flutter's `blurRadius >= 0` assertion when the
+              // selection animates.
+              curve: Curves.easeOutCubic,
               padding: EdgeInsets.symmetric(
-                horizontal: isSelected ? 16 : 12,
+                horizontal: isSelected ? 14 : 10,
                 vertical: 8,
               ),
               decoration: BoxDecoration(

@@ -10,6 +10,7 @@ import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
+import 'package:verifai/core/theme/theme_mode_provider.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/profile/presentation/admin_panel_screen.dart';
@@ -18,6 +19,7 @@ import 'package:verifai/features/scoreboard/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
+import 'package:verifai/shared/widgets/hub_tile.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -159,7 +161,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(
+                : Icon(
                     Icons.manage_accounts_rounded,
                     color: AppColors.accentGreen,
                   ),
@@ -183,7 +185,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: Container(
               width: 220,
               height: 220,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.ambientCyan,
               ),
@@ -195,7 +197,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: Container(
               width: 200,
               height: 200,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.ambientGreen,
               ),
@@ -231,10 +233,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
-                        const BoxShadow(
+                        BoxShadow(
                           color: AppColors.shadow,
                           blurRadius: 4,
-                          offset: Offset(0, 1),
+                          offset: const Offset(0, 1),
                         ),
                       ],
                     ),
@@ -248,7 +250,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               padding: const EdgeInsets.all(3),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                gradient: const LinearGradient(
+                                gradient: LinearGradient(
                                   colors: [
                                     AppColors.primaryNavy,
                                     AppColors.accentGreen
@@ -451,6 +453,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                   _buildAchievements(ref, achievementsAsync),
                   const SizedBox(height: AppSpacing.xl),
+                  _buildAppearance(ref),
+                  const SizedBox(height: AppSpacing.xl),
+                  _buildDestinations(),
+                  const SizedBox(height: AppSpacing.xl),
                 ],
               ),
             ),
@@ -501,11 +507,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ? AppColors.accentGreen.withValues(alpha: 0.4)
                   : AppColors.border,
             ),
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
                 color: AppColors.shadow,
                 blurRadius: 8,
-                offset: Offset(0, 2),
+                offset: const Offset(0, 2),
               ),
             ],
           ),
@@ -534,6 +540,89 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAppearance(WidgetRef ref) {
+    final mode = ref.watch(themeModeProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Appearance',
+          style: AppTypography.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: AppColors.primaryNavy,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        SegmentedButton<ThemeMode>(
+          showSelectedIcon: false,
+          segments: const [
+            ButtonSegment(
+              value: ThemeMode.light,
+              label: Text('Light'),
+              icon: Icon(Icons.light_mode_rounded, size: 16),
+            ),
+            ButtonSegment(
+              value: ThemeMode.system,
+              label: Text('System'),
+              icon: Icon(Icons.brightness_auto_rounded, size: 16),
+            ),
+            ButtonSegment(
+              value: ThemeMode.dark,
+              label: Text('Dark'),
+              icon: Icon(Icons.dark_mode_rounded, size: 16),
+            ),
+          ],
+          selected: {mode},
+          onSelectionChanged: (selection) => ref
+              .read(themeModeProvider.notifier)
+              .setMode(selection.first),
+        ),
+      ],
+    );
+  }
+
+  /// Rewards, wellbeing and the leaderboard used to sit in a drawer. With the
+  /// drawer gone, Profile is where the account's own surfaces live.
+  Widget _buildDestinations() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Your account',
+          style: AppTypography.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: AppColors.primaryNavy,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        HubTile(
+          entry: HubEntry(
+            title: 'Rewards',
+            subtitle: 'Spend the reward tokens you have earned',
+            icon: Icons.emoji_events_rounded,
+            onTap: () => context.push('/rewards'),
+          ),
+        ),
+        HubTile(
+          entry: HubEntry(
+            title: 'Wellness centre',
+            subtitle: 'Mood check-ins, journal and quiet activities',
+            icon: Icons.spa_rounded,
+            onTap: () => context.push('/wellness'),
+          ),
+        ),
+        HubTile(
+          entry: HubEntry(
+            title: 'Leaderboard',
+            subtitle: 'See how your readiness ranks in your track',
+            icon: Icons.leaderboard_rounded,
+            onTap: () => context.push('/scoreboard'),
+          ),
+        ),
+      ],
     );
   }
 
@@ -678,11 +767,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               if (badge.isUnlocked)
                 Container(
                   padding: const EdgeInsets.all(2),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: AppColors.accentLight,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.check_rounded,
+                  child: Icon(Icons.check_rounded,
                       size: 12, color: AppColors.accentGreen),
                 ),
             ],
@@ -749,29 +838,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: AppSpacing.xs),
-              const Text(
+              Text(
                 'Manage your account and personal data.',
                 style: TextStyle(color: AppColors.textSecondary),
               ),
               const SizedBox(height: AppSpacing.md),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(
+                leading: Icon(
                   Icons.swap_horiz_rounded,
                   color: AppColors.accentGreen,
                 ),
-                title: const Text(
+                title: Text(
                   'Explore another industry',
                   style: TextStyle(
                     color: AppColors.primaryNavy,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Switch learning pathways without signing out.',
                   style: TextStyle(color: AppColors.textSecondary),
                 ),
-                trailing: const Icon(
+                trailing: Icon(
                   Icons.chevron_right_rounded,
                   color: AppColors.textSecondary,
                 ),
@@ -784,18 +873,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(
+                leading: Icon(
                   Icons.delete_forever_outlined,
                   color: AppColors.error,
                 ),
-                title: const Text(
+                title: Text(
                   'Delete account',
                   style: TextStyle(
                     color: AppColors.error,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Permanently remove your account and data.',
                   style: TextStyle(color: AppColors.textSecondary),
                 ),
@@ -835,7 +924,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               Navigator.pop(dialogContext);
               ref.read(authNotifierProvider.notifier).logout();
             },
-            child: const Text('Log Out',
+            child: Text('Log Out',
                 style: TextStyle(
                     color: AppColors.error, fontWeight: FontWeight.w700)),
           ),
@@ -875,7 +964,7 @@ class _BadgeSpec {
       this.code, this.name, this.description, this.icon, this.color);
 }
 
-const List<_BadgeSpec> _badgeCatalog = [
+final List<_BadgeSpec> _badgeCatalog = [
   _BadgeSpec(
       'first-task',
       'First Assessment',

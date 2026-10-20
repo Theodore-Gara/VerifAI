@@ -103,6 +103,11 @@ async function chatWithFallback(params, fetchImpl = fetch) {
 async function* streamChatCompletion(params, fetchImpl = fetch) {
   const key = requireApiKey();
   const controller = new AbortController();
+  // Stop upstream work when the caller aborts (a client that closed the SSE
+  // connection). AbortSignal.any keeps the local timeout logic working too.
+  const signal = params.signal
+    ? AbortSignal.any([controller.signal, params.signal])
+    : controller.signal;
   const headerTimeoutMs = params.timeoutMs || 30000;
   const idleTimeoutMs = params.idleTimeoutMs || 60000;
   const firstTokenMs = Number(params.firstTokenTimeoutMs) || 0;
@@ -118,7 +123,7 @@ async function* streamChatCompletion(params, fetchImpl = fetch) {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(buildBody({ ...params, stream: true })),
-      signal: controller.signal,
+      signal,
     });
   } catch (cause) {
     throw mapTransportError(cause);
@@ -189,6 +194,9 @@ async function* streamChatCompletion(params, fetchImpl = fetch) {
       }
     }
   } catch (err) {
+    // A caller-side abort is not an upstream failure; surface it as such so the
+    // controller does not try to report an error to a client that is gone.
+    if (params.signal?.aborted) throw llmError(499, 'The client disconnected.');
     if (firstTokenExpired) throw llmError(504, 'The AI service was too slow to start.');
     throw err;
   } finally {
@@ -214,6 +222,13 @@ async function* streamWithFallback(params, fetchImpl = fetch) {
     }
   } catch (err) {
     error = err;
+  }
+
+  // Never retry a fallback model for a request the client abandoned: the
+  // answer has nobody to go to.
+  if (params.signal?.aborted) {
+    if (error) throw error;
+    return;
   }
 
   if (yielded) {

@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppTypography {
   AppTypography._();
 
-  // Built once and reused. Every access used to call GoogleFonts.interTextTheme()
-  // again, which re-resolves (and, when a font is missing, re-requests) each
-  // family on every style lookup — an allocation storm on hot widgets.
+  // Both families are bundled in pubspec.yaml, so there is no runtime fetch and
+  // no fallback-then-swap reflow on first paint. The theme is built once.
+  static const String bodyFamily = 'Inter';
+  static const String headingFamily = 'Manrope';
+
+  static AppPalette? _cachedFor;
   static TextTheme? _cached;
 
-  static TextTheme get textTheme => _cached ??= GoogleFonts.interTextTheme().copyWith(
+  /// Rebuilt when the palette changes (light ↔ dark), cached otherwise.
+  static TextTheme get textTheme {
+    if (_cached != null && _cachedFor == AppColors.palette) return _cached!;
+    _cachedFor = AppColors.palette;
+    return _cached = _build();
+  }
+
+  static TextTheme _build() => ThemeData.light().textTheme.copyWith(
         displayLarge: _heading(32, FontWeight.w800, -1.0, 1.15),
         displayMedium: _heading(28, FontWeight.w800, -0.8, 1.2),
         displaySmall: _heading(24, FontWeight.w800, -0.6, 1.25),
@@ -38,12 +47,15 @@ class AppTypography {
     FontWeight weight,
     double spacing,
     double height, [
-    Color color = AppColors.primaryNavy,
+    Color? color,
   ]) {
-    return GoogleFonts.manrope(
+    return TextStyle(
+      fontFamily: headingFamily,
       fontSize: size,
       fontWeight: weight,
-      color: color,
+      // Nullable so the default follows the active palette rather than being
+      // frozen at the light theme's navy.
+      color: color ?? AppColors.primaryNavy,
       letterSpacing: spacing,
       height: height,
     );
@@ -56,7 +68,8 @@ class AppTypography {
     double height,
     Color color,
   ) {
-    return GoogleFonts.inter(
+    return TextStyle(
+      fontFamily: bodyFamily,
       fontSize: size,
       fontWeight: weight,
       color: color,

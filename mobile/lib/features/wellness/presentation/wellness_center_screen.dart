@@ -655,7 +655,7 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 12,
                         height: 1.4,
@@ -705,8 +705,8 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
           shrinkWrap: true,
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(8, 8, 8, 14),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 14),
               child: Text(
                 'VERIFAI  •  NAVIGATION',
                 style: TextStyle(
@@ -1111,7 +1111,7 @@ class _BreathingSheetState extends State<_BreathingSheet>
                   ),
             ),
             const SizedBox(height: AppSpacing.sm),
-            const Text(
+            Text(
               'Relax your shoulders. Breathe in gently as the circle grows, '
               'and out slowly as it shrinks. Stop if you feel dizzy or '
               'uncomfortable.',
@@ -1157,7 +1157,7 @@ class _BreathingSheetState extends State<_BreathingSheet>
             const SizedBox(height: AppSpacing.sm),
             Text(
               '$_secondsLeft seconds remaining',
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 12,
               ),
@@ -1224,7 +1224,7 @@ class _AffirmationSheetState extends State<_AffirmationSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.favorite_rounded,
+            Icon(Icons.favorite_rounded,
                 color: AppColors.accentGreen, size: 42),
             const SizedBox(height: AppSpacing.md),
             Text(
@@ -1236,7 +1236,7 @@ class _AffirmationSheetState extends State<_AffirmationSheet> {
                   ),
             ),
             const SizedBox(height: AppSpacing.sm),
-            const Text(
+            Text(
               'Say it slowly and notice how it lands. You can come back for '
               'another anytime.',
               textAlign: TextAlign.center,

@@ -156,7 +156,7 @@ class LabChaptersScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
               ],
             ),
           ),

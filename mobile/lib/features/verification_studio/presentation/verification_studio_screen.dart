@@ -155,7 +155,7 @@ class _State extends ConsumerState<VerificationStudioScreen> {
           IconButton(
             tooltip: 'Ask Vera',
             onPressed: () => context.push('/assistant'),
-            icon: const Icon(Icons.auto_awesome_rounded,
+            icon: Icon(Icons.auto_awesome_rounded,
                 color: AppColors.primaryNavy),
           ),
         ],
@@ -303,7 +303,7 @@ class _State extends ConsumerState<VerificationStudioScreen> {
                       for (final r in items)
                         ListTile(
                           contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.description_outlined,
+                          leading: Icon(Icons.description_outlined,
                               color: AppColors.primaryNavy),
                           title:
                               Text(r.documentName ?? _kinds[r.kind] ?? r.kind),

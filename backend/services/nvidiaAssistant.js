@@ -51,11 +51,12 @@ async function getAssistantReply({ task, messages, fetchImpl }) {
   return content;
 }
 
-async function* streamAssistantReply({ task, messages, fetchImpl }) {
+async function* streamAssistantReply({ task, messages, signal, fetchImpl }) {
   yield* streamWithFallback(
     {
       ...resolveProfile('assistant'),
       messages: [{ role: 'system', content: assistantSystem(task) }, ...messages],
+      signal,
     },
     fetchImpl,
   );
@@ -74,11 +75,12 @@ async function getGeneralReply({ trackName, messages, fetchImpl }) {
   return content;
 }
 
-async function* streamGeneralReply({ trackName, messages, fetchImpl }) {
+async function* streamGeneralReply({ trackName, messages, signal, fetchImpl }) {
   yield* streamWithFallback(
     {
       ...resolveProfile('general'),
       messages: [{ role: 'system', content: generalSystem(trackName) }, ...messages],
+      signal,
     },
     fetchImpl,
   );
@@ -97,11 +99,12 @@ async function getCoachReply({ lesson, messages, fetchImpl }) {
   return content;
 }
 
-async function* streamCoachReply({ lesson, messages, fetchImpl }) {
+async function* streamCoachReply({ lesson, messages, signal, fetchImpl }) {
   yield* streamWithFallback(
     {
       ...resolveProfile('coach'),
       messages: [{ role: 'system', content: coachSystem(lesson) }, ...messages],
+      signal,
     },
     fetchImpl,
   );
@@ -142,8 +145,8 @@ async function getVeraReply({ messages, fetchImpl }) {
   return content;
 }
 
-async function* streamVeraReply({ messages, fetchImpl }) {
-  yield* streamWithFallback({ ...resolveProfile('vera'), messages }, fetchImpl);
+async function* streamVeraReply({ messages, signal, fetchImpl }) {
+  yield* streamWithFallback({ ...resolveProfile('vera'), messages, signal }, fetchImpl);
 }
 
 // Extracts durable memories and refreshes the learner profile from one

@@ -2,6 +2,7 @@ const pool = require('../db/pool');
 const { positiveIntegerParam } = require('../middleware/validate');
 const { findUserByFirebaseUid } = require('../db/users');
 const { purgeAccount } = require('../services/accountPurge');
+const { invalidateStatusCache } = require('../middleware/auth');
 
 const AVATAR_MIME = new Set(['image/png', 'image/jpeg', 'image/webp']);
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
@@ -144,6 +145,7 @@ async function getAvatar(req, res, next) {
 async function deleteAccount(req, res, next) {
   try {
     const purge = await purgeAccount({ firebaseUid: req.firebaseUser.uid });
+    invalidateStatusCache(req.firebaseUser.uid);
 
     return res.status(200).json({
       deleted: true,

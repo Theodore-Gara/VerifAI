@@ -12,6 +12,7 @@ const {
 const { grantTokens, achievementGrants } = require('../services/rewardTokens');
 const { refreshReadiness } = require('../services/readinessService');
 const { awardXp } = require('../services/xpService');
+const { activityDate } = require('../utils/dates');
 
 // feature key -> skill_scores.dimension (display name)
 const FEATURE_DIMENSION = {
@@ -331,13 +332,14 @@ async function submitAttempt(req, res, next) {
     const attemptResult = await client.query(
       `INSERT INTO task_attempts
         (user_id, task_id, answer, rationale, answer_option_id, decision_option_id,
-         reason_option_id, selected_lines, task_title, score, passed, practice, feedback, xp_earned)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+         reason_option_id, selected_lines, task_title, score, passed, practice, feedback, xp_earned,
+         submitted_date)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
        RETURNING id, task_id, score, passed, practice, xp_earned, submitted_at`,
       [
         user.id, task.id, scored.answer, scored.rationale, scored.answerOptionId,
         scored.decisionOptionId, scored.reasonOptionId, scored.selectedLines, content.title,
-        scored.score, passed, practice, content.feedback, xpEarned,
+        scored.score, passed, practice, content.feedback, xpEarned, activityDate(),
       ]
     );
 
@@ -345,14 +347,16 @@ async function submitAttempt(req, res, next) {
     // department and the task's feature for per-department analytics.
     await client.query(
       `INSERT INTO answer_logs
-         (attempt_id, user_id, task_id, department_id, feature, score, passed, practice, answer_summary)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+         (attempt_id, user_id, task_id, department_id, feature, score, passed, practice, answer_summary,
+          submitted_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
         attemptResult.rows[0].id, user.id, task.id, user.industry_track_id, task.feature,
         scored.score, passed, practice,
         scored.answer || scored.rationale ||
           [scored.answerOptionId, scored.decisionOptionId, scored.reasonOptionId]
             .filter(Boolean).map(String).join(',') || null,
+        activityDate(),
       ]
     );
 

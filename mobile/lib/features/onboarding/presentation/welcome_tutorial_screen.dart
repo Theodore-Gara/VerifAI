@@ -21,7 +21,7 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
   int _page = 0;
   bool _saving = false;
 
-  static const _steps = <_TutorialStep>[
+  static final _steps = <_TutorialStep>[
     _TutorialStep(
       eyebrow: 'WELCOME TO VERIFAI',
       title: 'AI assists.\nHumans verify.',
@@ -48,7 +48,7 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
         'Try it for yourself'
       ],
     ),
-    _TutorialStep(
+    const _TutorialStep(
       eyebrow: '02 · VERIFY',
       title: 'Look for evidence',
       description:
@@ -61,7 +61,7 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
         'Know when more evidence is needed'
       ],
     ),
-    _TutorialStep(
+    const _TutorialStep(
       eyebrow: '03 · GET SUPPORT',
       title: 'Ask for guidance, not shortcuts',
       description:
@@ -74,7 +74,7 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
         'Keep ownership of your answer'
       ],
     ),
-    _TutorialStep(
+    const _TutorialStep(
       eyebrow: '04 · GROW',
       title: 'Learn from every attempt',
       description:
@@ -178,11 +178,11 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text('${_page + 1} of ${_steps.length}',
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: AppColors.textSecondary,
                               fontWeight: FontWeight.w700)),
                     ),
-                    const Text('VerifAI',
+                    Text('VerifAI',
                         style: TextStyle(
                           color: AppColors.primaryNavy,
                           fontSize: 18,
@@ -296,14 +296,14 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
                             ),
                             const SizedBox(height: 24),
                             Text(item.eyebrow,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     color: AppColors.accentGreen,
                                     fontWeight: FontWeight.w900,
                                     fontSize: 11,
                                     letterSpacing: 1.4)),
                             const SizedBox(height: 12),
                             Text(item.title,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     color: AppColors.primaryNavy,
                                     fontSize: 31,
                                     height: 1.1,
@@ -311,7 +311,7 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
                                     letterSpacing: -.7)),
                             const SizedBox(height: 14),
                             Text(item.description,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     color: AppColors.textSecondary,
                                     fontSize: 15,
                                     height: 1.6)),
@@ -330,14 +330,14 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
                                                     .withValues(alpha: .16),
                                                 borderRadius:
                                                     BorderRadius.circular(8)),
-                                            child: const Icon(
+                                            child: Icon(
                                                 Icons.check_rounded,
                                                 size: 16,
                                                 color: AppColors.primaryNavy)),
                                         const SizedBox(width: 11),
                                         Expanded(
                                             child: Text(bullet,
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                     color:
                                                         AppColors.primaryNavy,
                                                     fontWeight: FontWeight.w700,
@@ -354,7 +354,7 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
             ),
             Container(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 22),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                   color: Colors.white,
                   border: Border(top: BorderSide(color: AppColors.border))),
               child: Column(

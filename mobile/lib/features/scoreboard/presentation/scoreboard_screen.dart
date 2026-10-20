@@ -129,11 +129,11 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.pill),
               border: Border.all(color: AppColors.border),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
                   color: AppColors.shadow,
                   blurRadius: 4,
-                  offset: Offset(0, 1),
+                  offset: const Offset(0, 1),
                 ),
               ],
             ),
@@ -217,11 +217,11 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: AppColors.border),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
             color: AppColors.shadow,
             blurRadius: 10,
-            offset: Offset(0, 3),
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -359,11 +359,11 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
               : AppColors.border,
           width: isFirst ? 1.5 : 1,
         ),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
             color: AppColors.shadow,
             blurRadius: 8,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -605,7 +605,7 @@ class _LiveBenchmarkPill extends StatelessWidget {
           Container(
             width: 6,
             height: 6,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: AppColors.accentGreen,
               shape: BoxShape.circle,
             ),

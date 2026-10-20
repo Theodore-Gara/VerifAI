@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -18,42 +19,28 @@ class SplashScreen extends ConsumerStatefulWidget {
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 2300),
       vsync: this,
     );
-
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    _scaleAnimation = Tween<double>(begin: .94, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
-      ),
-    );
-
+    _fadeAnimation =
+        CurvedAnimation(parent: _controller, curve: Curves.easeOut);
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
+      begin: const Offset(0, .08),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.5, 1.0, curve: Curves.easeOut),
-      ),
-    );
-
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
     _controller.forward();
-
     _startWelcomeAndNavigate();
   }
 
@@ -67,14 +54,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final authState = ref.read(authStateProvider).valueOrNull;
     if (authState == null) {
       context.go('/login');
-    } else {
-      authState.when(
-        unauthenticated: () => context.go('/login'),
-        authenticated: (user, token) => context.go('/dashboard'),
-        needsOnboarding: (user, token) => context.go('/industry-select'),
-        loading: () => context.go('/login'),
-      );
+      return;
     }
+    authState.when(
+      unauthenticated: () => context.go('/login'),
+      authenticated: (user, token) => context.go('/dashboard'),
+      needsOnboarding: (user, token) => context.go('/industry-select'),
+      loading: () => context.go('/login'),
+    );
   }
 
   Future<void> _warmUpBackend() async {
@@ -92,77 +79,131 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.accentGreen,
-              AppColors.accentCyan,
-              AppColors.accentGreen,
-            ],
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+  Widget build(BuildContext context) => AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light,
+        child: Scaffold(
+          backgroundColor: AppColors.primaryDark,
+          body: Stack(
             children: [
-              ScaleTransition(
-                scale: _scaleAnimation,
+              const Positioned.fill(child: _LuxuryParticleField()),
+              Positioned(
+                top: -120,
+                right: -100,
+                child:
+                    _ambient(300, AppColors.accentGreen.withValues(alpha: .12)),
+              ),
+              Positioned(
+                bottom: -145,
+                left: -105,
+                child: _ambient(330, AppColors.gold.withValues(alpha: .10)),
+              ),
+              Center(
                 child: FadeTransition(
                   opacity: _fadeAnimation,
-                  child: Image.asset(
-                    'assets/images/logoalldarktrans.png',
-                    height: 100,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.verified_rounded,
-                      size: 80,
-                      color: Colors.white,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Image.asset(
+                            'assets/images/logodarktrans.png',
+                            width: 220,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.verified_rounded,
+                              size: 80,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xl),
+                          const Text(
+                            'AI assists. Humans verify.',
+                            style: TextStyle(
+                              color: Color(0xFFD5B779),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: .55,
+                            ),
+                          ),
+                          const SizedBox(height: 42),
+                          SizedBox(
+                            width: 76,
+                            child: Divider(
+                              color: AppColors.gold.withValues(alpha: .7),
+                              thickness: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'THINK CLEARLY. VERIFY WITH CONFIDENCE.',
+                            style: TextStyle(
+                              color: Color(0xFFB8C3BA),
+                              fontSize: 9,
+                              letterSpacing: 1.7,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.lg),
-              SlideTransition(
-                position: _slideAnimation,
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: Text(
-                    'VerifAI',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.primaryNavy.withValues(alpha: 0.9),
-                        ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: Text(
-                  'AI assists. Humans verify.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.primaryNavy.withValues(alpha: 0.82),
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.2,
-                      ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xxxl),
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: const CircularProgressIndicator(
-                  valueColor:
-                      AlwaysStoppedAnimation<Color>(AppColors.primaryNavy),
-                  strokeWidth: 3,
-                ),
-              ),
             ],
           ),
         ),
-      ),
-    );
+      );
+
+  Widget _ambient(double size, Color color) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+      );
+}
+
+class _LuxuryParticleField extends StatelessWidget {
+  const _LuxuryParticleField();
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+        child: CustomPaint(
+          painter: _LuxuryParticlePainter(),
+          size: Size.infinite,
+        ),
+      );
+}
+
+class _LuxuryParticlePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final points = <Offset>[
+      Offset(size.width * .13, size.height * .19),
+      Offset(size.width * .82, size.height * .14),
+      Offset(size.width * .73, size.height * .27),
+      Offset(size.width * .19, size.height * .68),
+      Offset(size.width * .86, size.height * .76),
+      Offset(size.width * .27, size.height * .84),
+      Offset(size.width * .62, size.height * .91),
+      Offset(size.width * .91, size.height * .42),
+      Offset(size.width * .08, size.height * .43),
+      Offset(size.width * .46, size.height * .11),
+      Offset(size.width * .55, size.height * .72),
+      Offset(size.width * .36, size.height * .31),
+    ];
+    for (var i = 0; i < points.length; i++) {
+      final radius = i % 4 == 0 ? 1.8 : .9;
+      final paint = Paint()
+        ..color = AppColors.gold.withValues(alpha: i % 3 == 0 ? .68 : .28);
+      canvas.drawCircle(points[i], radius, paint);
+      if (i % 4 == 0) {
+        final glow = Paint()
+          ..color = AppColors.gold.withValues(alpha: .12)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+        canvas.drawCircle(points[i], 5, glow);
+      }
+    }
   }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

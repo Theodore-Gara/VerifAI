@@ -15,7 +15,6 @@ dependencies:
   riverpod: ^2.4.9
   riverpod_annotation: ^2.3.3
   go_router: ^13.0.0
-  google_fonts: ^6.1.0
 
   # Firebase
   # firebase_core 4.x / firebase_auth 6.x support Swift Package Manager and use
@@ -61,6 +60,34 @@ flutter:
   assets:
     - assets/images/
     - assets/audio/
+
+  # Fonts are bundled, never fetched. Runtime fetching meant the first paint used
+  # a fallback family and then reflowed once the download finished, and left
+  # typography dependent on a network call. Both families are SIL OFL 1.1; the
+  # licence texts sit next to the files.
+  #
+  # Inter and Manrope ship as variable fonts upstream, so the static weights below
+  # are instanced from the official variable sources (opsz pinned at 14 for
+  # Inter). Regenerate with fontTools if the upstream files change.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Inter-ExtraBold.ttf
+          weight: 800
+    - family: Manrope
+      fonts:
+        - asset: assets/fonts/Manrope-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Manrope-ExtraBold.ttf
+          weight: 800
 
 # Regenerate with: dart run flutter_launcher_icons
 # The two source images are built by tool/generate_icon_sources.ps1 from the

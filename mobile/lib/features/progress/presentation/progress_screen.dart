@@ -46,7 +46,7 @@ class ProgressScreen extends ConsumerWidget {
             child: Container(
               width: 220,
               height: 220,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.ambientCyan,
               ),
@@ -58,7 +58,7 @@ class ProgressScreen extends ConsumerWidget {
             child: Container(
               width: 200,
               height: 200,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.ambientGreen,
               ),
@@ -183,7 +183,7 @@ class ProgressScreen extends ConsumerWidget {
       color: AppColors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.card),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: AppColors.border),
       ),
       elevation: 1,
       shadowColor: AppColors.shadow,
@@ -200,7 +200,7 @@ class ProgressScreen extends ConsumerWidget {
                   color: Color(0xFFF1F5F9),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.emoji_events_rounded,
+                child: Icon(Icons.emoji_events_rounded,
                     color: AppColors.primaryNavy, size: 22),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -224,7 +224,7 @@ class ProgressScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded,
+              Icon(Icons.chevron_right_rounded,
                   color: AppColors.textSecondary),
             ],
           ),
@@ -256,11 +256,11 @@ class ProgressScreen extends ConsumerWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: AppColors.border),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
             color: AppColors.shadow,
             blurRadius: 6,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -325,11 +325,11 @@ class ProgressScreen extends ConsumerWidget {
                 ? AppColors.accentGreen.withValues(alpha: 0.4)
                 : AppColors.border,
           ),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
               color: AppColors.shadow,
               blurRadius: 8,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),

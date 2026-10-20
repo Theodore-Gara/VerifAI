@@ -166,10 +166,10 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
         surfaceTintColor: Colors.transparent,
         title: Row(
           children: [
-            const CircleAvatar(
+            CircleAvatar(
                 radius: 15,
                 backgroundColor: AppColors.primaryNavy,
-                child: Icon(Icons.auto_awesome_rounded,
+                child: const Icon(Icons.auto_awesome_rounded,
                     size: 16, color: Colors.white)),
             const SizedBox(width: 10),
             Text('Vera',
@@ -182,11 +182,11 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
               tooltip: 'New chat',
               onPressed: _newChat,
               icon:
-                  const Icon(Icons.edit_square, color: AppColors.primaryNavy)),
+                  Icon(Icons.edit_square, color: AppColors.primaryNavy)),
           IconButton(
               tooltip: 'History',
               onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
-              icon: const Icon(Icons.history_rounded,
+              icon: Icon(Icons.history_rounded,
                   color: AppColors.primaryNavy)),
         ],
       ),
@@ -265,11 +265,11 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
         const SizedBox(height: AppSpacing.lg),
-        const Center(
+        Center(
           child: CircleAvatar(
               radius: 30,
               backgroundColor: AppColors.primaryNavy,
-              child: Icon(Icons.auto_awesome_rounded,
+              child: const Icon(Icons.auto_awesome_rounded,
                   size: 30, color: Colors.white)),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -331,7 +331,7 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
                       _send(c.$1);
                     },
                     backgroundColor: AppColors.surface,
-                    side: const BorderSide(color: AppColors.border),
+                    side: BorderSide(color: AppColors.border),
                   ))
               .toList(),
         ),
@@ -392,10 +392,10 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
                     horizontal: AppSpacing.md, vertical: AppSpacing.md),
                 border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.card),
-                    borderSide: const BorderSide(color: AppColors.border)),
+                    borderSide: BorderSide(color: AppColors.border)),
                 enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.card),
-                    borderSide: const BorderSide(color: AppColors.border)),
+                    borderSide: BorderSide(color: AppColors.border)),
                 focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.card),
                     borderSide: BorderSide(

@@ -5,7 +5,7 @@ import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/navigation/main_nav_shell.dart';
-import 'package:verifai/features/task/presentation/task_screen.dart';
+import 'package:verifai/features/hubs/presentation/practice_hub_screen.dart';
 import 'package:verifai/shared/models.dart';
 
 DashboardData _dashboard({bool withTask = true}) => DashboardData(
@@ -101,6 +101,6 @@ void main() {
     // Dashboard is live, the unvisited tabs are still placeholders: an eager
     // IndexedStack resolved every tab's providers on cold start.
     expect(find.byType(DashboardScreen), findsOneWidget);
-    expect(find.byType(TaskScreen), findsNothing);
+    expect(find.byType(PracticeHubScreen), findsNothing);
   });
 }

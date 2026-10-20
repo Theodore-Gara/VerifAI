@@ -2,6 +2,7 @@ const pool = require('../db/pool');
 const { clampInt } = require('../middleware/validate');
 const { findUserByFirebaseUid } = require('../db/users');
 const { xpForLevel } = require('../services/scoringService');
+const { contentCache } = require('../utils/ttlCache');
 
 async function requireUser(res, req) {
   const user = await findUserByFirebaseUid(pool, req.firebaseUser.uid);
@@ -34,12 +35,17 @@ async function listRewards(req, res, next) {
     if (!user) return undefined;
 
     const wallet = await loadWallet(pool, user.id);
-    const result = await pool.query(
-      `SELECT id, code, title, subtitle, cost_tokens, image_asset, note
-       FROM rewards WHERE active = TRUE ORDER BY sort_order, id`,
-    );
+    // The catalogue itself changes only when an admin edits it, so it is cached;
+    // `can_afford` is still computed against the caller's live balance.
+    const catalogue = await contentCache.wrap('rewards', async () => {
+      const result = await pool.query(
+        `SELECT id, code, title, subtitle, cost_tokens, image_asset, note
+         FROM rewards WHERE active = TRUE ORDER BY sort_order, id`,
+      );
+      return result.rows;
+    });
 
-    const rewards = result.rows.map((reward) => ({
+    const rewards = catalogue.map((reward) => ({
       ...reward,
       can_afford: wallet.tokens >= reward.cost_tokens,
     }));

@@ -68,8 +68,8 @@ class TrackRoadmapScreen extends ConsumerWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primaryNavy, Color(0xFF1E293B)],
+              gradient: LinearGradient(
+                colors: [AppColors.primaryNavy, const Color(0xFF1E293B)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -124,7 +124,7 @@ class TrackRoadmapScreen extends ConsumerWidget {
                         FractionallySizedBox(
                           widthFactor: progress,
                           child: Container(
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
                                   AppColors.accentGreen,
@@ -191,7 +191,7 @@ class TrackRoadmapScreen extends ConsumerWidget {
                           height: 80,
                           decoration: BoxDecoration(
                             gradient: status == MilestoneStatus.completed
-                                ? const LinearGradient(
+                                ? LinearGradient(
                                     colors: [
                                       AppColors.accentGreen,
                                       AppColors.accentCyan
@@ -231,7 +231,7 @@ class TrackRoadmapScreen extends ConsumerWidget {
         return Container(
           width: 20,
           height: 20,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: AppColors.accentGreen,
             shape: BoxShape.circle,
           ),
@@ -294,11 +294,11 @@ class TrackRoadmapScreen extends ConsumerWidget {
                   offset: const Offset(0, 3),
                 ),
               ]
-            : const [
+            : [
                 BoxShadow(
                   color: AppColors.shadow,
                   blurRadius: 4,
-                  offset: Offset(0, 1),
+                  offset: const Offset(0, 1),
                 ),
               ],
       ),

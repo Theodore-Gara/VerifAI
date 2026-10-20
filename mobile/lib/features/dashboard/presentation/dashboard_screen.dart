@@ -7,8 +7,9 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
-import 'package:verifai/features/dashboard/providers.dart';
+import 'package:verifai/features/navigation/main_nav_shell.dart';
 import 'package:verifai/features/navigation/nav_drawer_controller.dart';
+import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/task/presentation/task_run_screen.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets.dart';
@@ -62,7 +63,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         actions: [
           IconButton(
             tooltip: 'Refresh dashboard',
-            icon: const Icon(
+            icon: Icon(
               Icons.refresh_rounded,
               color: AppColors.textPrimary,
             ),
@@ -70,11 +71,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ref.invalidate(dashboardProvider);
             },
           ),
-          // The drawer is a secondary surface: the bottom dock is the primary
-          // navigation, so the menu sits here at low emphasis rather than
-          // occupying the leading slot of every screen's app bar.
-          const IconButton(
-            tooltip: 'More sections',
+          // Secondary navigation: the dock is primary, so the full index sits
+          // here at low emphasis instead of taking every screen's leading slot.
+          IconButton(
+            tooltip: 'All sections',
             icon: Icon(
               Icons.menu_rounded,
               color: AppColors.textSecondary,
@@ -94,7 +94,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Container(
                 width: 220,
                 height: 220,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: AppColors.ambientCyan,
                 ),
@@ -108,7 +108,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Container(
                 width: 200,
                 height: 200,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: AppColors.ambientGreen,
                 ),
@@ -379,11 +379,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: AppColors.border),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
             color: AppColors.shadow,
             blurRadius: 8,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -486,11 +486,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ? AppColors.accentGreen.withValues(alpha: 0.4)
                   : AppColors.border,
             ),
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
                 color: AppColors.shadow,
                 blurRadius: 8,
-                offset: Offset(0, 2),
+                offset: const Offset(0, 2),
               ),
             ],
           ),
@@ -526,21 +526,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         <({String title, String subtitle, IconData icon, String route})>[
       (
         title: 'AI Assistant',
-        subtitle: 'Thinking partner',
+        subtitle: 'Ask Vera',
         icon: Icons.auto_awesome_rounded,
         route: '/assistant',
       ),
       (
-        title: 'AI Lab',
-        subtitle: 'Learn by doing',
-        icon: Icons.science_rounded,
-        route: '/ai-lab',
+        title: 'Learn',
+        subtitle: 'Lessons & capstones',
+        icon: Icons.menu_book_rounded,
+        route: '/learn',
       ),
       (
         title: 'Practice',
-        subtitle: 'Real scenarios',
-        icon: Icons.psychology_alt_rounded,
-        route: '/industry-practice',
+        subtitle: 'Skills & scenarios',
+        icon: Icons.play_circle_outline_rounded,
+        route: '/practice',
       ),
       (
         title: 'Rewards',
@@ -566,7 +566,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Explore VerifAI',
+          'Keep going',
           style: AppTypography.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w900,
             color: AppColors.primaryNavy,
@@ -602,7 +602,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 borderRadius: BorderRadius.circular(AppRadius.card),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(AppRadius.card),
-                  onTap: () => context.push(item.route),
+                  // Hub routes are shell tabs: `go` switches the dock instead
+                  // of stacking a second shell on top of this one.
+                  onTap: () => shellTabRoutes.contains(item.route)
+                      ? context.go(item.route)
+                      : context.push(item.route),
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(

@@ -39,7 +39,9 @@ import 'package:verifai/features/vera/providers.dart';
 import 'package:verifai/features/onboarding/providers.dart';
 import 'package:verifai/features/verification_studio/providers.dart';
 import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
+import 'package:verifai/features/feedback/presentation/attempt_feedback_screen.dart';
 import 'package:verifai/features/navigation/main_nav_shell.dart';
+import 'package:verifai/features/track/presentation/track_roadmap_screen.dart';
 import 'package:verifai/features/wellness/presentation/wellness_center_screen.dart';
 import 'package:verifai/features/onboarding/presentation.dart';
 import 'package:verifai/features/scoreboard/presentation/scoreboard_screen.dart';
@@ -199,10 +201,26 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'dashboard',
         builder: (context, state) => const MainNavShell(initialIndex: 0),
       ),
+      // The five dock areas. Everything else is reached through a hub.
+      GoRoute(
+        path: '/learn',
+        name: 'learn',
+        builder: (context, state) => const MainNavShell(initialIndex: 1),
+      ),
+      GoRoute(
+        path: '/practice',
+        name: 'practice',
+        builder: (context, state) => const MainNavShell(initialIndex: 2),
+      ),
+      // Legacy destinations: old links and the drawer used these paths.
+      GoRoute(
+        path: '/tasks',
+        redirect: (context, state) => '/practice',
+      ),
       GoRoute(
         path: '/track',
         name: 'track',
-        builder: (context, state) => const MainNavShell(initialIndex: 1),
+        builder: (context, state) => const TrackRoadmapScreen(),
       ),
       GoRoute(
         path: '/scoreboard',
@@ -214,11 +232,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'profile',
         builder: (context, state) => const MainNavShell(initialIndex: 4),
       ),
-      GoRoute(
-        path: '/tasks',
-        name: 'tasks',
-        builder: (context, state) => const MainNavShell(initialIndex: 2),
-      ),
+
       GoRoute(
         path: '/verification',
         name: 'verification',
@@ -371,6 +385,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/progress',
         name: 'progress',
         builder: (context, state) => const MainNavShell(initialIndex: 3),
+      ),
+      GoRoute(
+        path: '/feedback/:attemptId',
+        name: 'feedback-attempt',
+        builder: (context, state) => AttemptFeedbackScreen(
+          attemptId:
+              int.tryParse(state.pathParameters['attemptId'] ?? '') ?? 0,
+        ),
       ),
       GoRoute(
         path: '/feedback',

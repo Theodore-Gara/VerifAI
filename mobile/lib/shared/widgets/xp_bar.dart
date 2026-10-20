@@ -62,7 +62,7 @@ class XPBar extends StatelessWidget {
                   FractionallySizedBox(
                     widthFactor: progress,
                     child: Container(
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [AppColors.primaryNavy, AppColors.accentCyan],
                         ),
@@ -83,11 +83,11 @@ class XPBar extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: AppColors.border),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
             color: AppColors.shadow,
             blurRadius: 8,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -155,7 +155,7 @@ class XPBar extends StatelessWidget {
                   FractionallySizedBox(
                     widthFactor: progress,
                     child: Container(
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [AppColors.primaryNavy, AppColors.accentCyan],
                         ),

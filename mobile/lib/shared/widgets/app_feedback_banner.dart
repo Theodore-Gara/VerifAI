@@ -198,11 +198,11 @@ class FeedbackBanner extends StatelessWidget {
           color: soft,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: accent.withValues(alpha: 0.35)),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
               color: AppColors.shadow,
               blurRadius: 10,
-              offset: Offset(0, 3),
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -245,8 +245,8 @@ class FeedbackBanner extends StatelessWidget {
               GestureDetector(
                 onTap: onAction,
                 behavior: HitTestBehavior.opaque,
-                child: const Padding(
-                  padding: EdgeInsets.all(AppSpacing.xs),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xs),
                   child: Icon(Icons.close_rounded,
                       size: 16, color: AppColors.textSecondary),
                 ),

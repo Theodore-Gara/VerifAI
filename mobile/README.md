@@ -24,14 +24,13 @@ This branch (`chore/foundation`) establishes the complete app foundation. **Pers
 | `dio` | HTTP client (ready for real backend) |
 | `flutter_secure_storage` | Encrypted token/user persistence |
 | `shared_preferences` | Mock user DB |
-| `google_fonts` | Manrope typography |
 | `fl_chart` | Charts (dashboard score ring, dimension bars) |
 | `shimmer` | Loading placeholders |
 
 ### Design System (`lib/core/theme/`)
 
 - **Colors**: Primary Navy `#0E1B2A`, Accent Green `#10B981`, Accent Cyan `#2DD4BF`, XP Purple `#7C3AED`, Gold `#F59E0B`, Silver/Bronze, semantic colors
-- **Typography**: Manrope via `google_fonts` — full type scale (Display, H1–H3, Body, Label, Caption)
+- **Typography**: Inter (body) and Manrope (headings), bundled in `assets/fonts` — full type scale (Display, H1–H3, Body, Label, Caption)
 - **Spacing**: 8pt grid tokens (xs=4 ... xxxxxl=48) + component-specific (buttonHeight=52, inputHeight=52)
 - **Radius**: Tokenized (xs=4 ... xxxl=24) with component mapping (button=12, input=10, card=16, badge=6, xl=20, xxl=24)
 - **Theme**: Material 3 `ThemeData` with full component theming (buttons, inputs, cards, chips, progress, appBar, bottomNav)

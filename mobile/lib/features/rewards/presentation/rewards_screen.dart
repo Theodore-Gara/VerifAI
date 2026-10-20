@@ -60,10 +60,10 @@ class RewardsScreen extends ConsumerWidget {
   Widget _wallet(BuildContext context, RewardWallet w) => Container(
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.primaryNavy, Color(0xFF176B68)]),
+              colors: [AppColors.primaryNavy, const Color(0xFF176B68)]),
           borderRadius: BorderRadius.circular(AppRadius.card),
         ),
         child: Row(
@@ -72,7 +72,7 @@ class RewardsScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('REWARD TOKENS',
+                  Text('REWARD TOKENS',
                       style: TextStyle(
                           color: AppColors.accentCyan, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.2)),
                   Text('${w.tokens}',
@@ -114,7 +114,7 @@ class RewardsScreen extends ConsumerWidget {
                       color: AppColors.accentLight,
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.card_giftcard_rounded, color: AppColors.primaryNavy),
+                    child: Icon(Icons.card_giftcard_rounded, color: AppColors.primaryNavy),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(

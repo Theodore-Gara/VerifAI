@@ -26,6 +26,7 @@ const wellnessRoutes = require('./routes/wellness');
 const adminRoutes = require('./routes/admin');
 const { maintenanceGate } = require('./middleware/adminRoles');
 const errorHandler = require('./middleware/errorHandler');
+const { PostgresRateLimitStore } = require('./utils/pgRateStore');
 
 const app = express();
 
@@ -133,6 +134,10 @@ app.use('/api', rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: rateLimitKey,
+  // Counters live in Postgres so every API instance shares one budget; the
+  // default MemoryStore doubled a user's allowance per instance (and the AI
+  // budget with it). See utils/pgRateStore.js for the fallback behaviour.
+  store: new PostgresRateLimitStore({ prefix: 'api' }),
 }));
 
 app.get('/', (req, res) => {

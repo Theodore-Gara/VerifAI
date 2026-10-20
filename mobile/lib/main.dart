@@ -3,9 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'core/router/app_router.dart';
+import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_mode_provider.dart';
 import 'firebase_options.dart';
-import 'shared/widgets/app_feedback_banner.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,17 +22,20 @@ class VerifAIApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final mode = ref.watch(themeModeProvider);
+    final platformBrightness =
+        WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    final palette = paletteFor(mode, platformBrightness);
+
+    // `AppColors` reads from the active palette, so every existing reference in
+    // the widget tree follows the chosen mode without being rewritten.
+    AppColors.palette = palette;
 
     return MaterialApp.router(
       title: 'VerifAI',
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.themeFor(palette),
       routerConfig: router,
       debugShowCheckedModeBanner: false,
-      // The overlay host renders every showFeedback(...) banner floating above
-      // the active screen, so callers never need their own ScaffoldMessenger.
-      // It sits inside MaterialApp so it inherits MediaQuery/Directionality.
-      builder: (context, child) =>
-          FeedbackOverlay(child: child ?? const SizedBox.shrink()),
     );
   }
 }
