@@ -8,6 +8,7 @@ import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
+import 'package:verifai/features/navigation/main_nav_shell.dart';
 import 'package:verifai/features/wellness/providers.dart';
 import 'package:verifai/shared/models.dart';
 
@@ -116,16 +117,28 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          tooltip: 'Open navigation menu',
-          icon: const Icon(Icons.menu_rounded),
-          onPressed: () => _showNavigation(context),
-        ),
+        leading: Navigator.of(context).canPop()
+            ? IconButton(
+                tooltip: 'Back',
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: () => Navigator.of(context).pop(),
+              )
+            : IconButton(
+                tooltip: 'Open navigation menu',
+                icon: const Icon(Icons.menu_rounded),
+                onPressed: () => _showNavigation(context),
+              ),
         title: const Text(
           'Wellness Centre',
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
         actions: [
+          if (Navigator.of(context).canPop())
+            IconButton(
+              tooltip: 'Open navigation menu',
+              icon: const Icon(Icons.menu_rounded),
+              onPressed: () => _showNavigation(context),
+            ),
           IconButton(
             tooltip: 'Ask Vera',
             onPressed: () => context.push('/assistant'),
@@ -566,7 +579,15 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () {
                   Navigator.of(sheetContext).pop();
-                  context.go(destination.$3);
+                  final dest = destination.$3;
+                  if (dest == '/wellness') return; // already here
+                  // Non-tab destinations are pushed so Back returns to the
+                  // screen the menu was opened from.
+                  if (shellTabRoutes.contains(dest)) {
+                    context.go(dest);
+                  } else {
+                    context.push(dest);
+                  }
                 },
               ),
           ],

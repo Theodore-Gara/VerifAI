@@ -13,6 +13,10 @@ import 'package:verifai/features/task/presentation/task_screen.dart';
 import 'package:verifai/features/track/presentation/track_roadmap_screen.dart';
 import 'package:verifai/features/profile/presentation/profile_screen.dart';
 
+/// Routes hosted by [MainNavShell]. These must stay `go` (never `push`) —
+/// stacking a second shell would duplicate [verifaiMainScaffoldKey].
+const shellTabRoutes = {'/dashboard', '/track', '/tasks', '/progress', '/profile'};
+
 class MainNavShell extends StatefulWidget {
   final int initialIndex;
 
@@ -217,7 +221,13 @@ class _MainNavShellState extends State<MainNavShell> {
       trailing: const Icon(Icons.chevron_right_rounded, size: 18),
       onTap: () {
         Navigator.of(context).pop();
-        context.go(route);
+        // Everything that isn't a shell tab is pushed, so the route it came
+        // from stays on the stack and Back returns to it.
+        if (shellTabRoutes.contains(route)) {
+          context.go(route);
+        } else {
+          context.push(route);
+        }
       },
     );
   }
