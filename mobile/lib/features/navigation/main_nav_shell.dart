@@ -32,24 +32,34 @@ class MainNavShell extends StatefulWidget {
 class _MainNavShellState extends State<MainNavShell> {
   late int _currentIndex;
 
-  final List<Widget> _screens = const [
-    DashboardScreen(),
-    TrackRoadmapScreen(),
-    TaskScreen(),
-    ProgressScreen(),
-    ProfileScreen(),
+  // Tabs are built on first visit. An IndexedStack builds every child, so the
+  // old eager list resolved the providers of all five tabs on cold start (~10
+  // requests before the learner tapped anything).
+  static final List<Widget Function()> _tabBuilders = <Widget Function()>[
+    () => const DashboardScreen(),
+    () => const TrackRoadmapScreen(),
+    () => const TaskScreen(),
+    () => const ProgressScreen(),
+    () => const ProfileScreen(),
   ];
+
+  final List<Widget?> _tabs = List<Widget?>.filled(_tabBuilders.length, null);
 
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex;
+    _currentIndex =
+        widget.initialIndex.clamp(0, _tabBuilders.length - 1).toInt();
+    _tabs[_currentIndex] = _tabBuilders[_currentIndex]();
   }
 
   void _onItemTapped(int index) {
     if (_currentIndex == index) return;
     HapticFeedback.selectionClick();
-    setState(() => _currentIndex = index);
+    setState(() {
+      _tabs[index] ??= _tabBuilders[index]();
+      _currentIndex = index;
+    });
   }
 
   @override
@@ -129,7 +139,10 @@ class _MainNavShellState extends State<MainNavShell> {
       ),
       body: IndexedStack(
         index: _currentIndex,
-        children: _screens,
+        children: [
+          for (var i = 0; i < _tabs.length; i++)
+            _tabs[i] ?? const SizedBox.shrink(),
+        ],
       ),
       bottomNavigationBar: SafeArea(
         top: false,
@@ -233,49 +246,70 @@ class _MainNavShellState extends State<MainNavShell> {
   }) {
     final isSelected = _currentIndex == index;
 
-    return GestureDetector(
-      onTap: () => _onItemTapped(index),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutBack,
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 16 : 12,
-          vertical: 8,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryNavy : Colors.transparent,
+    // 48dp minimum target: the old item was icon(20) + 8dp padding ≈ 36dp, and
+    // a bare GestureDetector gave no ripple, focus or accessibility action.
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: isSelected ? '$label, selected' : label,
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.pill),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.primaryNavy.withValues(alpha: 0.25),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: isSelected ? Colors.white : AppColors.textSecondary,
-            ),
-            if (isSelected) ...[
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: AppTypography.textTheme.labelMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.2,
-                ),
+          onTap: () => _onItemTapped(index),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 56, minHeight: 48),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutBack,
+              padding: EdgeInsets.symmetric(
+                horizontal: isSelected ? 16 : 12,
+                vertical: 8,
               ),
-            ],
-          ],
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primaryNavy : Colors.transparent,
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primaryNavy.withValues(alpha: 0.25),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    size: 22,
+                    color:
+                        isSelected ? Colors.white : AppColors.textSecondary,
+                  ),
+                  if (isSelected) ...[
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.textTheme.labelMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

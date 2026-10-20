@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:verifai/core/providers/app_providers.dart';
-import 'package:verifai/core/services/mock_api_client.dart';
+import 'support/mock_api_client.dart';
 import 'package:verifai/features/lab/presentation/assessment_paper_screen.dart';
 import 'package:verifai/features/lab/presentation/topic_reader_screen.dart';
 import 'package:verifai/shared/models.dart';

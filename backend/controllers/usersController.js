@@ -1,7 +1,7 @@
 const pool = require('../db/pool');
 const { positiveIntegerParam } = require('../middleware/validate');
 const { findUserByFirebaseUid } = require('../db/users');
-const { getFirebaseAuth } = require('../db/firebase');
+const { purgeAccount } = require('../services/accountPurge');
 
 const AVATAR_MIME = new Set(['image/png', 'image/jpeg', 'image/webp']);
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
@@ -24,7 +24,7 @@ async function getMe(req, res, next) {
       return res.status(404).json({ error: 'User not found. Call /api/auth/sync first.', request_id: req.requestId });
     }
 
-    return res.status(200).json({ user: result.rows[0] });
+    return res.status(200).json({ user: result.rows[0], request_id: req.requestId });
   } catch (err) {
     return next(err);
   }
@@ -137,27 +137,18 @@ async function getAvatar(req, res, next) {
 }
 
 // DELETE /api/users/me
-// Removes the account everywhere: the Firebase identity (so the email can be
-// reused) and the database row, which cascades to all of the user's data.
+// Removes the account everywhere: the database row (cascading to all of the
+// user's data) and then the Firebase identity, so the email can be reused.
+// Shares one implementation with the admin hard delete — see
+// services/accountPurge.js for why the order matters.
 async function deleteAccount(req, res, next) {
   try {
-    const uid = req.firebaseUser.uid;
-
-    try {
-      await getFirebaseAuth().deleteUser(uid);
-    } catch (err) {
-      // Already gone in Firebase is fine; anything else is a real failure.
-      if (err.code !== 'auth/user-not-found') throw err;
-    }
-
-    const result = await pool.query(
-      `DELETE FROM users WHERE firebase_uid = $1 RETURNING id`,
-      [uid],
-    );
+    const purge = await purgeAccount({ firebaseUid: req.firebaseUser.uid });
 
     return res.status(200).json({
       deleted: true,
-      had_profile: result.rows.length > 0,
+      had_profile: purge.hadProfile,
+      identity_deleted: purge.firebaseDeleted,
       request_id: req.requestId,
     });
   } catch (err) {

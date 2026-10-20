@@ -1,4 +1,12 @@
 const pool = require('../db/pool');
+const { awardXp } = require('../services/xpService');
+const { purgeAccount } = require('../services/accountPurge');
+const { STREAK_TIMEZONE } = require('../services/streak');
+
+// Analytics day boundaries are anchored to the same timezone the streak logic
+// uses, imported rather than hardcoded so admin stats and learner stats can
+// never drift apart when the deployment timezone changes.
+const TZ = /^[A-Za-z_]+(\/[A-Za-z_+-]+)*$/.test(STREAK_TIMEZONE) ? STREAK_TIMEZONE : 'UTC';
 
 const FEATURES = new Set(['verification', 'judgement', 'risk_governance', 'prompt_design']);
 const DIFFICULTIES = new Set(['easy', 'medium', 'hard']);
@@ -591,13 +599,13 @@ async function trackProgress(req, res, next) {
          FROM industry_tracks t ORDER BY t.id`
       ),
       pool.query(
-        `SELECT (NOW() AT TIME ZONE 'Africa/Johannesburg')::date - d.day AS day,
+        `SELECT (NOW() AT TIME ZONE ${TZ})::date - d.day AS day,
                 COALESCE(COUNT(ta.id), 0)::int AS attempts,
                 COALESCE(COUNT(ta.id) FILTER (WHERE ta.passed), 0)::int AS passed
          FROM generate_series(0, 13) AS d(day)
          LEFT JOIN task_attempts ta
-           ON (ta.submitted_at AT TIME ZONE 'Africa/Johannesburg')::date
-              = (NOW() AT TIME ZONE 'Africa/Johannesburg')::date - d.day
+           ON (ta.submitted_at AT TIME ZONE ${TZ})::date
+              = (NOW() AT TIME ZONE ${TZ})::date - d.day
          GROUP BY d.day ORDER BY d.day`,
       ),
       pool.query(
@@ -1274,18 +1282,11 @@ async function grantAdjust(req, res, next) {
     }
 
     if (xp > 0) {
-      const result = await client.query(
-        `UPDATE user_progress SET xp = xp + $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2 RETURNING xp, level`,
-        [xp, userId]
-      );
-      if (!result.rows.length) {
-        await client.query(
-          `INSERT INTO user_progress (user_id, xp, level, streak, last_activity_date)
-           VALUES ($1, $2, 1, 0, NULL) RETURNING xp, level`,
-          [userId, xp]
-        );
-      }
-      changed = `+${xp} XP`;
+      // awardXp recomputes the level and credits level tokens. The old inline
+      // `SET xp = xp + n` left the level untouched, so a +5,000 XP grant kept a
+      // learner at level 1 forever. advanceStreak is off: a grant is not study.
+      const result = await awardXp(client, userId, xp, { advanceStreak: false });
+      changed = `+${xp} XP (level ${result.level})`;
     }
     if (tokens > 0) {
       const ref = `admin-grant-${Date.now()}`;
@@ -1365,35 +1366,37 @@ async function exportUserData(req, res, next) {
 }
 
 // DELETE /api/admin/users/:id — GDPR hard delete. FK cascades remove every
-// trace (attempts, skills, posts, tokens). Refuses to delete an admin.
+// trace (attempts, skills, posts, tokens) and the Firebase identity is removed
+// too, so the account cannot silently reappear on the next sign-in. Refuses to
+// delete the caller's own account.
 async function hardDeleteUser(req, res, next) {
-  const client = await pool.connect();
   try {
     const userId = Number.parseInt(req.params.id, 10);
     if (!Number.isInteger(userId)) fail('User id must be an integer.');
     const adminUid = req.firebaseUser.uid;
     if (adminUid) {
-      const self = await client.query('SELECT id FROM users WHERE firebase_uid = $1', [adminUid]);
+      const self = await pool.query('SELECT id FROM users WHERE firebase_uid = $1', [adminUid]);
       if (self.rows[0]?.id === userId) fail('You cannot delete your own account from the panel.');
     }
-    await client.query('BEGIN');
-    const result = await client.query('DELETE FROM users WHERE id = $1 RETURNING id, email', [userId]);
-    if (!result.rows.length) {
-      await client.query('ROLLBACK');
+
+    const purge = await purgeAccount({ userId });
+    if (!purge.hadProfile) {
       return res.status(404).json({ error: 'User not found.', request_id: req.requestId });
     }
-    await client.query('COMMIT');
+
     await logModeration(req.firebaseUser, {
-      action: 'user_delete', targetUserId: userId, targetEmail: result.rows[0].email,
-      reason: 'GDPR hard delete (all data removed)',
+      action: 'user_delete', targetUserId: userId, targetEmail: purge.email,
+      reason: 'GDPR hard delete (all data removed)'
+        + (purge.firebaseDeleted ? '' : ' — Firebase identity removal FAILED, needs follow-up'),
     });
-    return res.status(200).json({ deleted: result.rows[0], request_id: req.requestId });
+    return res.status(200).json({
+      deleted: { id: userId, email: purge.email },
+      identity_deleted: purge.firebaseDeleted,
+      request_id: req.requestId,
+    });
   } catch (err) {
-    await client.query('ROLLBACK').catch(() => {});
     if (!err.status) return next(err);
     return res.status(err.status).json({ error: err.message, request_id: req.requestId });
-  } finally {
-    client.release();
   }
 }
 
@@ -1733,15 +1736,15 @@ async function answerSummary(req, res, next) {
       ),
       pool.query(
         `SELECT COALESCE(tr.name, '(no track)') AS department,
-                (NOW() AT TIME ZONE 'Africa/Johannesburg')::date - d.day AS day,
+                (NOW() AT TIME ZONE ${TZ})::date - d.day AS day,
                 COUNT(al.id)::int AS answers,
                 COALESCE(ROUND(AVG(al.score)), 0)::int AS avg_score
          FROM generate_series(0, 29) AS d(day)
          CROSS JOIN (SELECT DISTINCT department_id FROM answer_logs) dd
          LEFT JOIN answer_logs al
            ON al.department_id = dd.department_id
-          AND (al.submitted_at AT TIME ZONE 'Africa/Johannesburg')::date
-              = (NOW() AT TIME ZONE 'Africa/Johannesburg')::date - d.day
+          AND (al.submitted_at AT TIME ZONE ${TZ})::date
+              = (NOW() AT TIME ZONE ${TZ})::date - d.day
          LEFT JOIN industry_tracks tr ON tr.id = dd.department_id
          GROUP BY dd.department_id, tr.name, d.day
          ORDER BY department, d.day`
@@ -1834,8 +1837,8 @@ async function getAnalytics(req, res, next) {
                          to_char(w.week_start, 'YYYY-MM-DD') AS week_start,
                          COUNT(u.id)::int AS signups
                   FROM generate_series(
-                         date_trunc('week', (NOW() AT TIME ZONE 'Africa/Johannesburg')::date - INTERVAL '11 weeks'),
-                         date_trunc('week', (NOW() AT TIME ZONE 'Africa/Johannesburg')::date),
+                         date_trunc('week', (NOW() AT TIME ZONE ${TZ})::date - INTERVAL '11 weeks'),
+                         date_trunc('week', (NOW() AT TIME ZONE ${TZ})::date),
                          INTERVAL '1 week'
                        ) AS w(week_start)
                   LEFT JOIN users u ON date_trunc('week', u.created_at) = w.week_start
@@ -1844,14 +1847,14 @@ async function getAnalytics(req, res, next) {
       ),
       // Attempts per day (last 30 days), passed/failed split.
       pool.query(
-        `SELECT (NOW() AT TIME ZONE 'Africa/Johannesburg')::date - d.day AS day,
+        `SELECT (NOW() AT TIME ZONE ${TZ})::date - d.day AS day,
                 COUNT(ta.id)::int AS attempts,
                 COUNT(ta.id) FILTER (WHERE ta.passed)::int AS passed,
                 COALESCE(ROUND(AVG(ta.score)), 0)::int AS avg_score
          FROM generate_series(0, 29) AS d(day)
          LEFT JOIN task_attempts ta
-           ON (ta.submitted_at AT TIME ZONE 'Africa/Johannesburg')::date
-              = (NOW() AT TIME ZONE 'Africa/Johannesburg')::date - d.day
+           ON (ta.submitted_at AT TIME ZONE ${TZ})::date
+              = (NOW() AT TIME ZONE ${TZ})::date - d.day
          GROUP BY d.day ORDER BY d.day`
       ),
       // Per-feature: attempts, avg score, pass rate.

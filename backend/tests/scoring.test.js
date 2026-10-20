@@ -228,57 +228,114 @@ test('verification choice scoring is all-or-nothing', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Streak timezone correctness (updateProgress).
+// Streak + level bookkeeping now lives in services/xpService.awardXp.
 // ---------------------------------------------------------------------------
-const { updateProgress } = require('../controllers/tasksController');
+const { awardXp } = require('../services/xpService');
 
-const PROGRESS_ROW = { id: 1, xp: 20, level: 1, streak: 1, last_activity_date: '2026-10-08', tier: 'Novice', tier_tasks_completed: 0 };
+const PROGRESS_ROW = { id: 1, xp: 20, level: 1, streak: 1, last_activity_date: '2026-10-08' };
 
 function fakeProgressClient(dayGap) {
-  const sqls = [];
   const calls = [];
   return {
-    sqls,
     calls,
     async query(sql, values) {
-      sqls.push(sql);
       calls.push({ sql, values });
       if (sql.includes('INSERT INTO user_progress')) return { rows: [PROGRESS_ROW] };
       if (sql.includes('day_gap')) return { rows: [{ today: '2026-10-09', day_gap: dayGap }] };
+      if (sql.includes('INSERT INTO reward_token_events')) return { rows: [] };
       if (sql.includes('UPDATE user_progress') && sql.includes('SET xp')) {
-        return { rows: [{ xp: 70, level: 2, streak: 2, last_activity_date: '2026-10-09', tier: 'Novice', tier_tasks_completed: 1, readiness_score: 0 }] };
+        return { rows: [{ xp: 70, level: 1, streak: 2, readiness_score: 0, tier: 'Novice', tokens: 0 }] };
       }
       return { rows: [] };
     },
   };
 }
 
+const updateOf = (fake) => fake.calls.find((call) => call.sql.includes('SET xp'));
+
 test('streak increments on a 1-day gap and pins the timezone, not the server clock', async () => {
   const fake = fakeProgressClient(1);
-  const row = await updateProgress(fake, { id: 7 }, 50);
-  assert.equal(row.streak, 2);
-  const gapSql = fake.sqls.find((s) => s.includes('day_gap'));
-  const updateSql = fake.sqls.find((s) => s.includes('SET xp'));
+  await awardXp(fake, 7, 50);
+
+  const gapCall = fake.calls.find((call) => call.sql.includes('day_gap'));
+  const update = updateOf(fake);
   // Both the gap lookup and the stored activity date must use the configured
   // timezone (parameterised), never the database server's CURRENT_DATE.
-  assert.match(gapSql, /AT TIME ZONE \$2/);
-  assert.match(updateSql, /AT TIME ZONE \$5/);
-  assert.doesNotMatch(updateSql, /last_activity_date = CURRENT_DATE/);
-  assert.deepEqual(fake.calls.find((call) => call.sql.includes('day_gap')).values, [1, process.env.STREAK_TIMEZONE || 'Africa/Johannesburg']);
-  assert.equal(fake.calls.find((call) => call.sql.includes('SET xp')).values[4], process.env.STREAK_TIMEZONE || 'Africa/Johannesburg');
+  assert.match(gapCall.sql, /AT TIME ZONE \$2/);
+  assert.match(update.sql, /AT TIME ZONE \$5/);
+  assert.doesNotMatch(update.sql, /last_activity_date = CURRENT_DATE/);
+  assert.deepEqual(gapCall.values, [1, process.env.STREAK_TIMEZONE || 'Africa/Johannesburg']);
+  assert.equal(update.values[4], process.env.STREAK_TIMEZONE || 'Africa/Johannesburg');
+  // 1-day gap -> streak advances; 20 + 50 XP.
+  assert.equal(update.values[0], 70);
+  assert.equal(update.values[2], 2);
 });
 
-test('streak keeps on a same-day gap and resets after a missed day', async () => {
+test('streak holds on a same-day gap and resets after a missed day', async () => {
   const sameDay = fakeProgressClient(0);
-  const kept = await updateProgress(sameDay, { id: 7 }, 50);
-  assert.equal(kept.streak, 2); // mock returns streak 2 for the update row; key check is reset below
+  await awardXp(sameDay, 7, 10);
+  assert.equal(updateOf(sameDay).values[2], 1);
 
   const missed = fakeProgressClient(5);
-  const reset = await updateProgress(missed, { id: 7 }, 50);
-  assert.equal(reset.streak, 2);
-  // The reset logic itself: gap 5 means newStreak starts at 1 before the mock's
-  // returned row; assert via the streak parameter the code would send is not
-  // observable here, so instead assert the gap query ran for both flows.
-  assert.ok(sameDay.sqls.some((s) => s.includes('day_gap')));
-  assert.ok(missed.sqls.some((s) => s.includes('day_gap')));
+  await awardXp(missed, 7, 10);
+  assert.equal(updateOf(missed).values[2], 1);
+});
+
+test('a zero-XP graded attempt still marks the day active', async () => {
+  const fake = fakeProgressClient(1);
+  const row = await awardXp(fake, 7, 0);
+  assert.equal(row.xp_earned, 0);
+  assert.equal(updateOf(fake).values[0], 20, 'XP balance is untouched');
+  assert.equal(updateOf(fake).values[2], 2, 'streak still advances');
+});
+
+test('an admin adjustment does not fabricate a streak', async () => {
+  const fake = fakeProgressClient(1);
+  await awardXp(fake, 7, 500, { advanceStreak: false });
+  assert.equal(updateOf(fake).values[5], false, 'advanceStreak flag reaches the UPDATE');
+  assert.equal(updateOf(fake).values[2], 1, 'streak is carried over');
+});
+
+test('crossing a level boundary levels up and credits level tokens', async () => {
+  const fake = {
+    calls: [],
+    async query(sql, values) {
+      this.calls.push({ sql, values });
+      if (sql.includes('INSERT INTO user_progress')) {
+        return { rows: [{ id: 1, xp: 240, level: 1, streak: 1, last_activity_date: '2026-10-08' }] };
+      }
+      if (sql.includes('day_gap')) return { rows: [{ day_gap: 0 }] };
+      if (sql.includes('INSERT INTO reward_token_events')) return { rows: [] };
+      if (sql.includes('UPDATE user_progress') && sql.includes('SET xp')) {
+        return { rows: [{ xp: 260, level: 2, streak: 1, readiness_score: 0, tier: 'Novice', tokens: 5 }] };
+      }
+      return { rows: [] };
+    },
+  };
+  await awardXp(fake, 7, 20);
+  assert.equal(xpForLevel(2), 250);
+  assert.equal(calculateLevel(260), 2);
+  assert.equal(updateOf(fake).values[1], 2, 'level recomputed from the new balance');
+  assert.ok(
+    fake.calls.some((call) => call.sql.includes('INSERT INTO reward_token_events')),
+    'level-up credits reward tokens',
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Verification pass rules (§3.1): a reason alone must not pass a line_text task.
+// ---------------------------------------------------------------------------
+const { isPass } = require('../controllers/tasksController');
+
+test('line_text verification requires a flaw and a fix, not just a reason', () => {
+  // Flawed lines picked (30) + a plausible reason (30), nothing fixed: the old
+  // flat 60 threshold passed this. It must not.
+  assert.equal(isPass('verification', { format: 'line_text', score: 60, flawScore: 30, fixScore: 0 }), false);
+  // Fix and flaw, no reason: 70 total is a pass (the fix is the skill).
+  assert.equal(isPass('verification', { format: 'line_text', score: 70, flawScore: 30, fixScore: 40 }), true);
+  // No flaw found, however good the fix: not a pass.
+  assert.equal(isPass('verification', { format: 'line_text', score: 70, flawScore: 0, fixScore: 40 }), false);
+  // Choice tasks keep the plain threshold.
+  assert.equal(isPass('verification', { format: 'choice', score: 60 }), true);
+  assert.equal(isPass('verification', { format: 'choice', score: 40 }), false);
 });

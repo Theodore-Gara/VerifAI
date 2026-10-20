@@ -439,6 +439,19 @@ async function findCapstone(executor, code, trackId) {
   return result.rows[0] || null;
 }
 
+// Same lookup without the track filter — used by the reviewer endpoint, where
+// the marker is an admin and the paper belongs to the attempt's owner.
+async function findCapstoneAnyTrack(executor, code) {
+  const result = await executor.query(
+    `SELECT id, code, title, summary, scenario, instructions, total_marks, grade_bands,
+            time_limit_seconds, pass_score, max_attempts, xp_reward, token_reward, achievement_code
+     FROM lab_capstone_assessments
+     WHERE code = $1 AND active = TRUE`,
+    [code],
+  );
+  return result.rows[0] || null;
+}
+
 // Full paper minus answer keys: used for both the list and the read-only view.
 const CAPSTONE_QUESTION_COLUMNS =
   `id, type, section, scenario, prompt, payload, code_lines, word_limit, competency, cognitive_level, marks, marking, sort_order`;
@@ -688,6 +701,17 @@ async function submitCapstone(req, res, next) {
     client = await pool.connect();
     await client.query('BEGIN');
 
+    // Re-check under a row lock: two concurrent submits of the same attempt
+    // could both pass the unlocked check above and both apply capstone rewards.
+    const locked = await client.query(
+      `SELECT submitted_at FROM lab_capstone_attempts WHERE id = $1 FOR UPDATE`,
+      [attemptId],
+    );
+    if (!locked.rows.length || locked.rows[0].submitted_at) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'This attempt has already been submitted.', request_id: req.requestId });
+    }
+
     if (hasRubric) {
       const provisional = totalMarks > 0 ? Math.round((100 * autoMarks) / totalMarks) : 0;
       await client.query(
@@ -797,26 +821,28 @@ async function getAssessmentPaper(req, res, next) {
 }
 
 // POST /api/lab/assessments/:code/attempts/:id/mark
-// Reviewer/AI-marker endpoint: assigns rubric marks and finalises the attempt.
-// Body { marks: { "<qid>": <total> | [<per-criterion>] }, marked_by }.
+// Reviewer endpoint (admin/moderator only — see routes/lab.js): assigns rubric
+// marks and finalises the attempt. Body { marks: { "<qid>": <total> | [<per-criterion>] } }.
+// The marker identity comes from the authenticated admin, never the body: it is
+// an audit field, and a learner could otherwise mark their own capstone for
+// full marks and collect the XP, tokens and readiness that follow.
 async function markCapstone(req, res, next) {
   let client = null;
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
-
     const attemptId = positiveIntegerParam(req.params.id, 'attempt id');
     const marks = req.body.marks;
     if (!marks || typeof marks !== 'object' || Array.isArray(marks)) {
       return res.status(400).json({ error: 'marks must be an object keyed by question id.', request_id: req.requestId });
     }
-    const markedBy = typeof req.body.marked_by === 'string' && req.body.marked_by.trim()
-      ? req.body.marked_by.trim().slice(0, 120)
-      : 'reviewer';
+    const markedBy = String(
+      req.firebaseUser?.email || req.firebaseUser?.uid || 'reviewer',
+    ).slice(0, 120);
 
-    const assessment = await findCapstone(pool, req.params.code, user.industry_track_id);
+    // The track is whatever the attempt's owner is on; an admin marking another
+    // track's paper must not be told the assessment does not exist.
+    const assessment = await findCapstoneAnyTrack(pool, req.params.code);
     if (!assessment) {
-      return res.status(404).json({ error: 'Assessment not found for your selected track.', request_id: req.requestId });
+      return res.status(404).json({ error: 'Assessment not found.', request_id: req.requestId });
     }
 
     const attemptResult = await pool.query(
@@ -859,6 +885,16 @@ async function markCapstone(req, res, next) {
 
     client = await pool.connect();
     await client.query('BEGIN');
+    // Lock the row and re-check: two reviewers confirming at once would apply
+    // the capstone rewards twice (awardXp is not an idempotent ledger).
+    const locked = await client.query(
+      `SELECT status FROM lab_capstone_attempts WHERE id = $1 FOR UPDATE`,
+      [attemptId],
+    );
+    if (!locked.rows.length || locked.rows[0].status !== 'pending_marking') {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'This attempt is not awaiting marking.', request_id: req.requestId });
+    }
     const rewards = passed ? await applyCapstoneRewards(client, owner, assessment) : { xpEarned: 0, tokensEarned: 0, achievement: null };
     await client.query(
       `UPDATE lab_capstone_attempts
@@ -902,9 +938,12 @@ async function aiMarkCapstone(req, res, next) {
       return res.status(404).json({ error: 'Assessment not found for your selected track.', request_id: req.requestId });
     }
 
+    // Scoped to the caller: this endpoint spends an LLM call, so it must not be
+    // usable to mark someone else's attempt.
     const attemptResult = await pool.query(
-      `SELECT id, answers, auto_marks, status FROM lab_capstone_attempts WHERE id = $1 AND assessment_id = $2`,
-      [attemptId, assessment.id],
+      `SELECT id, answers, auto_marks, status FROM lab_capstone_attempts
+       WHERE id = $1 AND assessment_id = $2 AND user_id = $3`,
+      [attemptId, assessment.id, user.id],
     );
     if (!attemptResult.rows.length) {
       return res.status(404).json({ error: 'Attempt not found.', request_id: req.requestId });

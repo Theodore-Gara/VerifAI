@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
-import 'package:verifai/core/theme/app_typography.dart';
 
 /// The kind of feedback a banner communicates. Drives the color treatment.
 enum FeedbackKind { success, error, info }
@@ -216,9 +215,15 @@ class FeedbackBanner extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
+              // Inherit the ambient text style instead of re-resolving the
+              // design-system typography: the banner appears on top of whatever
+              // screen raised it, and this keeps it from triggering another
+              // font-family lookup on every toast.
               child: Text(
                 message,
-                style: AppTypography.textTheme.bodySmall?.copyWith(
+                style: DefaultTextStyle.of(context).style.copyWith(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
                   color: AppColors.textPrimary,
                   height: 1.35,
                 ),

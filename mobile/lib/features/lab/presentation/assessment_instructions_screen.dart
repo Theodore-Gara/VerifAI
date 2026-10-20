@@ -10,6 +10,7 @@ import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/lab/presentation/assessment_paper_screen.dart';
 import 'package:verifai/features/lab/providers.dart';
 import 'package:verifai/shared/models.dart';
+import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
 
@@ -42,8 +43,11 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
           extra: PaperArgs(code: widget.code, start: start));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Could not start the paper. Try again.')));
+      showFeedback(
+        context,
+        FeedbackKind.error,
+        'Could not start the paper. Try again.',
+      );
     } finally {
       if (mounted) setState(() => _starting = false);
     }

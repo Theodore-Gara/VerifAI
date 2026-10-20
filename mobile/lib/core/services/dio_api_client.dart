@@ -77,55 +77,47 @@ class DioApiClient implements ApiClient {
   }
 
   @override
+  /// One request: the server composes profile, progress, dimension scores and
+  /// the recommended next task. This used to fan out to five endpoints, three
+  /// of which ran the expensive task-selection query and were then discarded.
   Future<DashboardData> getDashboard() async {
     final token = await _idToken();
-    final auth = Options(headers: _authHeaders(token));
-    final responses = await Future.wait([
-      _dio.get<Map<String, dynamic>>('users/me', options: auth),
-      _dio.get<Map<String, dynamic>>('progress/me', options: auth),
-      _dio.get<Map<String, dynamic>>('tasks/next',
-          queryParameters: {'feature': 'verification', 'difficulty': 'easy'},
-          options: auth),
-      _dio.get<Map<String, dynamic>>('tasks/next',
-          queryParameters: {'feature': 'verification', 'difficulty': 'medium'},
-          options: auth),
-      _dio.get<Map<String, dynamic>>('tasks/next',
-          queryParameters: {'feature': 'verification', 'difficulty': 'hard'},
-          options: auth),
-    ]);
+    final response = await _dio.get<Map<String, dynamic>>(
+      'dashboard',
+      options: Options(headers: _authHeaders(token)),
+    );
 
-    final profile =
-        responses[0].data?['user'] as Map<String, dynamic>? ?? const {};
-    final progress =
-        responses[1].data?['progress'] as Map<String, dynamic>? ?? const {};
-    final skillScores = progress['skill_scores'] as List<dynamic>? ?? const [];
+    final data = response.data ?? const <String, dynamic>{};
+    final user = data['user'] as Map<String, dynamic>? ?? const {};
+    final progress = data['progress'] as Map<String, dynamic>? ?? const {};
+    final dimensions = data['dimensions'] as List<dynamic>? ?? const [];
+    final rawTask = data['next_task'] as Map<String, dynamic>?;
 
-    // One card per difficulty; a track may not have content for every band.
-    final tasks = <DailyTask>[];
-    for (final response in responses.skip(2)) {
-      final task = response.data?['task'] as Map<String, dynamic>?;
-      if (task == null) continue;
-      tasks.add(DailyTask.fromJson({
-        ...task,
-        'trackName': profile['industry_track_name'],
-        'trackId': task['track_id'],
-      }));
+    DailyTask? task;
+    if (rawTask != null) {
+      task = DailyTask.fromJson({
+        ...rawTask,
+        'trackName': user['industry_track_name'],
+        'trackId': rawTask['track_id'] ?? user['industry_track_id'],
+      });
     }
 
     return DashboardData(
       overallScore: _int(progress['readiness_score']),
       dimensionScores: {
-        for (final item in skillScores)
+        for (final item in dimensions)
           (item as Map<String, dynamic>)['dimension'] as String:
               _int(item['score']),
       },
       streakDays: _int(progress['streak']),
       currentXp: _int(progress['xp']),
       level: _int(progress['level'], fallback: 1),
-      completedTasks: _int(progress['completed_tasks']),
+      xpIntoLevel: _int(progress['xp_into_level']),
+      xpForNextLevel: _int(progress['xp_for_next_level']),
+      completedTasks: _int(data['tasks_completed']),
       tier: progress['tier'] as String?,
-      dailyTask: tasks.isEmpty ? null : tasks.first,
-      tasks: tasks,
+      dailyTask: task,
+      tasks: task == null ? const [] : [task],
     );
   }
 

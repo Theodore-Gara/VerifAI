@@ -9,6 +9,7 @@ import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/rewards/providers.dart';
 import 'package:verifai/shared/models.dart';
+import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 
 /// Reward product page: what it is, how it is earned and redeemed.
 class RewardDetailScreen extends ConsumerStatefulWidget {
@@ -44,12 +45,19 @@ class _RewardDetailScreenState extends ConsumerState<RewardDetailScreen> {
       setState(() => _remainingTokens = result.wallet.tokens);
       ref.invalidate(rewardsProvider);
       ref.invalidate(dashboardProvider);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Redeemed "${widget.reward.title}". You have ${result.wallet.tokens} tokens left.')));
+      showFeedback(
+        context,
+        FeedbackKind.success,
+        'Redeemed "${widget.reward.title}". '
+        'You have ${result.wallet.tokens} tokens left.',
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Could not redeem. Check your token balance.')));
+      showFeedback(
+        context,
+        FeedbackKind.error,
+        'Could not redeem. Check your token balance.',
+      );
     } finally {
       if (mounted) setState(() => _redeeming = false);
     }

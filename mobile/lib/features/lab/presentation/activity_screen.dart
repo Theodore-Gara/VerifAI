@@ -9,6 +9,7 @@ import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/shared/models.dart';
+import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 
 class ActivityArgs {
   const ActivityArgs({required this.activity, required this.code});
@@ -99,8 +100,7 @@ class _LabActivityScreenState extends ConsumerState<LabActivityScreen> {
       ref.invalidate(dashboardProvider);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not submit. Try again.')));
+      showFeedback(context, FeedbackKind.error, 'Could not submit. Try again.');
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

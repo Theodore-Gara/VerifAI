@@ -12,25 +12,24 @@ const { openStream, sendEvent, endStream } = require('../middleware/sse');
 const MAX_MESSAGES = 8;
 const MAX_MESSAGE_LENGTH = 1200;
 
-// Get or create a session for user+task, return session_id and existing messages
+// Get or create a session for user+task, return session_id and existing messages.
+// One upsert rather than SELECT-then-INSERT: two simultaneous first messages
+// (double tap, client retry) used to race on UNIQUE (user_id, task_id) and
+// surface as a 500.
 async function getOrCreateSession(userId, taskId) {
-  const existing = await pool.query(
-    `SELECT id FROM assistant_sessions WHERE user_id = $1 AND task_id = $2`,
+  const session = await pool.query(
+    `INSERT INTO assistant_sessions (user_id, task_id)
+     VALUES ($1, $2)
+     ON CONFLICT (user_id, task_id) DO UPDATE SET last_active_at = now()
+     RETURNING id`,
     [userId, taskId],
   );
-  if (existing.rows.length) {
-    const sessionId = existing.rows[0].id;
-    const messages = await pool.query(
-      `SELECT role, content FROM assistant_messages WHERE session_id = $1 ORDER BY created_at`,
-      [sessionId],
-    );
-    return { sessionId, history: messages.rows };
-  }
-  const created = await pool.query(
-    `INSERT INTO assistant_sessions (user_id, task_id) VALUES ($1, $2) RETURNING id`,
-    [userId, taskId],
+  const sessionId = session.rows[0].id;
+  const messages = await pool.query(
+    `SELECT role, content FROM assistant_messages WHERE session_id = $1 ORDER BY created_at`,
+    [sessionId],
   );
-  return { sessionId: created.rows[0].id, history: [] };
+  return { sessionId, history: messages.rows };
 }
 
 // Persist a user+assistant turn

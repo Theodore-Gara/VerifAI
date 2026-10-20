@@ -9,9 +9,14 @@ import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/navigation/nav_drawer_controller.dart';
+import 'package:verifai/features/task/presentation/task_run_screen.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets.dart';
+import 'package:verifai/shared/widgets/dimension_index_card.dart';
 
+/// Home. Leads with the one thing the learner can do next — a recommended task,
+/// their XP progress and their assessed dimensions — then the exploration grid.
+/// Everything here comes from a single `GET /api/dashboard` request.
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
@@ -20,10 +25,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  @override
-  void initState() {
-    super.initState();
-  }
+  bool _starting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -35,93 +37,98 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: const IconButton(
-          tooltip: 'Open navigation menu',
-          icon: Icon(Icons.menu_rounded, color: AppColors.textPrimary),
-          onPressed: openVerifaiNavigationDrawer,
-        ),
-        title: Row(
+        titleSpacing: AppSpacing.screenPadding,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: AppColors.primaryNavy,
-              child: Text(
-                (user?.name?.isNotEmpty == true)
-                    ? user!.name![0].toUpperCase()
-                    : 'U',
-                style: AppTypography.textTheme.labelMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
+            Text(
+              _greeting(user?.name),
+              style: AppTypography.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.2,
+                color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(width: AppSpacing.sm),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Home',
-                  style: AppTypography.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.2,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  user?.trackName ?? 'Specialization Active',
-                  style: AppTypography.textTheme.labelSmall?.copyWith(
-                    color: AppColors.accentGreen,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 10,
-                  ),
-                ),
-              ],
+            Text(
+              user?.trackName ?? 'Choose your specialization',
+              style: AppTypography.textTheme.labelSmall?.copyWith(
+                color: AppColors.accentGreen,
+                fontWeight: FontWeight.w700,
+                fontSize: 11,
+              ),
             ),
           ],
         ),
         actions: [
           IconButton(
+            tooltip: 'Refresh dashboard',
             icon: const Icon(
               Icons.refresh_rounded,
               color: AppColors.textPrimary,
             ),
-            onPressed: () => ref.invalidate(dashboardProvider),
+            onPressed: () {
+              ref.invalidate(dashboardProvider);
+            },
+          ),
+          // The drawer is a secondary surface: the bottom dock is the primary
+          // navigation, so the menu sits here at low emphasis rather than
+          // occupying the leading slot of every screen's app bar.
+          const IconButton(
+            tooltip: 'More sections',
+            icon: Icon(
+              Icons.menu_rounded,
+              color: AppColors.textSecondary,
+              size: 22,
+            ),
+            onPressed: openVerifaiNavigationDrawer,
           ),
         ],
       ),
       body: Stack(
         children: [
-          // Modern Ambient Background Glows
+          // Ambient background glows
           Positioned(
             top: -60,
             right: -40,
-            child: Container(
-              width: 220,
-              height: 220,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.ambientCyan,
+            child: IgnorePointer(
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.ambientCyan,
+                ),
               ),
             ),
           ),
           Positioned(
             top: 240,
             left: -80,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.ambientGreen,
+            child: IgnorePointer(
+              child: Container(
+                width: 200,
+                height: 200,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.ambientGreen,
+                ),
               ),
             ),
           ),
-
-          // Main Scrollable Content
           RefreshIndicator(
-            onRefresh: () async => ref.invalidate(dashboardProvider),
+            onRefresh: () async {
+              ref.invalidate(dashboardProvider);
+              try {
+                // Await so the spinner covers the reload. A failure is already
+                // rendered by AsyncErrorView with its own retry action, so it
+                // must not escape the pull gesture as an unhandled error.
+                await ref.read(dashboardProvider.future);
+              } on Object {
+                // Displayed by the error branch above.
+              }
+            },
             child: dashboardAsync.when(
-              data: (data) => _buildDashboard(data, user),
+              data: (data) => _buildDashboard(data),
               loading: () => _buildShimmer(),
               error: (error, stackTrace) => AsyncErrorView(
                 error: error,
@@ -135,7 +142,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildDashboard(DashboardData data, User? user) {
+  static String _greeting(String? name) {
+    final hour = DateTime.now().hour;
+    final part = hour < 12
+        ? 'Good morning'
+        : hour < 18
+            ? 'Good afternoon'
+            : 'Good evening';
+    final first = (name ?? '').trim().split(' ').first;
+    return first.isEmpty ? '$part.' : '$part, $first';
+  }
+
+  Future<void> _startNextTask(DailyTask task) async {
+    if (_starting) return;
+    setState(() => _starting = true);
+    try {
+      await context.push('/task-run',
+          extra: TaskRunArgs(task, practice: task.isRepeat));
+      // The attempt may have changed XP, readiness and the next task.
+      ref.invalidate(dashboardProvider);
+    } finally {
+      if (mounted) setState(() => _starting = false);
+    }
+  }
+
+  Widget _buildDashboard(DashboardData data) {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(
@@ -147,85 +178,255 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Hero Score Bento Card
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.card),
-              border: Border.all(color: AppColors.border),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primaryNavy.withValues(alpha: 0.05),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-                const BoxShadow(
-                  color: AppColors.shadow,
-                  blurRadius: 4,
-                  offset: Offset(0, 1),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                ScoreRing(
-                  score: data.overallScore,
-                  size: 116,
-                  strokeWidth: 11,
-                  tierLabel: data.tier,
-                ),
-                const SizedBox(width: AppSpacing.lg),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'AI readiness score',
-                        style: AppTypography.textTheme.titleMedium?.copyWith(
-                          fontSize: 19,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'This score reflects how consistently you verify AI output across the assessed skills.',
-                        style: AppTypography.textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                          height: 1.35,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          _buildNextAction(data),
+          const SizedBox(height: AppSpacing.md),
+          XPBar(
+            currentXP: data.xpIntoLevel,
+            nextLevelXP: data.xpForNextLevel,
+            level: data.level,
           ),
           const SizedBox(height: AppSpacing.md),
-
-          // Duo Metric Row — quiet stat tiles, no icons
           Row(
             children: [
               Expanded(
                 child: _statTile(
-                  value: '${data.streakDays} Days',
-                  label: 'Streak Active',
+                  value: '${data.streakDays}',
+                  label: 'Day streak',
+                  semanticsLabel: '${data.streakDays} day streak',
+                  accent: data.streakDays > 0,
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _statTile(
-                  value: '${data.completedTasks} Tasks',
-                  label: 'Completed',
+                  value: '${data.completedTasks}',
+                  label: 'Tasks completed',
+                  semanticsLabel: '${data.completedTasks} tasks completed',
                 ),
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
+          _buildReadinessCard(data),
+          const SizedBox(height: AppSpacing.md),
+          DimensionIndexCard(scores: data.dimensionScores),
+          const SizedBox(height: AppSpacing.md),
           _buildQuickLaunches(context),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Next action — the core loop, on the first screen.
+  // ---------------------------------------------------------------------------
+  Widget _buildNextAction(DashboardData data) {
+    final task = data.dailyTask;
+
+    if (task == null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Nothing lined up yet',
+              style: AppTypography.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'New scenarios land regularly. Try a practice case or a lesson '
+              'while you wait for the next one.',
+              style: AppTypography.textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.35,
+                fontSize: 12.5,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                Expanded(
+                  child: VerifAIButton(
+                    label: 'Open AI Lab',
+                    onPressed: () => context.push('/ai-lab'),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: VerifAIButton(
+                    label: 'Practice cases',
+                    variant: VerifAIButtonVariant.secondary,
+                    onPressed: () => context.push('/industry-practice'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Semantics(
+      container: true,
+      label: 'Next task: ${task.title}. '
+          '${task.dimension}, ${task.difficulty ?? 'medium'} difficulty. '
+          '${task.isRepeat ? 'Practice again.' : 'Not attempted yet.'}',
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          border: Border.all(
+            color: AppColors.primaryNavy.withValues(alpha: 0.16),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryNavy.withValues(alpha: 0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  task.isRepeat ? 'PRACTICE AGAIN' : 'YOUR NEXT TASK',
+                  style: AppTypography.textTheme.labelSmall?.copyWith(
+                    color: AppColors.accentGreen,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                    fontSize: 11,
+                  ),
+                ),
+                const Spacer(),
+                if (task.difficulty != null)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Text(
+                      task.difficulty!.toUpperCase(),
+                      style: AppTypography.textTheme.labelSmall?.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 10,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              task.title,
+              style: AppTypography.textTheme.titleLarge?.copyWith(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.3,
+                color: AppColors.primaryNavy,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              task.dimension,
+              style: AppTypography.textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+                fontSize: 12.5,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Semantics(
+              button: true,
+              label: task.isRepeat
+                  ? 'Practise ${task.title} again'
+                  : 'Start ${task.title}',
+              child: VerifAIButton(
+                label: task.isRepeat ? 'Practise again' : 'Start task',
+                trailingIcon: Icons.arrow_forward_rounded,
+                isLoading: _starting,
+                onPressed: _starting ? null : () => _startNextTask(task),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReadinessCard(DashboardData data) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.border),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Semantics(
+            label: 'AI readiness score ${data.overallScore} out of 100, '
+                '${data.tier ?? 'Novice'} tier',
+            child: ExcludeSemantics(
+              child: ScoreRing(
+                score: data.overallScore,
+                size: 104,
+                strokeWidth: 10,
+                tierLabel: data.tier,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'AI readiness',
+                  style: AppTypography.textTheme.titleMedium?.copyWith(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'How consistently you verify AI output across the assessed '
+                  'skills.',
+                  style: AppTypography.textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                    height: 1.35,
+                    fontSize: 12.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -235,12 +436,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
+        const ShimmerLoader.card(height: 160),
+        const SizedBox(height: AppSpacing.md),
         ShimmerLoader(
-          height: 54,
+          height: 70,
           borderRadius: BorderRadius.circular(AppRadius.card),
         ),
-        const SizedBox(height: AppSpacing.md),
-        const ShimmerLoader.card(height: 120),
         const SizedBox(height: AppSpacing.md),
         Row(
           children: [
@@ -268,46 +469,54 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _statTile({
     required String value,
     required String label,
+    required String semanticsLabel,
     bool accent = false,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-          color: accent
-              ? AppColors.accentGreen.withValues(alpha: 0.4)
-              : AppColors.border,
+    return Semantics(
+      container: true,
+      label: semanticsLabel,
+      child: ExcludeSemantics(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            border: Border.all(
+              color: accent
+                  ? AppColors.accentGreen.withValues(alpha: 0.4)
+                  : AppColors.border,
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.shadow,
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Text(
+                value,
+                style: AppTypography.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.4,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: AppTypography.textTheme.labelSmall?.copyWith(
+                  color: accent ? AppColors.accentGreen : AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
         ),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: AppTypography.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.4,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: AppTypography.textTheme.labelSmall?.copyWith(
-              color: accent ? AppColors.accentGreen : AppColors.textSecondary,
-              fontWeight: FontWeight.w700,
-              fontSize: 10,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -339,6 +548,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         icon: Icons.workspace_premium_rounded,
         route: '/rewards',
       ),
+      (
+        title: 'Wellbeing',
+        subtitle: 'Check in, reflect',
+        icon: Icons.spa_rounded,
+        route: '/wellness',
+      ),
+      (
+        title: 'History',
+        subtitle: 'Past attempts',
+        icon: Icons.history_rounded,
+        route: '/task-history',
+      ),
     ];
 
     return Column(
@@ -355,107 +576,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         Text(
           'Build confidence. Verify before you rely.',
           style: AppTypography.textTheme.bodySmall
-              ?.copyWith(color: AppColors.textSecondary),
+              ?.copyWith(color: AppColors.textSecondary, fontSize: 12.5),
         ),
         const SizedBox(height: AppSpacing.md),
-
-        // Featured Hero Bento Card: Verification Studio
-        Material(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            onTap: () => context.push('/verification-studio'),
-            child: Container(
-              padding: const EdgeInsets.all(AppSpacing.md + 2),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.card),
-                border: Border.all(
-                  color: AppColors.primaryNavy.withValues(alpha: 0.18),
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: AppColors.shadow,
-                    blurRadius: 10,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Verification Studio',
-                              style:
-                                  AppTypography.textTheme.titleMedium?.copyWith(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.primaryNavy,
-                                letterSpacing: -0.2,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Interactive sandbox to inspect documents, claims, AI output & sources.',
-                              style:
-                                  AppTypography.textTheme.bodySmall?.copyWith(
-                                color: AppColors.textSecondary,
-                                fontSize: 11,
-                                height: 1.35,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Supported artifact chips
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      'Document',
-                      'Claim',
-                      'AI Output',
-                      'Sources',
-                    ].map((tag) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.background,
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Text(
-                          tag,
-                          style: AppTypography.textTheme.labelSmall?.copyWith(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 9.5,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 11),
-
-        // 2x2 Bento Grid for Secondary Tools
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -464,34 +587,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             crossAxisCount: 2,
             crossAxisSpacing: 11,
             mainAxisSpacing: 11,
-            childAspectRatio: 1.45,
+            // Fixed extent instead of an aspect ratio: the tiles keep their
+            // height as the OS text scale grows, so labels wrap instead of
+            // overflowing the card.
+            mainAxisExtent: 116,
           ),
           itemBuilder: (context, index) {
             final item = gridItems[index];
-            return Material(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.card),
-              child: InkWell(
+            return Semantics(
+              button: true,
+              label: '${item.title}. ${item.subtitle}.',
+              child: Material(
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(AppRadius.card),
-                onTap: () => context.push(item.route),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(color: AppColors.border),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: AppColors.shadow,
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  onTap: () => context.push(item.route),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: ExcludeSemantics(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Container(
@@ -506,113 +626,41 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               size: 18,
                             ),
                           ),
-                          const Icon(
-                            Icons.arrow_outward_rounded,
-                            size: 14,
-                            color: AppColors.textSecondary,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.textTheme.labelLarge
+                                    ?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                  color: AppColors.primaryNavy,
+                                ),
+                              ),
+                              const SizedBox(height: 1),
+                              Text(
+                                item.subtitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.textTheme.bodySmall
+                                    ?.copyWith(
+                                  fontSize: 11.5,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.title,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 13,
-                              color: AppColors.primaryNavy,
-                            ),
-                          ),
-                          const SizedBox(height: 1),
-                          Text(
-                            item.subtitle,
-                            style: const TextStyle(
-                              fontSize: 10.5,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             );
           },
-        ),
-        const SizedBox(height: 5),
-
-        // Task History Strip
-        Material(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            onTap: () => context.push('/task-history'),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: 12,
-              ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.card),
-                border: Border.all(color: AppColors.border),
-                boxShadow: const [
-                  BoxShadow(
-                    color: AppColors.shadow,
-                    blurRadius: 6,
-                    offset: Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(7),
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.history_rounded,
-                      size: 18,
-                      color: AppColors.primaryNavy,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Task History',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
-                            color: AppColors.primaryNavy,
-                          ),
-                        ),
-                        const SizedBox(height: 1),
-                        Text(
-                          'Review past attempts and track your consistency',
-                          style: AppTypography.textTheme.bodySmall?.copyWith(
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 15,
-                    color: AppColors.primaryNavy,
-                  ),
-                ],
-              ),
-            ),
-          ),
         ),
       ],
     );

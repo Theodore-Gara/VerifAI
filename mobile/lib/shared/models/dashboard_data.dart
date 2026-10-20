@@ -12,6 +12,10 @@ class DashboardData with _$DashboardData {
     required int streakDays,
     @Default(0) int currentXp,
     @Default(1) int level,
+    // Progress inside the current level, straight from the server's level
+    // curve, so the app never re-derives it (and cannot drift from the backend).
+    @Default(0) int xpIntoLevel,
+    @Default(0) int xpForNextLevel,
     @Default(0) int completedTasks,
     String? tier,
     @JsonKey(

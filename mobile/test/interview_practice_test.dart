@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:verifai/core/services/mock_api_client.dart';
+import 'support/mock_api_client.dart';
 import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/features/interview/presentation/interview_practice_screen.dart';
 

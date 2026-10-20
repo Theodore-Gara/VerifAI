@@ -9,7 +9,6 @@ import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/progress/providers.dart';
 import 'package:verifai/features/scoreboard/providers.dart';
-import 'package:verifai/features/navigation/nav_drawer_controller.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/dimension_index_card.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
@@ -29,11 +28,6 @@ class ProgressScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: const IconButton(
-          tooltip: 'Open navigation menu',
-          icon: Icon(Icons.menu_rounded, color: AppColors.textPrimary),
-          onPressed: openVerifaiNavigationDrawer,
-        ),
         title: Text(
           'Progress',
           style: AppTypography.textTheme.titleMedium?.copyWith(
@@ -95,9 +89,6 @@ class ProgressScreen extends ConsumerWidget {
 
   Widget _buildContent(WidgetRef ref, DashboardData data,
       AsyncValue<ActivityData> activityAsync) {
-    // Mirrors the backend's rising level curve (each level costs +60 more XP).
-    final nextLevelXP = _xpForLevel(data.level + 1);
-
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(
@@ -110,9 +101,11 @@ class ProgressScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Level + XP Bento Card (shared XPBar component)
+          // Level curve values come from /api/dashboard, so the app never
+          // re-implements the backend's xpForLevel.
           XPBar(
-            currentXP: data.currentXp,
-            nextLevelXP: nextLevelXP,
+            currentXP: data.xpIntoLevel,
+            nextLevelXP: data.xpForNextLevel,
             level: data.level,
           ),
           const SizedBox(height: AppSpacing.md),
@@ -363,11 +356,6 @@ class ProgressScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  int _xpForLevel(int level) {
-    final k = level - 1;
-    return 250 * k + 30 * k * (k - 1);
   }
 
   Widget _buildShimmer() {

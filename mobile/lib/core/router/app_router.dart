@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -86,7 +87,8 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   final router = GoRouter(
     initialLocation: '/splash',
-    debugLogDiagnostics: true,
+    // Route logging on every navigation belongs in debug builds only.
+    debugLogDiagnostics: kDebugMode,
     refreshListenable: refreshNotifier,
     redirect: (context, state) {
       // valueOrNull: null while loading or errored, so redirects never crash.

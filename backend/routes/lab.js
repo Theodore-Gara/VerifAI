@@ -1,5 +1,7 @@
 const express = require('express');
 const { verifyFirebaseToken } = require('../middleware/auth');
+const { requireAdminAuth } = require('../middleware/admin');
+const { requireRole } = require('../middleware/adminRoles');
 const { aiLimit, writeLimit } = require('../middleware/rateLimits');
 const {
   listLessons,
@@ -35,7 +37,9 @@ router.get('/assessments', verifyFirebaseToken, listAssessments);
 router.get('/assessments/:code', verifyFirebaseToken, getAssessmentPaper);
 router.post('/assessments/:code/start', verifyFirebaseToken, writeLimit, startAssessment);
 router.post('/assessments/:code/submit', verifyFirebaseToken, writeLimit, submitCapstone);
-router.post('/assessments/:code/attempts/:id/mark', verifyFirebaseToken, writeLimit, markCapstone);
+// Finalising a rubric attempt awards XP, tokens and readiness, so it is a
+// reviewer action: admins/moderators only, never the learner whose work it is.
+router.post('/assessments/:code/attempts/:id/mark', requireAdminAuth, requireRole('moderator'), writeLimit, markCapstone);
 router.post('/assessments/:code/attempts/:id/ai-mark', verifyFirebaseToken, aiLimit, aiMarkCapstone);
 router.post('/assessments/:code/attempts/:id/analysis', verifyFirebaseToken, aiLimit, getAssessmentAnalysis);
 

@@ -13,6 +13,7 @@ import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/lab/presentation/assessment_instructions_screen.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets.dart';
+import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 
 class PaperArgs {
   const PaperArgs({required this.code, required this.start});
@@ -157,10 +158,13 @@ class _LabAssessmentPaperScreenState
     } catch (_) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(auto
-              ? 'Time is up but the paper could not be submitted. Please try again.'
-              : 'Could not submit the paper. Try again.')));
+      showFeedback(
+        context,
+        FeedbackKind.error,
+        auto
+            ? 'Time is up but the paper could not be submitted. Please try again.'
+            : 'Could not submit the paper. Try again.',
+      );
     }
   }
 

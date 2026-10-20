@@ -1,12 +1,8 @@
 export 'package:verifai/shared/widgets/verifai_button.dart';
 export 'package:verifai/shared/widgets/verifai_input.dart';
-export 'package:verifai/shared/widgets/verifai_card.dart';
 export 'package:verifai/shared/widgets/shimmer_loader.dart';
-export 'package:verifai/shared/widgets/dimension_bar.dart';
 export 'package:verifai/shared/widgets/score_ring.dart';
-export 'package:verifai/shared/widgets/streak_badge.dart';
 export 'package:verifai/shared/widgets/daily_task_card.dart';
 export 'package:verifai/shared/widgets/empty_state.dart';
 export 'package:verifai/shared/widgets/xp_bar.dart';
-export 'package:verifai/shared/widgets/sample_data_banner.dart';
 export 'package:verifai/shared/widgets/page_indicator.dart';

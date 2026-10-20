@@ -9,6 +9,7 @@ import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/industry_practice/providers.dart';
 import 'package:verifai/shared/models.dart';
+import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
 
@@ -194,8 +195,7 @@ Future<void> _openUrl(BuildContext context, String url) async {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   } catch (_) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Could not open the link.')));
+      showFeedback(context, FeedbackKind.error, 'Could not open the link.');
     }
   }
 }

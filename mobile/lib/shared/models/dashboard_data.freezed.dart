@@ -25,6 +25,8 @@ mixin _$DashboardData {
   int get streakDays => throw _privateConstructorUsedError;
   int get currentXp => throw _privateConstructorUsedError;
   int get level => throw _privateConstructorUsedError;
+  int get xpIntoLevel => throw _privateConstructorUsedError;
+  int get xpForNextLevel => throw _privateConstructorUsedError;
   int get completedTasks => throw _privateConstructorUsedError;
   String? get tier => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _dailyTaskFromJson, toJson: _dailyTaskToJson)
@@ -54,6 +56,8 @@ abstract class $DashboardDataCopyWith<$Res> {
       int streakDays,
       int currentXp,
       int level,
+      int xpIntoLevel,
+      int xpForNextLevel,
       int completedTasks,
       String? tier,
       @JsonKey(fromJson: _dailyTaskFromJson, toJson: _dailyTaskToJson)
@@ -84,6 +88,8 @@ class _$DashboardDataCopyWithImpl<$Res, $Val extends DashboardData>
     Object? streakDays = null,
     Object? currentXp = null,
     Object? level = null,
+    Object? xpIntoLevel = null,
+    Object? xpForNextLevel = null,
     Object? completedTasks = null,
     Object? tier = freezed,
     Object? dailyTask = freezed,
@@ -109,6 +115,14 @@ class _$DashboardDataCopyWithImpl<$Res, $Val extends DashboardData>
       level: null == level
           ? _value.level
           : level // ignore: cast_nullable_to_non_nullable
+              as int,
+      xpIntoLevel: null == xpIntoLevel
+          ? _value.xpIntoLevel
+          : xpIntoLevel // ignore: cast_nullable_to_non_nullable
+              as int,
+      xpForNextLevel: null == xpForNextLevel
+          ? _value.xpForNextLevel
+          : xpForNextLevel // ignore: cast_nullable_to_non_nullable
               as int,
       completedTasks: null == completedTasks
           ? _value.completedTasks
@@ -158,6 +172,8 @@ abstract class _$$DashboardDataImplCopyWith<$Res>
       int streakDays,
       int currentXp,
       int level,
+      int xpIntoLevel,
+      int xpForNextLevel,
       int completedTasks,
       String? tier,
       @JsonKey(fromJson: _dailyTaskFromJson, toJson: _dailyTaskToJson)
@@ -187,6 +203,8 @@ class __$$DashboardDataImplCopyWithImpl<$Res>
     Object? streakDays = null,
     Object? currentXp = null,
     Object? level = null,
+    Object? xpIntoLevel = null,
+    Object? xpForNextLevel = null,
     Object? completedTasks = null,
     Object? tier = freezed,
     Object? dailyTask = freezed,
@@ -212,6 +230,14 @@ class __$$DashboardDataImplCopyWithImpl<$Res>
       level: null == level
           ? _value.level
           : level // ignore: cast_nullable_to_non_nullable
+              as int,
+      xpIntoLevel: null == xpIntoLevel
+          ? _value.xpIntoLevel
+          : xpIntoLevel // ignore: cast_nullable_to_non_nullable
+              as int,
+      xpForNextLevel: null == xpForNextLevel
+          ? _value.xpForNextLevel
+          : xpForNextLevel // ignore: cast_nullable_to_non_nullable
               as int,
       completedTasks: null == completedTasks
           ? _value.completedTasks
@@ -242,6 +268,8 @@ class _$DashboardDataImpl implements _DashboardData {
       required this.streakDays,
       this.currentXp = 0,
       this.level = 1,
+      this.xpIntoLevel = 0,
+      this.xpForNextLevel = 0,
       this.completedTasks = 0,
       this.tier,
       @JsonKey(fromJson: _dailyTaskFromJson, toJson: _dailyTaskToJson)
@@ -274,6 +302,12 @@ class _$DashboardDataImpl implements _DashboardData {
   final int level;
   @override
   @JsonKey()
+  final int xpIntoLevel;
+  @override
+  @JsonKey()
+  final int xpForNextLevel;
+  @override
+  @JsonKey()
   final int completedTasks;
   @override
   final String? tier;
@@ -291,7 +325,7 @@ class _$DashboardDataImpl implements _DashboardData {
 
   @override
   String toString() {
-    return 'DashboardData(overallScore: $overallScore, dimensionScores: $dimensionScores, streakDays: $streakDays, currentXp: $currentXp, level: $level, completedTasks: $completedTasks, tier: $tier, dailyTask: $dailyTask, tasks: $tasks)';
+    return 'DashboardData(overallScore: $overallScore, dimensionScores: $dimensionScores, streakDays: $streakDays, currentXp: $currentXp, level: $level, xpIntoLevel: $xpIntoLevel, xpForNextLevel: $xpForNextLevel, completedTasks: $completedTasks, tier: $tier, dailyTask: $dailyTask, tasks: $tasks)';
   }
 
   @override
@@ -308,6 +342,10 @@ class _$DashboardDataImpl implements _DashboardData {
             (identical(other.currentXp, currentXp) ||
                 other.currentXp == currentXp) &&
             (identical(other.level, level) || other.level == level) &&
+            (identical(other.xpIntoLevel, xpIntoLevel) ||
+                other.xpIntoLevel == xpIntoLevel) &&
+            (identical(other.xpForNextLevel, xpForNextLevel) ||
+                other.xpForNextLevel == xpForNextLevel) &&
             (identical(other.completedTasks, completedTasks) ||
                 other.completedTasks == completedTasks) &&
             (identical(other.tier, tier) || other.tier == tier) &&
@@ -325,6 +363,8 @@ class _$DashboardDataImpl implements _DashboardData {
       streakDays,
       currentXp,
       level,
+      xpIntoLevel,
+      xpForNextLevel,
       completedTasks,
       tier,
       dailyTask,
@@ -353,6 +393,8 @@ abstract class _DashboardData implements DashboardData {
       required final int streakDays,
       final int currentXp,
       final int level,
+      final int xpIntoLevel,
+      final int xpForNextLevel,
       final int completedTasks,
       final String? tier,
       @JsonKey(fromJson: _dailyTaskFromJson, toJson: _dailyTaskToJson)
@@ -373,6 +415,10 @@ abstract class _DashboardData implements DashboardData {
   int get currentXp;
   @override
   int get level;
+  @override
+  int get xpIntoLevel;
+  @override
+  int get xpForNextLevel;
   @override
   int get completedTasks;
   @override

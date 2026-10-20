@@ -14,9 +14,9 @@ import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/profile/presentation/admin_panel_screen.dart';
 import 'package:verifai/features/profile/providers.dart';
-import 'package:verifai/features/navigation/nav_drawer_controller.dart';
 import 'package:verifai/features/scoreboard/providers.dart';
 import 'package:verifai/shared/models.dart';
+import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
 
@@ -84,8 +84,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       await ref.read(authNotifierProvider.notifier).logout();
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Could not delete the account. Try again.')));
+      showFeedback(
+        context,
+        FeedbackKind.error,
+        'Could not delete the account. Try again.',
+      );
     } finally {
       if (mounted) setState(() => _deleting = false);
     }
@@ -102,19 +105,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final bytes = await image.readAsBytes();
       if (!mounted) return;
       setState(() => _localProfileImage = bytes);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Photo preview updated on this device. Profile storage is not connected.',
-          ),
-        ),
+      showFeedback(
+        context,
+        FeedbackKind.info,
+        'Photo preview updated on this device. Profile storage is not connected.',
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not open your photo gallery. Try again.'),
-        ),
+      showFeedback(
+        context,
+        FeedbackKind.error,
+        'Could not open your photo gallery. Try again.',
       );
     }
   }
@@ -140,11 +141,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: const IconButton(
-          tooltip: 'Open navigation menu',
-          icon: Icon(Icons.menu_rounded, color: AppColors.textPrimary),
-          onPressed: openVerifaiNavigationDrawer,
-        ),
         title: Text(
           'Profile',
           style: AppTypography.textTheme.headlineMedium?.copyWith(

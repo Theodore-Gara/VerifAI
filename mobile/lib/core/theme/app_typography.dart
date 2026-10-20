@@ -5,7 +5,12 @@ import 'app_colors.dart';
 class AppTypography {
   AppTypography._();
 
-  static TextTheme get textTheme => GoogleFonts.interTextTheme().copyWith(
+  // Built once and reused. Every access used to call GoogleFonts.interTextTheme()
+  // again, which re-resolves (and, when a font is missing, re-requests) each
+  // family on every style lookup — an allocation storm on hot widgets.
+  static TextTheme? _cached;
+
+  static TextTheme get textTheme => _cached ??= GoogleFonts.interTextTheme().copyWith(
         displayLarge: _heading(32, FontWeight.w800, -1.0, 1.15),
         displayMedium: _heading(28, FontWeight.w800, -0.8, 1.2),
         displaySmall: _heading(24, FontWeight.w800, -0.6, 1.25),

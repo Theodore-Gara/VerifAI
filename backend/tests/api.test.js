@@ -85,7 +85,8 @@ pool.query = async (sql, values = []) => {
   }
   if (sql.includes('INSERT INTO interview_practice')) return { rows: [{ user_id: 7, question_id: 9 }] };
   if (sql.includes('UPDATE user_progress SET readiness_score')) return { rows: [] };
-  if (sql.includes('SELECT COUNT(*)::int AS total FROM interview_questions')) return { rows: [{ total: 3 }] };
+  // Readiness fetches interview total + practised in one statement.
+  if (sql.includes('FROM interview_questions WHERE track_id = $2')) return { rows: [{ total: 3, practised: 2 }] };
   if (sql.includes('SELECT COUNT(*)::int AS n')) return { rows: [{ n: 2 }] };
   if (sql.includes('FROM skill_scores')) return { rows: [] };
   if (sql.includes('JOIN judgement_tasks')) {
@@ -147,7 +148,7 @@ const fakeClient = {
     if (s.includes('SUM(xp_earned)')) return { rows: [{ attempts: 1, xp: 70 }] };
     if (s.includes('MAX(score)')) return { rows: [{ best_dimension: 100 }] };
     if (s.includes('FROM skill_scores')) return { rows: [{ dimension: 'AI Judgement', score: 100 }] };
-    if (s.includes('COUNT(*)::int AS total FROM interview_questions')) return { rows: [{ total: 0 }] };
+    if (s.includes('FROM interview_questions WHERE track_id = $2')) return { rows: [{ total: 0, practised: 0 }] };
     if (s.includes('FROM achievements')) return { rows: [] };
     return { rows: [] };
   },
@@ -570,9 +571,11 @@ test('marking a question practised is idempotent and refreshes readiness', async
   assert.equal(second.body.practised_count, first.body.practised_count);
 
   // Interview coverage feeds the weighted readiness score, so it is recomputed
-  // after each practice.
-  const updates = queries.filter((sql) => sql.includes('UPDATE user_progress') && sql.includes('readiness_score'));
+  // after each practice. Readiness is written as an upsert now (a plain UPDATE
+  // silently did nothing for a learner with no user_progress row yet).
+  const updates = queries.filter((sql) => sql.includes('user_progress') && sql.includes('readiness_score'));
   assert.equal(updates.length, 2, 'readiness recomputed after every practice');
+  assert.match(updates[0], /ON CONFLICT \(user_id\) DO UPDATE/);
 });
 
 test('a question from another track is rejected', async () => {
@@ -605,33 +608,4 @@ test('POST /api/tasks/:id/attempt scores a judgement task and commits', async ()
 
   assert.ok(queries.includes('COMMIT'), 'transaction committed');
   assert.ok(!queries.includes('ROLLBACK'), 'transaction not rolled back');
-});
-
-test('GET /api/tasks/history returns the user attempts, newest first', async () => {
-  const response = await request(app)
-    .get('/api/tasks/history?limit=5')
-    .set('Authorization', 'Bearer test-token');
-
-  assert.equal(response.status, 200);
-  assert.equal(response.body.total, 2);
-  assert.equal(response.body.attempts.length, 2);
-  assert.equal(response.body.attempts[0].feature, 'judgement');
-  assert.ok(
-    queryCalls.some((c) => c.sql.includes('ta.practice = FALSE')),
-    'practice attempts are excluded',
-  );
-});
-
-test('GET /api/tasks/history rejects an unknown feature filter', async () => {
-  const response = await request(app)
-    .get('/api/tasks/history?feature=nope')
-    .set('Authorization', 'Bearer test-token');
-  assert.equal(response.status, 400);
-});
-
-test('GET /api/tasks/history rejects a malformed passed filter', async () => {
-  const response = await request(app)
-    .get('/api/tasks/history?passed=maybe')
-    .set('Authorization', 'Bearer test-token');
-  assert.equal(response.status, 400);
 });

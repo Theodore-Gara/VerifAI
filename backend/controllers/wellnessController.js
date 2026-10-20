@@ -7,8 +7,13 @@ const ACTIVITIES = new Set(['breathing', 'journal', 'step_outside']);
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_JOURNAL_CHARS = 1200;
 const MAX_NOTE_CHARS = 200;
-// Soft-deleted journal entries are purged after this many days.
+// Soft-deleted journal entries are purged after this many days by
+// scripts/purge-wellness-trash.js (a schedule job, not a read path).
 const JOURNAL_TRASH_DAYS = 30;
+// Backfill window. Entries may be written for a day the learner missed, but not
+// for the future: a future date produced impossible streaks and "days
+// journalled" counts that could never be reached.
+const MAX_BACKFILL_DAYS = 365;
 
 async function requireUser(res, req) {
   const user = await findUserByFirebaseUid(pool, req.firebaseUser.uid);
@@ -24,6 +29,28 @@ async function requireUser(res, req) {
 function parseDate(value) {
   if (value === undefined || value === null || value === '') return undefined;
   return DATE_RE.test(String(value)) ? String(value) : null;
+}
+
+// "Today" in the configured timezone (en-CA formats as YYYY-MM-DD), matching
+// the streak logic rather than the database server's UTC clock.
+function todayInTimezone() {
+  const tz = process.env.STREAK_TIMEZONE || 'Africa/Johannesburg';
+  try {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(new Date());
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+
+// True when `date` (YYYY-MM-DD) is today or within the backfill window.
+function isWritableDate(date) {
+  const today = todayInTimezone();
+  if (date > today) return false;
+  const oldest = new Date(`${today}T00:00:00Z`);
+  oldest.setUTCDate(oldest.getUTCDate() - MAX_BACKFILL_DAYS);
+  return date >= oldest.toISOString().slice(0, 10);
 }
 
 function badRequest(res, req, message) {
@@ -65,6 +92,9 @@ async function saveMood(req, res, next) {
     }
     const date = parseDate(req.body?.date);
     if (date === null) return badRequest(res, req, 'date must be YYYY-MM-DD.');
+    if (date && !isWritableDate(date)) {
+      return badRequest(res, req, `date must not be in the future or more than ${MAX_BACKFILL_DAYS} days ago.`);
+    }
 
     const hasNote = req.body?.note !== undefined;
     const rawNote = typeof req.body?.note === 'string' ? req.body.note.trim() : '';
@@ -97,14 +127,9 @@ async function listJournal(req, res, next) {
     if (!user) return undefined;
     const limit = clampInt(req.query.limit, 30, 1, 90);
 
-    // Entries sitting in the trash for 30 days are gone for good.
-    await pool.query(
-      `DELETE FROM wellness_journal_entries
-       WHERE user_id = $1 AND deleted_at IS NOT NULL
-         AND deleted_at < now() - ($2::int * interval '1 day')`,
-      [user.id, JOURNAL_TRASH_DAYS],
-    );
-
+    // Trash is purged by scripts/purge-wellness-trash.js. This used to run a
+    // DELETE on every journal open — a write on a GET path, and a scan because
+    // the only index is partial on `deleted_at IS NULL`.
     const result = await pool.query(
       `SELECT entry_date::text AS date, content, updated_at
        FROM wellness_journal_entries
@@ -134,6 +159,9 @@ async function saveJournal(req, res, next) {
     }
     const date = parseDate(req.body?.date);
     if (date === null) return badRequest(res, req, 'date must be YYYY-MM-DD.');
+    if (date && !isWritableDate(date)) {
+      return badRequest(res, req, `date must not be in the future or more than ${MAX_BACKFILL_DAYS} days ago.`);
+    }
 
     const result = await pool.query(
       `INSERT INTO wellness_journal_entries (user_id, entry_date, content)

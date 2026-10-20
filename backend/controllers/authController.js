@@ -3,6 +3,16 @@ const { resolveRole } = require('../middleware/adminRoles');
 
 const USER_COLUMNS = 'id, firebase_uid, email, display_name, created_at';
 
+// Every learner gets a progress row from their first sign-in. Without it the
+// readiness recompute (a write to user_progress) had nowhere to land until a
+// second activity created the row, so first attempts were scored as 0 / Novice.
+async function ensureProgress(userId) {
+  await pool.query(
+    `INSERT INTO user_progress (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`,
+    [userId],
+  );
+}
+
 async function syncUser(req, res, next) {
   try {
     const { uid, email, name } = req.firebaseUser;
@@ -23,6 +33,7 @@ async function syncUser(req, res, next) {
       [uid, email || '', name || null],
     );
     if (updated.rows.length) {
+      await ensureProgress(updated.rows[0].id);
       return res.status(200).json({ user: updated.rows[0] });
     }
 
@@ -33,6 +44,7 @@ async function syncUser(req, res, next) {
          RETURNING ${USER_COLUMNS}`,
         [uid, email || '', name || null],
       );
+      await ensureProgress(inserted.rows[0].id);
       return res.status(200).json({ user: inserted.rows[0] });
     } catch (err) {
       // A concurrent first sign-in may have created the row between our UPDATE
@@ -80,6 +92,8 @@ async function me(req, res, next) {
       );
       user = inserted.rows[0];
     }
+
+    await ensureProgress(user.id);
 
     const role = await resolveRole(req.firebaseUser);
     return res.status(200).json({

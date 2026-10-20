@@ -21,6 +21,7 @@ const rewardsRoutes = require('./routes/rewards');
 const veraRoutes = require('./routes/vera');
 const industryPracticeRoutes = require('./routes/industryPractice');
 const historyRoutes = require('./routes/history');
+const dashboardRoutes = require('./routes/dashboard');
 const wellnessRoutes = require('./routes/wellness');
 const adminRoutes = require('./routes/admin');
 const { maintenanceGate } = require('./middleware/adminRoles');
@@ -79,6 +80,10 @@ app.use(cors({
 // it gets a 14MB ceiling.
 app.use(['/api/users/avatar'], express.json({ limit: '3mb' }));
 app.use(['/api/verification/analyze'], express.json({ limit: '14mb' }));
+// The importer accepts up to 200 tasks (and a single task with a scenario, five
+// options and feedback already exceeds the 32kb default), so admin task writes
+// get their own ceiling. Without this the import failed with an opaque 413.
+app.use(['/api/admin/tasks'], express.json({ limit: '2mb' }));
 app.use(express.json({ limit: '32kb' }));
 app.use(express.urlencoded({ extended: false, limit: '16kb' }));
 
@@ -160,6 +165,7 @@ app.use('/api/rewards', rewardsRoutes);
 app.use('/api/vera', veraRoutes);
 app.use('/api/industry-practice', industryPracticeRoutes);
 app.use('/api/history', historyRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/wellness', wellnessRoutes);
 app.use('/api/admin', adminRoutes);
 
@@ -178,8 +184,8 @@ app.get('/api/docs', (req, res) => {
       'PUT /api/users/profile',
       'GET /api/tracks',
       'GET /api/tasks/next',
-      'GET /api/tasks/history',
       'POST /api/tasks/:id/attempt',
+      'GET /api/dashboard',
       'GET /api/progress/me',
       'GET /api/progress/me/activity',
       'GET /api/leaderboard',

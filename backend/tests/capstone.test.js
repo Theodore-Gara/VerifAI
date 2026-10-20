@@ -43,7 +43,12 @@ test('rubricAward caps the sum at the question marks', () => {
 
 // --- Endpoint --------------------------------------------------------------
 const firebase = require('../db/firebase');
-firebase.getFirebaseAuth = () => ({ verifyIdToken: async () => ({ uid: 'test-uid' }) });
+// Marking is a reviewer action (admin/moderator only), so the test identity is
+// an allowlisted admin: that gate is the point of the endpoint.
+process.env.ADMIN_EMAILS = 'reviewer@verifai';
+firebase.getFirebaseAuth = () => ({
+  verifyIdToken: async () => ({ uid: 'test-uid', email: 'reviewer@verifai' }),
+});
 
 const pool = require('../db/pool');
 
@@ -96,6 +101,7 @@ pool.query = async (sql) => {
   if (s.includes('FROM lab_capstone_questions')) return { rows: START_QUESTIONS };
   if (s.startsWith('INSERT INTO lab_capstone_attempts')) return { rows: [{ id: 5, started_at: new Date().toISOString() }] };
   if (s.includes('SELECT id, presentation, started_at, submitted_at FROM lab_capstone_attempts')) return { rows: [attempt] };
+  if (s.includes('SELECT submitted_at FROM lab_capstone_attempts')) return { rows: [{ submitted_at: attempt.submitted_at }] };
   if (s.includes('MAX(score) AS best_score')) return { rows: [{ best_score: priorPass ? 80 : null }] };
   return { rows: [] };
 };
@@ -109,6 +115,8 @@ const fakeClient = {
     if (s.startsWith('INSERT INTO reward_token_events')) return { rowCount: 1, rows: [] };
     if (s.includes('UPDATE user_progress') && s.includes('SET tokens')) return { rowCount: 1, rows: [] };
     if (s.includes('UPDATE user_progress') && s.includes('SET xp')) return { rows: [{ xp: 70, level: 1, tokens: 15 }] };
+    if (s.includes('SELECT submitted_at FROM lab_capstone_attempts')) return { rows: [{ submitted_at: attempt.submitted_at }] };
+    if (s.includes('SELECT status FROM lab_capstone_attempts')) return { rows: [{ status: 'pending_marking' }] };
     if (s.includes('UPDATE lab_capstone_attempts')) return { rows: [] };
     if (s.includes('COUNT(*)::int AS used')) return { rows: [{ used: usedCount + 1 }] };
     if (s.includes('FROM skill_scores')) return { rows: [] };
@@ -233,4 +241,18 @@ test('POST ai-mark suggests rubric marks without finalising the attempt', async 
   assert.equal(response.body.projected_score, Math.round((100 * 23) / 25));
   assert.equal(response.body.ai_suggestion['11'].total_awarded, 6);
   assert.match(response.body.note, /human spot-check/);
+});
+
+test('marking a capstone is reviewer-only — a learner cannot finalise their own attempt', async () => {
+  const saved = process.env.ADMIN_EMAILS;
+  delete process.env.ADMIN_EMAILS;
+  try {
+    const response = await auth(
+      request(app).post('/api/lab/assessments/cap-fin/attempts/5/mark'),
+    ).send({ marks: { 11: 8 } });
+    assert.equal(response.status, 403);
+    assert.match(response.body.error, /privileges|Admin access/);
+  } finally {
+    process.env.ADMIN_EMAILS = saved;
+  }
 });

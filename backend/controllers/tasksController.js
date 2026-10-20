@@ -1,5 +1,5 @@
 const pool = require('../db/pool');
-const { positiveIntegerParam, requiredString } = require('../middleware/validate');
+const { positiveIntegerParam } = require('../middleware/validate');
 const {
   scoreOptions,
   scoreCriteria,
@@ -8,10 +8,10 @@ const {
   REASON_POINTS,
   calculateXp,
   calculatePracticeXp,
-  calculateLevel,
 } = require('../services/scoringService');
-const { grantTokens, levelGrants, achievementGrants } = require('../services/rewardTokens');
+const { grantTokens, achievementGrants } = require('../services/rewardTokens');
 const { refreshReadiness } = require('../services/readinessService');
+const { awardXp } = require('../services/xpService');
 
 // feature key -> skill_scores.dimension (display name)
 const FEATURE_DIMENSION = {
@@ -28,9 +28,15 @@ const PASS_THRESHOLD = {
   prompt_design: 60,
 };
 
+// A 'line_text' verification answer is worth 30 (flaw) + 40 (fix) + 30
+// (reason). At the flat 60 threshold, picking the flawed lines (30) and writing
+// a plausible reason (30) passed the task without fixing anything — the fix is
+// the skill being tested. Line-text answers therefore need a higher total AND
+// a non-zero flaw and fix score, so the reason alone can never carry the task.
+const LINE_TEXT_PASS = 70;
+
 // Tiers are derived from the readiness score (see services/tiers.js and
 // services/readinessService.js); this controller no longer manages them.
-const STREAK_TIMEZONE = process.env.STREAK_TIMEZONE || 'Africa/Johannesburg';
 
 const FEATURES = new Set(Object.keys(FEATURE_DIMENSION));
 
@@ -308,7 +314,7 @@ async function submitAttempt(req, res, next) {
       return res.status(400).json({ error: err.message, request_id: req.requestId });
     }
 
-    const passed = scored.score >= PASS_THRESHOLD[task.feature];
+    const passed = isPass(task.feature, scored);
 
     // XP: a first-time (non-practice) attempt earns full, score-proportional XP.
     // A practice pass earns half, but only the first time the task is passed
@@ -359,12 +365,16 @@ async function submitAttempt(req, res, next) {
     // nothing and is skipped).
     if (!practice || passed) {
       skillScore = await updateSkillScore(client, user.id, task.feature, task.track_id);
-      // Readiness (and the tier it drives) is recomputed before progress so the
-      // returned row carries the fresh readiness and tier.
+      // Readiness (and the tier it drives) is recomputed before the XP write so
+      // the returned row carries the fresh readiness and tier.
       await refreshReadiness(client, user.id, user.industry_track_id);
-      if (!practice || xpEarned > 0) {
-        progress = await updateProgress(client, user, xpEarned);
-      }
+    }
+    if (!practice || xpEarned > 0) {
+      // XP, level, level tokens and the streak all live in awardXp. A failed
+      // attempt passes 0 and still marks the day active.
+      progress = await awardXp(client, user.id, xpEarned);
+    }
+    if (!practice || passed) {
       newlyEarned = await awardAchievements(client, user.id);
     }
 
@@ -464,6 +474,18 @@ async function loadTaskContent(client, task) {
   throw new Error('Prompt Design tasks are not supported yet.');
 }
 
+// Pass rules per answer format. See LINE_TEXT_PASS above.
+function isPass(feature, scored) {
+  if (feature === 'verification' && scored.format === 'line_text') {
+    return (
+      scored.score >= LINE_TEXT_PASS &&
+      Number(scored.flawScore) > 0 &&
+      Number(scored.fixScore) > 0
+    );
+  }
+  return scored.score >= PASS_THRESHOLD[feature];
+}
+
 function scoreByFeature(feature, content, body) {
   if (feature === 'verification') {
     if (content.format === 'line_text') {
@@ -476,6 +498,10 @@ function scoreByFeature(feature, content, body) {
       const reasonResult = scoreCriteria(reason, content.reasonKeywords, REASON_POINTS);
       return {
         score: flawScore + fixResult.score + reasonResult.score,
+        format: 'line_text',
+        flawScore,
+        fixScore: fixResult.score,
+        reasonScore: reasonResult.score,
         selectedLines: selected,
         answer: fix,
         rationale: reason,
@@ -565,55 +591,12 @@ async function updateSkillScore(client, userId, feature, trackId) {
   return result.rows[0];
 }
 
-async function updateProgress(client, user, xpEarned) {
-  const progressResult = await client.query(
-    `INSERT INTO user_progress (user_id, xp, level, streak, last_activity_date)
-     VALUES ($1, 0, 1, 0, NULL)
-     ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id
-     RETURNING id, xp, level, streak, last_activity_date`,
-    [user.id]
-  );
-  const progress = progressResult.rows[0];
-
-  let newStreak = progress.streak;
-  if (!progress.last_activity_date) {
-    newStreak = 1;
-  } else {
-    const dateResult = await client.query(
-      `SELECT (NOW() AT TIME ZONE $2)::date AS today,
-              (NOW() AT TIME ZONE $2)::date - last_activity_date AS day_gap
-       FROM user_progress WHERE id = $1`,
-      [progress.id, STREAK_TIMEZONE]
-    );
-    const dayGap = dateResult.rows[0].day_gap;
-    if (Number(dayGap) === 0) newStreak = progress.streak;
-    else if (Number(dayGap) === 1) newStreak = progress.streak + 1;
-    else newStreak = 1;
-  }
-
-  const newXp = Number(progress.xp) + xpEarned;
-  const newLevel = calculateLevel(newXp);
-
-  // Reward tokens are earned per level gained (never from spending XP). The
-  // ledger's unique constraint makes this safe to run on every attempt.
-  await grantTokens(client, user.id, levelGrants(Number(progress.level) || 1, newLevel));
-
-  // The tier is derived from readiness and written by refreshReadiness before
-  // this; here we only own XP, level and streak.
-  const updated = await client.query(
-    `UPDATE user_progress
-     SET xp = $1, level = $2, streak = $3,
-         last_activity_date = (NOW() AT TIME ZONE $5)::date, updated_at = CURRENT_TIMESTAMP
-     WHERE user_id = $4
-     RETURNING xp, level, streak, last_activity_date, readiness_score, tier, tokens`,
-    [newXp, newLevel, newStreak, user.id, STREAK_TIMEZONE]
-  );
-  return updated.rows[0];
-}
-
+// `passed_tasks` counts real (non-practice) tasks passed — the practice filter
+// is in the WHERE clause, so repeatedly practising a task you failed can never
+// unlock a task-count achievement.
 async function awardAchievements(client, userId) {
   const stats = await client.query(
-    `SELECT COUNT(DISTINCT task_id) FILTER (WHERE passed)::int AS attempts,
+    `SELECT COUNT(DISTINCT task_id) FILTER (WHERE passed)::int AS passed_tasks,
             COALESCE(SUM(xp_earned), 0)::int AS xp
      FROM task_attempts WHERE user_id = $1 AND practice = FALSE`,
     [userId]
@@ -637,7 +620,7 @@ async function awardAchievements(client, userId) {
      AND NOT EXISTS (
        SELECT 1 FROM user_achievements ua WHERE ua.user_id = $1 AND ua.achievement_id = achievements.id
      )`,
-    [userId, values.attempts, values.xp, bestDimension]
+    [userId, values.passed_tasks, values.xp, bestDimension]
   );
 
   const newlyEarned = [];
@@ -656,95 +639,11 @@ async function awardAchievements(client, userId) {
   return newlyEarned;
 }
 
-// ---------------------------------------------------------------------------
-// GET /api/tasks/history?limit=&offset=&feature=&passed=
-// The user's scored attempts (practice excluded), newest first.
-// ---------------------------------------------------------------------------
-const HISTORY_DEFAULT_LIMIT = 20;
-const HISTORY_MAX_LIMIT = 50;
-
-function clampInt(raw, fallback, min, max) {
-  const parsed = Number.parseInt(raw, 10);
-  if (!Number.isInteger(parsed)) return fallback;
-  return Math.min(max, Math.max(min, parsed));
-}
-
-async function getHistory(req, res, next) {
-  try {
-    const limit = clampInt(req.query.limit, HISTORY_DEFAULT_LIMIT, 1, HISTORY_MAX_LIMIT);
-    const offset = clampInt(req.query.offset, 0, 0, 100000);
-
-    const feature = req.query.feature == null ? null : String(req.query.feature).toLowerCase().trim();
-    if (feature != null && !FEATURES.has(feature)) {
-      return res.status(400).json({ error: 'Unknown feature.', request_id: req.requestId });
-    }
-
-    let passedFilter = null;
-    if (req.query.passed != null) {
-      const value = String(req.query.passed).toLowerCase();
-      if (value === 'true') passedFilter = true;
-      else if (value === 'false') passedFilter = false;
-      else return res.status(400).json({ error: 'passed must be true or false.', request_id: req.requestId });
-    }
-
-    const userResult = await pool.query(
-      `SELECT id FROM users WHERE firebase_uid = $1`,
-      [req.firebaseUser.uid]
-    );
-    if (!userResult.rows.length) {
-      return res.status(404).json({ error: 'User not found. Call /api/auth/sync first.', request_id: req.requestId });
-    }
-
-    const params = [userResult.rows[0].id];
-    let where = 'WHERE ta.user_id = $1 AND ta.practice = FALSE';
-    if (feature) {
-      params.push(feature);
-      where += ` AND t.feature = $${params.length}`;
-    }
-    if (passedFilter !== null) {
-      params.push(passedFilter);
-      where += ` AND ta.passed = $${params.length}`;
-    }
-
-    const totalResult = await pool.query(
-      `SELECT COUNT(*)::int AS total
-       FROM task_attempts ta
-       JOIN tasks t ON t.id = ta.task_id
-       ${where}`,
-      params
-    );
-
-    params.push(limit, offset);
-    const rows = await pool.query(
-      `SELECT ta.id, ta.task_id, t.feature, ta.task_title AS title, ta.score,
-              ta.passed, ta.xp_earned, ta.submitted_at, ta.feedback,
-              ta.answer, ta.rationale, ta.selected_lines
-       FROM task_attempts ta
-       JOIN tasks t ON t.id = ta.task_id
-       ${where}
-       ORDER BY ta.submitted_at DESC, ta.id DESC
-       LIMIT $${params.length - 1} OFFSET $${params.length}`,
-      params
-    );
-
-    return res.status(200).json({
-      attempts: rows.rows,
-      total: totalResult.rows[0].total,
-      limit,
-      offset,
-      request_id: req.requestId,
-    });
-  } catch (err) {
-    return next(err);
-  }
-}
-
 module.exports = {
   getNextTask,
   submitAttempt,
-  getHistory,
   awardAchievements,
   refreshReadiness,
   scoreByFeature,
-  updateProgress,
+  isPass,
 };

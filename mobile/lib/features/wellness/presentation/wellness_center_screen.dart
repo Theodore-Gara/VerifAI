@@ -11,6 +11,7 @@ import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/features/navigation/main_nav_shell.dart';
 import 'package:verifai/features/wellness/providers.dart';
 import 'package:verifai/shared/models.dart';
+import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 
 class WellnessCenterScreen extends ConsumerStatefulWidget {
   const WellnessCenterScreen({super.key});
@@ -67,9 +68,12 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
           );
       if (!mounted) return;
       ref.invalidate(moodHistoryProvider);
-      _showMessage('Check-in saved.');
+      _showMessage('Check-in saved.', kind: FeedbackKind.success);
     } catch (_) {
-      if (mounted) _showMessage('Could not save your check-in. Try again.');
+      if (mounted) {
+        _showMessage('Could not save your check-in. Try again.',
+            kind: FeedbackKind.error);
+      }
     } finally {
       if (mounted) setState(() => _savingMood = false);
     }
@@ -87,10 +91,14 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
       if (!mounted) return true;
       ref.invalidate(journalEntriesProvider);
       ref.invalidate(wellnessWeekProvider);
-      _showMessage('Reflection saved to your account.');
+      _showMessage('Reflection saved to your account.',
+          kind: FeedbackKind.success);
       return true;
     } catch (_) {
-      if (mounted) _showMessage('Could not save your reflection. Try again.');
+      if (mounted) {
+        _showMessage('Could not save your reflection. Try again.',
+            kind: FeedbackKind.error);
+      }
       return false;
     }
   }
@@ -108,23 +116,31 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
           ref.invalidate(journalEntriesProvider);
           ref.invalidate(wellnessWeekProvider);
         } catch (_) {
-          if (mounted) _showMessage('Could not restore that reflection.');
+          if (mounted) {
+            _showMessage('Could not restore that reflection.',
+                kind: FeedbackKind.error);
+          }
         }
       });
     } catch (_) {
-      if (mounted) _showMessage('Could not delete that reflection.');
+      if (mounted) {
+        _showMessage('Could not delete that reflection.',
+            kind: FeedbackKind.error);
+      }
     }
   }
 
   void _showUndo(String message, Future<void> Function() undo) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          action: SnackBarAction(label: 'Undo', onPressed: () => undo()),
-        ),
-      );
+    showFeedback(
+      context,
+      FeedbackKind.info,
+      message,
+      actionLabel: 'Undo',
+      onAction: (hide) {
+        hide();
+        undo();
+      },
+    );
   }
 
   Future<void> _logActivity(String activity) async {
@@ -132,16 +148,16 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
       await ref.read(apiClientProvider).logWellnessActivity(activity);
       if (!mounted) return;
       ref.invalidate(wellnessWeekProvider);
-      _showMessage('Logged. Nicely done.');
+      _showMessage('Logged. Nicely done.', kind: FeedbackKind.success);
     } catch (_) {
-      if (mounted) _showMessage('Could not log that just now.');
+      if (mounted) {
+        _showMessage('Could not log that just now.', kind: FeedbackKind.error);
+      }
     }
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+  void _showMessage(String message, {FeedbackKind kind = FeedbackKind.info}) {
+    showFeedback(context, kind, message);
   }
 
   @override

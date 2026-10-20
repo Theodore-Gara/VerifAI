@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:verifai/main.dart';
 import 'package:verifai/core/providers/app_providers.dart';
-import 'package:verifai/core/services/mock_api_client.dart';
+import 'support/mock_api_client.dart';
 
 void main() {
   testWidgets('VerifAI app renders the splash screen',
