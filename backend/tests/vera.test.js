@@ -48,6 +48,8 @@ pool.query = async (sql, values = []) => {
   if (s.includes('UPDATE vera_sessions')) return { rows: [] };
   if (s.includes('INSERT INTO vera_memories')) return { rows: [{ id: 1, kind: values[1], content: values[2], source: 'chat', created_at: 'now', updated_at: 'now' }] };
   if (s.includes('FROM vera_memories WHERE user_id')) return { rows: [] };
+  if (s.includes('FROM vera_profiles')) return { rows: [{ profile: 'Prefers short, practical answers.' }] };
+  if (s.includes('INSERT INTO vera_profiles')) return { rows: [] };
   if (s.includes('DELETE FROM vera_memories')) return { rows: [{ id: Number(values[0]) === 1 ? 1 : 0 }] };
   if (s.includes('FROM vera_sessions')) return { rows: [{ id: 11, context: 'assistant', title: 'Hi', started_at: 'now', last_active_at: 'now', message_count: 2 }] };
   if (s.includes('FROM vera_messages')) return { rows: [{ id: 1, role: 'user', content: 'Hi', created_at: 'now' }] };
@@ -75,8 +77,17 @@ global.fetch = async (url, options) => {
   const system = body.messages[0].content;
   systems.push(system);
   let content = 'Hi, I am Vera.';
-  if (system.includes('extract durable')) {
-    content = JSON.stringify({ memories: [{ kind: 'struggle', content: 'Struggles with the cash conversion cycle' }] });
+  if (system.includes('decide whether an assistant should search')) {
+    const userMessage = body.messages[1]?.content || '';
+    content = userMessage.includes('latest')
+      ? JSON.stringify({ search: true, query: 'latest AI regulation' })
+      : JSON.stringify({ search: false, query: '' });
+  }
+  if (system.includes('You maintain Vera\'s notes')) {
+    content = JSON.stringify({
+      profile: 'Prefers short, practical answers and wants the Finance capstone.',
+      memories: [{ kind: 'struggle', content: 'Struggles with the cash conversion cycle' }],
+    });
   }
   return { ok: true, json: async () => ({ choices: [{ message: { content } }], usage: {} }) };
 };
@@ -98,6 +109,10 @@ test('POST /api/vera/chat creates a session, replies, and stores a memory', asyn
   const memory = writes.find((w) => w.sql.startsWith('INSERT INTO vera_memories'));
   assert.ok(memory);
   assert.deepEqual(memory.values, [7, 'struggle', 'Struggles with the cash conversion cycle']);
+  // The extractor also refreshes Vera's rolling profile of the learner.
+  const profile = writes.find((w) => w.sql.startsWith('INSERT INTO vera_profiles'));
+  assert.ok(profile);
+  assert.match(profile.values[1], /Finance capstone/);
 });
 
 test('GET /api/vera/tips returns personalised, deterministic tips', async () => {
@@ -166,4 +181,31 @@ test('Vera can search the web to verify input when asked', async () => {
   assert.equal(response.body.web_searched, true);
   assert.equal(response.body.sources[0].url, 'https://a.example');
   assert.match(systems.join('\n---\n'), /Live web search results/);
+});
+
+test('Vera searches the web automatically when the planner says to', async () => {
+  const response = await auth(request(app).post('/api/vera/chat')).send({
+    messages: [{ role: 'user', content: 'What is the latest AI regulation news?' }],
+  });
+  assert.equal(response.status, 200);
+  assert.equal(response.body.web_searched, true);
+  assert.equal(response.body.sources[0].url, 'https://a.example');
+});
+
+test('Vera does not search the web for small talk', async () => {
+  const response = await auth(request(app).post('/api/vera/chat')).send({
+    messages: [{ role: 'user', content: 'Hey, how are you?' }],
+  });
+  assert.equal(response.status, 200);
+  assert.equal(response.body.web_searched, false);
+});
+
+test('Vera prompt includes free-chat routing and the profile notes', async () => {
+  systems = [];
+  await auth(request(app).post('/api/vera/chat')).send({ messages: [{ role: 'user', content: 'How are you?' }] });
+  const joined = systems.join('\n---\n');
+  assert.match(joined, /real conversation about anything/);
+  assert.match(joined, /Do not bring up their progress, scores or wellness/);
+  assert.match(joined, /Your notes on this learner so far/);
+  assert.match(joined, /Prefers short, practical answers/);
 });

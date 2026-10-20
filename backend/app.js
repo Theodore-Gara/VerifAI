@@ -206,6 +206,8 @@ app.get('/api/docs', (req, res) => {
       'PUT /api/wellness/mood',
       'GET /api/wellness/journal',
       'PUT /api/wellness/journal',
+      'DELETE /api/wellness/journal/:date',
+      'POST /api/wellness/journal/:date/restore',
       'GET /api/wellness/activities',
       'POST /api/wellness/activities',
     ],

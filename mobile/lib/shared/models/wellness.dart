@@ -3,21 +3,27 @@
 class MoodCheckin {
   final String date; // YYYY-MM-DD, the learner's local day
   final String mood;
+  final String? note;
   final String updatedAt;
 
   const MoodCheckin({
     required this.date,
     required this.mood,
+    this.note,
     this.updatedAt = '',
   });
 
   bool get isToday => date == _todayIso();
 
-  factory MoodCheckin.fromJson(Map<String, dynamic> json) => MoodCheckin(
-        date: json['date'] as String? ?? '',
-        mood: json['mood'] as String? ?? '',
-        updatedAt: json['updated_at'] as String? ?? '',
-      );
+  factory MoodCheckin.fromJson(Map<String, dynamic> json) {
+    final rawNote = (json['note'] as String?)?.trim();
+    return MoodCheckin(
+      date: json['date'] as String? ?? '',
+      mood: json['mood'] as String? ?? '',
+      note: rawNote == null || rawNote.isEmpty ? null : rawNote,
+      updatedAt: json['updated_at'] as String? ?? '',
+    );
+  }
 }
 
 class JournalEntry {

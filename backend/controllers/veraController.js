@@ -1,7 +1,7 @@
 const pool = require('../db/pool');
 const { positiveIntegerParam, clampInt } = require('../middleware/validate');
-const { getVeraReply, streamVeraReply, extractMemories } = require('../services/nvidiaAssistant');
-const { buildUserContext, describeContext, buildTips, buildAppKnowledge, buildAttemptAnswers, buildLeaderboardContext, buildTokenContext, buildWellnessContext } = require('../services/veraContext');
+const { getVeraReply, streamVeraReply, extractMemories, planWebSearch } = require('../services/nvidiaAssistant');
+const { buildUserContext, describeContext, buildTips, buildAppKnowledge, buildAttemptAnswers, buildLeaderboardContext, buildTokenContext, buildWellnessContext, loadVeraProfile, saveVeraProfile } = require('../services/veraContext');
 const { webSearch } = require('../services/tavily');
 const { MEMORY_KINDS, veraSystem, wellnessSection } = require('../services/llm/prompts');
 const { assembleContext, shouldCompact, compactSession } = require('../services/chatCompaction');
@@ -78,12 +78,13 @@ async function loadVeraInputs(user) {
     `SELECT kind, content FROM vera_memories WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 15`,
     [user.id],
   );
-  const [appKnowledge, attemptAnswers, leaderboard, tokens, wellness] = await Promise.all([
+  const [appKnowledge, attemptAnswers, leaderboard, tokens, wellness, profile] = await Promise.all([
     buildAppKnowledge(pool, user.id, user.industry_track_id),
     buildAttemptAnswers(pool, user.id),
     buildLeaderboardContext(pool, user.id, user.industry_track_id),
     buildTokenContext(pool, user.id),
     buildWellnessContext(pool, user.id),
+    loadVeraProfile(pool, user.id),
   ]);
   return {
     context,
@@ -94,10 +95,11 @@ async function loadVeraInputs(user) {
     leaderboard,
     tokens,
     wellness,
+    profile,
   };
 }
 
-async function persistAssistantTurn(user, sessionId, userMessage, reply, contextText) {
+async function persistAssistantTurn(user, sessionId, userMessage, reply, contextText, currentProfile) {
   await pool.query(
     `INSERT INTO vera_messages (session_id, user_id, role, content) VALUES ($1, $2, 'assistant', $3)`,
     [sessionId, user.id, reply],
@@ -106,8 +108,15 @@ async function persistAssistantTurn(user, sessionId, userMessage, reply, context
     `UPDATE vera_sessions SET last_active_at = now(), message_count = message_count + 2 WHERE id = $1`,
     [sessionId],
   );
-  const extracted = await extractMemories({ userName: user.display_name, contextText, userMessage, assistantReply: reply });
-  if (extracted.length) await storeMemories(pool, user.id, extracted);
+  const extracted = await extractMemories({
+    userName: user.display_name,
+    contextText,
+    currentProfile,
+    userMessage,
+    assistantReply: reply,
+  });
+  if (extracted.memories.length) await storeMemories(pool, user.id, extracted.memories);
+  if (extracted.profile) await saveVeraProfile(pool, user.id, extracted.profile);
 }
 
 // POST /api/vera/chat  { session_id?, messages, context? }
@@ -145,10 +154,18 @@ async function chat(req, res, next) {
       [sessionId, user.id, lastUser.content],
     );
 
-    const { contextText, memories, appKnowledge, attemptAnswers, leaderboard, tokens, wellness } = await loadVeraInputs(user);
+    const { contextText, memories, appKnowledge, attemptAnswers, leaderboard, tokens, wellness, profile } = await loadVeraInputs(user);
 
-    // The learner can ask Vera to verify their input: search the web on request.
-    const webResults = req.body.web_search === true ? await webSearch(lastUser.content, { maxResults: 5 }) : [];
+    // Search the live web when Vera is unsure or the question needs current
+    // facts. An explicit client request always searches.
+    let webQuery = null;
+    if (req.body.web_search === true) {
+      webQuery = lastUser.content;
+    } else {
+      const plan = await planWebSearch({ userMessage: lastUser.content });
+      webQuery = plan.search ? plan.query : null;
+    }
+    const webResults = webQuery ? await webSearch(webQuery, { maxResults: 5 }) : [];
     const sources = webResults.map((r) => ({ title: r.title, url: r.url }));
 
     const system = veraSystem({
@@ -164,6 +181,7 @@ async function chat(req, res, next) {
       leaderboard,
       tokens,
       wellness,
+      profile,
     });
 
     // Rebuild the context from stored history: the running summary covers the
@@ -197,7 +215,7 @@ async function chat(req, res, next) {
       const wellnessText = wellness ? `\n\n${wellnessSection(wellness)}` : '';
       context.splice(context.length - 1, 0, {
         role: 'system',
-        content: `CURRENT LEARNER DATA (live, fetched for this message and authoritative). If the learner asks about their progress or stats (XP, level, streak, tokens, readiness, tier, skills, leaderboard) or their recent mood, quote these EXACT figures and ignore any numbers stated earlier in the conversation:\n${contextText || 'No activity recorded yet.'}${wellnessText}`,
+        content: `CURRENT LEARNER DATA (live, fetched for this message and authoritative). If the learner asks about their progress or stats (XP, level, streak, tokens, readiness, tier, skills, leaderboard), quote these EXACT figures and ignore any numbers stated earlier in the conversation. The wellness lines are private context: mention them only when the learner raises mood, stress or wellbeing, never in an unrelated answer.\n${contextText || 'No activity recorded yet.'}${wellnessText}`,
       });
     }
 
@@ -217,7 +235,7 @@ async function chat(req, res, next) {
 
     if (!wantsStream) {
       const reply = await getVeraReply({ messages: context });
-      await persistAssistantTurn(user, sessionId, lastUser.content, reply, contextText);
+      await persistAssistantTurn(user, sessionId, lastUser.content, reply, contextText, profile);
       scheduleCompaction();
       return res.status(200).json({ session_id: sessionId, reply, sources, web_searched: webResults.length > 0, request_id: req.requestId });
     }
@@ -237,7 +255,7 @@ async function chat(req, res, next) {
       sendEvent(res, { error: error.message });
       endStream(res);
     }
-    if (full) await persistAssistantTurn(user, sessionId, lastUser.content, full, contextText);
+    if (full) await persistAssistantTurn(user, sessionId, lastUser.content, full, contextText, profile);
     scheduleCompaction();
     return undefined;
   } catch (err) {

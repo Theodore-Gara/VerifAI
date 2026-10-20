@@ -136,23 +136,24 @@ async function buildTokenContext(executor, userId) {
   return { tokens, events };
 }
 
-// Wellness context: recent mood check-ins, this week's self-care activity
-// counts and how many journal entries exist. Journal content is deliberately
-// never loaded — it stays private to the learner.
+// Wellness context: the last 30 days of mood check-ins (with their optional
+// notes), self-care activity counts and how many journal entries exist. Journal
+// content is deliberately never loaded — it stays private to the learner.
 async function buildWellnessContext(executor, userId) {
   const moodResult = await executor.query(
-    `SELECT check_in_date::text AS date, mood, (check_in_date = CURRENT_DATE) AS today
+    `SELECT check_in_date::text AS date, mood, note, (check_in_date = CURRENT_DATE) AS today
      FROM wellness_mood_checkins
      WHERE user_id = $1
      ORDER BY check_in_date DESC
-     LIMIT 7`,
+     LIMIT 30`,
     [userId],
   );
 
   const activityResult = await executor.query(
     `SELECT activity, COUNT(*)::int AS count
      FROM wellness_activities
-     WHERE user_id = $1 AND completed_at >= now() - interval '7 days'
+     WHERE user_id = $1 AND activity <> 'journal'
+       AND completed_at >= now() - interval '30 days'
      GROUP BY activity`,
     [userId],
   );
@@ -160,15 +161,36 @@ async function buildWellnessContext(executor, userId) {
   const journalResult = await executor.query(
     `SELECT COUNT(*)::int AS count
      FROM wellness_journal_entries
-     WHERE user_id = $1 AND entry_date >= CURRENT_DATE - 6`,
+     WHERE user_id = $1 AND deleted_at IS NULL
+       AND entry_date >= CURRENT_DATE - 29`,
     [userId],
   );
 
   return {
     moods: moodResult.rows,
     activities: activityResult.rows,
-    journalEntriesThisWeek: journalResult.rows[0]?.count ?? 0,
+    journalEntries30d: journalResult.rows[0]?.count ?? 0,
   };
+}
+
+// Vera's rolling, synthesised understanding of the learner. It is rewritten in
+// the background from conversations and injected as background knowledge.
+async function loadVeraProfile(executor, userId) {
+  const result = await executor.query(
+    `SELECT profile FROM vera_profiles WHERE user_id = $1`,
+    [userId],
+  );
+  return result.rows[0]?.profile || '';
+}
+
+async function saveVeraProfile(executor, userId, profile) {
+  const text = String(profile || '').trim().slice(0, 1500);
+  if (!text) return;
+  await executor.query(
+    `INSERT INTO vera_profiles (user_id, profile) VALUES ($1, $2)
+     ON CONFLICT (user_id) DO UPDATE SET profile = EXCLUDED.profile`,
+    [userId, text],
+  );
 }
 
 // Compact text injected into Vera's system prompt.
@@ -297,5 +319,5 @@ async function buildAttemptAnswers(executor, userId) {
   });
 }
 
-module.exports = { buildUserContext, describeContext, buildTips, buildAppKnowledge, buildAttemptAnswers, buildLeaderboardContext, buildTokenContext, buildWellnessContext };
+module.exports = { buildUserContext, describeContext, buildTips, buildAppKnowledge, buildAttemptAnswers, buildLeaderboardContext, buildTokenContext, buildWellnessContext, loadVeraProfile, saveVeraProfile };
 

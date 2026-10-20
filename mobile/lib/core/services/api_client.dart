@@ -91,9 +91,11 @@ abstract class ApiClient {
 
   // --- Wellness ---
   Future<List<MoodCheckin>> getMoodCheckins({int limit = 30});
-  Future<void> saveMoodCheckin(String mood, {String? date});
+  Future<void> saveMoodCheckin(String mood, {String? date, String? note});
   Future<List<JournalEntry>> getJournalEntries({int limit = 30});
   Future<void> saveJournalEntry(String content, {String? date});
+  Future<void> deleteJournalEntry(String date);
+  Future<void> restoreJournalEntry(String date);
   Future<WellnessWeek> getWellnessWeek({int days = 7});
   Future<void> logWellnessActivity(String activity);
 }

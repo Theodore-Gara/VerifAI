@@ -647,11 +647,15 @@ class DioApiClient implements ApiClient {
   }
 
   @override
-  Future<void> saveMoodCheckin(String mood, {String? date}) async {
+  Future<void> saveMoodCheckin(String mood, {String? date, String? note}) async {
     final token = await _idToken();
     await _dio.put<Map<String, dynamic>>(
       'wellness/mood',
-      data: {'mood': mood, if (date != null) 'date': date},
+      data: {
+        'mood': mood,
+        if (date != null) 'date': date,
+        if (note != null) 'note': note,
+      },
       options: Options(headers: _authHeaders(token)),
     );
   }
@@ -671,6 +675,24 @@ class DioApiClient implements ApiClient {
     await _dio.put<Map<String, dynamic>>(
       'wellness/journal',
       data: {'content': content, if (date != null) 'date': date},
+      options: Options(headers: _authHeaders(token)),
+    );
+  }
+
+  @override
+  Future<void> deleteJournalEntry(String date) async {
+    final token = await _idToken();
+    await _dio.delete<Map<String, dynamic>>(
+      'wellness/journal/$date',
+      options: Options(headers: _authHeaders(token)),
+    );
+  }
+
+  @override
+  Future<void> restoreJournalEntry(String date) async {
+    final token = await _idToken();
+    await _dio.post<Map<String, dynamic>>(
+      'wellness/journal/$date/restore',
       options: Options(headers: _authHeaders(token)),
     );
   }

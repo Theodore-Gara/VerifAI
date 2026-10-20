@@ -32,6 +32,14 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
 
   String? _selectedMood;
   bool _savingMood = false;
+  final TextEditingController _noteController = TextEditingController();
+  bool _noteInitialized = false;
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
 
   String get _today => DateTime.now().toIso8601String().substring(0, 10);
 
@@ -52,7 +60,11 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
   Future<void> _saveMood(String mood) async {
     setState(() => _savingMood = true);
     try {
-      await ref.read(apiClientProvider).saveMoodCheckin(mood, date: _today);
+      await ref.read(apiClientProvider).saveMoodCheckin(
+            mood,
+            date: _today,
+            note: _noteController.text.trim(),
+          );
       if (!mounted) return;
       ref.invalidate(moodHistoryProvider);
       _showMessage('Check-in saved.');
@@ -71,9 +83,7 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
     }
 
     try {
-      final api = ref.read(apiClientProvider);
-      await api.saveJournalEntry(reflection, date: _today);
-      await api.logWellnessActivity('journal');
+      await ref.read(apiClientProvider).saveJournalEntry(reflection, date: _today);
       if (!mounted) return true;
       ref.invalidate(journalEntriesProvider);
       ref.invalidate(wellnessWeekProvider);
@@ -83,6 +93,38 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
       if (mounted) _showMessage('Could not save your reflection. Try again.');
       return false;
     }
+  }
+
+  Future<void> _deleteJournalEntry(String date) async {
+    try {
+      await ref.read(apiClientProvider).deleteJournalEntry(date);
+      if (!mounted) return;
+      ref.invalidate(journalEntriesProvider);
+      ref.invalidate(wellnessWeekProvider);
+      _showUndo('Reflection deleted.', () async {
+        try {
+          await ref.read(apiClientProvider).restoreJournalEntry(date);
+          if (!mounted) return;
+          ref.invalidate(journalEntriesProvider);
+          ref.invalidate(wellnessWeekProvider);
+        } catch (_) {
+          if (mounted) _showMessage('Could not restore that reflection.');
+        }
+      });
+    } catch (_) {
+      if (mounted) _showMessage('Could not delete that reflection.');
+    }
+  }
+
+  void _showUndo(String message, Future<void> Function() undo) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          action: SnackBarAction(label: 'Undo', onPressed: () => undo()),
+        ),
+      );
   }
 
   Future<void> _logActivity(String activity) async {
@@ -104,13 +146,29 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final checkins = ref.watch(moodHistoryProvider).valueOrNull ?? const <MoodCheckin>[];
-    final journalEntries =
-        ref.watch(journalEntriesProvider).valueOrNull ?? const <JournalEntry>[];
+    final moodAsync = ref.watch(moodHistoryProvider);
+    final journalAsync = ref.watch(journalEntriesProvider);
     final weekAsync = ref.watch(wellnessWeekProvider);
+    final checkins = moodAsync.valueOrNull ?? const <MoodCheckin>[];
+    final journalEntries =
+        journalAsync.valueOrNull ?? const <JournalEntry>[];
     final today = _todayCheckin(checkins);
     final selectedMood = _selectedMood ?? today?.mood;
-    final saved = today != null && today.mood == selectedMood;
+
+    if (!_noteInitialized && moodAsync.hasValue) {
+      _noteInitialized = true;
+      final savedNote = today?.note ?? '';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _noteController.text.isEmpty) {
+          _noteController.text = savedNote;
+        }
+      });
+    }
+
+    final noteText = _noteController.text.trim();
+    final saved = today != null &&
+        today.mood == selectedMood &&
+        noteText == (today.note ?? '');
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -155,6 +213,20 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
         ),
         children: [
           _heroCard(context),
+          if (moodAsync.hasError) ...[
+            const SizedBox(height: AppSpacing.md),
+            _InlineErrorCard(
+              message: 'Could not load your mood history.',
+              onRetry: () => ref.invalidate(moodHistoryProvider),
+            ),
+          ],
+          if (journalAsync.hasError) ...[
+            const SizedBox(height: AppSpacing.md),
+            _InlineErrorCard(
+              message: 'Could not load your reflections.',
+              onRetry: () => ref.invalidate(journalEntriesProvider),
+            ),
+          ],
           const SizedBox(height: AppSpacing.xl),
           Text(
             'How are you feeling today?',
@@ -184,6 +256,18 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
+          TextField(
+            controller: _noteController,
+            maxLength: 200,
+            maxLines: 2,
+            onChanged: (_) => setState(() {}),
+            decoration: const InputDecoration(
+              labelText: 'Add a note (optional)',
+              hintText: 'Anything you want to remember about today?',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
@@ -204,7 +288,7 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
               ),
             ),
           ),
-          if (checkins.length > 1) _historyStrip(checkins),
+          if (checkins.isNotEmpty) _historyStrip(checkins),
           const SizedBox(height: AppSpacing.xl),
           Text(
             'A little care goes a long way',
@@ -275,6 +359,22 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
   }
 
   Widget _weekSummary(AsyncValue<WellnessWeek> weekAsync) {
+    if (weekAsync.hasError) {
+      return Row(
+        children: [
+          const Expanded(
+            child: Text(
+              'Could not load this week’s self-care.',
+              style: TextStyle(color: Color(0xFFB3261E), fontSize: 12),
+            ),
+          ),
+          TextButton(
+            onPressed: () => ref.invalidate(wellnessWeekProvider),
+            child: const Text('Retry'),
+          ),
+        ],
+      );
+    }
     final week = weekAsync.valueOrNull;
     final label = week == null
         ? 'Self-care this week: loading…'
@@ -308,7 +408,7 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
         ),
         const SizedBox(height: AppSpacing.sm),
         SizedBox(
-          height: 64,
+          height: 78,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: recent.length,
@@ -316,39 +416,70 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
             itemBuilder: (context, index) {
               final checkin = recent[index];
               final isToday = checkin.isToday;
-              return Container(
-                width: 64,
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                decoration: BoxDecoration(
-                  color: isToday ? const Color(0xFFDDF3E8) : AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(
-                    color: isToday ? const Color(0xFF18805D) : AppColors.border,
+              return InkWell(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                onTap: () => _showCheckinDetail(checkin),
+                child: Container(
+                  width: 74,
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  decoration: BoxDecoration(
+                    color:
+                        isToday ? const Color(0xFFDDF3E8) : AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(
+                      color: isToday
+                          ? const Color(0xFF18805D)
+                          : AppColors.border,
+                    ),
                   ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _emojiFor(checkin.mood),
-                      style: const TextStyle(fontSize: 20),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      isToday ? 'Today' : shortWellnessDate(checkin.date),
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF52665C),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _emojiFor(checkin.mood),
+                        style: const TextStyle(fontSize: 18),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 2),
+                      Text(
+                        checkin.mood,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF19372F),
+                        ),
+                      ),
+                      Text(
+                        isToday ? 'Today' : shortWellnessDate(checkin.date),
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF52665C),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
           ),
         ),
       ],
+    );
+  }
+
+  void _showCheckinDetail(MoodCheckin checkin) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('${checkin.mood} · ${shortWellnessDate(checkin.date)}'),
+        content: Text(checkin.note ?? 'No note added that day.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -627,6 +758,10 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
           ),
           child: _JournalReflectionSheet(
             onSave: _saveJournal,
+            onDelete: (date) async {
+              Navigator.of(sheetContext).pop();
+              await _deleteJournalEntry(date);
+            },
             titleStyle: Theme.of(context).textTheme.headlineSmall,
             initialText: todayEntry?.content ?? '',
             entries: entries,
@@ -671,8 +806,40 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
   }
 }
 
-String shortWellnessDate(String isoDate) {
-  const months = [
+class _InlineErrorCard extends StatelessWidget {
+  const _InlineErrorCard({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.sm, AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFDECEA),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: const Color(0xFFF2C6C1)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline_rounded,
+              size: 18, color: Color(0xFFB3261E)),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(color: Color(0xFFB3261E), fontSize: 12),
+            ),
+          ),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
+        ],
+      ),
+    );
+  }
+}
+
+String shortWellnessDate(String isoDate) {  const months = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
   ];
@@ -687,12 +854,14 @@ String shortWellnessDate(String isoDate) {
 class _JournalReflectionSheet extends StatefulWidget {
   const _JournalReflectionSheet({
     required this.onSave,
+    required this.onDelete,
     required this.titleStyle,
     required this.initialText,
     required this.entries,
   });
 
   final Future<bool> Function(String) onSave;
+  final Future<void> Function(String) onDelete;
   final TextStyle? titleStyle;
   final String initialText;
   final List<JournalEntry> entries;
@@ -719,6 +888,32 @@ class _JournalReflectionSheetState extends State<_JournalReflectionSheet> {
     if (!mounted) return;
     setState(() => _saving = false);
     if (ok) Navigator.of(context).pop();
+  }
+
+  Future<void> _confirmDelete(JournalEntry entry) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete this reflection?'),
+        content: const Text(
+          'It will be removed from your journal. You can undo right after, '
+          'and it is permanently deleted after 30 days.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Keep it'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await widget.onDelete(entry.date);
+    }
   }
 
   @override
@@ -778,6 +973,16 @@ class _JournalReflectionSheetState extends State<_JournalReflectionSheet> {
                       content: SingleChildScrollView(child: Text(entry.content)),
                       actions: [
                         TextButton(
+                          onPressed: () {
+                            Navigator.of(dialogContext).pop();
+                            _confirmDelete(entry);
+                          },
+                          child: const Text(
+                            'Delete entry',
+                            style: TextStyle(color: Color(0xFFB3261E)),
+                          ),
+                        ),
+                        TextButton(
                           onPressed: () => Navigator.of(dialogContext).pop(),
                           child: const Text('Close'),
                         ),
@@ -804,15 +1009,28 @@ class _BreathingSheet extends StatefulWidget {
 
 class _BreathingSheetState extends State<_BreathingSheet>
     with SingleTickerProviderStateMixin {
+  static const _inhaleWeight = 40;
+  static const _exhaleWeight = 60;
+  static const _inhaleFraction = _inhaleWeight / (_inhaleWeight + _exhaleWeight);
+  static const _duration = Duration(seconds: 60);
+  // A tap that ends the exercise almost immediately should not count as a
+  // completed self-care moment. Ticks track the 1s timer (fake-clock friendly).
+  static const _minLogTicks = 10;
+
   late final AnimationController _controller;
   late final Animation<double> _breath;
+  late final DateTime _startedAt;
+  late final DateTime _endsAt;
   Timer? _timer;
-  int _secondsLeft = 60;
+  int _ticks = 0;
+  int _secondsLeft = _duration.inSeconds;
   bool _finishing = false;
 
   @override
   void initState() {
     super.initState();
+    _startedAt = DateTime.now();
+    _endsAt = _startedAt.add(_duration);
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 10),
@@ -821,18 +1039,26 @@ class _BreathingSheetState extends State<_BreathingSheet>
       TweenSequenceItem(
         tween: Tween(begin: 0.7, end: 1.0)
             .chain(CurveTween(curve: Curves.easeInOut)),
-        weight: 40,
+        weight: _inhaleWeight.toDouble(),
       ),
       TweenSequenceItem(
         tween: Tween(begin: 1.0, end: 0.7)
             .chain(CurveTween(curve: Curves.easeInOut)),
-        weight: 60,
+        weight: _exhaleWeight.toDouble(),
       ),
     ]).animate(_controller);
+    // Derive the countdown from the wall clock so a paused or throttled timer
+    // cannot make the exercise run longer than a minute.
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
-      setState(() => _secondsLeft--);
-      if (_secondsLeft <= 0) _finish();
+      _ticks++;
+      final left = _endsAt.difference(DateTime.now()).inSeconds;
+      if (left <= 0) {
+        if (_secondsLeft != 0) setState(() => _secondsLeft = 0);
+        _finish(completed: true);
+      } else if (left != _secondsLeft) {
+        setState(() => _secondsLeft = left);
+      }
     });
   }
 
@@ -843,12 +1069,14 @@ class _BreathingSheetState extends State<_BreathingSheet>
     super.dispose();
   }
 
-  Future<void> _finish() async {
+  Future<void> _finish({bool completed = false}) async {
     if (_finishing) return;
     _finishing = true;
     _timer?.cancel();
     _controller.stop();
-    await widget.onComplete();
+    if (completed || _ticks >= _minLogTicks) {
+      await widget.onComplete();
+    }
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -899,7 +1127,9 @@ class _BreathingSheetState extends State<_BreathingSheet>
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    _controller.value < 0.4 ? 'Breathe in…' : 'Breathe out…',
+                    _controller.value < _inhaleFraction
+                        ? 'Breathe in…'
+                        : 'Breathe out…',
                     style: const TextStyle(
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF176B4D),
@@ -961,6 +1191,15 @@ class _AffirmationSheetState extends State<_AffirmationSheet> {
   final _random = Random();
   late int _index = _random.nextInt(_affirmations.length);
 
+  void _next() {
+    if (_affirmations.length < 2) return;
+    int next;
+    do {
+      next = _random.nextInt(_affirmations.length);
+    } while (next == _index);
+    setState(() => _index = next);
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -991,9 +1230,7 @@ class _AffirmationSheetState extends State<_AffirmationSheet> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: () => setState(
-                  () => _index = (_index + 1) % _affirmations.length,
-                ),
+                onPressed: _next,
                 child: const Text('Show another'),
               ),
             ),

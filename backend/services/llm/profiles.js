@@ -87,6 +87,15 @@ const PROFILES = {
     thinking: false,
     timeoutMs: 30000,
   },
+  // Decides whether Vera should search the web before replying (cheap, fast).
+  planner: {
+    model: MODELS.light,
+    temperature: 0,
+    topP: 1,
+    maxTokens: 200,
+    thinking: false,
+    timeoutMs: 20000,
+  },
   // Folds an ageing conversation into a running summary (background, cheap).
   compactor: {
     model: MODELS.light,

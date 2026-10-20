@@ -581,6 +581,7 @@ class MockApiClient implements ApiClient {
   // --- Wellness ---
   final List<MoodCheckin> _moodCheckins = [];
   final List<JournalEntry> _journalEntries = [];
+  final Map<String, JournalEntry> _trashedJournal = {};
   final List<String> _wellnessActivities = [];
 
   String get _todayIso => DateTime.now().toIso8601String().substring(0, 10);
@@ -593,11 +594,19 @@ class MockApiClient implements ApiClient {
   }
 
   @override
-  Future<void> saveMoodCheckin(String mood, {String? date}) async {
+  Future<void> saveMoodCheckin(String mood, {String? date, String? note}) async {
     await _delay();
     final day = date ?? _todayIso;
+    MoodCheckin? existing;
+    for (final entry in _moodCheckins) {
+      if (entry.date == day) existing = entry;
+    }
     _moodCheckins.removeWhere((entry) => entry.date == day);
-    _moodCheckins.add(MoodCheckin(date: day, mood: mood));
+    _moodCheckins.add(MoodCheckin(
+      date: day,
+      mood: mood,
+      note: note == null ? existing?.note : (note.trim().isEmpty ? null : note.trim()),
+    ));
   }
 
   @override
@@ -613,6 +622,24 @@ class MockApiClient implements ApiClient {
     final day = date ?? _todayIso;
     _journalEntries.removeWhere((entry) => entry.date == day);
     _journalEntries.add(JournalEntry(date: day, content: content));
+    _trashedJournal.remove(day);
+  }
+
+  @override
+  Future<void> deleteJournalEntry(String date) async {
+    await _delay();
+    final index = _journalEntries.indexWhere((entry) => entry.date == date);
+    if (index < 0) throw StateError('Journal entry not found.');
+    _trashedJournal[date] = _journalEntries.removeAt(index);
+  }
+
+  @override
+  Future<void> restoreJournalEntry(String date) async {
+    await _delay();
+    final entry = _trashedJournal.remove(date);
+    if (entry == null) return;
+    _journalEntries.removeWhere((existing) => existing.date == date);
+    _journalEntries.add(entry);
   }
 
   @override
@@ -620,11 +647,13 @@ class MockApiClient implements ApiClient {
     await _delay();
     final counts = <String, int>{};
     for (final activity in _wellnessActivities) {
+      if (activity == 'journal') continue;
       counts[activity] = (counts[activity] ?? 0) + 1;
     }
+    if (_journalEntries.isNotEmpty) counts['journal'] = _journalEntries.length;
     return WellnessWeek(
       days: days,
-      total: _wellnessActivities.length,
+      total: counts.values.fold(0, (sum, count) => sum + count),
       counts: counts,
     );
   }

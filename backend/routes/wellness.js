@@ -6,6 +6,8 @@ const {
   saveMood,
   listJournal,
   saveJournal,
+  deleteJournal,
+  restoreJournal,
   listActivities,
   logActivity,
 } = require('../controllers/wellnessController');
@@ -16,6 +18,8 @@ router.get('/mood', verifyFirebaseToken, listMood);
 router.put('/mood', verifyFirebaseToken, writeLimit, saveMood);
 router.get('/journal', verifyFirebaseToken, listJournal);
 router.put('/journal', verifyFirebaseToken, writeLimit, saveJournal);
+router.delete('/journal/:date', verifyFirebaseToken, writeLimit, deleteJournal);
+router.post('/journal/:date/restore', verifyFirebaseToken, writeLimit, restoreJournal);
 router.get('/activities', verifyFirebaseToken, listActivities);
 router.post('/activities', verifyFirebaseToken, writeLimit, logActivity);
 
