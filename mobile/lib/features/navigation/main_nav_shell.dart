@@ -74,24 +74,18 @@ class _MainNavShellState extends State<MainNavShell> {
                     end: Alignment.bottomRight,
                   ),
                 ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Icon(Icons.verified_user_rounded,
-                        color: AppColors.goldLight, size: 34),
-                    SizedBox(height: 14),
-                    Text(
-                      'VERIFAI',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 3,
-                        fontSize: 20,
-                      ),
+                    Image.asset(
+                      'assets/images/wordmarkwhite.png',
+                      height: 34,
+                      fit: BoxFit.contain,
                     ),
-                    SizedBox(height: 5),
-                    Text(
+                    const SizedBox(height: 14),
+                    const Text(
                       'AI assists. Humans verify.',
+                      textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.white70, fontSize: 12),
                     ),
                   ],

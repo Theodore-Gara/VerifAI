@@ -368,34 +368,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                   _buildAchievements(ref, achievementsAsync),
                   const SizedBox(height: AppSpacing.xl),
-
-                  Material(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                    child: ListTile(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.card),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      title: const Text(
-                        'Explore another industry',
-                        style: TextStyle(
-                          color: AppColors.primaryNavy,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      subtitle: const Text(
-                        'Switch learning pathways without signing out.',
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                      trailing: const Icon(
-                        Icons.chevron_right_rounded,
-                        color: AppColors.textSecondary,
-                      ),
-                      onTap: () => context.go('/change-industry'),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
                 ],
               ),
             ),
@@ -699,6 +671,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 style: TextStyle(color: AppColors.textSecondary),
               ),
               const SizedBox(height: AppSpacing.md),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(
+                  Icons.swap_horiz_rounded,
+                  color: AppColors.accentGreen,
+                ),
+                title: const Text(
+                  'Explore another industry',
+                  style: TextStyle(
+                    color: AppColors.primaryNavy,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Switch learning pathways without signing out.',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+                trailing: const Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.textSecondary,
+                ),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) context.go('/change-industry');
+                  });
+                },
+              ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(

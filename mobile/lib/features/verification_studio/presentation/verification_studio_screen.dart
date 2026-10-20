@@ -151,6 +151,14 @@ class _State extends ConsumerState<VerificationStudioScreen> {
         title: Text('Verification Studio',
             style: AppTypography.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+        actions: [
+          IconButton(
+            tooltip: 'Ask Vera',
+            onPressed: () => context.push('/assistant'),
+            icon: const Icon(Icons.auto_awesome_rounded,
+                color: AppColors.primaryNavy),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
@@ -160,15 +168,6 @@ class _State extends ConsumerState<VerificationStudioScreen> {
               'Vera checks a claim, document, AI answer or source and reports what needs review.',
               style: AppTypography.textTheme.bodyMedium
                   ?.copyWith(color: AppColors.textSecondary, height: 1.45)),
-          const SizedBox(height: AppSpacing.md),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: OutlinedButton.icon(
-              onPressed: () => context.push('/assistant'),
-              icon: const Icon(Icons.auto_awesome_rounded),
-              label: const Text('Ask Vera'),
-            ),
-          ),
           const SizedBox(height: AppSpacing.lg),
           InputDecorator(
             decoration: const InputDecoration(

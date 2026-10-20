@@ -70,6 +70,14 @@ class TaskScreen extends ConsumerWidget {
             color: AppColors.textPrimary,
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Ask Vera',
+            onPressed: () => context.push('/assistant'),
+            icon: const Icon(Icons.auto_awesome_rounded,
+                color: AppColors.primaryNavy),
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -120,15 +128,6 @@ class TaskScreen extends ConsumerWidget {
                   'Practise a skill, then take on its workplace scenarios.',
                   style: AppTypography.textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: OutlinedButton.icon(
-                    onPressed: () => context.push('/assistant'),
-                    icon: const Icon(Icons.auto_awesome_rounded),
-                    label: const Text('Ask Vera'),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.lg),
