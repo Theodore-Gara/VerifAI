@@ -622,7 +622,11 @@ class _LabAssessmentPaperScreenState
     );
     if (leave == true && mounted) {
       _ticker?.cancel();
-      context.go('/ai-lab/assessments/$_code');
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/ai-lab/assessments/$_code');
+      }
     }
   }
 }

@@ -8,6 +8,7 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
+import 'package:verifai/features/navigation/nav_drawer_controller.dart';
 
 /// Tasks tab — a hub of skill categories. Each card leads to that skill's
 /// dedicated task flow.
@@ -56,6 +57,11 @@ class TaskScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: const IconButton(
+          tooltip: 'Open navigation menu',
+          icon: Icon(Icons.menu_rounded, color: AppColors.textPrimary),
+          onPressed: openVerifaiNavigationDrawer,
+        ),
         title: Text(
           'Tasks',
           style: AppTypography.textTheme.titleMedium?.copyWith(
@@ -64,6 +70,14 @@ class TaskScreen extends ConsumerWidget {
             color: AppColors.textPrimary,
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Ask Vera',
+            onPressed: () => context.push('/assistant'),
+            icon: const Icon(Icons.auto_awesome_rounded,
+                color: AppColors.primaryNavy),
+          ),
+        ],
       ),
       body: Stack(
         children: [

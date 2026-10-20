@@ -1,14 +1,21 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:verifai/features/navigation/nav_drawer_controller.dart';
 import 'package:verifai/features/progress/presentation/progress_screen.dart';
 import 'package:verifai/features/task/presentation/task_screen.dart';
 import 'package:verifai/features/track/presentation/track_roadmap_screen.dart';
 import 'package:verifai/features/profile/presentation/profile_screen.dart';
+
+/// Routes hosted by [MainNavShell]. These must stay `go` (never `push`) —
+/// stacking a second shell would duplicate [verifaiMainScaffoldKey].
+const shellTabRoutes = {'/dashboard', '/track', '/tasks', '/progress', '/profile'};
 
 class MainNavShell extends StatefulWidget {
   final int initialIndex;
@@ -50,7 +57,76 @@ class _MainNavShellState extends State<MainNavShell> {
     final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
+      key: verifaiMainScaffoldKey,
       extendBody: true,
+      drawer: Drawer(
+        backgroundColor: AppColors.background,
+        child: SafeArea(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              Container(
+                padding: const EdgeInsets.fromLTRB(22, 26, 22, 24),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.primaryNavy, AppColors.accentGreen],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/images/wordmarkwhite.png',
+                      height: 34,
+                      fit: BoxFit.contain,
+                    ),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'AI assists. Humans verify.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              _drawerLink(context, Icons.home_rounded, 'Home', '/dashboard'),
+              _drawerLink(
+                  context, Icons.route_rounded, 'Skill roadmap', '/track'),
+              _drawerLink(context, Icons.task_alt_rounded, 'Tasks', '/tasks'),
+              _drawerLink(context, Icons.verified_rounded,
+                  'Verification Studio', '/verification-studio'),
+              _drawerLink(context, Icons.auto_awesome_rounded, 'Ask Vera',
+                  '/assistant'),
+              _drawerLink(context, Icons.science_rounded, 'AI Lab', '/ai-lab'),
+              _drawerLink(context, Icons.fitness_center_rounded, 'Practice',
+                  '/industry-practice'),
+              _drawerLink(
+                  context, Icons.insights_rounded, 'Progress', '/progress'),
+              _drawerLink(context, Icons.leaderboard_rounded, 'Leaderboard',
+                  '/scoreboard'),
+              _drawerLink(
+                  context, Icons.emoji_events_rounded, 'Rewards', '/rewards'),
+              _drawerLink(context, Icons.history_rounded, 'Task history',
+                  '/task-history'),
+              _drawerLink(
+                  context, Icons.spa_rounded, 'Wellness Centre', '/wellness'),
+              _drawerLink(context, Icons.person_rounded, 'Profile & settings',
+                  '/profile'),
+              const Divider(indent: 18, endIndent: 18),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+                child: Text(
+                  'AI assists. Humans verify.',
+                  style:
+                      TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
@@ -124,6 +200,29 @@ class _MainNavShellState extends State<MainNavShell> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _drawerLink(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String route,
+  ) {
+    return ListTile(
+      leading: Icon(icon, color: AppColors.accentGreen),
+      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+      trailing: const Icon(Icons.chevron_right_rounded, size: 18),
+      onTap: () {
+        Navigator.of(context).pop();
+        // Everything that isn't a shell tab is pushed, so the route it came
+        // from stays on the stack and Back returns to it.
+        if (shellTabRoutes.contains(route)) {
+          context.go(route);
+        } else {
+          context.push(route);
+        }
+      },
     );
   }
 

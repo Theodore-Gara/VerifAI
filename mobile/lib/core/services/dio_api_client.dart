@@ -642,6 +642,85 @@ class DioApiClient implements ApiClient {
     return list.map((e) => HistoryEntry.fromJson(Map<String, dynamic>.from(e as Map))).toList();
   }
 
+  // --- Wellness ---
+  @override
+  Future<List<MoodCheckin>> getMoodCheckins({int limit = 30}) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>('wellness/mood',
+        queryParameters: {'limit': limit}, options: Options(headers: _authHeaders(token)));
+    final list = response.data?['checkins'] as List<dynamic>? ?? const [];
+    return list.map((e) => MoodCheckin.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+  }
+
+  @override
+  Future<void> saveMoodCheckin(String mood, {String? date, String? note}) async {
+    final token = await _idToken();
+    await _dio.put<Map<String, dynamic>>(
+      'wellness/mood',
+      data: {
+        'mood': mood,
+        if (date != null) 'date': date,
+        if (note != null) 'note': note,
+      },
+      options: Options(headers: _authHeaders(token)),
+    );
+  }
+
+  @override
+  Future<List<JournalEntry>> getJournalEntries({int limit = 30}) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>('wellness/journal',
+        queryParameters: {'limit': limit}, options: Options(headers: _authHeaders(token)));
+    final list = response.data?['entries'] as List<dynamic>? ?? const [];
+    return list.map((e) => JournalEntry.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+  }
+
+  @override
+  Future<void> saveJournalEntry(String content, {String? date}) async {
+    final token = await _idToken();
+    await _dio.put<Map<String, dynamic>>(
+      'wellness/journal',
+      data: {'content': content, if (date != null) 'date': date},
+      options: Options(headers: _authHeaders(token)),
+    );
+  }
+
+  @override
+  Future<void> deleteJournalEntry(String date) async {
+    final token = await _idToken();
+    await _dio.delete<Map<String, dynamic>>(
+      'wellness/journal/$date',
+      options: Options(headers: _authHeaders(token)),
+    );
+  }
+
+  @override
+  Future<void> restoreJournalEntry(String date) async {
+    final token = await _idToken();
+    await _dio.post<Map<String, dynamic>>(
+      'wellness/journal/$date/restore',
+      options: Options(headers: _authHeaders(token)),
+    );
+  }
+
+  @override
+  Future<WellnessWeek> getWellnessWeek({int days = 7}) async {
+    final token = await _idToken();
+    final response = await _dio.get<Map<String, dynamic>>('wellness/activities',
+        queryParameters: {'days': days}, options: Options(headers: _authHeaders(token)));
+    return WellnessWeek.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<void> logWellnessActivity(String activity) async {
+    final token = await _idToken();
+    await _dio.post<Map<String, dynamic>>(
+      'wellness/activities',
+      data: {'activity': activity},
+      options: Options(headers: _authHeaders(token)),
+    );
+  }
+
   Future<String> _idToken() async {
     final user = _firebaseAuth.currentUser;
     if (user == null) {

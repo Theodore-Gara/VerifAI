@@ -13,6 +13,7 @@ const {
   analysisSystem,
   markerSystem,
   extractorSystem,
+  plannerSystem,
   capstoneReportSystem,
   MEMORY_KINDS,
 } = require('./llm/prompts');
@@ -145,9 +146,10 @@ async function* streamVeraReply({ messages, fetchImpl }) {
   yield* streamWithFallback({ ...resolveProfile('vera'), messages }, fetchImpl);
 }
 
-// Extracts durable memories from one exchange. Best-effort: any failure yields
-// an empty list so chat is never blocked by extraction.
-async function extractMemories({ userName, contextText, userMessage, assistantReply, fetchImpl }) {
+// Extracts durable memories and refreshes the learner profile from one
+// exchange. Best-effort: any failure yields empty results so chat is never
+// blocked by extraction.
+async function extractMemories({ userName, contextText, currentProfile, userMessage, assistantReply, fetchImpl }) {
   try {
     const { content } = await chatWithFallback(
       {
@@ -156,20 +158,46 @@ async function extractMemories({ userName, contextText, userMessage, assistantRe
           { role: 'system', content: extractorSystem() },
           {
             role: 'user',
-            content: `Learner: ${userName || 'Unknown'}\n\nProfile:\n${contextText || '(none)'}\n\nExchange:\nLearner: ${userMessage}\nVera: ${assistantReply}`,
+            content: `Learner: ${userName || 'Unknown'}\n\nProfile:\n${contextText || '(none)'}\n\nExisting notes about the learner:\n${currentProfile || '(none yet)'}\n\nExchange:\nLearner: ${userMessage}\nVera: ${assistantReply}`,
           },
         ],
       },
       fetchImpl,
     );
     const parsed = parseJsonObject(content);
-    if (!parsed || !Array.isArray(parsed.memories)) return [];
-    return parsed.memories
-      .filter((m) => m && MEMORY_KINDS.includes(m.kind) && typeof m.content === 'string' && m.content.trim())
-      .map((m) => ({ kind: m.kind, content: m.content.trim().slice(0, 300) }))
-      .slice(0, 3);
+    if (!parsed) return { profile: '', memories: [] };
+    const profile = typeof parsed.profile === 'string' ? parsed.profile.trim().slice(0, 1500) : '';
+    const memories = Array.isArray(parsed.memories)
+      ? parsed.memories
+          .filter((m) => m && MEMORY_KINDS.includes(m.kind) && typeof m.content === 'string' && m.content.trim())
+          .map((m) => ({ kind: m.kind, content: m.content.trim().slice(0, 300) }))
+          .slice(0, 3)
+      : [];
+    return { profile, memories };
   } catch {
-    return [];
+    return { profile: '', memories: [] };
+  }
+}
+
+// Decides whether Vera needs live web results for this message. Best-effort:
+// any failure means no search, so a planner hiccup never blocks the reply.
+async function planWebSearch({ userMessage, fetchImpl }) {
+  try {
+    const { content } = await chatWithFallback(
+      {
+        ...resolveProfile('planner'),
+        messages: [
+          { role: 'system', content: plannerSystem() },
+          { role: 'user', content: `Learner's message:\n${userMessage}` },
+        ],
+      },
+      fetchImpl,
+    );
+    const parsed = parseJsonObject(content);
+    const query = typeof parsed?.query === 'string' ? parsed.query.trim().slice(0, 300) : '';
+    return { search: parsed?.search === true && Boolean(query), query };
+  } catch {
+    return { search: false, query: '' };
   }
 }
 
@@ -235,6 +263,7 @@ module.exports = {
   getVeraReply,
   streamVeraReply,
   extractMemories,
+  planWebSearch,
   markRubric,
   generateCapstoneReport,
 };

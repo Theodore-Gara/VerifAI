@@ -69,7 +69,7 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/icon/app_icon.png"
-  adaptive_icon_background: "#0E1B2A"
+  adaptive_icon_background: "#061810"
   adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
   # The foreground is already fitted to the safe circle by
   # tool/generate_icon_sources.ps1, so the tool must not pad it a second time.

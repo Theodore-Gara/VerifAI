@@ -39,14 +39,13 @@ import 'package:verifai/features/onboarding/providers.dart';
 import 'package:verifai/features/verification_studio/providers.dart';
 import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
 import 'package:verifai/features/navigation/main_nav_shell.dart';
+import 'package:verifai/features/wellness/presentation/wellness_center_screen.dart';
 import 'package:verifai/features/onboarding/presentation.dart';
 import 'package:verifai/features/scoreboard/presentation/scoreboard_screen.dart';
-import 'package:verifai/features/task/presentation/task_screen.dart';
 import 'package:verifai/features/verification/presentation/verification_screen.dart';
 import 'package:verifai/features/judgement/presentation/judgement_screen.dart';
 import 'package:verifai/features/risk_governance/presentation/risk_governance_screen.dart';
 import 'package:verifai/features/interview/presentation/interview_practice_screen.dart';
-import 'package:verifai/features/progress/presentation/progress_screen.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 
@@ -216,7 +215,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/tasks',
         name: 'tasks',
-        builder: (context, state) => const TaskScreen(),
+        builder: (context, state) => const MainNavShell(initialIndex: 2),
       ),
       GoRoute(
         path: '/verification',
@@ -288,7 +287,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'lab-topics',
         builder: (context, state) => LabTopicsScreen(
           code: state.pathParameters['code'] ?? '',
-          chapterIndex: int.tryParse(state.pathParameters['chapterIndex'] ?? '0') ?? 0,
+          chapterIndex:
+              int.tryParse(state.pathParameters['chapterIndex'] ?? '0') ?? 0,
         ),
       ),
       GoRoute(
@@ -310,7 +310,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final args = state.extra;
           if (args is ActivityArgs) return LabActivityScreen(args: args);
-          return const Scaffold(body: Center(child: Text('Open a practice question.')));
+          return const Scaffold(
+              body: Center(child: Text('Open a practice question.')));
         },
       ),
       GoRoute(
@@ -330,7 +331,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final args = state.extra;
           if (args is PaperArgs) return LabAssessmentPaperScreen(args: args);
-          return const Scaffold(body: Center(child: Text('Open an assessment to start.')));
+          return const Scaffold(
+              body: Center(child: Text('Open an assessment to start.')));
         },
       ),
       GoRoute(
@@ -338,7 +340,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'lab-assessment',
         builder: (context, state) => LabAssessmentInstructionsScreen(
           code: state.pathParameters['code'] ?? '',
-          outcome: state.extra is AssessmentOutcome ? state.extra as AssessmentOutcome : null,
+          outcome: state.extra is AssessmentOutcome
+              ? state.extra as AssessmentOutcome
+              : null,
         ),
       ),
       GoRoute(
@@ -357,9 +361,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const HistoryScreen(),
       ),
       GoRoute(
+        path: '/wellness',
+        name: 'wellness',
+        builder: (context, state) => const WellnessCenterScreen(),
+      ),
+      GoRoute(
         path: '/progress',
         name: 'progress',
-        builder: (context, state) => const ProgressScreen(),
+        builder: (context, state) => const MainNavShell(initialIndex: 3),
       ),
       GoRoute(
         path: '/feedback',

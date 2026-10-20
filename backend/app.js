@@ -21,6 +21,7 @@ const rewardsRoutes = require('./routes/rewards');
 const veraRoutes = require('./routes/vera');
 const industryPracticeRoutes = require('./routes/industryPractice');
 const historyRoutes = require('./routes/history');
+const wellnessRoutes = require('./routes/wellness');
 const adminRoutes = require('./routes/admin');
 const { maintenanceGate } = require('./middleware/adminRoles');
 const errorHandler = require('./middleware/errorHandler');
@@ -159,6 +160,7 @@ app.use('/api/rewards', rewardsRoutes);
 app.use('/api/vera', veraRoutes);
 app.use('/api/industry-practice', industryPracticeRoutes);
 app.use('/api/history', historyRoutes);
+app.use('/api/wellness', wellnessRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Admin dashboard: a static single-page app served by the API itself.
@@ -228,6 +230,14 @@ app.get('/api/docs', (req, res) => {
       'GET /api/industry-practice/cases/:id',
       'POST /api/industry-practice/cases/:id/read',
       'GET /api/history',
+      'GET /api/wellness/mood',
+      'PUT /api/wellness/mood',
+      'GET /api/wellness/journal',
+      'PUT /api/wellness/journal',
+      'DELETE /api/wellness/journal/:date',
+      'POST /api/wellness/journal/:date/restore',
+      'GET /api/wellness/activities',
+      'POST /api/wellness/activities',
       'GET /api/admin/overview',
       'GET /api/admin/tasks',
       'GET /api/admin/tasks/:id',

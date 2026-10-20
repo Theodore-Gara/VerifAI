@@ -25,7 +25,8 @@ class LabAssessmentsScreen extends ConsumerWidget {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.go('/ai-lab'),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/ai-lab'),
         ),
         title: Text('Assessments',
             style: AppTypography.textTheme.titleLarge

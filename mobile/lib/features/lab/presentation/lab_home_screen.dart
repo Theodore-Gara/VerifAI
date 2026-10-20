@@ -40,7 +40,8 @@ class LabHomeScreen extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.go('/dashboard'),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/dashboard'),
         ),
         title: Text('AI Lab',
             style: AppTypography.textTheme.titleLarge
