@@ -206,12 +206,12 @@ class ProgressScreen extends ConsumerWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF1F5F9),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.emoji_events_rounded,
-                    color: AppColors.primaryNavy, size: 22),
+                    color: AppColors.accentGreen, size: 22),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(

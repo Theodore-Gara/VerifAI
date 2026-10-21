@@ -166,20 +166,20 @@ class _SkillRow extends StatelessWidget {
     } else if (value >= 70) {
       return _TierInfo(
         label: 'Proficient',
-        textColor: AppColors.primaryNavy,
-        bgColor: const Color(0xFFF1F5F9),
+        textColor: AppColors.textPrimary,
+        bgColor: AppColors.background,
       );
     } else if (value >= 50) {
       return _TierInfo(
         label: 'Developing',
         textColor: AppColors.textSecondary,
-        bgColor: const Color(0xFFF8FAFC),
+        bgColor: AppColors.background,
       );
     } else {
       return _TierInfo(
         label: 'Foundational',
         textColor: AppColors.textSecondary,
-        bgColor: const Color(0xFFF8FAFC),
+        bgColor: AppColors.background,
       );
     }
   }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,8 +19,9 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _controller;
+  late final AnimationController _starController;
   late final Animation<double> _scaleAnimation;
   late final Animation<double> _fadeAnimation;
   late final Animation<Offset> _slideAnimation;
@@ -41,6 +43,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
     _controller.forward();
+    _starController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat();
     _startWelcomeAndNavigate();
   }
 
@@ -75,6 +81,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   void dispose() {
     _controller.dispose();
+    _starController.dispose();
     super.dispose();
   }
 
@@ -96,6 +103,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 bottom: -145,
                 left: -105,
                 child: _ambient(330, AppColors.gold.withValues(alpha: .10)),
+              ),
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    painter: _ShootingStarPainter(
+                      _starController,
+                      enabled: !MediaQuery.disableAnimationsOf(context),
+                    ),
+                    size: Size.infinite,
+                  ),
+                ),
               ),
               Center(
                 child: FadeTransition(
@@ -139,7 +157,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                             'THINK CLEARLY. VERIFY WITH CONFIDENCE.',
                             style: TextStyle(
                               color: Color(0xFFB8C3BA),
-                              fontSize: 9,
+                              fontSize: 11.5,
                               letterSpacing: 1.7,
                               fontWeight: FontWeight.w700,
                             ),
@@ -206,4 +224,97 @@ class _LuxuryParticlePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// A single gold meteor crossing the splash once every three seconds.
+class _ShootingStarPainter extends CustomPainter {
+  _ShootingStarPainter(this.animation, {this.enabled = true})
+      : super(repaint: animation);
+
+  final Animation<double> animation;
+  final bool enabled;
+
+  /// The meteor is visible for 1.1s of each 3s cycle.
+  static const double _activeShare = 1.1 / 3;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (!enabled) return;
+    final t = (animation.value / _activeShare).clamp(0.0, 1.0);
+    if (t >= 1) return;
+    final env = _envelope(t);
+    if (env <= 0) return;
+
+    final start = Offset(size.width * 1.05, -size.height * .05);
+    final end = Offset(-size.width * .25, size.height * .55);
+    final travel = end - start;
+    final direction = travel / travel.distance;
+    final head = Offset.lerp(start, end, t)!;
+    final tail = head - direction * (size.width * .28 * env);
+    final tailLength = (head - tail).distance;
+    final perpendicular = Offset(-direction.dy, direction.dx);
+
+    for (var i = 0; i < 3; i++) {
+      final f = .45 + i * .25;
+      final spark = head -
+          direction * (tailLength * f) +
+          perpendicular * (math.sin(i * 2.7) * 4 * env);
+      canvas.drawCircle(
+        spark,
+        1.4 - i * .25,
+        Paint()
+          ..color = AppColors.gold.withValues(alpha: .5 * env * (1 - f * .6)),
+      );
+    }
+
+    canvas.drawLine(
+      tail,
+      head,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [
+            AppColors.gold.withValues(alpha: 0),
+            AppColors.gold.withValues(alpha: .18),
+            AppColors.gold.withValues(alpha: .9),
+          ],
+          stops: const [0, .55, 1],
+        ).createShader(Rect.fromPoints(tail, head))
+        ..strokeWidth = 1.6
+        ..strokeCap = StrokeCap.round,
+    );
+
+    canvas.drawCircle(
+      head,
+      3,
+      Paint()
+        ..color = AppColors.gold.withValues(alpha: .35 * env)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+    );
+    canvas.drawCircle(
+      head,
+      2,
+      Paint()
+        ..color = AppColors.gold.withValues(alpha: .5 * env)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+    );
+    canvas.drawCircle(
+      head,
+      1.3,
+      Paint()..color = const Color(0xFFFFF6DF).withValues(alpha: .95 * env),
+    );
+  }
+
+  static double _envelope(double t) {
+    const inEnd = .12;
+    const outStart = .8;
+    if (t < inEnd) return Curves.easeOut.transform(t / inEnd);
+    if (t > outStart) return Curves.easeIn.transform((1 - t) / (1 - outStart));
+    return 1;
+  }
+
+  @override
+  bool shouldRepaint(covariant _ShootingStarPainter oldDelegate) =>
+      oldDelegate.enabled != enabled;
 }

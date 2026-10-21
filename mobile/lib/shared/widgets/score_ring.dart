@@ -42,7 +42,6 @@ class ScoreRing extends StatelessWidget {
             size: Size(size, size),
             painter: _ModernScoreRingPainter(
               progress: progress,
-              color: color,
               trackColor: track,
               strokeWidth: strokeWidth,
             ),
@@ -101,13 +100,11 @@ class ScoreRing extends StatelessWidget {
 
 class _ModernScoreRingPainter extends CustomPainter {
   final double progress;
-  final Color color;
   final Color trackColor;
   final double strokeWidth;
 
   _ModernScoreRingPainter({
     required this.progress,
-    required this.color,
     required this.trackColor,
     required this.strokeWidth,
   });
@@ -134,17 +131,16 @@ class _ModernScoreRingPainter extends CustomPainter {
 
     // Subtle ambient glow
     final glowPaint = Paint()
-      ..color = color.withValues(alpha: 0.2)
+      ..color = AppColors.accentGreen.withValues(alpha: 0.2)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth + 6
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
 
     canvas.drawArc(rect, startAngle, sweepAngle, false, glowPaint);
 
-    // Solid progress arc — a single colour, so the ring never blends a stray
-    // cyan/green into a low-score (warning/error) indicator.
+    // Solid themed arc using the Luxe Green accent.
     final progressPaint = Paint()
-      ..color = color
+      ..color = AppColors.accentGreen
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
@@ -167,7 +163,6 @@ class _ModernScoreRingPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ModernScoreRingPainter oldDelegate) {
     return oldDelegate.progress != progress ||
-        oldDelegate.color != color ||
         oldDelegate.trackColor != trackColor;
   }
 }

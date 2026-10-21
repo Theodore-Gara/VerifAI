@@ -221,12 +221,6 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
         actions: [
-          if (Navigator.of(context).canPop())
-            IconButton(
-              tooltip: 'Open navigation menu',
-              icon: const Icon(Icons.menu_rounded),
-              onPressed: () => _showNavigation(context),
-            ),
           IconButton(
             tooltip: 'Ask Vera',
             onPressed: () => context.push('/assistant'),

@@ -562,7 +562,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Widget _buildAppearance(WidgetRef ref) {
     final mode = ref.watch(themeModeProvider);
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Appearance',
@@ -571,7 +572,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             color: AppColors.primaryNavy,
           ),
         ),
-        const Spacer(),
+        const SizedBox(height: AppSpacing.sm),
         SegmentedButton<ThemeMode>(
           showSelectedIcon: false,
           segments: const [

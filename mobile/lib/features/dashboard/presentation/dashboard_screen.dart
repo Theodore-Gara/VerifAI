@@ -27,18 +27,11 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _starting = false;
-  DateTime? _updatedAt;
 
   @override
   Widget build(BuildContext context) {
     final dashboardAsync = ref.watch(dashboardProvider);
     final user = ref.watch(currentUserProvider).valueOrNull;
-
-    // Every refresh (button, pull, resume) lands here, so the hint below the
-    // content always describes the data actually on screen.
-    ref.listen<AsyncValue<DashboardData>>(dashboardProvider, (previous, next) {
-      if (next.hasValue) _updatedAt = DateTime.now();
-    });
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -140,15 +133,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  String get _updatedLabel {
-    final at = _updatedAt;
-    if (at == null) return 'Updating…';
-    final minutes = DateTime.now().difference(at).inMinutes;
-    if (minutes < 1) return 'Updated just now';
-    if (minutes == 1) return 'Updated 1 minute ago';
-    return 'Updated $minutes minutes ago';
-  }
-
   static String _greeting(String? name) {
     final hour = DateTime.now().hour;
     final part = hour < 12
@@ -180,7 +164,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         AppSpacing.screenPadding,
         AppSpacing.sm,
         AppSpacing.screenPadding,
-        dockClearance(context),
+        dockClearance(context) - 12,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -196,7 +180,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   value: '${data.streakDays}',
                   label: 'Day streak',
                   semanticsLabel: '${data.streakDays} day streak',
-                  accent: data.streakDays > 0,
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -215,16 +198,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           const SizedBox(height: AppSpacing.md),
           // Keep going section
           _buildQuickLaunches(context),
-          const SizedBox(height: AppSpacing.md),
-          Center(
-            child: Text(
-              _updatedLabel,
-              style: AppTypography.textTheme.labelSmall?.copyWith(
-                color: AppColors.textSecondary,
-                fontSize: 11.5,
-              ),
-            ),
-          ),
         ],
       ),
     );

@@ -110,7 +110,7 @@ class _MainNavShellState extends State<MainNavShell> {
                 padding: const EdgeInsets.fromLTRB(22, 26, 22, 24),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [AppColors.primaryNavy, AppColors.accentGreen],
+                    colors: [AppColors.primaryFill, AppColors.greenFill],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -316,12 +316,12 @@ class _MainNavShellState extends State<MainNavShell> {
                 vertical: 8,
               ),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primaryNavy : Colors.transparent,
+                color: isSelected ? AppColors.primaryFill : Colors.transparent,
                 borderRadius: BorderRadius.circular(AppRadius.pill),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: AppColors.primaryNavy.withValues(alpha: 0.25),
+                          color: AppColors.primaryFill.withValues(alpha: 0.25),
                           blurRadius: 10,
                           offset: const Offset(0, 3),
                         ),
