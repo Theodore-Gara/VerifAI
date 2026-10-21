@@ -61,8 +61,7 @@ class DioApiClient implements ApiClient {
   @override
   Future<AdminIdentity> getMe() async {
     final response = await _dio.get<Map<String, dynamic>>('auth/me');
-    return AdminIdentity.fromJson(
-        Map<String, dynamic>.from(response.data ?? {}));
+    return parseAdminIdentity(response.data ?? const {});
   }
 
   @override
@@ -704,4 +703,29 @@ class DioApiClient implements ApiClient {
 
   List<String> _stringList(dynamic value) =>
       (value as List<dynamic>? ?? const []).map((e) => '$e').toList();
+}
+
+/// Parses `GET /api/auth/me` into an [AdminIdentity].
+///
+/// The endpoint returns the snake_case/integer row shape (`id`, `display_name`,
+/// `created_at`, `is_admin`) like every other user payload, so the generated
+/// `AdminIdentity.fromJson`/`User.fromJson` (String id, camelCase keys) cannot
+/// read it — it would throw and the profile would silently drop the admin
+/// entry point. Top-level so it can be unit-tested without Firebase.
+AdminIdentity parseAdminIdentity(Map<String, dynamic> json) {
+  final user = Map<String, dynamic>.from(json['user'] as Map? ?? const {});
+  return AdminIdentity(
+    user: User(
+      id: user['id'].toString(),
+      email: user['email'] as String? ?? '',
+      name: user['display_name'] as String?,
+      trackId: user['industry_track_id']?.toString(),
+      trackName: user['industry_track_name'] as String?,
+      hasCompletedOnboarding: user['industry_track_id'] != null,
+      createdAt:
+          user['created_at'] as String? ?? DateTime.now().toIso8601String(),
+    ),
+    isAdmin: json['is_admin'] as bool? ?? false,
+    role: json['role'] as String?,
+  );
 }
