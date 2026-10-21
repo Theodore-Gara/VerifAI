@@ -13,6 +13,7 @@ import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
 import 'package:verifai/features/profile/providers.dart';
+import 'package:verifai/features/verification/providers.dart';
 import 'package:verifai/shared/models/daily_task.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 import 'package:verifai/shared/widgets/verifai_button.dart';
@@ -92,6 +93,11 @@ class _TaskRunScreenState extends ConsumerState<TaskRunScreen> {
 
       ref.invalidate(dashboardProvider);
       ref.invalidate(achievementsProvider);
+      // The Verification hub caches one task per difficulty. It stays mounted
+      // under this screen, so an invalidate — not its autoDispose — is what
+      // drops the just-answered task; otherwise re-entering the hub re-serves
+      // the attempt as a fresh (non-practice) task.
+      ref.invalidate(verificationTasksProvider);
 
       if (!mounted) return;
       final feedback = FeedbackResult(
