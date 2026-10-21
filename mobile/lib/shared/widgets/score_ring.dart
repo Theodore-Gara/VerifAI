@@ -29,7 +29,7 @@ class ScoreRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = (score / maxScore).clamp(0.0, 1.0);
-    final color = progressColor ?? _getScoreColor(score);
+    final color = progressColor ?? AppColors.accentCyan;
     final track = trackColor ?? AppColors.border.withValues(alpha: 0.5);
 
     return SizedBox(
@@ -42,6 +42,7 @@ class ScoreRing extends StatelessWidget {
             size: Size(size, size),
             painter: _ModernScoreRingPainter(
               progress: progress,
+              color: color,
               trackColor: track,
               strokeWidth: strokeWidth,
             ),
@@ -89,22 +90,17 @@ class ScoreRing extends StatelessWidget {
       ),
     );
   }
-
-  Color _getScoreColor(int score) {
-    if (score >= 80) return AppColors.accentGreen;
-    if (score >= 60) return AppColors.accentCyan;
-    if (score >= 40) return AppColors.warning;
-    return AppColors.error;
-  }
 }
 
 class _ModernScoreRingPainter extends CustomPainter {
   final double progress;
+  final Color color;
   final Color trackColor;
   final double strokeWidth;
 
   _ModernScoreRingPainter({
     required this.progress,
+    required this.color,
     required this.trackColor,
     required this.strokeWidth,
   });
@@ -131,16 +127,16 @@ class _ModernScoreRingPainter extends CustomPainter {
 
     // Subtle ambient glow
     final glowPaint = Paint()
-      ..color = AppColors.accentGreen.withValues(alpha: 0.2)
+      ..color = color.withValues(alpha: 0.2)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth + 6
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
 
     canvas.drawArc(rect, startAngle, sweepAngle, false, glowPaint);
 
-    // Solid themed arc using the Luxe Green accent.
+    // Solid uniform accent arc.
     final progressPaint = Paint()
-      ..color = AppColors.accentGreen
+      ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
