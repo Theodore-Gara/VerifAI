@@ -23,6 +23,16 @@ const shellTabRoutes = {
   '/profile',
 };
 
+/// Dock index of each shell-tab route, in [_navTabs] order. Lets any in-app link
+/// switch tabs in place instead of `go`-ing to a sibling shell route.
+const shellTabIndex = <String, int>{
+  '/dashboard': 0,
+  '/learn': 1,
+  '/practice': 2,
+  '/progress': 3,
+  '/profile': 4,
+};
+
 /// Five top-level areas, with each area's destinations gathered in a hub.
 ///
 /// The previous layout had three overlapping navigation systems: a 13-link
@@ -79,6 +89,13 @@ class _MainNavShellState extends State<MainNavShell> {
     _currentIndex =
         widget.initialIndex.clamp(0, _tabBuilders.length - 1).toInt();
     _tabs[_currentIndex] = _tabBuilders[_currentIndex]();
+    registerShellTabSwitcher(_onItemTapped);
+  }
+
+  @override
+  void dispose() {
+    unregisterShellTabSwitcher();
+    super.dispose();
   }
 
   void _onItemTapped(int index) {
@@ -274,8 +291,11 @@ class _MainNavShellState extends State<MainNavShell> {
       trailing: const Icon(Icons.chevron_right_rounded, size: 18),
       onTap: () {
         Navigator.of(context).pop();
-        if (shellTabRoutes.contains(route)) {
-          context.go(route);
+        final tab = shellTabIndex[route];
+        if (tab != null) {
+          // Switch the dock in place; `go` to a sibling shell route collides on
+          // the shared scaffold global key.
+          _onItemTapped(tab);
         } else {
           context.push(route);
         }

@@ -61,7 +61,7 @@ async function getAttempt(req, res, next) {
 
     const attemptId = positiveIntegerParam(req.params.id, 'attempt id');
     const result = await pool.query(
-      `SELECT ta.id, ta.task_id, ta.task_title AS title, t.feature, t.difficulty,
+      `SELECT ta.id, ta.task_id, ta.task_title AS title, t.feature,
               ta.score, ta.passed, ta.practice, ta.feedback, ta.xp_earned,
               ta.answer, ta.rationale, ta.selected_lines, ta.submitted_at
        FROM task_attempts ta

@@ -589,11 +589,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 borderRadius: BorderRadius.circular(AppRadius.card),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(AppRadius.card),
-                  // Hub routes are shell tabs: `go` switches the dock instead
-                  // of stacking a second shell on top of this one.
-                  onTap: () => shellTabRoutes.contains(item.route)
-                      ? context.go(item.route)
-                      : context.push(item.route),
+                  // Hub routes are shell tabs: switch the dock in place. `go`-ing
+                  // to a sibling shell route would mount a second shell and
+                  // collide on the shared scaffold global key.
+                  onTap: () {
+                    final tab = shellTabIndex[item.route];
+                    if (tab != null) {
+                      switchShellTab(tab);
+                    } else {
+                      context.push(item.route);
+                    }
+                  },
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(

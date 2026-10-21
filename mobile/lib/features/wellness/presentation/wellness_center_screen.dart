@@ -9,6 +9,7 @@ import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/features/navigation/main_nav_shell.dart';
+import 'package:verifai/features/navigation/nav_drawer_controller.dart';
 import 'package:verifai/features/wellness/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
@@ -752,10 +753,13 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
                   Navigator.of(sheetContext).pop();
                   final dest = destination.$3;
                   if (dest == '/wellness') return; // already here
-                  // Non-tab destinations are pushed so Back returns to the
-                  // screen the menu was opened from.
-                  if (shellTabRoutes.contains(dest)) {
-                    context.go(dest);
+                  // Dock areas switch in place; pushing or going to a sibling
+                  // shell route would mount a second shell and collide on the
+                  // shared scaffold global key. Everything else is pushed so
+                  // Back returns to the screen the menu was opened from.
+                  final tab = shellTabIndex[dest];
+                  if (tab != null) {
+                    switchShellTab(tab);
                   } else {
                     context.push(dest);
                   }
