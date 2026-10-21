@@ -549,12 +549,12 @@ async function trackProgress(req, res, next) {
          FROM industry_tracks t ORDER BY t.id`
       ),
       pool.query(
-        `SELECT (NOW() AT TIME ZONE ${TZ})::date - d.day AS day,
+        `SELECT (NOW() AT TIME ZONE '${TZ}')::date - d.day AS day,
                 COALESCE(COUNT(ta.id), 0)::int AS attempts,
                 COALESCE(COUNT(ta.id) FILTER (WHERE ta.passed), 0)::int AS passed
          FROM generate_series(0, 13) AS d(day)
          LEFT JOIN task_attempts ta
-           ON ta.submitted_date = (NOW() AT TIME ZONE ${TZ})::date - d.day
+           ON ta.submitted_date = (NOW() AT TIME ZONE '${TZ}')::date - d.day
          GROUP BY d.day ORDER BY d.day`,
       ),
       pool.query(
@@ -1386,8 +1386,8 @@ async function getSystem(req, res, next) {
   try {
     const usage = await pool.query(
       `SELECT
-         (SELECT COUNT(*)::int FROM assistant_sessions WHERE created_at >= CURRENT_DATE - 7) AS assistant_sessions_7d,
-         (SELECT COUNT(*)::int FROM vera_sessions WHERE created_at >= CURRENT_DATE - 7) AS vera_sessions_7d,
+         (SELECT COUNT(*)::int FROM assistant_sessions WHERE started_at >= CURRENT_DATE - 7) AS assistant_sessions_7d,
+         (SELECT COUNT(*)::int FROM vera_sessions WHERE started_at >= CURRENT_DATE - 7) AS vera_sessions_7d,
          (SELECT COUNT(*)::int FROM verification_analyses WHERE created_at >= CURRENT_DATE - 7) AS verification_analyses_7d,
          (SELECT COUNT(*)::int FROM task_attempts WHERE submitted_at >= CURRENT_DATE - 7) AS attempts_7d,
          (SELECT COUNT(*)::int FROM users) AS users_total`
@@ -1687,14 +1687,14 @@ async function answerSummary(req, res, next) {
       ),
       pool.query(
         `SELECT COALESCE(tr.name, '(no track)') AS department,
-                (NOW() AT TIME ZONE ${TZ})::date - d.day AS day,
+                (NOW() AT TIME ZONE '${TZ}')::date - d.day AS day,
                 COUNT(al.id)::int AS answers,
                 COALESCE(ROUND(AVG(al.score)), 0)::int AS avg_score
          FROM generate_series(0, 29) AS d(day)
          CROSS JOIN (SELECT DISTINCT department_id FROM answer_logs) dd
          LEFT JOIN answer_logs al
            ON al.department_id = dd.department_id
-          AND al.submitted_date = (NOW() AT TIME ZONE ${TZ})::date - d.day
+          AND al.submitted_date = (NOW() AT TIME ZONE '${TZ}')::date - d.day
          LEFT JOIN industry_tracks tr ON tr.id = dd.department_id
          GROUP BY dd.department_id, tr.name, d.day
          ORDER BY department, d.day`
@@ -1806,8 +1806,8 @@ async function getAnalytics(req, res, next) {
                          to_char(w.week_start, 'YYYY-MM-DD') AS week_start,
                          COUNT(u.id)::int AS signups
                   FROM generate_series(
-                         date_trunc('week', (NOW() AT TIME ZONE ${TZ})::date - INTERVAL '11 weeks'),
-                         date_trunc('week', (NOW() AT TIME ZONE ${TZ})::date),
+                         date_trunc('week', (NOW() AT TIME ZONE '${TZ}')::date - INTERVAL '11 weeks'),
+                         date_trunc('week', (NOW() AT TIME ZONE '${TZ}')::date),
                          INTERVAL '1 week'
                        ) AS w(week_start)
                   LEFT JOIN users u ON date_trunc('week', u.created_at) = w.week_start
@@ -1816,13 +1816,13 @@ async function getAnalytics(req, res, next) {
       ),
       // Attempts per day (last 30 days), passed/failed split.
       pool.query(
-        `SELECT (NOW() AT TIME ZONE ${TZ})::date - d.day AS day,
+        `SELECT (NOW() AT TIME ZONE '${TZ}')::date - d.day AS day,
                 COUNT(ta.id)::int AS attempts,
                 COUNT(ta.id) FILTER (WHERE ta.passed)::int AS passed,
                 COALESCE(ROUND(AVG(ta.score)), 0)::int AS avg_score
          FROM generate_series(0, 29) AS d(day)
          LEFT JOIN task_attempts ta
-           ON ta.submitted_date = (NOW() AT TIME ZONE ${TZ})::date - d.day
+           ON ta.submitted_date = (NOW() AT TIME ZONE '${TZ}')::date - d.day
          GROUP BY d.day ORDER BY d.day`
       ),
       // Per-feature: attempts, avg score, pass rate.
