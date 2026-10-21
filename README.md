@@ -131,7 +131,7 @@ VerifAI/
 │   ├── middleware/             Auth, roles, validation, SSE, rate limits, errors
 │   ├── db/
 │   │   ├── schema.sql          Full schema for a fresh database
-│   │   ├── migrations/         Ledger-based incremental migrations (001–028)
+│   │   ├── migrations/         Ledger-based incremental migrations (001–029)
 │   │   ├── seed/               Curriculum, tasks, rewards, sources
 │   │   └── pool.js             Shared pg pool (TLS aware)
 │   ├── utils/                  Dates, HTTP caching, TTL cache, rate-limit store
@@ -499,7 +499,7 @@ A submission moves through a single transaction with a bounded number of round t
 |---|---|
 | `cd backend && npm test` | **186 tests** — routing, auth/authorisation, scoring, readiness, capstones, wellness, rewards, lab, admin, streaming |
 | `cd mobile && flutter analyze` | Static analysis; currently clean |
-| `cd mobile && flutter test` | **50 tests** — auth interceptor, login/onboarding flows, task submission, lab navigation, judgement, wellness, navigation shell and a 200% text-scale regression |
+| `cd mobile && flutter test` | **55 tests** — auth interceptor, login/onboarding flows, task submission, lab navigation, judgement, wellness, navigation shell and a 200% text-scale regression |
 
 GitHub Actions runs the backend suite, the Flutter format/analyze/test jobs, `npm audit` and a
 gitleaks secret scan on every push and pull request. `codemagic.yaml` builds the mobile artefacts.

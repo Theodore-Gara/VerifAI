@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VerifAI - 5 Minute Demo Script</title>
+<style>
+  @page { size: A4; margin: 15mm 15mm 13mm 15mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: #16211C;
+    font-size: 10.4pt;
+    line-height: 1.45;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  h1 { font-size: 21pt; margin: 0 0 4px 0; letter-spacing: -0.02em; }
+  .sub { font-size: 9pt; letter-spacing: .16em; text-transform: uppercase; color: #1E8A63; font-weight: 800; margin: 0 0 13px 0; }
+  .rule { height: 3px; width: 56px; background: #C9A227; margin: 0 0 12px 0; }
+  .meta { font-size: 9pt; color: #5F7169; margin: 0 0 14px 0; }
+  .meta b { color: #16211C; }
+  .preflight {
+    border: 1px solid #DFD9CB; background: #FBF9F3; border-left: 4px solid #1E8A63;
+    border-radius: 6px; padding: 10px 14px; margin: 0 0 16px 0;
+  }
+  .preflight h2 { font-size: 9pt; letter-spacing: .14em; text-transform: uppercase; margin: 0 0 6px 0; color: #1E8A63; }
+  .preflight ol { margin: 0; padding-left: 16px; }
+  .preflight li { font-size: 9.4pt; margin-bottom: 3px; }
+  .sec { break-inside: avoid; page-break-inside: avoid; margin: 0 0 13px 0; }
+  .head { display: flex; align-items: baseline; gap: 10px; border-bottom: 1px solid #E4DECD; padding-bottom: 4px; margin-bottom: 7px; }
+  .t { font-size: 8.6pt; font-weight: 800; letter-spacing: .08em; background: #EAF3EE; color: #146B4B; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+  .h { font-size: 12.2pt; font-weight: 800; letter-spacing: -0.01em; }
+  .do {
+    font-size: 9.4pt; color: #4A5A52; background: #F4F1E7; border-radius: 5px;
+    padding: 5px 9px; margin-bottom: 7px;
+  }
+  .do b { color: #7A5E07; letter-spacing: .1em; font-size: 8.4pt; margin-right: 4px; }
+  .say p { margin: 0 0 6px 0; font-size: 11.2pt; line-height: 1.5; }
+  .say p:last-child { margin-bottom: 0; }
+  .say { padding-left: 11px; border-left: 3px solid #C9A227; }
+  .notes { margin-top: 16px; border-top: 1px solid #E4DECD; padding-top: 10px; }
+  .notes h2 { font-size: 9pt; letter-spacing: .14em; text-transform: uppercase; margin: 12px 0 6px 0; color: #1E8A63; }
+  .notes ul { margin: 0 0 0 0; padding-left: 16px; }
+  .notes li { font-size: 9.4pt; margin-bottom: 3px; }
+  .foot { margin-top: 14px; font-size: 8pt; letter-spacing: .12em; text-transform: uppercase; color: #A79E88; display: flex; justify-content: space-between; }
+  .tight { margin: 0; padding-left: 16px; }
+  .tight li { font-size: 9.4pt; margin-bottom: 2px; }
+</style>
+</head>
+<body>
+
+<p class="sub">VerifAI &middot; Group SE16</p>
+<h1>5 Minute Demo Script</h1>
+<div class="rule"></div>
+<p class="meta"><b>Speaker</b> reads the SAY lines only. &nbsp; <b>Operator</b> follows the DO lines only. &nbsp; <b>Total</b> 5:00 &middot; about 720 spoken words.</p>
+
+<div class="preflight">
+  <h2>Pre-flight, five minutes before</h2>
+  <ol>
+    <li>Open <b>verif-ai-5a435.web.app</b> and sign in as the demo account. This warms the API, which sleeps on the free tier.</li>
+    <li>Make sure that account already has attempts, so Progress and History are not empty.</li>
+    <li>Phone on the podium, mirrored to the projector, already signed in as the second backup.</li>
+    <li>Screen recording of the full loop open in a second tab. If the network dies, play it and keep reading.</li>
+  </ol>
+</div>
+
+<div class="sec">
+  <div class="head"><span class="t">0:00 - 0:30</span><span class="h">What VerifAI is</span></div>
+  <div class="do"><b>DO</b> Hold on the cover. No clicking yet.</div>
+  <div class="say">
+    <p>Good morning, we are Group SE16, and this is VerifAI.</p>
+    <p>Employers now hire graduates who use AI, but nobody can really tell whether they use it well. A CV cannot show judgement, and a quiz about tool names does not measure it either.</p>
+    <p>So we built an app that puts you inside realistic AI work: an answer with a flaw in it, or a decision that needs a call. You find the problem, fix it, and explain your reasoning. Every attempt feeds one number: your AI workplace readiness score, from zero to a hundred.</p>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="head"><span class="t">0:30 - 1:00</span><span class="h">Sign in and Home</span></div>
+  <div class="do"><b>DO</b> Sign in, then stop on Home.</div>
+  <div class="say">
+    <p>Signing in takes you straight to Home, and Home always opens on the next best action.</p>
+    <p>At the top is your readiness score and your tier. Below it, your streak, your XP, and how many tasks you have completed. And here is one recommended task, chosen from a difficulty band that suits your level.</p>
+    <p>Notice what is not here: no wall of charts. The first thing you can do is start work.</p>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="head"><span class="t">1:00 - 2:10</span><span class="h">Verification, the core loop</span></div>
+  <div class="do"><b>DO</b> Practice hub, then Verification, then open a line-text task.</div>
+  <div class="say">
+    <p>Practice is where the scored skills live. We have Verification, AI Judgement, and Risk and Governance, plus interview practice, a verification studio, industry cases, and your task history.</p>
+    <p>Verification gives you a numbered AI output. Our learner taps the line that is wrong, writes the correction, then writes why. Three parts: the flaw, the fix, and the reason.</p>
+  </div>
+  <div class="do"><b>DO</b> Select one flawed line, skip the fix and reason, submit.</div>
+  <div class="say">
+    <p>First, we answer badly on purpose, so you can see that the app is honest.</p>
+    <p>Picking the flawed line alone does not pass. The rule is a total of seventy or more, with a real score on both the flaw and the fix, because the fix is the skill being tested. The feedback says exactly what was missed and shows the correct answer.</p>
+  </div>
+  <div class="do"><b>DO</b> Retry, then give the correct lines, the fix, and the reason. Submit.</div>
+  <div class="say">
+    <p>Now the real attempt. Thirty for the flaw, forty for the fix, thirty for the reason.</p>
+    <p>On submit, the server scores it, saves the attempt, updates skill coverage, readiness, XP, streak and achievements, all in one transaction. Then it offers the next task, full screen, with no friction.</p>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="head"><span class="t">2:10 - 2:45</span><span class="h">AI Judgement and Risk</span></div>
+  <div class="do"><b>DO</b> Back to Practice, open AI Judgement, choose a decision and a reason.</div>
+  <div class="say">
+    <p>AI Judgement asks a different question: should AI be used here at all?</p>
+    <p>You choose between use it, use it with human review, or do not use it, and then pick the best reason. Getting the decision right is worth fifty, a neighbouring answer gets twenty five, the opposite gets nothing, and the reason is another fifty.</p>
+    <p>Risk and Governance uses the same engine, but the decision is proceed or do not proceed. Same interaction, different judgement.</p>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="head"><span class="t">2:45 - 3:20</span><span class="h">Learn</span></div>
+  <div class="do"><b>DO</b> Learn hub, open a lesson, scroll one chapter, then open a capstone.</div>
+  <div class="say">
+    <p>Learn is the knowledge side of the product.</p>
+    <p>AI Lab gives you short lessons built from chapters and topics, with a source library behind them, recall practice, and a skill roadmap.</p>
+    <p>Capstones work like exams. They are timed, they have a pass mark and a limited number of attempts. Objective questions mark themselves, and longer written answers go to a moderator, with the AI suggesting rubric marks to speed that up.</p>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="head"><span class="t">3:20 - 3:55</span><span class="h">Progress</span></div>
+  <div class="do"><b>DO</b> Progress hub. Point at the readiness breakdown, the activity chart and the leaderboard, then open one history row.</div>
+  <div class="say">
+    <p>Progress is the evidence.</p>
+    <p>Readiness is broken down by skill, so you can see exactly where you are strong and where you are not. Then XP and level, a thirty day activity chart, and a leaderboard for your track.</p>
+    <p>History keeps every attempt. And if I open one, it loads the real feedback again, because the result is stored, not kept in the screen.</p>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="head"><span class="t">3:55 - 4:25</span><span class="h">Wellness and Vera</span></div>
+  <div class="do"><b>DO</b> Profile, Wellness, tap a mood. Then open Vera and send one short message.</div>
+  <div class="say">
+    <p>Profile holds the personal side.</p>
+    <p>The Wellness Centre gives a daily mood check-in, a private journal, guided breathing and a weekly summary. It is private to the learner.</p>
+    <p>And this is Vera, our AI coach. Her answers stream in as they are written, so there is no waiting, and she only keeps what you choose to let her remember.</p>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="head"><span class="t">4:25 - 4:45</span><span class="h">The platform</span></div>
+  <div class="do"><b>DO</b> Go back to Home. Keep the readiness number on screen.</div>
+  <div class="say">
+    <p>Behind all of this is one Flutter app for Android, iOS and web, an Express API, and a PostgreSQL database.</p>
+    <p>It is fully deployed: a live web build, an installable APK, and a staff portal for content and moderation. Nothing you have seen is a mock-up.</p>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="head"><span class="t">4:45 - 5:00</span><span class="h">Close</span></div>
+  <div class="say">
+    <p>So the loop is simple. Learn the concept, practise a realistic scenario, get assessed, see the evidence, and keep the habit going.</p>
+    <p>VerifAI does not test whether you know AI. It tests whether you can be trusted with it.</p>
+    <p>Thank you.</p>
+  </div>
+</div>
+
+<div class="notes">
+  <h2>If something breaks</h2>
+  <ul>
+    <li><b>API slow or asleep:</b> keep talking about the screen already on display, then refresh once.</li>
+    <li><b>Task fails to load:</b> go to Progress, talk through readiness instead, then return.</li>
+    <li><b>Total network loss:</b> switch to the recording, keep the same order of sections.</li>
+    <li><b>Never</b> open the admin portal or the Workshop in these five minutes. They are not part of this story.</li>
+  </ul>
+  <h2>Two things not to say</h2>
+  <ul>
+    <li>Do not promise Prompt Design. It has no content yet.</li>
+    <li>Do not claim the Workshop is available to learners. Only the API and admin side exist.</li>
+  </ul>
+</div>
+
+</body>
+</html>

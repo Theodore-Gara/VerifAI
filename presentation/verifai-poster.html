@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VerifAI Poster</title>
+<style>
+  @page { size: 8.5in 11in; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 612pt; height: 792pt; overflow: hidden;
+    font-family: "Times New Roman", Times, serif;
+    color: #000; font-size: 7.9pt; line-height: 1.32;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .page { position: relative; width: 612pt; height: 792pt; padding: 10pt 30pt 20pt 30pt; }
+  .logo { position: absolute; left: 41pt; top: 13pt; width: 166pt; }
+  .head { text-align: center; }
+  h1 {
+    margin: 2pt 0 7pt 186pt;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14.6pt; line-height: 1.12; font-weight: bold;
+    letter-spacing: .2pt; color: #0038A8; text-transform: uppercase;
+  }
+  .authors { font-size: 11.8pt; font-weight: bold; font-style: italic; color: #FF0000; margin: 20pt 0 2pt 0; }
+  .faculty { font-size: 11.2pt; margin: 0 0 1pt 0; }
+  .contact { font-size: 10pt; font-style: italic; color: #0070C0; margin: 0; }
+  .cols { display: flex; gap: 14pt; margin-top: 9pt; }
+  .col { width: 269pt; }
+  h2 {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10pt; font-weight: bold; text-transform: uppercase;
+    color: #0038A8; text-align: center; margin: 9pt 0 3pt 0; letter-spacing: .3pt;
+  }
+  h2:first-child { margin-top: 0; }
+  p { margin: 0 0 4pt 0; text-align: justify; }
+  ul { margin: 0 0 4pt 0; padding-left: 11pt; }
+  li { margin-bottom: 1.5pt; }
+  b { font-weight: bold; }
+  .abstract { border: 1pt solid #000; padding: 4pt 6pt; }
+  .abstract h2 { margin-top: 0; }
+  .abstract p { margin-bottom: 0; }
+  .kv { margin: 0 0 4pt 0; }
+  .kv b { font-family: Arial, Helvetica, sans-serif; font-size: 7.4pt; }
+  .fig { margin: 5pt 0 6pt 0; }
+  .caption { font-size: 6.6pt; text-align: center; margin: 3pt 0 0 0; font-style: italic; }
+  /* loop */
+  .loop { display: flex; gap: 3pt; }
+  .loop .s { flex: 1; border: .6pt solid #0038A8; border-radius: 2pt; padding: 3pt 2pt; text-align: center; }
+  .loop .n { font-family: Arial, Helvetica, sans-serif; font-size: 6pt; color: #0038A8; font-weight: bold; }
+  .loop .t { font-family: Arial, Helvetica, sans-serif; font-size: 6.4pt; font-weight: bold; }
+  /* bars */
+  .bars { display: flex; flex-direction: column; gap: 2pt; }
+  .bar { display: grid; grid-template-columns: 66pt 1fr 18pt; gap: 4pt; align-items: center; }
+  .bar .l { font-size: 6.8pt; font-family: Arial, Helvetica, sans-serif; }
+  .bar .t { height: 5pt; background: #E8E8E8; border: .5pt solid #C9C9C9; }
+  .bar .f { display: block; height: 100%; background: #0038A8; }
+  .bar .v { font-size: 6.6pt; text-align: right; font-family: Arial, Helvetica, sans-serif; }
+  /* arch */
+  .arch { display: flex; flex-direction: column; gap: 2pt; }
+  .arch .r { display: grid; grid-template-columns: 52pt 1fr; gap: 4pt; align-items: center; }
+  .arch .k { font-family: Arial, Helvetica, sans-serif; font-size: 6.2pt; text-transform: uppercase; letter-spacing: .4pt; color: #555; text-align: right; }
+  .arch .b { border: .6pt solid #0038A8; border-radius: 2pt; padding: 2.5pt 4pt; font-size: 6.8pt; }
+  /* kpi */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3pt; margin: 4pt 0 5pt 0; }
+  .kpi { border: .6pt solid #0038A8; border-radius: 2pt; padding: 3pt 2pt; text-align: center; }
+  .kpi .n { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; font-weight: bold; color: #0038A8; line-height: 1; }
+  .kpi .l { font-family: Arial, Helvetica, sans-serif; font-size: 5.6pt; text-transform: uppercase; letter-spacing: .3pt; color: #444; margin-top: 2pt; }
+  /* tiers */
+  .tiers { display: flex; gap: 2pt; margin: 3pt 0 0 0; }
+  .tier { flex: 1; border-top: 3pt solid #0038A8; padding-top: 2pt; text-align: center; }
+  .tier .n { font-family: Arial, Helvetica, sans-serif; font-size: 6.4pt; font-weight: bold; }
+  .tier .v { font-size: 6.2pt; color: #333; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <img class="logo" src="_tmpl_img0_1.jpeg" alt="Eduvos">
+
+  <div class="head">
+    <h1>VerifAI: Measuring AI Workplace Readiness Through Realistic Judgement Tasks</h1>
+    <p class="authors">Meshaque Kalonji, Vusani Earl Mulaudzi, Theodore Nangara, Lwandle Naledi Chloe Mvelase, Mpho Mokoena</p>
+    <p class="faculty">Faculty of Information Technology, Eduvos, Bedfordview, South Africa</p>
+  </div>
+
+  <div class="cols">
+    <!-- LEFT -->
+    <div class="col">
+
+      <div class="abstract">
+        <h2>Abstract</h2>
+        <p>Employers are adopting AI faster than graduates can be assessed on using it well. Tool knowledge is easy to test and easy to forget; what decides whether a junior hire is trustworthy with AI is judgement: catching a hallucinated citation, knowing when not to automate a decision, and spotting a privacy or bias risk before it reaches a client. VerifAI is a Flutter application that measures AI workplace readiness through realistic, employer-style work. Learners find the flaw in an AI output, correct it, and justify the decision. Every graded attempt feeds a deterministic, server-side readiness score across four South African industry tracks, producing a 0 to 100 readiness profile, a tier, and an evidence trail a recruiter can inspect.</p>
+      </div>
+
+      <h2>Introduction</h2>
+      <p>No CV states whether a graduate can be trusted with AI, and a multiple-choice quiz measures recall rather than judgement. The gap is the product: an assessment that behaves like the work itself.</p>
+      <p>The app runs a daily loop: learn a concept, practise a flawed scenario, be assessed under exam-style conditions, see the evidence, and keep the habit going. Content covers <b>Finance</b>, <b>Legal</b>, <b>IT and Software</b>, and <b>Business Consulting</b>, with 144 authored scenario tasks and 576 answer options.</p>
+
+      <div class="fig">
+        <div class="loop">
+          <div class="s"><div class="n">01</div><div class="t">Learn</div></div>
+          <div class="s"><div class="n">02</div><div class="t">Practise</div></div>
+          <div class="s"><div class="n">03</div><div class="t">Assess</div></div>
+          <div class="s"><div class="n">04</div><div class="t">Evidence</div></div>
+          <div class="s"><div class="n">05</div><div class="t">Habit</div></div>
+        </div>
+        <p class="caption">Figure 1: The VerifAI learner loop.</p>
+      </div>
+
+      <h2>Assessment Engine</h2>
+      <p class="kv"><b>Verification.</b> Either four-option choice, or a numbered AI output where the learner taps the flawed lines, types the correction, then the reason. Line-text scores 30 flaw, 40 fix, 30 reason, and needs 70 with a non-zero flaw <i>and</i> fix, so a plausible explanation cannot pass a task whose point is the correction.</p>
+      <p class="kv"><b>AI Judgement.</b> Decision (use AI, use with review, do not use) plus best-of-three reason. Decision scores 50, 25 or 0 for correct, neighbouring or opposite; reason scores 50 or 0. Pass 50.</p>
+      <p class="kv"><b>Risk and Governance.</b> Proceed or do not proceed, plus best-of-three reason, 50 and 0 each. Pass 50.</p>
+      <p class="kv"><b>Interview Practice.</b> An ungraded per-track question bank that feeds 10% of readiness as coverage.</p>
+      <p>Scoring is deterministic and server-side. The payload never contains the answer key, and no LLM grades a scored task, so the same answer always earns the same mark.</p>
+
+      <h2>Readiness Model</h2>
+      <p>Readiness is a weighted mean over the components a track actually offers. Each skill score is <b>coverage</b>: passed tasks divided by available tasks. A four-task skill therefore fills 25, 50, 75 then 100% as each task is passed, and never decays between sessions.</p>
+      <div class="fig">
+        <div class="bars">
+          <div class="bar"><span class="l">Verification</span><span class="t"><span class="f" style="width:100%"></span></span><span class="v">0.30</span></div>
+          <div class="bar"><span class="l">AI Judgement</span><span class="t"><span class="f" style="width:100%"></span></span><span class="v">0.30</span></div>
+          <div class="bar"><span class="l">Risk &amp; Governance</span><span class="t"><span class="f" style="width:66%"></span></span><span class="v">0.20</span></div>
+          <div class="bar"><span class="l">Learning</span><span class="t"><span class="f" style="width:66%"></span></span><span class="v">0.20</span></div>
+          <div class="bar"><span class="l">Prompt Design</span><span class="t"><span class="f" style="width:33%"></span></span><span class="v">0.10</span></div>
+          <div class="bar"><span class="l">Interview</span><span class="t"><span class="f" style="width:33%"></span></span><span class="v">0.10</span></div>
+        </div>
+        <p class="caption">Figure 2: Readiness weights, fixed per track.</p>
+      </div>
+      <div class="tiers">
+        <div class="tier"><div class="n">Novice</div><div class="v">0 to 49</div></div>
+        <div class="tier"><div class="n">Developing</div><div class="v">50 to 69</div></div>
+        <div class="tier"><div class="n">Proficient</div><div class="v">70 to 84</div></div>
+        <div class="tier"><div class="n">Advanced</div><div class="v">85 to 100</div></div>
+      </div>
+      <p class="caption" style="text-align:left; margin-top:3pt;">Tiers are derived from the live score, so they move with evidence.</p>
+
+    </div>
+
+    <!-- RIGHT -->
+    <div class="col">
+
+      <h2>System Design</h2>
+      <div class="fig">
+        <div class="arch">
+          <div class="r"><div class="k">Client</div><div class="b"><b>Flutter</b> app on Android, iOS and web: Riverpod state, go_router navigation, one API client.</div></div>
+          <div class="r"><div class="k">Transport</div><div class="b">HTTPS with a <b>Firebase ID token</b>; a 401 interceptor refreshes once, retries, then signs out.</div></div>
+          <div class="r"><div class="k">API</div><div class="b"><b>Node.js 22 and Express</b> on Render: 20 routers, 107 endpoints, rate limits, ETags, streaming.</div></div>
+          <div class="r"><div class="k">Data</div><div class="b"><b>PostgreSQL on Supabase</b>: 50 tables, 29 ledger-applied migrations, parameterised SQL.</div></div>
+          <div class="r"><div class="k">Services</div><div class="b">Firebase Auth, NVIDIA-hosted LLMs with a fallback model, and Tavily web search.</div></div>
+        </div>
+        <p class="caption">Figure 3: One API and one database behind three clients.</p>
+      </div>
+      <p>A submission is handled in one transaction: score the answer, write the attempt and its analytics row, recompute coverage and readiness if it moved, then award XP, tokens, streak and achievements. The app never computes a score.</p>
+
+      <h2>Implementation</h2>
+      <ul>
+        <li><b>Scale:</b> 34.5k lines (12.5k backend, 21.9k Flutter), 40 screens across 22 feature modules.</li>
+        <li><b>Navigation:</b> five hubs, Home, Learn, Practice, Progress and Profile, with every other screen pushed from the hub that owns it.</li>
+        <li><b>Content:</b> 5 lessons with 248 sections, 4 timed capstones over 100 questions, 16 industry cases, 9 rewards and 13 achievements.</li>
+        <li><b>AI:</b> Verification Studio reviews pasted text, documents, links and citations; Vera and the in-task assistant stream over server-sent events and abort cleanly when the client disconnects.</li>
+        <li><b>Accessibility:</b> light, dark and system themes, bundled fonts, OS text scaling, and semantic labels on custom-drawn scores.</li>
+      </ul>
+
+      <h2>Results</h2>
+      <div class="kpis">
+        <div class="kpi"><div class="n">144</div><div class="l">Tasks</div></div>
+        <div class="kpi"><div class="n">241</div><div class="l">Tests</div></div>
+        <div class="kpi"><div class="n">107</div><div class="l">Endpoints</div></div>
+        <div class="kpi"><div class="n">4</div><div class="l">Tracks</div></div>
+      </div>
+      <p>The full loop is working end to end against the deployed API. A submission moves readiness, XP and tier immediately; feedback is stored and reopens from history or a deep link; and the same build ships as a web app and an installable APK. Continuous integration runs 186 backend and 55 Flutter tests, static analysis, a dependency audit and a secret scan on every push.</p>
+      <p>An internal audit closed 24 findings across three rounds, including fixed per-track readiness denominators, a shared rate-limit store in PostgreSQL, off-thread document parsing, and cached static payloads with ETag revalidation.</p>
+
+      <h2>Conclusion and Future Work</h2>
+      <p>VerifAI turns a vague hiring question, whether a graduate can be trusted with AI, into a measurable readiness score backed by evidence. The engineering that makes it credible is already in place: one authoritative scoring pipeline, a schema that evolves through reviewed migrations, streaming AI features that degrade gracefully, and server-side authorisation for every privileged action.</p>
+      <p>Outstanding work is scheduled rather than open: a testing phase to 30 October covering regression and a device matrix, Prompt Design content (scaffolded but not authored), a Workshop learner screen (API and moderation already complete), an embedded-Postgres integration suite, and row-level security hardening on the hosted database.</p>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

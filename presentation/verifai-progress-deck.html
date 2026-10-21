@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VerifAI  -  Progress Review</title>
+<style>
+  @page { size: 13.333in 7.5in; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #0A2A22; }
+  body {
+    font-family: "Segoe UI", Inter, Arial, sans-serif;
+    color: #0F1C18;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  :root {
+    --ink: #0F1C18;
+    --deep: #0A2A22;
+    --deep2: #0E3A2E;
+    --accent: #1E8A63;
+    --accent2: #37B58A;
+    --gold: #C9A227;
+    --paper: #F6F4ED;
+    --line: #DFD9CB;
+    --muted: #5F7169;
+  }
+  .slide {
+    width: 1280px; height: 720px;
+    position: relative; overflow: hidden;
+    background: var(--paper);
+    break-after: page; page-break-after: always;
+    display: flex; flex-direction: column;
+  }
+  .slide:last-child { break-after: auto; page-break-after: auto; }
+  .rib {
+    flex: 0 0 auto;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 22px 64px 0 64px;
+    font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--muted); font-weight: 700;
+  }
+  .rib .sn { color: #B4A98F; letter-spacing: .1em; }
+  .body { flex: 1 1 auto; padding: 14px 64px 46px 64px; display: flex; flex-direction: column; }
+  .kicker {
+    margin: 0 0 10px 0; font-size: 12px; letter-spacing: .2em;
+    text-transform: uppercase; color: var(--accent); font-weight: 800;
+  }
+  h1 {
+    margin: 0 0 16px 0; font-size: 42px; line-height: 1.1;
+    letter-spacing: -0.025em; font-weight: 800; color: var(--ink);
+  }
+  h1 em { font-style: normal; color: var(--accent); }
+  h2 { margin: 0 0 10px 0; font-size: 24px; letter-spacing: -.01em; font-weight: 800; }
+  .lead { margin: 0 0 22px 0; font-size: 18px; line-height: 1.45; color: #2C3A34; max-width: 980px; }
+  p { margin: 0 0 10px 0; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .card {
+    background: #FFFFFF; border: 1px solid var(--line); border-radius: 14px;
+    padding: 18px 20px;
+  }
+  .card h3 { margin: 0 0 8px 0; font-size: 15px; font-weight: 800; letter-spacing: -.005em; }
+  .card p { margin: 0; font-size: 13.5px; line-height: 1.45; color: #3A4A43; }
+  .card.soft { background: #FBF9F3; }
+  .tint { background: #EDF5F0; border-color: #CFE6DA; }
+  .gold { background: #FBF5E2; border-color: #E8D9A8; }
+  ul { margin: 0; padding-left: 18px; }
+  li { font-size: 15px; line-height: 1.55; margin-bottom: 7px; color: #2C3A34; }
+  li b { color: var(--ink); }
+  .kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-top: auto; }
+  .kpi { background: #FFFFFF; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .kpi .n { font-size: 27px; font-weight: 800; letter-spacing: -.03em; color: var(--deep); line-height: 1; }
+  .kpi .l { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-top: 7px; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th {
+    text-align: left; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--muted); font-weight: 800; padding: 0 10px 8px 10px; border-bottom: 1.5px solid var(--line);
+  }
+  td { padding: 9px 10px; border-bottom: 1px solid #EAE5D8; vertical-align: top; line-height: 1.4; }
+  tr:last-child td { border-bottom: none; }
+  td b { color: var(--ink); }
+  .pill {
+    display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: .1em;
+    text-transform: uppercase; padding: 4px 9px; border-radius: 999px;
+    background: #DFF0E6; color: #146B4B; white-space: nowrap;
+  }
+  .pill.g { background: #F6EAC4; color: #7A5E07; }
+  .pill.n { background: #E9E5D8; color: #6A6350; }
+  .muted { color: var(--muted); }
+  .small { font-size: 12.5px; line-height: 1.45; }
+  .foot {
+    position: absolute; left: 64px; right: 64px; bottom: 16px;
+    display: flex; justify-content: space-between; font-size: 10px;
+    letter-spacing: .14em; text-transform: uppercase; color: #A79E88; font-weight: 700;
+  }
+  /* cover */
+  .cover { background: radial-gradient(120% 100% at 82% 0%, #12503F 0%, #0A2A22 46%, #071E19 100%); color: #F3F1E7; }
+  .cover .body { padding: 0 72px; justify-content: center; }
+  .brand { font-size: 13px; letter-spacing: .32em; text-transform: uppercase; color: #7FC7A9; font-weight: 800; }
+  .cover h1 { color: #F7F5EC; font-size: 66px; margin: 18px 0 10px; letter-spacing: -.035em; }
+  .cover .sub { font-size: 24px; color: #CFE3D9; max-width: 760px; line-height: 1.35; margin-bottom: 34px; }
+  .cover .meta { display: flex; gap: 40px; font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase; color: #93B3A6; font-weight: 700; }
+  .cover .rule { width: 84px; height: 4px; background: var(--gold); border-radius: 2px; margin: 0 0 26px; }
+  .cover .foot { color: #6E8F82; }
+  /* loop diagram */
+  .flow { display: flex; align-items: center; gap: 10px; margin: 6px 0 20px; }
+  .step {
+    flex: 1; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 12px; text-align: center;
+  }
+  .step .i { font-size: 10px; letter-spacing: .16em; color: var(--accent); font-weight: 800; }
+  .step .t { font-size: 13.5px; font-weight: 800; margin-top: 5px; }
+  .step .d { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.35; }
+  .arrow { color: #B9B09A; font-size: 18px; font-weight: 700; }
+  /* bars */
+  .bars { display: flex; flex-direction: column; gap: 9px; }
+  .bar { display: grid; grid-template-columns: 132px 1fr 44px; align-items: center; gap: 10px; }
+  .bar .bl { font-size: 12.5px; font-weight: 700; color: #33443C; }
+  .bar .bt { display: block; height: 9px; background: #E7E2D4; border-radius: 6px; overflow: hidden; }
+  .bar .bf { display: block; height: 100%; background: linear-gradient(90deg, #1E8A63, #37B58A); border-radius: 6px; }
+  .bar .bv { font-size: 12px; font-weight: 800; color: var(--muted); text-align: right; }
+  /* arch */
+  .arch { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .layer { display: grid; grid-template-columns: 190px 1fr; gap: 14px; align-items: center; }
+  .layer .who { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 800; text-align: right; }
+  .layer .what { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 11px 14px; font-size: 13px; line-height: 1.4; }
+  .layer .what b { color: var(--deep); }
+  .dark { background: var(--deep); color: #EDEAE0; }
+  .dark .rib { color: #7FA294; }
+  .dark h1, .dark h2 { color: #F7F5EC; }
+  .dark .lead, .dark li { color: #CFE0D7; }
+  .dark li b { color: #fff; }
+  .dark .card { background: #10382D; border-color: #1D5142; }
+  .dark .card p, .dark .card h3 { color: #D7E6DE; }
+  .dark .card h3 { color: #fff; }
+  .dark .kicker { color: var(--accent2); }
+  .dark .kpi { background: #10382D; border-color: #1D5142; }
+  .dark .kpi .n { color: #8FE0BE; }
+  .dark .kpi .l { color: #86A798; }
+  .dark .foot { color: #5C7C6F; }
+  .quote { font-size: 22px; line-height: 1.45; font-weight: 600; color: #23332C; border-left: 4px solid var(--gold); padding-left: 18px; }
+  .dark .quote { color: #EAF3EE; }
+  .two-col-list { columns: 2; column-gap: 28px; }
+  .tight li { margin-bottom: 4px; font-size: 13.5px; }
+  .compact .card { padding: 13px 16px; margin-bottom: 8px !important; }
+  .compact .card h3 { font-size: 14px; margin-bottom: 6px; }
+  .compact .card p { font-size: 12.5px; line-height: 1.4; }
+</style>
+</head>
+<body>
+
+<!-- 01 COVER -->
+<section class="slide cover">
+  <div class="rib" style="border-bottom:1px solid #1D4A3B; padding-bottom:16px;">
+    <span>Progress Review &middot; Group SE16</span><span class="sn">01 / 20</span>
+  </div>
+  <div class="body">
+    <div class="brand">AI Workplace Readiness</div>
+    <h1>VerifAI</h1>
+    <div class="rule"></div>
+    <p class="sub">Measuring the judgement behind AI use  -  not the tool knowledge  -  so employers can trust a graduate&rsquo;s readiness before day one.</p>
+    <div class="meta">
+      <span>22 October 2026</span>
+      <span>ITMDA3-34</span>
+      <span>Eduvos Bedfordview</span>
+      <span>5 speakers</span>
+    </div>
+    <div class="foot"><span>Flutter &middot; Express &middot; PostgreSQL &middot; Firebase</span><span>Live at verif-ai-5a435.web.app</span></div>
+  </div>
+</section>
+
+<!-- 02 RUNNING ORDER -->
+<section class="slide">
+  <div class="rib"><span>Team &amp; running order</span><span class="sn">02 / 20</span></div>
+  <div class="body">
+    <p class="kicker">Five speakers, five sections</p>
+    <h1>Who presents what</h1>
+    <table style="margin-top:6px;">
+      <tr><th style="width:52px">#</th><th style="width:220px">Speaker</th><th>Section</th><th style="width:120px">Slides</th><th style="width:86px">Time</th></tr>
+      <tr><td><b>1</b></td><td><b>Meshaque Kalonji</b></td><td>Introduction  -  the problem, the product, the promise</td><td>3&ndash;5</td><td>3:00</td></tr>
+      <tr><td><b>2</b></td><td><b>Vusani Mulaudzi</b></td><td>The experience  -  five hubs and a live walkthrough</td><td>6&ndash;8</td><td>3:00</td></tr>
+      <tr><td><b>3</b></td><td><b>Theodore Nangara</b></td><td>The assessment engine  -  formats, scoring, feedback</td><td>9&ndash;11</td><td>2:30</td></tr>
+      <tr><td><b>4</b></td><td><b>Lwandle Mvelase</b></td><td>Readiness, motivation and the learning ecosystem</td><td>12&ndash;14</td><td>3:00</td></tr>
+      <tr><td><b>5</b></td><td><b>Mpho Mokoena</b></td><td>Engineering, quality, plan versus delivery</td><td>15&ndash;19</td><td>3:30</td></tr>
+      <tr><td><b>-</b></td><td><b>Meshaque</b></td><td>Conclusion</td><td>20</td><td>1:00</td></tr>
+    </table>
+    <div class="grid3" style="margin-top:20px;">
+      <div class="card soft"><h3>Planned</h3><p>The sprint scope, straight from the project board.</p></div>
+      <div class="card soft"><h3>Built</h3><p>A live, tested product across five hubs.</p></div>
+      <div class="card soft"><h3>Left</h3><p>Testing phase, two content gaps, hardening.</p></div>
+    </div>
+    <div class="grid4" style="margin-top:auto;">
+      <div class="kpi"><div class="n">34.5k</div><div class="l">Lines of code</div></div>
+      <div class="kpi"><div class="n">107</div><div class="l">API endpoints</div></div>
+      <div class="kpi"><div class="n">241</div><div class="l">Automated tests</div></div>
+      <div class="kpi"><div class="n">144</div><div class="l">Scenario tasks</div></div>
+    </div>
+    <div class="foot"><span>Roles are a suggested split  -  swap freely</span><span>Total: 16 minutes</span></div>
+  </div>
+</section>
+
+<!-- 03 S1 PROBLEM -->
+<section class="slide">
+  <div class="rib"><span>01 &middot; Introduction</span><span class="sn">03 / 20</span></div>
+  <div class="body">
+    <p class="kicker">The problem</p>
+    <h1>AI knowledge is easy to test.<br><em>Judgement</em> is not.</h1>
+    <p class="lead">Employers are adopting AI faster than graduates can be assessed on using it <b>well</b>. Tool knowledge is easy to quiz and easy to forget. What actually decides whether a junior hire is trustworthy with AI is the judgement around it.</p>
+    <div class="grid3" style="margin-top:4px;">
+      <div class="card"><h3>Catch what is wrong</h3><p>A hallucinated citation. A fabricated figure. Code that silently swallows an exception. The output looks confident and is wrong.</p></div>
+      <div class="card"><h3>Know when not to automate</h3><p>Some decisions carry legal, financial or human consequences. The correct answer is sometimes &ldquo;use AI with a human in the loop&rdquo;  -  or not at all.</p></div>
+      <div class="card"><h3>Spot the risk first</h3><p>Privacy, bias, POPIA and client confidentiality. By the time a risk reaches a client, the damage is already done.</p></div>
+    </div>
+    <p class="quote" style="margin-top:26px;">No CV states it. No multiple-choice quiz measures it. That gap is the product.</p>
+    <div class="foot"><span>Meshaque Kalonji</span><span>Why VerifAI exists</span></div>
+  </div>
+</section>
+
+<!-- 04 S1 PRODUCT -->
+<section class="slide">
+  <div class="rib"><span>01 &middot; Introduction</span><span class="sn">04 / 20</span></div>
+  <div class="body">
+    <p class="kicker">The product</p>
+    <h1>An app that measures AI workplace readiness</h1>
+    <p class="lead">VerifAI puts the learner inside realistic, employer-style work: a scenario containing a flawed AI output or a judgement call, where they must find the problem, fix it, and justify the decision. Every graded attempt feeds a live readiness profile  -  the number a recruiter could actually trust.</p>
+    <div class="flow">
+      <div class="step"><div class="i">01</div><div class="t">Learn</div><div class="d">Short AI-literacy lessons and capstones</div></div>
+      <div class="arrow">&rarr;</div>
+      <div class="step"><div class="i">02</div><div class="t">Practise</div><div class="d">Realistic flawed-output scenarios</div></div>
+      <div class="arrow">&rarr;</div>
+      <div class="step"><div class="i">03</div><div class="t">Be assessed</div><div class="d">Server-scored, exam-style conditions</div></div>
+      <div class="arrow">&rarr;</div>
+      <div class="step"><div class="i">04</div><div class="t">See evidence</div><div class="d">Readiness, tier and full attempt history</div></div>
+      <div class="arrow">&rarr;</div>
+      <div class="step"><div class="i">05</div><div class="t">Keep going</div><div class="d">Streaks, XP, tokens, rewards</div></div>
+    </div>
+    <div class="grid4">
+      <div class="card soft"><h3>Finance</h3><p>A gross-profit summary with a payment that never arrived.</p></div>
+      <div class="card soft"><h3>Legal</h3><p>A case summary citing a judgment that does not exist.</p></div>
+      <div class="card soft"><h3>IT / Software</h3><p>AI-written code that swallows an exception silently.</p></div>
+      <div class="card soft"><h3>Business Consulting</h3><p>A recommendation that ignores a client&rsquo;s POPIA duties.</p></div>
+    </div>
+    <div class="card tint" style="margin-top:auto; display:flex; align-items:center; gap:20px;">
+      <div style="font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:#146B4B; font-weight:800; white-space:nowrap;">What a recruiter sees</div>
+      <div style="font-size:14.5px; line-height:1.45; color:#2C3A34;">A 0&ndash;100 readiness score, a tier, and an evidence trail of every scenario attempted  -  not a certificate for watching videos.</div>
+    </div>
+    <div class="foot"><span>Meshaque Kalonji</span><span>Four South African industry tracks</span></div>
+  </div>
+</section>
+
+<!-- 05 S1 DAILY LOOP -->
+<section class="slide">
+  <div class="rib"><span>01 &middot; Introduction</span><span class="sn">05 / 20</span></div>
+  <div class="body">
+    <p class="kicker">The core loop</p>
+    <h1>One action, then a number that moves</h1>
+    <p class="lead">Home never opens on a wall of charts. It opens on the one thing worth doing next. Submitting a task updates readiness, XP, streak and achievements <b>in a single transaction</b>  -  the server is the source of truth, and the app only renders what it is told.</p>
+    <div class="grid2" style="align-items:start;">
+      <div>
+        <div class="flow" style="flex-direction:column; align-items:stretch; gap:8px;">
+          <div class="step" style="text-align:left; display:flex; gap:14px; align-items:center;"><div class="i" style="min-width:22px;">01</div><div><div class="t">Home recommends the next task</div><div class="d">Unseen first, in a difficulty band suited to level; least-recently attempted rotates back in as &ldquo;Practise again&rdquo;.</div></div></div>
+          <div class="step" style="text-align:left; display:flex; gap:14px; align-items:center;"><div class="i" style="min-width:22px;">02</div><div><div class="t">The learner answers</div><div class="d">Pick the flawed lines and write the fix, choose the correct option, or make a decision plus a justification.</div></div></div>
+          <div class="step" style="text-align:left; display:flex; gap:14px; align-items:center;"><div class="i" style="min-width:22px;">03</div><div><div class="t">The server scores and commits</div><div class="d">Attempt, analytics row, coverage, readiness, XP, tokens, streak and achievements  -  one transaction.</div></div></div>
+          <div class="step" style="text-align:left; display:flex; gap:14px; align-items:center;"><div class="i" style="min-width:22px;">04</div><div><div class="t">Feedback explains, then offers the next step</div><div class="d">What was right, what was missed, and a full-screen next task.</div></div></div>
+          <div class="step" style="text-align:left; display:flex; gap:14px; align-items:center;"><div class="i" style="min-width:22px;">05</div><div><div class="t">Home reflects the new reality</div><div class="d">Readiness, tier, XP and a fresh recommendation.</div></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="card tint" style="margin-bottom:14px;">
+          <h3>One request, not five</h3>
+          <p>Home is <code>GET /api/dashboard</code>: profile, progress, dimension scores and one recommended task. It replaced five calls, three of which ran an expensive selection query and were then discarded.</p>
+        </div>
+        <div class="card">
+          <h3>Practice is honest</h3>
+          <p>Repeat attempts are labelled <b>Practise again</b> and earn no new coverage  -  a practice pass pays half XP, once. You cannot farm readiness by re-doing the same task.</p>
+        </div>
+        <div class="card gold" style="margin-top:14px;">
+          <h3>Server-side &ldquo;today&rdquo;</h3>
+          <p>Streaks are anchored to <b>Africa/Johannesburg</b>, not the phone&rsquo;s clock or the server&rsquo;s UTC  -  a check-in just after midnight cannot land on yesterday.</p>
+        </div>
+      </div>
+    </div>
+    <div class="foot"><span>Meshaque Kalonji</span><span>Server-authoritative by design</span></div>
+  </div>
+</section>
+
+<!-- 06 S2 HUBS -->
+<section class="slide">
+  <div class="rib"><span>02 &middot; The experience</span><span class="sn">06 / 20</span></div>
+  <div class="body">
+    <p class="kicker">Navigation</p>
+    <h1>Five hubs. Everything one tap away.</h1>
+    <p class="lead">The shell is deliberately shallow: five areas on a floating dock, with every other screen pushed from the hub that owns it. A full index drawer stays available as a secondary route for people who prefer a list.</p>
+    <div class="grid4" style="margin-top:2px;">
+      <div class="card"><h3>Home</h3><p>Recommended task, readiness and tier, XP bar, streak and completed tiles. Pull to refresh.</p></div>
+      <div class="card"><h3>Learn</h3><p>AI Lab lessons &rarr; chapters &rarr; topics with sources; recall practice; capstones; roadmap; Ask Vera.</p></div>
+      <div class="card"><h3>Practice</h3><p>Verification, AI Judgement, Risk &amp; Governance, Verification Studio, interview bank, industry cases, history.</p></div>
+      <div class="card"><h3>Progress</h3><p>Readiness breakdown, XP/level, activity chart, leaderboard, milestones, history, rewards.</p></div>
+    </div>
+    <div class="grid2" style="margin-top:14px;">
+      <div class="card soft"><h3>Profile</h3><p>Identity, track change, photo, appearance (light/dark/system), wellness centre, Vera, staff admin portal, sign out, delete account.</p></div>
+      <div class="card soft"><h3>Built for real use</h3><p>Material 3, bundled Inter/Manrope, light and dark themes, respects OS text scale, semantic labels on custom-drawn scores and cards, inline retry on a dropped connection.</p></div>
+    </div>
+    <div class="kpis" style="margin-top:18px;">
+      <div class="kpi"><div class="n">40</div><div class="l">Screens</div></div>
+      <div class="kpi"><div class="n">43</div><div class="l">Routes</div></div>
+      <div class="kpi"><div class="n">5</div><div class="l">Dock tabs</div></div>
+      <div class="kpi"><div class="n">3</div><div class="l">Themes</div></div>
+    </div>
+    <div class="foot"><span>Vusani Mulaudzi</span><span>Home &middot; Learn &middot; Practice &middot; Progress &middot; Profile</span></div>
+  </div>
+</section>
+
+<!-- 07 S2 SCREEN MAP -->
+<section class="slide">
+  <div class="rib"><span>02 &middot; The experience</span><span class="sn">07 / 20</span></div>
+  <div class="body">
+    <p class="kicker">What is actually built</p>
+    <h1>The screens behind each hub</h1>
+    <table style="margin-top:4px;">
+      <tr><th style="width:132px">Hub</th><th>Destinations  -  all implemented and navigable</th></tr>
+      <tr><td><b>Home</b></td><td>Dashboard with next task, readiness ring, XP, streak, completed count, dimension index; drawer index; task runner; feedback</td></tr>
+      <tr><td><b>Learn</b></td><td>Lab catalogue &rarr; lesson &rarr; chapter &rarr; topic; recall practice; capstone list &rarr; exam paper &rarr; result; skill roadmap; Ask Vera</td></tr>
+      <tr><td><b>Practice</b></td><td>Verification card set &rarr; full-screen runner &rarr; feedback; AI Judgement; Risk &amp; Governance; Verification Studio (paste / upload / link / citation); interview bank; industry cases; task history</td></tr>
+      <tr><td><b>Progress</b></td><td>Readiness breakdown by dimension; XP and level; 30-day activity chart; leaderboard (global + track); milestones; paginated history with deep-linked feedback; rewards catalogue and redemptions</td></tr>
+      <tr><td><b>Profile</b></td><td>Account and track; photo; appearance; wellness (mood, journal, self-care, breathing, weekly summary); Vera sessions and memories; staff admin entry; delete account</td></tr>
+      <tr><td><b>Auth / first run</b></td><td>Splash; welcome tour (5 steps); sign in, register, reset; industry selection; track change</td></tr>
+    </table>
+    <div class="grid3" style="margin-top:16px;">
+      <div class="card tint"><h3>Full-screen task runner</h3><p>Verification tasks run full screen with the learning assistant in the app bar  -  not a bottom sheet. Continue opens the next task the same way.</p></div>
+      <div class="card tint"><h3>Deep links survive</h3><p><code>/feedback/:attemptId</code> re-fetches the attempt, so a restart or a shared link still lands on real feedback.</p></div>
+      <div class="card tint"><h3>Staff separated</h3><p>Admin entry appears only for accounts with a database role (<code>owner</code> / <code>moderator</code>)  -  never a client-side flag.</p></div>
+    </div>
+    <div class="kpis" style="margin-top:auto;">
+      <div class="kpi"><div class="n">22</div><div class="l">Feature modules</div></div>
+      <div class="kpi"><div class="n">43</div><div class="l">Routes</div></div>
+      <div class="kpi"><div class="n">5</div><div class="l">Hubs</div></div>
+      <div class="kpi"><div class="n">3</div><div class="l">Themes</div></div>
+    </div>
+    <div class="foot"><span>Vusani Mulaudzi</span><span>40 screens across 22 feature modules</span></div>
+  </div>
+</section>
+
+<!-- 08 S2 DEMO -->
+<section class="slide dark">
+  <div class="rib"><span>02 &middot; The experience</span><span class="sn">08 / 20</span></div>
+  <div class="body">
+    <p class="kicker">Live walkthrough</p>
+    <h1>Eight steps, about four minutes</h1>
+    <p class="lead">This is the script for the live demo. If the network or a free-tier cold start gets in the way, fall back to the recorded clip and continue from step 5.</p>
+    <div class="grid2">
+      <div>
+        <ul class="tight">
+          <li><b>1. Sign in</b>  -  existing learner, Finance track, so Progress already has evidence.</li>
+          <li><b>2. Home</b>  -  point at readiness, tier, streak and the recommended task.</li>
+          <li><b>3. Practice &rarr; Verification</b>  -  open a line-text task full screen.</li>
+          <li><b>4. Answer badly, on purpose</b>  -  tap one wrong line, skip the fix. Show the honest feedback: the reason alone cannot pass.</li>
+        </ul>
+      </div>
+      <div>
+        <ul class="tight">
+          <li><b>5. Retry and pass</b>  -  correct lines, real fix, real reason. Feedback shows the 30 / 40 / 30 split.</li>
+          <li><b>6. Continue</b>  -  next task opens full screen, no friction.</li>
+          <li><b>7. Progress</b>  -  readiness coverage stepped up; open history and a deep link.</li>
+          <li><b>8. Learn &rarr; AI Lab</b>  -  open a capstone paper. Then Profile &rarr; Wellness for the second half of the product.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="grid4" style="margin-top:20px;">
+      <div class="kpi"><div class="n">144</div><div class="l">Tasks seeded</div></div>
+      <div class="kpi"><div class="n">576</div><div class="l">Answer options</div></div>
+      <div class="kpi"><div class="n">4</div><div class="l">Capstones</div></div>
+      <div class="kpi"><div class="n">4</div><div class="l">Industry tracks</div></div>
+    </div>
+    <div class="foot"><span>Vusani Mulaudzi</span><span>Android APK + web build, same Flutter codebase</span></div>
+  </div>
+</section>
+
+<!-- 09 S3 ENGINES -->
+<section class="slide">
+  <div class="rib"><span>03 &middot; The assessment engine</span><span class="sn">09 / 20</span></div>
+  <div class="body">
+    <p class="kicker">Three live skill engines</p>
+    <h1>Different skills need different answer formats</h1>
+    <p class="lead">One shared scoring pipeline, three genuinely different task shapes. Nothing is graded by an LLM on the critical path  -  the score is deterministic, auditable and cheap.</p>
+    <table style="margin-top:2px;">
+      <tr><th style="width:170px">Skill</th><th style="width:300px">Format</th><th>Scoring</th><th style="width:110px">Content</th></tr>
+      <tr>
+        <td><b>Verification</b></td>
+        <td><b>Choice</b>  -  four options, one correct.<br><b>Line&#8209;text</b>  -  numbered AI output; tap the flawed lines, then type the fix and the reason.</td>
+        <td>Choice: 100 / 0, pass &ge; 60.<br>Line&#8209;text: flaw <b>30</b> + fix <b>40</b> + reason <b>30</b>, proportional criteria matching with variants, prefix and numeric-compact matching.</td>
+        <td>60<br><span class="muted small">24 choice<br>36 line-text</span></td>
+      </tr>
+      <tr>
+        <td><b>AI Judgement</b></td>
+        <td>Scenario &rarr; <b>decision</b> (use AI / use with human review / don&rsquo;t use) + best-of-three <b>reason</b>. Optional rationale.</td>
+        <td>Decision <b>50 / 25 / 0</b> (correct / neighbour / opposite); reason <b>50 / 0</b>. Pass &ge; 50.</td>
+        <td>60<br><span class="muted small">15 per track</span></td>
+      </tr>
+      <tr>
+        <td><b>Risk &amp; Governance</b></td>
+        <td>Scenario &rarr; <b>decision</b> (proceed / don&rsquo;t proceed) + best-of-three <b>reason</b>. Optional rationale.</td>
+        <td>Decision <b>50 / 0</b>; reason <b>50 / 0</b>. Pass &ge; 50.</td>
+        <td>24<br><span class="muted small">6 per track</span></td>
+      </tr>
+      <tr>
+        <td><b>Interview</b></td>
+        <td>Per-track question bank with model answers and what employers are testing.</td>
+        <td>Ungraded. Marking practised feeds <b>10%</b> of readiness as coverage. Idempotent.</td>
+        <td>14</td>
+      </tr>
+    </table>
+    <div class="card soft" style="margin-top:auto; display:flex; align-items:center; gap:14px; padding:14px 18px;">
+      <span class="pill g">Worked example</span>
+      <div style="font-size:13.5px; line-height:1.5;">A numbered AI summary  -  <q>Revenue grew 15% because 2023 outperformed</q>  -  flag <b>line 2</b>, fix it to <b>&ldquo;compare like periods&rdquo;</b>, reason <b>&ldquo;the prior quarter covered 14 weeks&rdquo;</b> &rarr; <b>30 + 40 + 30 = 100</b>. Prompt Design is scaffolded in the model but has no content yet.</div>
+    </div>
+    <div class="foot"><span>Theodore Nangara</span><span>Deterministic scoring, no answer key before submission</span></div>
+  </div>
+</section>
+
+<!-- 10 S3 SCORING -->
+<section class="slide">
+  <div class="rib"><span>03 &middot; The assessment engine</span><span class="sn">10 / 20</span></div>
+  <div class="body">
+    <p class="kicker">Fairness rules</p>
+    <h1>Scoring that cannot be gamed</h1>
+    <div class="grid2">
+      <div>
+        <div class="card" style="margin-bottom:12px;">
+          <h3>Verification line-text: the fix is the skill</h3>
+          <p>At a flat 60, tapping the flawed lines (30) plus a plausible reason (30) passed without fixing anything. Line-text therefore requires <b>&ge; 70</b> <b>and</b> a non-zero flaw <b>and</b> fix score. The reason alone can never carry the task.</p>
+        </div>
+        <div class="card" style="margin-bottom:12px;">
+          <h3>XP is earned, never printed</h3>
+          <p>XP is score-proportional with a difficulty ceiling  -  easy 50, medium 70, hard 100. A wrong answer earns <b>0 XP</b>. Practice pays half, once.</p>
+        </div>
+        <div class="card">
+          <h3>Options never leak their score</h3>
+          <p>The task payload omits every option&rsquo;s score and the correct flag. The answer key exists only in the database until the attempt is scored.</p>
+        </div>
+      </div>
+      <div>
+        <div class="card tint" style="margin-bottom:12px;">
+          <h3>One transaction, six effects</h3>
+          <p style="margin-bottom:8px;">A submission commits atomically:</p>
+          <ul class="tight">
+            <li>the attempt <b>and</b> its analytics log row</li>
+            <li>feature coverage (passed &divide; available)</li>
+            <li>readiness and tier, only if coverage moved</li>
+            <li>XP, level and token grant</li>
+            <li>streak advance</li>
+            <li>new achievements, token grants batched</li>
+          </ul>
+        </div>
+        <div class="card gold">
+          <h3>Idempotent by construction</h3>
+          <p>The token ledger has a unique <code>(user, reason, ref)</code> key, so a retried request cannot double-credit. Practice passes are counted once.</p>
+        </div>
+      </div>
+    </div>
+    <div class="foot"><span>Theodore Nangara</span><span>Server-authoritative &middot; parameterised SQL &middot; no LLM on the critical path</span></div>
+  </div>
+</section>
+
+<!-- 11 S3 FEEDBACK -->
+<section class="slide">
+  <div class="rib"><span>03 &middot; The assessment engine</span><span class="sn">11 / 20</span></div>
+  <div class="body">
+    <p class="kicker">Closing the loop</p>
+    <h1>Feedback that survives the session</h1>
+    <p class="lead">A score without an explanation teaches nothing. Every attempt is stored with a title snapshot, the selected lines, the rationale and the pass flag  -  so feedback is a real record, not a route-local variable.</p>
+    <div class="grid3">
+      <div class="card"><h3>Three honest states</h3><p>Correct, incorrect and error are distinct screens with different copy and actions. Network failure shows a retry, never a fabricated score.</p></div>
+      <div class="card"><h3>Re-fetchable</h3><p><code>GET /api/history/attempts/:id</code> is owner-scoped; <code>/feedback/:attemptId</code> renders the stored result after a restart or deep link.</p></div>
+      <div class="card"><h3>Searchable history</h3><p>Paginated with limit/offset, free-text search and type filters, plus infinite scroll. Rows open their feedback.</p></div>
+    </div>
+    <div class="grid2" style="margin-top:16px;">
+      <div class="card soft">
+        <h3>What the learner sees</h3>
+        <ul class="tight">
+          <li>Score and pass/fail against the dimension threshold</li>
+          <li>The correct lines and a model correction</li>
+          <li>Why their reason did or did not land</li>
+          <li>XP earned, streak, and any achievement unlocked</li>
+          <li>One clear next action: retry, or continue</li>
+        </ul>
+      </div>
+      <div class="card soft">
+        <h3>What the team sees</h3>
+        <ul class="tight">
+          <li>Answer logs per task and per option</li>
+          <li>Per-track progress and funnel in the admin portal</li>
+          <li>CSV exports for users, attempts and track progress</li>
+          <li>Moderator queue for extended and rubric answers</li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot"><span>Theodore Nangara</span><span>Evidence, not vanity metrics</span></div>
+  </div>
+</section>
+
+<!-- 12 S4 READINESS -->
+<section class="slide">
+  <div class="rib"><span>04 &middot; Readiness &amp; growth</span><span class="sn">12 / 20</span></div>
+  <div class="body">
+    <p class="kicker">The readiness model</p>
+    <h1>One score, six weighted components</h1>
+    <p class="lead">Readiness is a 0&ndash;100 weighted mean. The denominator is the sum of the weights of the components the learner&rsquo;s <b>track actually offers</b>  -  so an empty module cannot silently cap a learner, but a module left untouched still counts as zero coverage.</p>
+    <div class="grid2" style="align-items:start;">
+      <div>
+        <div class="bars" style="margin-top:6px;">
+          <div class="bar"><span class="bl">Verification</span><span class="bt"><span class="bf" style="width:100%"></span></span><span class="bv">0.30</span></div>
+          <div class="bar"><span class="bl">AI Judgement</span><span class="bt"><span class="bf" style="width:100%"></span></span><span class="bv">0.30</span></div>
+          <div class="bar"><span class="bl">Risk &amp; Governance</span><span class="bt"><span class="bf" style="width:66%"></span></span><span class="bv">0.20</span></div>
+          <div class="bar"><span class="bl">Learning (capstones)</span><span class="bt"><span class="bf" style="width:66%"></span></span><span class="bv">0.20</span></div>
+          <div class="bar"><span class="bl">Prompt Design</span><span class="bt"><span class="bf" style="width:33%"></span></span><span class="bv">0.10</span></div>
+          <div class="bar"><span class="bl">Interview</span><span class="bt"><span class="bf" style="width:33%"></span></span><span class="bv">0.10</span></div>
+        </div>
+        <p class="small muted" style="margin-top:14px;">Each skill score is <b>coverage</b>: passed tasks &divide; tasks available. A skill with four tasks fills <b>25 &rarr; 50 &rarr; 75 &rarr; 100%</b> as each is passed. It climbs with evidence; it does not decay between sessions.</p>
+        <div class="card gold" style="margin-top:16px;">
+          <h3>Inputs, not opinions</h3>
+          <p>Skill scores come from stored coverage; Interview from questions practised &divide; questions offered; Learning from the average best capstone result. Nothing is self-reported.</p>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="padding:14px 18px;">
+          <h3 style="margin-bottom:10px;">Tiers follow the score</h3>
+          <table>
+            <tr><td><b>Novice</b></td><td class="muted">0 &ndash; 49</td></tr>
+            <tr><td><b>Developing</b></td><td class="muted">50 &ndash; 69</td></tr>
+            <tr><td><b>Proficient</b></td><td class="muted">70 &ndash; 84</td></tr>
+            <tr><td><b>Advanced</b></td><td class="muted">85 &ndash; 100</td></tr>
+          </table>
+        </div>
+        <div class="card tint" style="margin-top:12px;">
+          <h3>Why it is hard to fake</h3>
+          <p>Readiness is written on the server on every scored attempt, from stored coverage. Three strong answers cannot reach Advanced if two modules are untouched  -  <b>coverage counts</b>.</p>
+        </div>
+      </div>
+    </div>
+    <div class="foot"><span>Lwandle Mvelase</span><span>Computed server-side, never trusted from the client</span></div>
+  </div>
+</section>
+
+<!-- 13 S4 MOTIVATION -->
+<section class="slide">
+  <div class="rib"><span>04 &middot; Readiness &amp; growth</span><span class="sn">13 / 20</span></div>
+  <div class="body">
+    <p class="kicker">The habit loop</p>
+    <h1>XP for effort, tokens for progress</h1>
+    <p class="lead">Readiness measures competence; the reward economy keeps people coming back. XP is never spent. Tokens are  -  granted by levels and achievements, written to an append-only ledger.</p>
+    <div class="grid4">
+      <div class="card"><h3>XP &amp; levels</h3><p>Score-proportional per difficulty, <b>0 for wrong</b>. Levels step by +60 XP and unlock spendable tokens.</p></div>
+      <div class="card"><h3>Streak</h3><p>Daily, anchored to Africa/Johannesburg. Server dates mean a timezone cannot break it.</p></div>
+      <div class="card"><h3>Achievements</h3><p><b>13</b> definitions, granted in one batched statement on the submission that earns them.</p></div>
+      <div class="card"><h3>Rewards</h3><p><b>9</b> catalogue items with original artwork, atomic redemption, and a ledger that cannot double-credit.</p></div>
+    </div>
+    <div class="grid2" style="margin-top:16px;">
+      <div class="card soft">
+        <h3>Leaderboard &amp; milestones</h3>
+        <p>Global and per-track boards with the learner&rsquo;s own rank always live; the board itself is cached per (track, limit) for 60 seconds. A covering index on <code>(xp DESC, readiness_score DESC, user_id)</code> keeps it off a full scan.</p>
+      </div>
+      <div class="card soft">
+        <h3>Activity, not a number</h3>
+        <p>A shared activity view projects task attempts, lab practice and capstones into one timeline, and the 30-day chart groups on stored dates instead of converting a timezone per row.</p>
+      </div>
+    </div>
+    <div class="foot"><span>Lwandle Mvelase</span><span>Idempotent grants &middot; atomic debits</span></div>
+  </div>
+</section>
+
+<!-- 14 S4 ECOSYSTEM -->
+<section class="slide">
+  <div class="rib"><span>04 &middot; Readiness &amp; growth</span><span class="sn">14 / 20</span></div>
+  <div class="body">
+    <p class="kicker">The learning ecosystem</p>
+    <h1>More than a quiz app</h1>
+    <p class="lead">Scenarios test judgement. The rest of the product builds the knowledge and habit around them  -  and every part feeds the same profile.</p>
+    <div class="grid3">
+      <div class="card"><h3>AI Lab</h3><p><b>5 lessons, 248 sections, 240 activities.</b> Track-specific and global content, per-section progress, a source library with licence metadata, recall practice.</p></div>
+      <div class="card"><h3>Capstones</h3><p><b>4 assessments, 100 questions.</b> Timed, attempt-capped, pass mark and reward. Objective questions auto-mark; extended answers queue for a moderator, with AI suggesting rubric marks.</p></div>
+      <div class="card"><h3>Verification Studio</h3><p>Paste an AI answer, upload a PDF/DOCX, drop a link or a citation and get a structured verification report. The submitted material is never persisted.</p></div>
+      <div class="card"><h3>Industry cases</h3><p><b>16</b> longer workplace briefs, served per track, deliberately unscored  -  they build the context the scenarios test.</p></div>
+      <div class="card"><h3>Wellness Centre</h3><p>Daily mood check-in, private journal with undo, self-care activities, breathing exercise, weekly summary. Private to the learner.</p></div>
+      <div class="card"><h3>Vera &amp; assistant</h3><p>An app-wide AI coach and an in-task assistant. Both stream over SSE, keep inspectable memory, and never hand over the answer.</p></div>
+    </div>
+    <div class="foot"><span>Lwandle Mvelase</span><span>Content is seeded and versioned, not hardcoded in the app</span></div>
+  </div>
+</section>
+
+<!-- 15 S5 ARCHITECTURE -->
+<section class="slide">
+  <div class="rib"><span>05 &middot; Engineering &amp; delivery</span><span class="sn">15 / 20</span></div>
+  <div class="body">
+    <p class="kicker">Architecture</p>
+    <h1>One API, one database, one source of truth</h1>
+    <div class="arch" style="margin-top:8px;">
+      <div class="layer"><div class="who">Client</div><div class="what"><b>Flutter</b> (Android, iOS, web)  -  Riverpod state, go_router navigation, Dio HTTP. Screens read a provider; providers call one <code>ApiClient</code>. That single seam is what makes 55 widget and flow tests possible without a network.</div></div>
+      <div class="layer"><div class="who">Transport</div><div class="what">HTTPS with a <b>Firebase ID token</b> on every protected call. A 401 interceptor refreshes once, retries, then signs out cleanly.</div></div>
+      <div class="layer"><div class="who">API</div><div class="what"><b>Node.js 22 + Express</b> on Render  -  <b>20 routers, 107 endpoints</b>, rate limits, in-process caches, ETags, SSE streaming, a bounded document-parsing worker pool.</div></div>
+      <div class="layer"><div class="who">Data</div><div class="what"><b>PostgreSQL on Supabase</b>  -  <b>50 tables</b>, 29 ledger-applied migrations, a shared <code>pg</code> pool, parameterised SQL throughout.</div></div>
+      <div class="layer"><div class="who">Services</div><div class="what"><b>Firebase Auth</b> for credentials and token verification; <b>NVIDIA-hosted LLMs</b> for analysis, chat and marking with a fallback model; <b>Tavily</b> for live web search.</div></div>
+      <div class="layer"><div class="who">Delivery</div><div class="what"><b>Render</b> blueprint (migrate, then start) &middot; <b>Firebase Hosting</b> for the web build &middot; <b>GitHub Actions</b> for tests and the APK artefact.</div></div>
+    </div>
+    <div class="kpis" style="margin-top:auto;">
+      <div class="kpi"><div class="n">12.5k</div><div class="l">Backend JS lines</div></div>
+      <div class="kpi"><div class="n">21.9k</div><div class="l">Flutter Dart lines</div></div>
+      <div class="kpi"><div class="n">163</div><div class="l">Commits</div></div>
+      <div class="kpi"><div class="n">5</div><div class="l">Team members</div></div>
+    </div>
+    <div class="foot"><span>Mpho Mokoena</span><span>Deployed, not a local demo</span></div>
+  </div>
+</section>
+
+<!-- 16 S5 DECISIONS -->
+<section class="slide">
+  <div class="rib"><span>05 &middot; Engineering &amp; delivery</span><span class="sn">16 / 20</span></div>
+  <div class="body">
+    <p class="kicker">Engineering decisions</p>
+    <h1>What we fixed after auditing ourselves</h1>
+    <p class="lead">Three review rounds, 24 findings closed. The ones that matter most are below  -  each replaced a working-but-wrong design, not a missing feature.</p>
+    <div class="grid2">
+      <div>
+        <div class="card" style="margin-bottom:10px;"><h3>Security</h3><p>Every protected route verifies a Firebase token; roles come from <code>admin_roles</code> in the database, so a moderator cannot promote themselves. Bodies are size-capped per route, SQL is parameterised, the answer key never ships early, submitted verification material is never stored, and CI runs gitleaks.</p></div>
+        <div class="card" style="margin-bottom:10px;"><h3>Correctness</h3><p>The readiness denominator is fixed per track, so starting a second module no longer <i>lowers</i> the score. Streaks use one configured timezone. Practice passes count half, once. Readiness is skipped when nothing moved.</p></div>
+        <div class="card"><h3>Testability</h3><p>One <code>ApiClient</code> seam, a mock client for widget tests, and a 200% text-scale regression test so accessibility cannot silently break layout.</p></div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:10px;"><h3>Performance</h3><p>Home is one composed request instead of five; analytics, leaderboard and static catalogues cache for 60&nbsp;s with strong <code>ETag</code>/304; indexes follow the actual queries; the timezone conversion is gone from chart queries.</p></div>
+        <div class="card" style="margin-bottom:10px;"><h3>Reliability</h3><p>Rate limits live in PostgreSQL, so two API instances share one per-account budget. Document parsing runs off the request thread with byte, page, queue and timeout caps. Streaming aborts upstream work when the client disconnects and sends keep-alives during model silence.</p></div>
+        <div class="card gold"><h3>Accessibility</h3><p>Light, dark and system themes; bundled Inter/Manrope (no runtime font download, no reflow on first paint); OS text scaling; semantic labels for scores, streaks and cards.</p></div>
+      </div>
+    </div>
+    <div class="foot"><span>Mpho Mokoena</span><span>Audit: 24 findings closed across 3 rounds</span></div>
+  </div>
+</section>
+
+<!-- 17 S5 QUALITY -->
+<section class="slide">
+  <div class="rib"><span>05 &middot; Engineering &amp; delivery</span><span class="sn">17 / 20</span></div>
+  <div class="body">
+    <p class="kicker">Quality gates</p>
+    <h1>Green before it ships</h1>
+    <p class="lead">Nothing merges on a red build. CI runs the backend suite, the Flutter suite, static analysis, a dependency audit, a secret scan and an APK build  -  on every push and every pull request.</p>
+    <div class="grid4">
+      <div class="kpi"><div class="n">186</div><div class="l">Backend tests</div></div>
+      <div class="kpi"><div class="n">55</div><div class="l">Flutter tests</div></div>
+      <div class="kpi"><div class="n">0</div><div class="l">Analyzer issues</div></div>
+      <div class="kpi"><div class="n">0</div><div class="l">Analyzer warnings</div></div>
+    </div>
+    <div class="grid2" style="margin-top:16px;">
+      <div class="card">
+        <h3>What the 186 backend tests cover</h3>
+        <ul class="tight two-col-list">
+          <li>Routing and auth</li><li>Authorisation and roles</li><li>Scoring and thresholds</li><li>Readiness and tiers</li><li>Capstones</li><li>Wellness</li><li>Rewards and tokens</li><li>Lab</li><li>Admin</li><li>Streaming</li><li>Streaks</li><li>Wiring</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>What the 55 Flutter tests cover</h3>
+        <ul class="tight two-col-list">
+          <li>Auth interceptor</li><li>Login and onboarding</li><li>Task submission</li><li>Lab navigation</li><li>Judgement flow</li><li>Wellness</li><li>Navigation shell</li><li>Feedback states</li><li>Assistant</li><li>200% text scale</li><li>API error mapping</li><li>Markdown rendering</li>
+        </ul>
+      </div>
+    </div>
+    <p class="small muted" style="margin-top:14px;">CI: backend test + <code>npm audit</code> &middot; Flutter format, analyze, test &middot; gitleaks secret scan &middot; release APK uploaded as an artefact (14-day retention).</p>
+    <div class="foot"><span>Mpho Mokoena</span><span>GitHub Actions &middot; ci-cd.yml</span></div>
+  </div>
+</section>
+
+<!-- 18 PLAN VS DELIVERED -->
+<section class="slide">
+  <div class="rib"><span>05 &middot; Engineering &amp; delivery</span><span class="sn">18 / 20</span></div>
+  <div class="body">
+    <p class="kicker">Scope, from the project board</p>
+    <h1>Planned versus delivered</h1>
+    <table style="margin-top:2px;">
+      <tr><th style="width:190px">Board card</th><th style="width:340px">What was scoped</th><th>Status</th></tr>
+      <tr><td><b>Backend  -  Fix</b></td><td>No points for wrong answers; difficulty-scaled XP; hardened verification scoring; leaderboard; activity history; achievements and milestones; streak timezone.</td><td><span class="pill">Delivered</span>  -  186 tests</td></tr>
+      <tr><td><b>DB  -  Restructure &amp; Reseed</b></td><td>Per-feature tables, shared option table, extended attempts, migration, rewritten schema/seed.</td><td><span class="pill">Delivered</span>  -  50 tables, 29 migrations, 144 tasks</td></tr>
+      <tr><td><b>Backend  -  Build</b></td><td>AI Judgement, Risk &amp; Governance, Interview Practice on a shared choice engine.</td><td><span class="pill">Delivered</span>  -  60 / 24 / 14 items</td></tr>
+      <tr><td><b>Frontend  -  Build</b></td><td>Tasks hub, judgement, risk, interview, feedback, history, promotion display, models and client.</td><td><span class="pill">Delivered</span>  -  5 hubs, 40 screens</td></tr>
+      <tr><td><b>Frontend  -  Fix</b></td><td>Real feedback states, 401 refresh, profile/industry states, offline and timeout, honest labels.</td><td><span class="pill">Delivered</span>  -  analyze clean</td></tr>
+      <tr><td><b>Beyond the sprint</b></td><td>Not on the original board.</td><td><span class="pill g">Shipped</span>  -  Studio, AI Lab, rewards, wellness, Vera, admin portal</td></tr>
+      <tr><td><b>Not delivered</b></td><td>Prompt Design content; Workshop mobile UI.</td><td><span class="pill n">Carried</span>  -  see next slide</td></tr>
+    </table>
+    <p class="small muted" style="margin-top:14px;">Every item marked delivered is live against the deployed API and covered by the automated suite. Nothing above is a mock-up.</p>
+    <div class="foot"><span>Mpho Mokoena</span><span>Source: Trello &ldquo;Complete Build&rdquo; board vs. current <code>main</code></span></div>
+  </div>
+</section>
+
+<!-- 19 OUTSTANDING -->
+<section class="slide">
+  <div class="rib"><span>05 &middot; Engineering &amp; delivery</span><span class="sn">19 / 20</span></div>
+  <div class="body">
+    <p class="kicker">Honest status</p>
+    <h1>Outstanding work</h1>
+    <p class="lead">Development phase closes 23 October; testing runs to 30 October; the final presentation is 13 November. These are the gaps we know about, in priority order.</p>
+    <div class="grid2 compact">
+      <div>
+        <div class="card" style="margin-bottom:10px;"><h3>1 &middot; Testing phase <span class="pill n" style="margin-left:6px;">Due 30 Oct</span></h3><p>QA plan and test cases, a regression pass across every screen, a device matrix (budget Android, iOS, web), and verification of scoring, readiness, tiers and passport rules.</p></div>
+        <div class="card" style="margin-bottom:10px;"><h3>2 &middot; Prompt Design content</h3><p>Scaffolded in the schema, weights and feature map, but no tasks authored  -  task creation rejects it for now. It is excluded from readiness until the track offers it.</p></div>
+        <div class="card" style="margin-bottom:10px;"><h3>3 &middot; Workshop mobile UI</h3><p>Threads, replies, reactions, reports and moderation are complete on the API and in the admin portal. No learner-facing screen yet.</p></div>
+        <div class="card"><h3>4 &middot; Integration tests</h3><p>The 186 backend tests mock PostgreSQL, so SQL regressions rely on review and the schema. An embedded-Postgres suite is the highest-value next test.</p></div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:10px;"><h3>5 &middot; Offline mode</h3><p>A dropped connection shows an inline retry rather than a cached read. No offline queue.</p></div>
+        <div class="card" style="margin-bottom:10px;"><h3>6 &middot; Content workflow</h3><p>Authoring still goes through the admin portal and seed files  -  there is no dedicated CMS review workflow.</p></div>
+        <div class="card gold" style="margin-bottom:10px;"><h3>7 &middot; Database hardening</h3><p>The Supabase tables are reachable through the API only in practice, but row-level security is not enabled on the public schema. Enabling RLS (the API connects as owner) is a low-risk hardening step before submission.</p></div>
+        <div class="card tint"><h3>8 &middot; Final deck and rehearsal</h3><p>This is the progress review. The 13 November presentation needs the final numbers, a rehearsed demo and Q&amp;A preparation.</p></div>
+      </div>
+    </div>
+    <div class="foot"><span>Mpho Mokoena</span><span>No new features in the testing phase by design</span></div>
+  </div>
+</section>
+
+<!-- 20 CONCLUSION -->
+<section class="slide dark">
+  <div class="rib"><span>Conclusion</span><span class="sn">20 / 20</span></div>
+  <div class="body">
+    <p class="kicker">Where we are</p>
+    <h1>A working product, not a prototype</h1>
+    <p class="lead">VerifAI turns a vague hiring question  -  <i>&ldquo;can this graduate be trusted with AI?&rdquo;</i>  -  into something measurable, and backs it with the engineering that makes it credible.</p>
+    <div class="grid2">
+      <div>
+        <ul>
+          <li><b>The learner</b> works through realistic, flawed AI output and is scored on the judgement behind the answer.</li>
+          <li><b>The result</b> accumulates into a readiness score, a tier and a body of evidence an employer can inspect.</li>
+          <li><b>The habit</b> is supported by XP, tokens, streaks, rewards, a wellness centre and an AI coach.</li>
+        </ul>
+      </div>
+      <div>
+        <ul>
+          <li><b>The engineering</b> is a single authoritative scoring pipeline, a schema that evolves through reviewed migrations, and graceful degradation for every AI feature.</li>
+          <li><b>The delivery</b> is real: deployed API, deployed web build, installable APK, tested on every push.</li>
+          <li><b>The next phase</b> is testing and hardening  -  not new features.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="grid4" style="margin-top:24px;">
+      <div class="kpi"><div class="n">144</div><div class="l">Scenario tasks</div></div>
+      <div class="kpi"><div class="n">241</div><div class="l">Automated tests</div></div>
+      <div class="kpi"><div class="n">107</div><div class="l">API endpoints</div></div>
+      <div class="kpi"><div class="n">5</div><div class="l">Shipped hubs</div></div>
+    </div>
+    <div class="foot"><span>Meshaque Kalonji</span><span>Questions</span></div>
+  </div>
+</section>
+
+<!-- A1 CHECKLIST -->
+<section class="slide">
+  <div class="rib"><span>Appendix A</span><span class="sn">A1</span></div>
+  <div class="body">
+    <p class="kicker">Delivery checklist</p>
+    <h1>Things easy to forget tomorrow</h1>
+    <div class="grid2">
+      <div>
+        <div class="card" style="margin-bottom:10px;"><h3>Warm the API before you start</h3><p>The API runs on a free tier that sleeps when idle. Open the web app <b>5 minutes before</b> you present so the first request is not a 30&ndash;60&nbsp;s cold start in front of the panel.</p></div>
+        <div class="card" style="margin-bottom:10px;"><h3>Demo with a lived-in account</h3><p>Use a learner who already has attempts, so Progress, history and readiness look alive. A brand-new account makes the product look empty.</p></div>
+        <div class="card" style="margin-bottom:10px;"><h3>Two fallbacks, not one</h3><p>Install the APK on a phone <b>and</b> keep a 60&ndash;90&nbsp;s screen recording of the full loop. If the network dies, play the clip and keep talking.</p></div>
+        <div class="card"><h3>Have the links ready</h3><p>Web: verif-ai-5a435.web.app &middot; API health: <code>/api/health</code>. Put a QR code on the last slide or a handout.</p></div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:10px;"><h3>Confirm your slot length</h3><p>This deck assumes ~16 minutes plus questions. If you have 10, cut slides 7 and 13 first  -  keep the demo and the readiness model.</p></div>
+        <div class="card" style="margin-bottom:10px;"><h3>One driver, four talkers</h3><p>Agree who holds the laptop. Handover cues: &ldquo;&hellip;and Theodore will show how that is scored.&rdquo; Rehearse the switch at least twice.</p></div>
+        <div class="card" style="margin-bottom:10px;"><h3>Say the same numbers</h3><p>Use the figures in this deck consistently: 144 tasks, 107 endpoints, 241 tests, 50 tables. Mixed numbers invite doubt.</p></div>
+        <div class="card gold"><h3>Be first to name the gaps</h3><p>Prompt Design content and the Workshop screen are unfinished. Say so before the panel finds it  -  it reads as control, not failure.</p></div>
+      </div>
+    </div>
+    <div class="foot"><span>Suggested: tag the demo commit before you present</span><span>Keep the build frozen during the demo</span></div>
+  </div>
+</section>
+
+<!-- A2 Q&A -->
+<section class="slide">
+  <div class="rib"><span>Appendix B</span><span class="sn">A2</span></div>
+  <div class="body">
+    <p class="kicker">Q&amp;A preparation</p>
+    <h1>The questions you will be asked</h1>
+    <table style="margin-top:2px;">
+      <tr><th style="width:290px">Question</th><th>Short answer</th></tr>
+      <tr><td><b>Why not let an LLM grade the answers?</b></td><td>Determinism, fairness and cost. A scored task must give the same result twice and be auditable. LLMs are used where judgement is genuinely open  -  rubric suggestions for extended answers  -  with a moderator making the final call.</td></tr>
+      <tr><td><b>How do you stop people gaming readiness?</b></td><td>Coverage denominator fixed per track, distinct passed tasks only, server-side scoring, practice passes count once at half value, and the answer key never leaves the database before submission.</td></tr>
+      <tr><td><b>What about POPIA and privacy?</b></td><td>Submitted verification material is never persisted; API keys stay server-side; Vera receives only bounded context with explicit privacy guidance; wellness content is private to the learner.</td></tr>
+      <tr><td><b>Does it scale / what does AI cost?</b></td><td>60-second caches, ETag/304 on static content, per-account rate limits shared across instances, a fallback model, and deterministic scoring on the critical path so AI is never in the hot loop.</td></tr>
+      <tr><td><b>What is still missing?</b></td><td>Prompt Design content, Workshop mobile UI, a real-Postgres integration suite, offline mode, and the testing phase (regression, device matrix) due 30 October.</td></tr>
+      <tr><td><b>Is it actually deployed?</b></td><td>Yes: API on Render, database on Supabase, web build on Firebase Hosting, and a release APK built by CI. Every flow demoed runs against the live API.</td></tr>
+    </table>
+    <div class="grid4" style="margin-top:16px;">
+      <div class="kpi"><div class="n">144</div><div class="l">Tasks &middot; 60/60/24</div></div>
+      <div class="kpi"><div class="n">50</div><div class="l">Tables &middot; 29 migrations</div></div>
+      <div class="kpi"><div class="n">186 + 55</div><div class="l">Backend + Flutter</div></div>
+      <div class="kpi"><div class="n">4</div><div class="l">Tracks</div></div>
+    </div>
+    <div class="foot"><span>Numbers cheat-sheet  -  use these everywhere</span><span>Group SE16</span></div>
+  </div>
+</section>
+
+</body>
+</html>
