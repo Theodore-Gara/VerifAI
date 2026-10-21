@@ -307,6 +307,13 @@ for each achievement, written to an append-only ledger whose unique `(user, reas
 makes every grant idempotent — a retried submission cannot double-credit. Redeeming a reward
 checks and debits the balance atomically and records the redemption.
 
+Each product carries a photograph in the catalogue: the API returns only the file name
+(`rewards.image_asset`), and the picture ships in the app bundle, so rows render instantly and
+survive a dead connection. `RewardImage` resolves the name against `assets/images/` and falls
+back to a gift glyph if a new catalogue entry has no artwork yet. The nine photos are original
+project artwork (see `mobile/assets/images/CREDITS.md`); they illustrate a concept rather than a
+live offer, which the product page states alongside the note.
+
 ### 4.10 Vera and the in-task assistant
 
 **What it does.** Vera is the app-wide AI coach; the assistant appears inside a task to help the
@@ -526,8 +533,6 @@ Stated plainly, because a marker should not have to discover them:
 - **Prompt Design** is present in the data model, readiness weights and feature map, but no task
   content has been authored for it (task creation rejects it for now) — the three live dimensions
   carry the score today.
-- **Reward imagery** is not shown yet: the catalogue renders a placeholder icon even where an
-  image asset exists.
 - **Workshop** is complete on the API side but has no mobile screen.
 - The backend test suite mocks PostgreSQL, so SQL-level regressions are caught by review and the
   schema itself rather than by an integration suite. Adding one embedded-Postgres suite is the

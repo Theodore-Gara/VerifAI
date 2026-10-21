@@ -23,8 +23,8 @@ const USER = { id: 7, industry_track_id: 1 };
 const USER_WITH_TRACK = { id: 7, industry_track_id: 1, track_name: 'Finance' };
 const WALLET = { xp: 2450, level: 10, tokens: 50 };
 const REWARDS = [
-  { id: 1, code: 'coffee', title: 'Coffee break', subtitle: 's', cost_tokens: 10, image_asset: 'reward_coffee.png', note: 'n' },
-  { id: 2, code: 'm365', title: 'Microsoft 365 boost', subtitle: 's', cost_tokens: 30, image_asset: 'reward_m365.png', note: 'n' },
+  { id: 1, code: 'coffee', title: 'Coffee break', subtitle: 's', cost_tokens: 10, image_asset: 'reward_coffee.jpg', note: 'n' },
+  { id: 2, code: 'm365', title: 'Microsoft 365 boost', subtitle: 's', cost_tokens: 30, image_asset: 'reward_m365.jpg', note: 'n' },
 ];
 const LESSON = { id: 1, code: 'ai-fundamentals', title: 'AI fundamentals', summary: 'Sum', estimated_minutes: 8, level: 1 };
 const VERIFICATION_ROW = {

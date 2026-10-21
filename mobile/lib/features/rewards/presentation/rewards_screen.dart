@@ -9,6 +9,7 @@ import 'package:verifai/features/rewards/presentation/reward_detail_screen.dart'
 import 'package:verifai/features/rewards/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
+import 'package:verifai/shared/widgets/reward_image.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
 
 /// Rewards: token wallet + catalogue.
@@ -72,7 +73,7 @@ class RewardsScreen extends ConsumerWidget {
           gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.primaryNavy, const Color(0xFF176B68)]),
+              colors: [AppColors.primaryFill, AppColors.greenFill]),
           borderRadius: BorderRadius.circular(AppRadius.card),
         ),
         child: Row(
@@ -127,15 +128,14 @@ class RewardsScreen extends ConsumerWidget {
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 54,
-                    height: 54,
-                    decoration: BoxDecoration(
-                      color: AppColors.accentLight,
-                      borderRadius: BorderRadius.circular(14),
+                  Hero(
+                    tag: 'reward-art-${r.code}',
+                    child: RewardImage(
+                      imageAsset: r.imageAsset,
+                      width: 76,
+                      height: 76,
+                      borderRadius: AppRadius.lg,
                     ),
-                    child: Icon(Icons.card_giftcard_rounded,
-                        color: AppColors.primaryNavy),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(

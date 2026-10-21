@@ -10,6 +10,7 @@ import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/rewards/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
+import 'package:verifai/shared/widgets/reward_image.dart';
 
 /// Reward product page: what it is, how it is earned and redeemed.
 class RewardDetailScreen extends ConsumerStatefulWidget {
@@ -87,18 +88,17 @@ class _RewardDetailScreenState extends ConsumerState<RewardDetailScreen> {
         padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
             AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.xxl),
         children: [
-          Container(
-            height: 140,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [
-                AppColors.accentGreen.withValues(alpha: .2),
-                AppColors.accentCyan.withValues(alpha: .2),
-              ]),
-              borderRadius: BorderRadius.circular(AppRadius.card),
+          Hero(
+            tag: 'reward-art-${r.code}',
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: RewardImage(
+                imageAsset: r.imageAsset,
+                width: double.infinity,
+                height: double.infinity,
+                borderRadius: AppRadius.card,
+              ),
             ),
-            child: Center(
-                child: Icon(Icons.card_giftcard_rounded,
-                    size: 60, color: AppColors.primaryNavy)),
           ),
           const SizedBox(height: AppSpacing.lg),
           Text(r.title,
