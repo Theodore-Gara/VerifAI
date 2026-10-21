@@ -129,8 +129,15 @@ async function getNextTask(req, res, next) {
       const params = [user.industry_track_id, user.id];
       let order = 't.id ASC';
       if (!byId) {
-        const difficulties = preferredDifficulties(Number(user.level));
-        params.push(difficulties[0], difficulties[1], difficulties[2]);
+        const difficulties = preferredDifficulties(Number(user.level)).filter(Boolean);
+        // Rotate which preferred band leads each day, so consecutive days
+        // surface a different difficulty instead of always the level's top
+        // band. The set stays the same (level-appropriate) — only the lead
+        // band moves, and unseen tasks are still found via the CASE ordering.
+        const dayIndex = Math.floor(Date.now() / 86400000);
+        const offset = ((dayIndex % difficulties.length) + difficulties.length) % difficulties.length;
+        const rotated = difficulties.slice(offset).concat(difficulties.slice(0, offset));
+        params.push(rotated[0], rotated[1], rotated[2]);
         order = `CASE v.difficulty
            WHEN $3 THEN 0 WHEN $4 THEN 1 WHEN $5 THEN 2 ELSE 3
          END, t.id ASC`;
