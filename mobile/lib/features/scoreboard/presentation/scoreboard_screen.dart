@@ -7,6 +7,7 @@ import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/scoreboard/providers.dart';
+import 'package:verifai/shared/widgets/dock_clearance.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/score_ring.dart';
@@ -71,7 +72,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
               'Cohort XP & rankings',
               style: AppTypography.textTheme.labelSmall?.copyWith(
                 color: AppColors.textSecondary,
-                fontSize: 11,
+                fontSize: 11.5,
               ),
             ),
           ],
@@ -113,11 +114,11 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppSpacing.screenPadding,
         AppSpacing.xs,
         AppSpacing.screenPadding,
-        100, // accommodates floating dock
+        dockClearance(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,7 +143,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
               indicatorSize: TabBarIndicatorSize.tab,
               dividerColor: Colors.transparent,
               indicator: BoxDecoration(
-                color: AppColors.primaryNavy,
+                color: AppColors.primaryFill,
                 borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
               labelColor: Colors.white,
@@ -187,14 +188,14 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.6,
-                    fontSize: 10.5,
+                    fontSize: 11.5,
                   ),
                 ),
                 Text(
                   '${entries.length} members',
                   style: AppTypography.textTheme.labelSmall?.copyWith(
                     color: AppColors.textSecondary.withValues(alpha: 0.7),
-                    fontSize: 11,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -252,7 +253,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
                   style: AppTypography.textTheme.labelSmall?.copyWith(
                     color: AppColors.accentGreen,
                     fontWeight: FontWeight.w800,
-                    fontSize: 9.5,
+                    fontSize: 11.5,
                     letterSpacing: 0.6,
                   ),
                 ),
@@ -290,14 +291,14 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
             color: AppColors.textSecondary,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.6,
-            fontSize: 10.5,
+            fontSize: 11.5,
           ),
         ),
         Text(
           'Total XP',
           style: AppTypography.textTheme.labelSmall?.copyWith(
             color: AppColors.textSecondary.withValues(alpha: 0.7),
-            fontSize: 10,
+            fontSize: 11.5,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -407,7 +408,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
             style: AppTypography.textTheme.labelSmall?.copyWith(
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w800,
-              fontSize: 9.5,
+              fontSize: 11.5,
             ),
           ),
         ],
@@ -498,7 +499,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
                           vertical: 1.5,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.accentGreen,
+                          color: AppColors.greenFill,
                           borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
                         child: Text(
@@ -518,7 +519,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
                   entry.tier,
                   style: AppTypography.textTheme.labelSmall?.copyWith(
                     color: AppColors.textSecondary,
-                    fontSize: 11,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -616,7 +617,7 @@ class _LiveBenchmarkPill extends StatelessWidget {
             style: AppTypography.textTheme.labelSmall?.copyWith(
               color: AppColors.primaryNavy,
               fontWeight: FontWeight.w800,
-              fontSize: 9.5,
+              fontSize: 11.5,
               letterSpacing: 0.5,
             ),
           ),

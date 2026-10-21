@@ -14,6 +14,7 @@
 // (passed tasks / tasks available), so readiness climbs as the learner covers
 // more of each module rather than jumping high on a single good attempt.
 const { tierForScore } = require('./tiers');
+const { contentCache } = require('../utils/ttlCache');
 
 const READINESS_WEIGHTS = {
   Verification: 0.3,
@@ -25,49 +26,56 @@ const READINESS_WEIGHTS = {
 };
 
 async function refreshReadiness(client, userId, trackId) {
-  // The five lookups are independent, so they run together rather than as a
-  // serial chain (node-postgres queues them on the one connection).
-  const [scores, available, interview, learning] = await Promise.all([
-    client.query(`SELECT dimension, score FROM skill_scores WHERE user_id = $1`, [userId]),
-    client.query(
-      `SELECT feature, COUNT(*)::int AS n
-       FROM tasks
-       WHERE track_id = $1 AND published
-       GROUP BY feature`,
+  // One statement for every non-static input. These used to be four separate
+  // round trips (and `Promise.all` on a single pooled client does not overlap
+  // them — node-postgres queues on the one connection).
+  const inputs = await client.query(
+    `/* readiness_inputs */
+     SELECT
+       COALESCE((SELECT json_agg(json_build_object('dimension', dimension, 'score', score))
+                   FROM skill_scores WHERE user_id = $1), '[]'::json) AS scores,
+       COALESCE((SELECT json_agg(json_build_object('feature', feature))
+                   FROM (SELECT feature FROM tasks
+                          WHERE track_id = $2 AND published
+                          GROUP BY feature) f), '[]'::json) AS available,
+       (SELECT COUNT(*)::int FROM lab_capstone_assessments
+         WHERE track_id = $2 AND active) AS capstone_offered,
+       COALESCE((SELECT AVG(best)::int FROM (
+          SELECT assessment_id, MAX(score) AS best
+          FROM lab_capstone_attempts
+          WHERE user_id = $1 AND passed = TRUE
+          GROUP BY assessment_id
+        ) t), 0) AS capstone_average,
+       (SELECT COUNT(*)::int
+          FROM interview_practice ip
+          JOIN interview_questions q ON q.id = ip.question_id
+         WHERE ip.user_id = $1 AND q.track_id = $2) AS interview_practised,
+       (SELECT readiness_score FROM user_progress WHERE user_id = $1) AS current_readiness`,
+    [userId, trackId],
+  );
+  const row = inputs.rows[0] || {};
+  const scores = { rows: row.scores || [] };
+  const available = { rows: row.available || [] };
+
+  // Track question counts are static content, so they are cached rather than
+  // recounted on every graded attempt.
+  const interviewTotal = await contentCache.wrap(`interview-total:${trackId}`, async () => {
+    const result = await client.query(
+      `SELECT COUNT(*)::int AS total FROM interview_questions WHERE track_id = $1`,
       [trackId],
-    ),
-    client.query(
-      `SELECT
-         (SELECT COUNT(*)::int FROM interview_questions WHERE track_id = $2) AS total,
-         (SELECT COUNT(*)::int
-            FROM interview_practice ip
-            JOIN interview_questions q ON q.id = ip.question_id
-           WHERE ip.user_id = $1 AND q.track_id = $2) AS practised`,
-      [userId, trackId],
-    ),
-    client.query(
-      `SELECT
-         (SELECT COUNT(*)::int FROM lab_capstone_assessments
-           WHERE track_id = $2 AND active) AS offered,
-         COALESCE((
-           SELECT AVG(best) FROM (
-             SELECT assessment_id, MAX(score) AS best
-             FROM lab_capstone_attempts
-             WHERE user_id = $1 AND passed = TRUE
-             GROUP BY assessment_id
-           ) t
-         ), 0)::int AS average`,
-      [userId, trackId],
-    ),
-  ]);
+    );
+    return Number(result.rows[0] && result.rows[0].total) || 0;
+  });
+  const interview = { rows: [{ total: interviewTotal, practised: Number(row.interview_practised) || 0 }] };
+  const learning = { rows: [{ offered: Number(row.capstone_offered) || 0, average: Number(row.capstone_average) || 0 }] };
 
   const parts = [];
   const scoredDimensions = new Set();
-  for (const row of scores.rows) {
-    const weight = READINESS_WEIGHTS[row.dimension];
+  for (const scoreRow of scores.rows) {
+    const weight = READINESS_WEIGHTS[scoreRow.dimension];
     if (!weight) continue;
-    parts.push({ weight, score: Number(row.score) });
-    scoredDimensions.add(row.dimension);
+    parts.push({ weight, score: Number(scoreRow.score) });
+    scoredDimensions.add(scoreRow.dimension);
   }
   // A module the track offers but the learner has not touched counts as zero
   // coverage. Only offerings are scored — otherwise an empty module would
@@ -96,11 +104,17 @@ async function refreshReadiness(client, userId, trackId) {
     parts.push({ weight: READINESS_WEIGHTS.Learning, score: Number(learningRow.average) });
   }
 
-  if (!parts.length) return;
+  if (!parts.length) return undefined;
 
   const totalWeight = parts.reduce((sum, part) => sum + part.weight, 0);
   const value = Math.round(parts.reduce((sum, part) => sum + part.weight * part.score, 0) / totalWeight);
   const readiness = Math.max(0, Math.min(100, value));
+
+  // Recomputing the same score (practising a task that is already counted) is
+  // the common case; the write is skipped when nothing moved.
+  if (row.current_readiness != null && Number(row.current_readiness) === readiness) {
+    return readiness;
+  }
 
   // Upsert: a learner's first scored attempt has no user_progress row yet (sync
   // creates one, but rows can predate that), and a plain UPDATE silently threw
@@ -112,6 +126,7 @@ async function refreshReadiness(client, userId, trackId) {
      SET readiness_score = EXCLUDED.readiness_score, tier = EXCLUDED.tier`,
     [userId, readiness, tierForScore(readiness)],
   );
+  return readiness;
 }
 
 module.exports = { READINESS_WEIGHTS, refreshReadiness };

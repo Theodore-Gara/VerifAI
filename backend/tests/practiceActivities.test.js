@@ -53,7 +53,7 @@ let xpAwardCalls = 0;
 
 pool.query = async (sql) => {
   const s = sql.replace(/\s+/g, ' ').trim();
-  if (s.includes('FROM users WHERE firebase_uid')) return { rows: [{ id: 7, industry_track_id: 1 }] };
+  if (s.includes('find_user_by_uid')) return { rows: [{ id: 7, industry_track_id: 1 }] };
   if (s.includes('FROM lab_activities a') && s.includes('JOIN lab_lessons')) return { rows: activityMissing ? [] : [ACTIVITY] };
   if (s.includes('FROM lab_lessons WHERE code')) return { rows: [LESSON] };
   if (s.includes('FROM lab_activities a')) return { rows: [{ id: 3, type: 'multiple_choice', prompt: 'p', payload: { options: ['a', 'b', 'c'] }, sort_order: 1, xp_reward: 10, passed: priorAttempt, attempted: priorAttempt }] };

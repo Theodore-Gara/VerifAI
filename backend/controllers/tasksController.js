@@ -1,4 +1,5 @@
 const pool = require('../db/pool');
+const { findUserByFirebaseUid } = require('../db/users');
 const { positiveIntegerParam } = require('../middleware/validate');
 const {
   scoreOptions,
@@ -69,13 +70,9 @@ function resolveFeature(query) {
   return { feature: feature || 'verification', byId: rawDimension != null };
 }
 
-async function getCurrentUser(client, firebaseUid) {
-  const result = await client.query(
-    `SELECT id, industry_track_id FROM users WHERE firebase_uid = $1`,
-    [firebaseUid]
-  );
-  return result.rows[0] || null;
-}
+// One definition of "uid -> local user row" (db/users.js), shared with the
+// requireUser middleware so every path resolves the same fields.
+const getCurrentUser = findUserByFirebaseUid;
 
 function preferredDifficulties(level) {
   if (level <= 1) return ['easy', 'medium'];
@@ -329,34 +326,34 @@ async function submitAttempt(req, res, next) {
       if (!priorPass.rows.length) xpEarned = calculatePracticeXp(scored.score, content.difficulty);
     }
 
+    // The attempt and its denormalised answer log (one row per graded answer,
+    // keyed to the user's department for per-department analytics) are written
+    // in one statement: the log row needs the attempt id, which previously
+    // meant a second round trip.
     const attemptResult = await client.query(
-      `INSERT INTO task_attempts
-        (user_id, task_id, answer, rationale, answer_option_id, decision_option_id,
-         reason_option_id, selected_lines, task_title, score, passed, practice, feedback, xp_earned,
-         submitted_date)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-       RETURNING id, task_id, score, passed, practice, xp_earned, submitted_at`,
+      `WITH attempt AS (
+         INSERT INTO task_attempts
+           (user_id, task_id, answer, rationale, answer_option_id, decision_option_id,
+            reason_option_id, selected_lines, task_title, score, passed, practice, feedback, xp_earned,
+            submitted_date)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+         RETURNING id, task_id, score, passed, practice, xp_earned, submitted_at
+       ), logged AS (
+         INSERT INTO answer_logs
+           (attempt_id, user_id, task_id, department_id, feature, score, passed, practice, answer_summary,
+            submitted_date)
+         SELECT id, $1, $2, $16, $17, $10, $11, $12, $18, $15
+         FROM attempt
+       )
+       SELECT * FROM attempt`,
       [
         user.id, task.id, scored.answer, scored.rationale, scored.answerOptionId,
         scored.decisionOptionId, scored.reasonOptionId, scored.selectedLines, content.title,
         scored.score, passed, practice, content.feedback, xpEarned, activityDate(),
-      ]
-    );
-
-    // Denormalised answer log: one row per graded answer, keyed to the user's
-    // department and the task's feature for per-department analytics.
-    await client.query(
-      `INSERT INTO answer_logs
-         (attempt_id, user_id, task_id, department_id, feature, score, passed, practice, answer_summary,
-          submitted_date)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-      [
-        attemptResult.rows[0].id, user.id, task.id, user.industry_track_id, task.feature,
-        scored.score, passed, practice,
+        user.industry_track_id, task.feature,
         scored.answer || scored.rationale ||
           [scored.answerOptionId, scored.decisionOptionId, scored.reasonOptionId]
             .filter(Boolean).map(String).join(',') || null,
-        activityDate(),
       ]
     );
 
@@ -370,8 +367,15 @@ async function submitAttempt(req, res, next) {
     if (!practice || passed) {
       skillScore = await updateSkillScore(client, user.id, task.feature, task.track_id);
       // Readiness (and the tier it drives) is recomputed before the XP write so
-      // the returned row carries the fresh readiness and tier.
-      await refreshReadiness(client, user.id, user.industry_track_id);
+      // the returned row carries the fresh readiness and tier. Nothing moved
+      // when the skill coverage is unchanged, so that recompute is skipped.
+      const unchanged =
+        skillScore &&
+        skillScore.previous_score != null &&
+        Number(skillScore.previous_score) === Number(skillScore.score);
+      if (!unchanged) {
+        await refreshReadiness(client, user.id, user.industry_track_id);
+      }
     }
     if (!practice || xpEarned > 0) {
       // XP, level, level tokens and the streak all live in awardXp. A failed
@@ -576,6 +580,8 @@ async function updateSkillScore(client, userId, feature, trackId) {
             JOIN tasks t ON t.id = ta.task_id
            WHERE ta.user_id = $1 AND ta.practice = FALSE
              AND t.feature = $2 AND t.track_id = $3) AS attempts
+     ), previous AS (
+       SELECT score FROM skill_scores WHERE user_id = $1 AND dimension = $4
      )
      INSERT INTO skill_scores (user_id, dimension, score, attempts_count, updated_at)
      SELECT $1, $4,
@@ -589,7 +595,8 @@ async function updateSkillScore(client, userId, feature, trackId) {
        score = EXCLUDED.score,
        attempts_count = EXCLUDED.attempts_count,
        updated_at = CURRENT_TIMESTAMP
-     RETURNING dimension, score, attempts_count`,
+     RETURNING dimension, score, attempts_count,
+               (SELECT score FROM previous) AS previous_score`,
     [userId, feature, trackId, dimension]
   );
   return result.rows[0];
@@ -597,45 +604,38 @@ async function updateSkillScore(client, userId, feature, trackId) {
 
 // `passed_tasks` counts real (non-practice) tasks passed — the practice filter
 // is in the WHERE clause, so repeatedly practising a task you failed can never
-// unlock a task-count achievement.
+// unlock a task-count achievement. Stats, best dimension and the insert all
+// happen in one statement so the common "nothing new" case costs one query.
 async function awardAchievements(client, userId) {
-  const stats = await client.query(
-    `SELECT COUNT(DISTINCT task_id) FILTER (WHERE passed)::int AS passed_tasks,
-            COALESCE(SUM(xp_earned), 0)::int AS xp
-     FROM task_attempts WHERE user_id = $1 AND practice = FALSE`,
-    [userId]
-  );
-  const dimension = await client.query(
-    `SELECT COALESCE(MAX(score), 0)::int AS best_dimension
-     FROM skill_scores WHERE user_id = $1`,
+  const earned = await client.query(
+    `WITH stats AS (
+       SELECT COUNT(DISTINCT task_id) FILTER (WHERE passed)::int AS passed_tasks,
+              COALESCE(SUM(xp_earned), 0)::int AS xp
+       FROM task_attempts WHERE user_id = $1 AND practice = FALSE
+     ), eligible AS (
+       SELECT a.id, a.code, a.name, a.description
+       FROM achievements a
+       WHERE ((a.code = 'first-task' AND (SELECT passed_tasks FROM stats) >= 1)
+          OR (a.code = 'five-tasks' AND (SELECT passed_tasks FROM stats) >= 5)
+          OR (a.code = 'ten-tasks' AND (SELECT passed_tasks FROM stats) >= 10)
+          OR (a.code = 'xp-500' AND (SELECT xp FROM stats) >= 500)
+          OR (a.code = 'dimension-80'
+              AND (SELECT COALESCE(MAX(score), 0) FROM skill_scores WHERE user_id = $1) >= 80))
+       AND NOT EXISTS (
+         SELECT 1 FROM user_achievements ua WHERE ua.user_id = $1 AND ua.achievement_id = a.id
+       )
+     ), inserted AS (
+       INSERT INTO user_achievements (user_id, achievement_id)
+       SELECT $1, id FROM eligible
+       ON CONFLICT DO NOTHING
+       RETURNING achievement_id
+     )
+     SELECT e.id, e.code, e.name, e.description
+     FROM eligible e JOIN inserted i ON i.achievement_id = e.id`,
     [userId]
   );
 
-  const values = stats.rows[0];
-  const bestDimension = dimension.rows[0].best_dimension;
-  const eligible = await client.query(
-    `SELECT id, code, name, description
-     FROM achievements
-     WHERE ((code = 'first-task' AND $2 >= 1)
-        OR (code = 'five-tasks' AND $2 >= 5)
-        OR (code = 'ten-tasks' AND $2 >= 10)
-        OR (code = 'xp-500' AND $3 >= 500)
-        OR (code = 'dimension-80' AND $4 >= 80))
-     AND NOT EXISTS (
-       SELECT 1 FROM user_achievements ua WHERE ua.user_id = $1 AND ua.achievement_id = achievements.id
-     )`,
-    [userId, values.passed_tasks, values.xp, bestDimension]
-  );
-
-  const newlyEarned = [];
-  for (const achievement of eligible.rows) {
-    const inserted = await client.query(
-      `INSERT INTO user_achievements (user_id, achievement_id)
-       VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING achievement_id`,
-      [userId, achievement.id]
-    );
-    if (inserted.rows.length) newlyEarned.push(achievement);
-  }
+  const newlyEarned = earned.rows;
   // Each achievement also carries a small token bonus.
   if (newlyEarned.length) {
     await grantTokens(client, userId, achievementGrants(newlyEarned));

@@ -35,11 +35,13 @@ class _LearningAssistantScreenState
 
   Future<void> _loadHistory() async {
     try {
-      final detail = await ref.read(apiClientProvider).getAssistantSession(widget.task.id);
+      final detail =
+          await ref.read(apiClientProvider).getAssistantSession(widget.task.id);
       if (!mounted) return;
       if (detail.session != null && detail.messages.isNotEmpty) {
         setState(() {
-          _messages.addAll(detail.messages.map((m) => AssistantMessage(role: m.role, content: m.content)));
+          _messages.addAll(detail.messages
+              .map((m) => AssistantMessage(role: m.role, content: m.content)));
         });
       }
     } catch (_) {
@@ -152,7 +154,7 @@ class _LearningAssistantScreenState
         const SizedBox(height: AppSpacing.xl),
         CircleAvatar(
           radius: 25,
-          backgroundColor: AppColors.primaryNavy,
+          backgroundColor: AppColors.primaryFill,
           child: const Icon(Icons.support_agent_rounded, color: Colors.white),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -271,7 +273,7 @@ class _LearningAssistantScreenState
             onPressed: _sending ? null : () => _send(),
             icon: const Icon(Icons.send_rounded),
             style: IconButton.styleFrom(
-              backgroundColor: AppColors.primaryNavy,
+              backgroundColor: AppColors.primaryFill,
               foregroundColor: Colors.white,
             ),
             tooltip: 'Send message',

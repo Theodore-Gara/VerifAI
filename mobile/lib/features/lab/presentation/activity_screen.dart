@@ -64,7 +64,8 @@ class _LabActivityScreenState extends ConsumerState<LabActivityScreen> {
       case 'fill_blank':
         return _text.text.trim().isNotEmpty;
       case 'matching':
-        return _matching.length == _activity.left.length && _matching.values.every((v) => v != null);
+        return _matching.length == _activity.left.length &&
+            _matching.values.every((v) => v != null);
       case 'ordering':
         return true;
       default:
@@ -114,13 +115,13 @@ class _LabActivityScreenState extends ConsumerState<LabActivityScreen> {
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         title: Text('Practice question',
-            style: AppTypography.textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+            style: AppTypography.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.sm,
-              AppSpacing.screenPadding, AppSpacing.xxl),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+              AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.xxl),
           children: [
             if (_activity.attempted) ...[
               _practiceBanner(),
@@ -128,7 +129,9 @@ class _LabActivityScreenState extends ConsumerState<LabActivityScreen> {
             ],
             Text(_activity.prompt,
                 style: AppTypography.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800, color: AppColors.textPrimary, height: 1.3)),
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                    height: 1.3)),
             const SizedBox(height: AppSpacing.lg),
             ..._body(),
             const SizedBox(height: AppSpacing.lg),
@@ -150,12 +153,15 @@ class _LabActivityScreenState extends ConsumerState<LabActivityScreen> {
       case 'multiple_choice':
         return [
           for (var i = 0; i < _activity.options.length; i++)
-            _optionTile(_activity.options[i], _choice == i, () => setState(() => _choice = i)),
+            _optionTile(_activity.options[i], _choice == i,
+                () => setState(() => _choice = i)),
         ];
       case 'true_false':
         return [
-          _optionTile('True', _bool == true, () => setState(() => _bool = true)),
-          _optionTile('False', _bool == false, () => setState(() => _bool = false)),
+          _optionTile(
+              'True', _bool == true, () => setState(() => _bool = true)),
+          _optionTile(
+              'False', _bool == false, () => setState(() => _bool = false)),
         ];
       case 'fill_blank':
         return [
@@ -163,7 +169,8 @@ class _LabActivityScreenState extends ConsumerState<LabActivityScreen> {
             controller: _text,
             enabled: _result == null,
             onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(hintText: 'Your answer', border: OutlineInputBorder()),
+            decoration: const InputDecoration(
+                hintText: 'Your answer', border: OutlineInputBorder()),
           ),
         ];
       case 'matching':
@@ -173,13 +180,20 @@ class _LabActivityScreenState extends ConsumerState<LabActivityScreen> {
               padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: Row(
                 children: [
-                  Expanded(child: Text(l, style: AppTypography.textTheme.bodyMedium)),
+                  Expanded(
+                      child:
+                          Text(l, style: AppTypography.textTheme.bodyMedium)),
                   const SizedBox(width: AppSpacing.sm),
                   DropdownButton<String>(
                     value: _matching[l],
                     hint: const Text('Match'),
-                    items: [for (final r in _activity.right) DropdownMenuItem(value: r, child: Text(r))],
-                    onChanged: _result != null ? null : (v) => setState(() => _matching[l] = v),
+                    items: [
+                      for (final r in _activity.right)
+                        DropdownMenuItem(value: r, child: Text(r))
+                    ],
+                    onChanged: _result != null
+                        ? null
+                        : (v) => setState(() => _matching[l] = v),
                   ),
                 ],
               ),
@@ -187,7 +201,8 @@ class _LabActivityScreenState extends ConsumerState<LabActivityScreen> {
         ];
       case 'ordering':
         return [
-          Text('Drag into the correct order:', style: AppTypography.textTheme.bodySmall),
+          Text('Drag into the correct order:',
+              style: AppTypography.textTheme.bodySmall),
           const SizedBox(height: AppSpacing.sm),
           ReorderableListView(
             shrinkWrap: true,
@@ -204,7 +219,8 @@ class _LabActivityScreenState extends ConsumerState<LabActivityScreen> {
               for (var i = 0; i < _order.length; i++)
                 Card(
                   key: ValueKey('$_order[$i]'),
-                  child: ListTile(leading: Text('${i + 1}'), title: Text(_order[i])),
+                  child: ListTile(
+                      leading: Text('${i + 1}'), title: Text(_order[i])),
                 ),
             ],
           ),
@@ -223,17 +239,28 @@ class _LabActivityScreenState extends ConsumerState<LabActivityScreen> {
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: selected ? AppColors.accentLight.withValues(alpha: .7) : AppColors.surface,
+            color: selected
+                ? AppColors.accentLight.withValues(alpha: .7)
+                : AppColors.surface,
             borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(
-                color: selected ? AppColors.accentGreen : AppColors.border, width: selected ? 2 : 1),
+                color: selected ? AppColors.accentGreen : AppColors.border,
+                width: selected ? 2 : 1),
           ),
           child: Row(
             children: [
-              Icon(selected ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded,
-                  size: 20, color: selected ? AppColors.accentGreen : AppColors.textSecondary),
+              Icon(
+                  selected
+                      ? Icons.radio_button_checked_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  size: 20,
+                  color: selected
+                      ? AppColors.accentGreen
+                      : AppColors.textSecondary),
               const SizedBox(width: AppSpacing.md),
-              Expanded(child: Text(label, style: AppTypography.textTheme.bodyMedium)),
+              Expanded(
+                  child:
+                      Text(label, style: AppTypography.textTheme.bodyMedium)),
             ],
           ),
         ),
@@ -254,8 +281,10 @@ class _LabActivityScreenState extends ConsumerState<LabActivityScreen> {
           Icon(Icons.replay_rounded, size: 18, color: AppColors.textSecondary),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Text('Practice run. You already attempted this, so it will not earn XP.',
-                style: AppTypography.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
+            child: Text(
+                'Practice run. You already attempted this, so it will not earn XP.',
+                style: AppTypography.textTheme.bodySmall
+                    ?.copyWith(color: AppColors.textSecondary)),
           ),
         ],
       ),
@@ -267,9 +296,12 @@ class _LabActivityScreenState extends ConsumerState<LabActivityScreen> {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: (ok ? AppColors.accentGreen : AppColors.warning).withValues(alpha: .08),
+        color: (ok ? AppColors.accentGreen : AppColors.warning)
+            .withValues(alpha: .08),
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: (ok ? AppColors.accentGreen : AppColors.warning).withValues(alpha: .4)),
+        border: Border.all(
+            color: (ok ? AppColors.accentGreen : AppColors.warning)
+                .withValues(alpha: .4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,21 +312,26 @@ class _LabActivityScreenState extends ConsumerState<LabActivityScreen> {
                   color: ok ? AppColors.accentGreen : AppColors.goldDark),
               const SizedBox(width: 8),
               Text(ok ? 'Correct' : 'Not quite',
-                  style: AppTypography.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+                  style: AppTypography.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primaryNavy)),
               const Spacer(),
               if (result.xpEarned > 0)
                 Text('+${result.xpEarned} XP',
-                    style: AppTypography.textTheme.labelMedium
-                        ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.accentGreen))
+                    style: AppTypography.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.accentGreen))
               else if (result.practice)
                 Text('Practice - no XP',
-                    style: AppTypography.textTheme.labelSmall?.copyWith(color: AppColors.textSecondary)),
+                    style: AppTypography.textTheme.labelSmall
+                        ?.copyWith(color: AppColors.textSecondary)),
             ],
           ),
           if (result.explanation.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.sm),
-            Text(result.explanation, style: AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
+            Text(result.explanation,
+                style:
+                    AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
           ],
           const SizedBox(height: AppSpacing.md),
           Row(

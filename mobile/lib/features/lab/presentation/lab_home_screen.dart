@@ -12,7 +12,8 @@ class LabHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final entries = <({String title, String subtitle, IconData icon, String route})>[
+    final entries =
+        <({String title, String subtitle, IconData icon, String route})>[
       (
         title: 'Learning material',
         subtitle: 'Textbook lessons, worked through topic by topic',
@@ -44,13 +45,13 @@ class LabHomeScreen extends StatelessWidget {
               context.canPop() ? context.pop() : context.go('/dashboard'),
         ),
         title: Text('AI Lab',
-            style: AppTypography.textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+            style: AppTypography.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.sm,
-              AppSpacing.screenPadding, AppSpacing.xxl),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+              AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.xxl),
           children: [
             Text('Learn, practise, then prove it.',
                 style: AppTypography.textTheme.bodyMedium
@@ -91,17 +92,21 @@ class LabHomeScreen extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(e.title,
-                                    style: AppTypography.textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.w800,
-                                        color: AppColors.primaryNavy)),
+                                    style: AppTypography.textTheme.titleMedium
+                                        ?.copyWith(
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.primaryNavy)),
                                 const SizedBox(height: 3),
                                 Text(e.subtitle,
                                     style: AppTypography.textTheme.bodySmall
-                                        ?.copyWith(color: AppColors.textSecondary, height: 1.35)),
+                                        ?.copyWith(
+                                            color: AppColors.textSecondary,
+                                            height: 1.35)),
                               ],
                             ),
                           ),
-                          Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                          Icon(Icons.chevron_right_rounded,
+                              color: AppColors.textSecondary),
                         ],
                       ),
                     ),

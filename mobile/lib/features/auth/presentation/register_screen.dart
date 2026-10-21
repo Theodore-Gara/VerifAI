@@ -69,7 +69,7 @@ class _PasswordStrengthIndicator extends StatelessWidget {
         const Text(
           'Aim for 8+ characters, uppercase and lowercase letters, and a number or symbol.',
           style: TextStyle(
-            fontSize: 11,
+            fontSize: 11.5,
             height: 1.35,
             color: Color(0xFF64748B),
           ),

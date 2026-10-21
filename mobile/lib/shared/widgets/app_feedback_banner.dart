@@ -222,11 +222,11 @@ class FeedbackBanner extends StatelessWidget {
               child: Text(
                 message,
                 style: DefaultTextStyle.of(context).style.copyWith(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                  height: 1.35,
-                ),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
+                      height: 1.35,
+                    ),
               ),
             ),
             const SizedBox(width: AppSpacing.xs),

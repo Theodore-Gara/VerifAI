@@ -140,8 +140,12 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
         }
         _streaming = '';
       });
-      showFeedback(context, FeedbackKind.error,
-          kDebugMode ? 'Vera could not respond: $e' : 'Vera could not finish that reply. Try again.');
+      showFeedback(
+          context,
+          FeedbackKind.error,
+          kDebugMode
+              ? 'Vera could not respond: $e'
+              : 'Vera could not finish that reply. Try again.');
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -168,7 +172,7 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
           children: [
             CircleAvatar(
                 radius: 15,
-                backgroundColor: AppColors.primaryNavy,
+                backgroundColor: AppColors.primaryFill,
                 child: const Icon(Icons.auto_awesome_rounded,
                     size: 16, color: Colors.white)),
             const SizedBox(width: 10),
@@ -181,13 +185,11 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
           IconButton(
               tooltip: 'New chat',
               onPressed: _newChat,
-              icon:
-                  Icon(Icons.edit_square, color: AppColors.primaryNavy)),
+              icon: Icon(Icons.edit_square, color: AppColors.primaryNavy)),
           IconButton(
               tooltip: 'History',
               onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
-              icon: Icon(Icons.history_rounded,
-                  color: AppColors.primaryNavy)),
+              icon: Icon(Icons.history_rounded, color: AppColors.primaryNavy)),
         ],
       ),
       endDrawer: _sessionsDrawer(),
@@ -268,7 +270,7 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
         Center(
           child: CircleAvatar(
               radius: 30,
-              backgroundColor: AppColors.primaryNavy,
+              backgroundColor: AppColors.primaryFill,
               child: const Icon(Icons.auto_awesome_rounded,
                   size: 30, color: Colors.white)),
         ),
@@ -414,7 +416,7 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
             onPressed: _sending ? null : () => _send(),
             icon: const Icon(Icons.send_rounded),
             style: IconButton.styleFrom(
-                backgroundColor: AppColors.primaryNavy,
+                backgroundColor: AppColors.primaryFill,
                 foregroundColor: Colors.white),
           ),
         ],

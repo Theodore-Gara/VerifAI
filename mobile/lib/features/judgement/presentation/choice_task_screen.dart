@@ -174,7 +174,7 @@ class _ChoiceTaskScreenState extends ConsumerState<ChoiceTaskScreen> {
                 style: AppTypography.textTheme.labelSmall?.copyWith(
                   color: AppColors.goldDark,
                   fontWeight: FontWeight.w800,
-                  fontSize: 9.5,
+                  fontSize: 11.5,
                 ),
               ),
             ),

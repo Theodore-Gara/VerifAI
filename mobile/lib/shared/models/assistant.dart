@@ -12,7 +12,8 @@ class AssistantSession {
     required this.messageCount,
   });
 
-  factory AssistantSession.fromJson(Map<String, dynamic> json) => AssistantSession(
+  factory AssistantSession.fromJson(Map<String, dynamic> json) =>
+      AssistantSession(
         id: int.tryParse('${json['id']}') ?? 0,
         startedAt: json['started_at'] as String? ?? '',
         lastActiveAt: json['last_active_at'] as String? ?? '',
@@ -36,7 +37,8 @@ class AssistantMessageModel {
 
   bool get fromAssistant => role == 'assistant';
 
-  factory AssistantMessageModel.fromJson(Map<String, dynamic> json) => AssistantMessageModel(
+  factory AssistantMessageModel.fromJson(Map<String, dynamic> json) =>
+      AssistantMessageModel(
         id: int.tryParse('${json['id']}') ?? 0,
         role: json['role'] as String? ?? 'assistant',
         content: json['content'] as String? ?? '',

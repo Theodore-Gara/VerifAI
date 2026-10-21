@@ -31,7 +31,7 @@ let shareAlike = false;
 
 pool.query = async (sql, values = []) => {
   const s = sql.replace(/\s+/g, ' ').trim();
-  if (s.includes('FROM users WHERE firebase_uid')) return { rows: [USER] };
+  if (s.includes('find_user_by_uid')) return { rows: [USER] };
   if (s.startsWith('INSERT INTO lab_lesson_progress')) return { rows: [] };
   if (s.includes('FROM content_sources WHERE id')) return { rows: values[0] === SOURCE.id ? [SOURCE] : [] };
   if (s.includes('FROM content_sources')) return { rows: [SOURCE, OWASP] };

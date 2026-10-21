@@ -1,14 +1,9 @@
 const pool = require('../db/pool');
+const { findUserByFirebaseUid } = require('../db/users');
 const { positiveIntegerParam } = require('../middleware/validate');
 const { refreshReadiness } = require('../services/readinessService');
 
-async function getCurrentUser(firebaseUid) {
-  const result = await pool.query(
-    `SELECT id, industry_track_id FROM users WHERE firebase_uid = $1`,
-    [firebaseUid]
-  );
-  return result.rows[0] || null;
-}
+const getCurrentUser = (firebaseUid) => findUserByFirebaseUid(pool, firebaseUid);
 
 function requireTrack(user) {
   if (!user) return { error: { status: 404, message: 'User not found. Call /api/auth/sync first.' } };

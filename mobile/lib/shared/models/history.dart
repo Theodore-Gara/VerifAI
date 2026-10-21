@@ -23,7 +23,8 @@ class AttemptFeedback {
     this.submittedAt = '',
   });
 
-  factory AttemptFeedback.fromJson(Map<String, dynamic> json) => AttemptFeedback(
+  factory AttemptFeedback.fromJson(Map<String, dynamic> json) =>
+      AttemptFeedback(
         id: int.tryParse('${json['id']}') ?? 0,
         title: json['title'] as String? ?? '',
         feature: json['feature'] as String?,

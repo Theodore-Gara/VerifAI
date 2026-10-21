@@ -25,7 +25,7 @@ class AuthBrandHeader extends StatelessWidget {
         AppSpacing.xl,
       ),
       decoration: BoxDecoration(
-        color: AppColors.primaryNavy,
+        color: AppColors.primaryFill,
         borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       child: Column(

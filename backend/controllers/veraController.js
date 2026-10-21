@@ -20,22 +20,6 @@ const REPLY_RESERVE_TOKENS = 2000; // room for the reply + safety
 // Guard so a session is never compacted twice at once.
 const compactionInFlight = new Set();
 
-async function requireUser(res, req) {
-  const result = await pool.query(
-    `SELECT u.id, u.industry_track_id, u.display_name, u.created_at,
-            t.name AS track_name
-     FROM users u
-     LEFT JOIN industry_tracks t ON t.id = u.industry_track_id
-     WHERE u.firebase_uid = $1`,
-    [req.firebaseUser.uid],
-  );
-  if (!result.rows.length) {
-    res.status(404).json({ error: 'User not found. Call /api/auth/sync first.', request_id: req.requestId });
-    return null;
-  }
-  return result.rows[0];
-}
-
 // Vera's conversation is rebuilt server-side from the stored session history,
 // so only the newest message matters: it must be the learner's next question.
 // Earlier client entries (which may include long assistant replies) are ignored.
@@ -122,8 +106,7 @@ async function persistAssistantTurn(user, sessionId, userMessage, reply, context
 // POST /api/vera/chat  { session_id?, messages, context? }
 async function chat(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const lastUser = validateLatestUserTurn(req.body.messages);
     if (!process.env.NVIDIA_API_KEY) {
@@ -269,8 +252,7 @@ async function chat(req, res, next) {
 // GET /api/vera/sessions
 async function listSessions(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
     const result = await pool.query(
       `SELECT id, context, title, started_at, last_active_at, message_count
        FROM vera_sessions WHERE user_id = $1 ORDER BY last_active_at DESC LIMIT 30`,
@@ -285,8 +267,7 @@ async function listSessions(req, res, next) {
 // GET /api/vera/sessions/:id
 async function getSession(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
     const id = positiveIntegerParam(req.params.id, 'session id');
     const session = await pool.query(
       `SELECT id, context, title, started_at, last_active_at, message_count FROM vera_sessions WHERE id = $1 AND user_id = $2`,
@@ -308,8 +289,7 @@ async function getSession(req, res, next) {
 // GET /api/vera/memory
 async function listMemory(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
     const result = await pool.query(
       `SELECT id, kind, content, source, created_at, updated_at FROM vera_memories WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 100`,
       [user.id],
@@ -323,8 +303,7 @@ async function listMemory(req, res, next) {
 // POST /api/vera/memory  { kind, content }
 async function addMemory(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
     const kind = String(req.body.kind || '').toLowerCase().trim();
     if (!MEMORY_KINDS.includes(kind)) {
       return res.status(400).json({ error: `kind must be one of ${MEMORY_KINDS.join(', ')}.`, request_id: req.requestId });
@@ -349,8 +328,7 @@ async function addMemory(req, res, next) {
 // DELETE /api/vera/memory/:id
 async function deleteMemory(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
     const id = positiveIntegerParam(req.params.id, 'memory id');
     const result = await pool.query(`DELETE FROM vera_memories WHERE id = $1 AND user_id = $2 RETURNING id`, [id, user.id]);
     if (!result.rows.length) {
@@ -365,8 +343,7 @@ async function deleteMemory(req, res, next) {
 // GET /api/vera/tips — deterministic, personalised coaching tips.
 async function tips(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
     const context = await buildUserContext(pool, user.id);
     return res.status(200).json({
       tips: buildTips(context),

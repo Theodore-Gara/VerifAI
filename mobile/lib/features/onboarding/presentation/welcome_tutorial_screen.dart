@@ -299,7 +299,7 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
                                 style: TextStyle(
                                     color: AppColors.accentGreen,
                                     fontWeight: FontWeight.w900,
-                                    fontSize: 11,
+                                    fontSize: 11.5,
                                     letterSpacing: 1.4)),
                             const SizedBox(height: 12),
                             Text(item.title,
@@ -330,8 +330,7 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
                                                     .withValues(alpha: .16),
                                                 borderRadius:
                                                     BorderRadius.circular(8)),
-                                            child: Icon(
-                                                Icons.check_rounded,
+                                            child: Icon(Icons.check_rounded,
                                                 size: 16,
                                                 color: AppColors.primaryNavy)),
                                         const SizedBox(width: 11),
@@ -388,7 +387,7 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
                               ? 'Start learning'
                               : 'Next')),
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryNavy,
+                          backgroundColor: AppColors.primaryFill,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           shape: RoundedRectangleBorder(

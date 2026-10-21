@@ -55,8 +55,8 @@ class _LabLessonsScreenState extends ConsumerState<LabLessonsScreen> {
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         title: Text(practice ? 'Practice' : 'Learning material',
-            style: AppTypography.textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+            style: AppTypography.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
       ),
       body: lessonsAsync.when(
         loading: () => ListView(
@@ -134,7 +134,9 @@ class _LabLessonsScreenState extends ConsumerState<LabLessonsScreen> {
     final count = practice
         ? '${lesson.activitiesCount} questions${lesson.activitiesCompleted > 0 ? ' · ${lesson.activitiesCompleted} done' : ''}'
         : '${lesson.sectionsCount} topics · ${lesson.estimatedMinutes} min';
-    final route = practice ? '/ai-lab/practice/${lesson.code}' : '/ai-lab/lessons/${lesson.code}';
+    final route = practice
+        ? '/ai-lab/practice/${lesson.code}'
+        : '/ai-lab/lessons/${lesson.code}';
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Material(
@@ -160,7 +162,8 @@ class _LabLessonsScreenState extends ConsumerState<LabLessonsScreen> {
                     children: [
                       Text(lesson.title,
                           style: AppTypography.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryNavy)),
                       const SizedBox(height: 4),
                       Text(count,
                           style: AppTypography.textTheme.bodySmall
@@ -169,9 +172,11 @@ class _LabLessonsScreenState extends ConsumerState<LabLessonsScreen> {
                   ),
                 ),
                 if (lesson.completed)
-                  Icon(Icons.check_circle_rounded, color: AppColors.accentGreen, size: 20)
+                  Icon(Icons.check_circle_rounded,
+                      color: AppColors.accentGreen, size: 20)
                 else
-                  Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                  Icon(Icons.chevron_right_rounded,
+                      color: AppColors.textSecondary),
               ],
             ),
           ),

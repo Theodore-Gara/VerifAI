@@ -41,7 +41,7 @@ class HubSectionTitle extends StatelessWidget {
           color: AppColors.textSecondary,
           fontWeight: FontWeight.w900,
           letterSpacing: 1.1,
-          fontSize: 11,
+          fontSize: 11.5,
         ),
       ),
     );
@@ -81,35 +81,27 @@ class HubTile extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.accentLight,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(entry.icon,
-                        size: 21, color: AppColors.primaryNavy),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           entry.title,
-                          style: AppTypography.textTheme.titleSmall?.copyWith(
+                          style: AppTypography.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
                             color: AppColors.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 3),
                         Text(
                           entry.subtitle,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: AppTypography.textTheme.bodySmall?.copyWith(
+                          style: AppTypography.textTheme.labelSmall?.copyWith(
                             color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
                             height: 1.3,
                           ),
                         ),

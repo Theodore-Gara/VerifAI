@@ -51,8 +51,10 @@ class LabLesson {
         activitiesCount: int.tryParse('${json['activities_count']}') ?? 0,
         questionsCount: int.tryParse('${json['questions_count']}') ?? 0,
         sectionsCompleted: int.tryParse('${json['sections_completed']}') ?? 0,
-        activitiesCompleted: int.tryParse('${json['activities_completed']}') ?? 0,
-        assessmentBestScore: int.tryParse('${json['assessment_best_score']}') ?? 0,
+        activitiesCompleted:
+            int.tryParse('${json['activities_completed']}') ?? 0,
+        assessmentBestScore:
+            int.tryParse('${json['assessment_best_score']}') ?? 0,
         status: json['status'] as String? ?? 'not_started',
         seen: json['seen'] as bool? ?? false,
       );
@@ -65,11 +67,18 @@ class LabSection {
   final String body;
   final int sortOrder;
 
-  const LabSection({required this.id, this.parentId, required this.heading, required this.body, this.sortOrder = 0});
+  const LabSection(
+      {required this.id,
+      this.parentId,
+      required this.heading,
+      required this.body,
+      this.sortOrder = 0});
 
   factory LabSection.fromJson(Map<String, dynamic> json) => LabSection(
         id: int.tryParse('${json['id']}') ?? 0,
-        parentId: json['parent_id'] == null ? null : int.tryParse('${json['parent_id']}'),
+        parentId: json['parent_id'] == null
+            ? null
+            : int.tryParse('${json['parent_id']}'),
         heading: json['heading'] as String? ?? '',
         body: json['body'] as String? ?? '',
         sortOrder: int.tryParse('${json['sort_order']}') ?? 0,
@@ -78,7 +87,8 @@ class LabSection {
 
 class LabActivity {
   final int id;
-  final String type; // multiple_choice | true_false | fill_blank | matching | ordering
+  final String
+      type; // multiple_choice | true_false | fill_blank | matching | ordering
   final String prompt;
   final Map<String, dynamic> payload;
   final int xpReward;
@@ -97,10 +107,17 @@ class LabActivity {
     this.sortOrder = 0,
   });
 
-  List<String> get options => (payload['options'] as List<dynamic>? ?? const []).map((e) => '$e').toList();
-  List<String> get left => (payload['left'] as List<dynamic>? ?? const []).map((e) => '$e').toList();
-  List<String> get right => (payload['right'] as List<dynamic>? ?? const []).map((e) => '$e').toList();
-  List<String> get items => (payload['items'] as List<dynamic>? ?? const []).map((e) => '$e').toList();
+  List<String> get options => (payload['options'] as List<dynamic>? ?? const [])
+      .map((e) => '$e')
+      .toList();
+  List<String> get left =>
+      (payload['left'] as List<dynamic>? ?? const []).map((e) => '$e').toList();
+  List<String> get right => (payload['right'] as List<dynamic>? ?? const [])
+      .map((e) => '$e')
+      .toList();
+  List<String> get items => (payload['items'] as List<dynamic>? ?? const [])
+      .map((e) => '$e')
+      .toList();
 
   factory LabActivity.fromJson(Map<String, dynamic> json) => LabActivity(
         id: int.tryParse('${json['id']}') ?? 0,
@@ -120,12 +137,18 @@ class LabQuestion {
   final List<String> options;
   final int sortOrder;
 
-  const LabQuestion({required this.id, required this.prompt, this.options = const [], this.sortOrder = 0});
+  const LabQuestion(
+      {required this.id,
+      required this.prompt,
+      this.options = const [],
+      this.sortOrder = 0});
 
   factory LabQuestion.fromJson(Map<String, dynamic> json) => LabQuestion(
         id: int.tryParse('${json['id']}') ?? 0,
         prompt: json['prompt'] as String? ?? '',
-        options: (json['options'] as List<dynamic>? ?? const []).map((e) => '$e').toList(),
+        options: (json['options'] as List<dynamic>? ?? const [])
+            .map((e) => '$e')
+            .toList(),
         sortOrder: int.tryParse('${json['sort_order']}') ?? 0,
       );
 }
@@ -145,8 +168,10 @@ class LabProgress {
 
   factory LabProgress.fromJson(Map<String, dynamic> json) => LabProgress(
         sectionsCompleted: int.tryParse('${json['sections_completed']}') ?? 0,
-        activitiesCompleted: int.tryParse('${json['activities_completed']}') ?? 0,
-        assessmentBestScore: int.tryParse('${json['assessment_best_score']}') ?? 0,
+        activitiesCompleted:
+            int.tryParse('${json['activities_completed']}') ?? 0,
+        assessmentBestScore:
+            int.tryParse('${json['assessment_best_score']}') ?? 0,
         status: json['status'] as String? ?? 'not_started',
       );
 }
@@ -202,7 +227,9 @@ class LabLessonDetail {
   factory LabLessonDetail.fromJson(Map<String, dynamic> json) {
     final l = (json['lesson'] as Map?)?.cast<String, dynamic>() ?? const {};
     List<T> list<T>(String key, T Function(Map<String, dynamic>) build) =>
-        (l[key] as List<dynamic>? ?? const []).map((e) => build(Map<String, dynamic>.from(e as Map))).toList();
+        (l[key] as List<dynamic>? ?? const [])
+            .map((e) => build(Map<String, dynamic>.from(e as Map)))
+            .toList();
     return LabLessonDetail(
       lesson: LabLesson.fromJson(l),
       sections: list('sections', LabSection.fromJson),
@@ -211,15 +238,18 @@ class LabLessonDetail {
       sources: list('sources', VeraSource.fromJson),
       attributions: list('attributions', LabAttribution.fromJson),
       shareAlike: l['share_alike'] as bool? ?? false,
-      progress: LabProgress.fromJson((l['progress'] as Map?)?.cast<String, dynamic>() ?? const {}),
+      progress: LabProgress.fromJson(
+          (l['progress'] as Map?)?.cast<String, dynamic>() ?? const {}),
     );
   }
 
   /// Chapters are top-level sections (no parent).
-  List<LabSection> get chapters => sections.where((s) => s.parentId == null).toList();
+  List<LabSection> get chapters =>
+      sections.where((s) => s.parentId == null).toList();
 
   /// Topics are the sections directly under a chapter.
-  List<LabSection> topicsOf(int chapterId) => sections.where((s) => s.parentId == chapterId).toList();
+  List<LabSection> topicsOf(int chapterId) =>
+      sections.where((s) => s.parentId == chapterId).toList();
 
   /// All topics flattened in reading order (chapter by chapter).
   List<LabSection> get orderedTopics {
@@ -231,12 +261,15 @@ class LabLessonDetail {
   }
 
   /// Subtopics are the sections under a topic; rendered together on the reader.
-  List<LabSection> subtopicsOf(int topicId) => sections.where((s) => s.parentId == topicId).toList();
+  List<LabSection> subtopicsOf(int topicId) =>
+      sections.where((s) => s.parentId == topicId).toList();
 
   /// Total number of topics (the unit that progress counts).
   int get topicCount {
     final chapterIds = chapters.map((c) => c.id).toSet();
-    return sections.where((s) => s.parentId != null && chapterIds.contains(s.parentId)).length;
+    return sections
+        .where((s) => s.parentId != null && chapterIds.contains(s.parentId))
+        .length;
   }
 }
 
@@ -247,7 +280,12 @@ class LabActivityResult {
   final String explanation;
   final dynamic answer;
 
-  const LabActivityResult({required this.passed, required this.xpEarned, this.practice = false, this.explanation = '', this.answer});
+  const LabActivityResult(
+      {required this.passed,
+      required this.xpEarned,
+      this.practice = false,
+      this.explanation = '',
+      this.answer});
 
   factory LabActivityResult.fromJson(Map<String, dynamic> json) {
     final r = (json['result'] as Map?)?.cast<String, dynamic>() ?? const {};
@@ -310,11 +348,15 @@ class LabAssessment {
         questionCount: int.tryParse('${json['question_count']}') ?? 0,
         attemptsUsed: int.tryParse('${json['attempts_used']}') ?? 0,
         attemptsRemaining: int.tryParse('${json['attempts_remaining']}') ?? 0,
-        bestScore: json['best_score'] == null ? null : int.tryParse('${json['best_score']}'),
+        bestScore: json['best_score'] == null
+            ? null
+            : int.tryParse('${json['best_score']}'),
         passed: json['passed'] as bool? ?? false,
         viewOnly: json['view_only'] as bool? ?? false,
         scenario: (json['scenario'] as Map?)?.cast<String, dynamic>(),
-        instructions: (json['instructions'] as List<dynamic>? ?? const []).map((e) => '$e').toList(),
+        instructions: (json['instructions'] as List<dynamic>? ?? const [])
+            .map((e) => '$e')
+            .toList(),
       );
 }
 
@@ -349,13 +391,21 @@ class LabAssessmentQuestion {
     this.sortOrder = 0,
   });
 
-  List<String> get options => (payload['options'] as List<dynamic>? ?? const []).map((e) => '$e').toList();
-  List<String> get left => (payload['left'] as List<dynamic>? ?? const []).map((e) => '$e').toList();
-  List<String> get right => (payload['right'] as List<dynamic>? ?? const []).map((e) => '$e').toList();
-  List<String> get items => (payload['items'] as List<dynamic>? ?? const []).map((e) => '$e').toList();
-  List<Map<String, dynamic>> get parts => (payload['parts'] as List<dynamic>? ?? const [])
-      .map((e) => Map<String, dynamic>.from(e as Map))
+  List<String> get options => (payload['options'] as List<dynamic>? ?? const [])
+      .map((e) => '$e')
       .toList();
+  List<String> get left =>
+      (payload['left'] as List<dynamic>? ?? const []).map((e) => '$e').toList();
+  List<String> get right => (payload['right'] as List<dynamic>? ?? const [])
+      .map((e) => '$e')
+      .toList();
+  List<String> get items => (payload['items'] as List<dynamic>? ?? const [])
+      .map((e) => '$e')
+      .toList();
+  List<Map<String, dynamic>> get parts =>
+      (payload['parts'] as List<dynamic>? ?? const [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
 
   /// The numbered question this sub-question belongs to (1..6). Sub-questions
   /// sharing a number are shown together on one page.
@@ -365,14 +415,17 @@ class LabAssessmentQuestion {
     return int.tryParse('$v');
   }
 
-  factory LabAssessmentQuestion.fromJson(Map<String, dynamic> json) => LabAssessmentQuestion(
+  factory LabAssessmentQuestion.fromJson(Map<String, dynamic> json) =>
+      LabAssessmentQuestion(
         id: int.tryParse('${json['id']}') ?? 0,
         type: json['type'] as String? ?? 'multiple_choice',
         section: json['section'] as String?,
         scenario: json['scenario'] as String?,
         prompt: json['prompt'] as String? ?? '',
         payload: (json['payload'] as Map?)?.cast<String, dynamic>() ?? const {},
-        codeLines: (json['code_lines'] as List<dynamic>? ?? const []).map((e) => '$e').toList(),
+        codeLines: (json['code_lines'] as List<dynamic>? ?? const [])
+            .map((e) => '$e')
+            .toList(),
         wordLimit: (json['word_limit'] as Map?)?.cast<String, dynamic>(),
         competency: json['competency'] as String?,
         cognitiveLevel: json['cognitive_level'] as String?,
@@ -387,13 +440,16 @@ class LabAssessmentPaper {
   final LabAssessment assessment;
   final List<LabAssessmentQuestion> questions;
 
-  const LabAssessmentPaper({required this.assessment, this.questions = const []});
+  const LabAssessmentPaper(
+      {required this.assessment, this.questions = const []});
 
-  factory LabAssessmentPaper.fromJson(Map<String, dynamic> json) => LabAssessmentPaper(
+  factory LabAssessmentPaper.fromJson(Map<String, dynamic> json) =>
+      LabAssessmentPaper(
         assessment: LabAssessment.fromJson(
             (json['assessment'] as Map?)?.cast<String, dynamic>() ?? const {}),
         questions: (json['questions'] as List<dynamic>? ?? const [])
-            .map((e) => LabAssessmentQuestion.fromJson(Map<String, dynamic>.from(e as Map)))
+            .map((e) => LabAssessmentQuestion.fromJson(
+                Map<String, dynamic>.from(e as Map)))
             .toList(),
       );
 }
@@ -424,7 +480,8 @@ class LabAssessmentStart {
     this.questions = const [],
   });
 
-  factory LabAssessmentStart.fromJson(Map<String, dynamic> json) => LabAssessmentStart(
+  factory LabAssessmentStart.fromJson(Map<String, dynamic> json) =>
+      LabAssessmentStart(
         attemptId: int.tryParse('${json['attempt_id']}') ?? 0,
         startedAt: json['started_at'] as String? ?? '',
         expiresAt: json['expires_at'] as String? ?? '',
@@ -432,10 +489,13 @@ class LabAssessmentStart {
         passScore: int.tryParse('${json['pass_score']}') ?? 60,
         totalMarks: int.tryParse('${json['total_marks']}') ?? 0,
         scenario: (json['scenario'] as Map?)?.cast<String, dynamic>(),
-        instructions: (json['instructions'] as List<dynamic>? ?? const []).map((e) => '$e').toList(),
+        instructions: (json['instructions'] as List<dynamic>? ?? const [])
+            .map((e) => '$e')
+            .toList(),
         attemptsRemaining: int.tryParse('${json['attempts_remaining']}') ?? 0,
         questions: (json['questions'] as List<dynamic>? ?? const [])
-            .map((e) => LabAssessmentQuestion.fromJson(Map<String, dynamic>.from(e as Map)))
+            .map((e) => LabAssessmentQuestion.fromJson(
+                Map<String, dynamic>.from(e as Map)))
             .toList(),
       );
 }
@@ -459,11 +519,13 @@ class LabQuestionResult {
     this.explanation,
   });
 
-  factory LabQuestionResult.fromJson(Map<String, dynamic> json) => LabQuestionResult(
+  factory LabQuestionResult.fromJson(Map<String, dynamic> json) =>
+      LabQuestionResult(
         questionId: int.tryParse('${json['question_id']}') ?? 0,
         pending: json['pending'] as bool? ?? false,
         correct: json['correct'] as bool?,
-        awarded: json['awarded'] == null ? null : int.tryParse('${json['awarded']}'),
+        awarded:
+            json['awarded'] == null ? null : int.tryParse('${json['awarded']}'),
         max: int.tryParse('${json['max'] ?? json['marks']}') ?? 0,
         answer: json['answer'],
         explanation: json['explanation'] as String?,
@@ -500,14 +562,16 @@ class LabAssessmentResult {
   factory LabAssessmentResult.fromJson(Map<String, dynamic> json) {
     final r = (json['result'] as Map?)?.cast<String, dynamic>() ?? const {};
     final questions = ((json['results'] as List<dynamic>?) ?? const [])
-        .map((e) => LabQuestionResult.fromJson(Map<String, dynamic>.from(e as Map)))
+        .map((e) =>
+            LabQuestionResult.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
     return LabAssessmentResult(
       pendingMarking: r['pending_marking'] as bool? ?? false,
       score: int.tryParse('${r['score']}') ?? 0,
       passed: r['passed'] as bool? ?? false,
       timedOut: r['timed_out'] as bool? ?? false,
-      marksAwarded: int.tryParse('${r['marks_awarded'] ?? r['auto_marks']}') ?? 0,
+      marksAwarded:
+          int.tryParse('${r['marks_awarded'] ?? r['auto_marks']}') ?? 0,
       totalMarks: int.tryParse('${r['total_marks']}') ?? 0,
       attemptsRemaining: int.tryParse('${r['attempts_remaining']}') ?? 0,
       xpEarned: int.tryParse('${json['xp_earned']}') ?? 0,
@@ -524,14 +588,21 @@ class LabAssessmentAnalysis {
   final List<String> focus;
   final String report;
 
-  const LabAssessmentAnalysis({this.headline = '', this.strengths = const [], this.focus = const [], this.report = ''});
+  const LabAssessmentAnalysis(
+      {this.headline = '',
+      this.strengths = const [],
+      this.focus = const [],
+      this.report = ''});
 
   factory LabAssessmentAnalysis.fromJson(Map<String, dynamic> json) {
     final a = (json['analysis'] as Map?)?.cast<String, dynamic>() ?? json;
     return LabAssessmentAnalysis(
       headline: a['headline'] as String? ?? '',
-      strengths: (a['strengths'] as List<dynamic>? ?? const []).map((e) => '$e').toList(),
-      focus: (a['focus'] as List<dynamic>? ?? const []).map((e) => '$e').toList(),
+      strengths: (a['strengths'] as List<dynamic>? ?? const [])
+          .map((e) => '$e')
+          .toList(),
+      focus:
+          (a['focus'] as List<dynamic>? ?? const []).map((e) => '$e').toList(),
       report: a['report'] as String? ?? '',
     );
   }

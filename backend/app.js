@@ -77,10 +77,11 @@ app.use(cors({
 
 // Path-scoped parsers run first so avatar images and long documents are not
 // capped by the small global limit; body-parser skips paths already parsed.
-// The verification route accepts a 10MB document (base64 inflates it ~33%), so
-// it gets a 14MB ceiling.
+// The verification route accepts a 5MB document (base64 inflates it ~33%), so
+// it gets an 8MB ceiling — enough headroom for the JSON envelope without
+// letting a 14MB body reach the parser.
 app.use(['/api/users/avatar'], express.json({ limit: '3mb' }));
-app.use(['/api/verification/analyze'], express.json({ limit: '14mb' }));
+app.use(['/api/verification/analyze'], express.json({ limit: '8mb' }));
 // The importer accepts up to 200 tasks (and a single task with a scenario, five
 // options and feedback already exceeds the 32kb default), so admin task writes
 // get their own ceiling. Without this the import failed with an opaque 413.

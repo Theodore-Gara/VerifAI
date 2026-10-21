@@ -7,6 +7,7 @@ import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/track/providers.dart';
+import 'package:verifai/shared/widgets/dock_clearance.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
@@ -33,7 +34,7 @@ class TrackRoadmapScreen extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(milestonesProvider),
         child: milestonesAsync.when(
-          data: (milestones) => _buildContent(trackName, milestones),
+          data: (milestones) => _buildContent(context, trackName, milestones),
           loading: () => _buildShimmer(),
           error: (error, stackTrace) => AsyncErrorView(
             error: error,
@@ -45,7 +46,8 @@ class TrackRoadmapScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildContent(String trackName, List<Milestone> milestones) {
+  Widget _buildContent(
+      BuildContext context, String trackName, List<Milestone> milestones) {
     final achieved = milestones.where((m) => m.achieved).length;
     final progress = milestones.isEmpty ? 0.0 : achieved / milestones.length;
 
@@ -54,11 +56,11 @@ class TrackRoadmapScreen extends ConsumerWidget {
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppSpacing.screenPadding,
         AppSpacing.sm,
         AppSpacing.screenPadding,
-        100, // accommodates floating dock
+        dockClearance(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,7 +93,7 @@ class TrackRoadmapScreen extends ConsumerWidget {
                     color: AppColors.accentGreen,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.8,
-                    fontSize: 9.5,
+                    fontSize: 11.5,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -143,7 +145,7 @@ class TrackRoadmapScreen extends ConsumerWidget {
                   '$achieved of ${milestones.length} milestones reached',
                   style: AppTypography.textTheme.labelSmall?.copyWith(
                     color: Colors.white.withValues(alpha: 0.75),
-                    fontSize: 10,
+                    fontSize: 11.5,
                   ),
                 ),
               ],
@@ -340,7 +342,7 @@ class TrackRoadmapScreen extends ConsumerWidget {
                         ? AppColors.accentGreen
                         : AppColors.textSecondary,
                     fontWeight: FontWeight.w800,
-                    fontSize: 9.5,
+                    fontSize: 11.5,
                   ),
                 ),
               ),

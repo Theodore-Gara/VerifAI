@@ -15,12 +15,12 @@ const CAP_REPORT = { headline: 'Solid effort', strengths: ['Good structure'], fo
 
 pool.query = async (sql, values = []) => {
   const s = sql.replace(/\s+/g, ' ').trim();
-  if (s.includes('FROM users WHERE firebase_uid')) return { rows: [{ id: 7, industry_track_id: 1 }] };
+  if (s.includes('find_user_by_uid')) return { rows: [{ id: 7, industry_track_id: 1 }] };
   if (s.startsWith('INSERT INTO verification_analyses')) {
     return { rows: [{ id: 1, kind: values[1], document_name: values[2], overall_status: REPORT.overall_status, items_requiring_review: 1, sources_confirmed: 1, summary: REPORT.summary, report: REPORT, created_at: 'now' }] };
   }
-  // History union
-  if (s.includes('UNION ALL') && s.includes("'task' AS type")) {
+  // History now reads the shared user_activity view.
+  if (s.includes('FROM user_activity')) {
     return { rows: [
       { type: 'capstone', id: 3, title: 'Finance Capstone', feature: null, score: 92, passed: true, xp_earned: 70, created_at: '2026-10-13T10:00:00Z' },
       { type: 'task', id: 2, title: 'Verify the summary', feature: 'verification', score: 100, passed: true, xp_earned: 50, created_at: '2026-10-12T10:00:00Z' },

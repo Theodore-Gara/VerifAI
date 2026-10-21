@@ -96,7 +96,7 @@ class DimensionIndexCard extends StatelessWidget {
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.6,
-                    fontSize: 10,
+                    fontSize: 11.5,
                   ),
                 ),
                 Container(
@@ -112,7 +112,7 @@ class DimensionIndexCard extends StatelessWidget {
                     style: AppTypography.textTheme.labelSmall?.copyWith(
                       color: AppColors.primaryNavy,
                       fontWeight: FontWeight.w800,
-                      fontSize: 10,
+                      fontSize: 11.5,
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
@@ -224,7 +224,7 @@ class _SkillRow extends StatelessWidget {
                   style: AppTypography.textTheme.labelSmall?.copyWith(
                     color: tier.textColor,
                     fontWeight: FontWeight.w800,
-                    fontSize: 9.5,
+                    fontSize: 11.5,
                   ),
                 ),
               ),
@@ -237,7 +237,7 @@ class _SkillRow extends StatelessWidget {
                   style: AppTypography.textTheme.labelSmall?.copyWith(
                     color: AppColors.primaryNavy,
                     fontWeight: FontWeight.w800,
-                    fontSize: 11,
+                    fontSize: 11.5,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),

@@ -24,13 +24,19 @@ class RewardsScreen extends ConsumerWidget {
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         title: Text('Rewards',
-            style: AppTypography.textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+            style: AppTypography.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
       ),
       body: async.when(
         loading: () => ListView(
           padding: const EdgeInsets.all(AppSpacing.screenPadding),
-          children: const [ShimmerLoader(height: 110), SizedBox(height: AppSpacing.md), ShimmerLoader(height: 90), SizedBox(height: AppSpacing.sm), ShimmerLoader(height: 90)],
+          children: const [
+            ShimmerLoader(height: 110),
+            SizedBox(height: AppSpacing.md),
+            ShimmerLoader(height: 90),
+            SizedBox(height: AppSpacing.sm),
+            ShimmerLoader(height: 90)
+          ],
         ),
         error: (e, _) => AsyncErrorView(
           error: e,
@@ -38,17 +44,20 @@ class RewardsScreen extends ConsumerWidget {
           onRetry: () => ref.invalidate(rewardsProvider),
         ),
         data: (data) => ListView(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.sm,
-              AppSpacing.screenPadding, AppSpacing.xxl),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+              AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.xxl),
           children: [
             _wallet(context, data.wallet),
             const SizedBox(height: AppSpacing.lg),
             Text('Spend your tokens',
-                style: AppTypography.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+                style: AppTypography.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
             const SizedBox(height: AppSpacing.sm),
             if (data.rewards.isEmpty)
-              const EmptyState(icon: Icons.card_giftcard_outlined, title: 'No rewards yet', message: '')
+              const EmptyState(
+                  icon: Icons.card_giftcard_outlined,
+                  title: 'No rewards yet',
+                  message: '')
             else
               for (final r in data.rewards) _card(context, ref, r),
           ],
@@ -74,15 +83,23 @@ class RewardsScreen extends ConsumerWidget {
                 children: [
                   Text('REWARD TOKENS',
                       style: TextStyle(
-                          color: AppColors.accentCyan, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.2)),
+                          color: AppColors.accentCyan,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 11.5,
+                          letterSpacing: 1.2)),
                   Text('${w.tokens}',
-                      style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900)),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900)),
                   Text('Level ${w.level} · ${w.xp} XP',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12)),
                 ],
               ),
             ),
-            const Icon(Icons.workspace_premium_rounded, color: Colors.white24, size: 54),
+            const Icon(Icons.workspace_premium_rounded,
+                color: Colors.white24, size: 54),
           ],
         ),
       );
@@ -103,7 +120,10 @@ class RewardsScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AppRadius.card),
-                border: Border.all(color: r.canAfford ? AppColors.accentGreen.withValues(alpha: .5) : AppColors.border),
+                border: Border.all(
+                    color: r.canAfford
+                        ? AppColors.accentGreen.withValues(alpha: .5)
+                        : AppColors.border),
               ),
               child: Row(
                 children: [
@@ -114,7 +134,8 @@ class RewardsScreen extends ConsumerWidget {
                       color: AppColors.accentLight,
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Icon(Icons.card_giftcard_rounded, color: AppColors.primaryNavy),
+                    child: Icon(Icons.card_giftcard_rounded,
+                        color: AppColors.primaryNavy),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
@@ -122,19 +143,23 @@ class RewardsScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(r.title,
-                            style: AppTypography.textTheme.titleSmall
-                                ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+                            style: AppTypography.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primaryNavy)),
                         Text(r.subtitle,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: AppTypography.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
+                            style: AppTypography.textTheme.bodySmall
+                                ?.copyWith(color: AppColors.textSecondary)),
                       ],
                     ),
                   ),
                   Text('${r.costTokens}',
                       style: AppTypography.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w900,
-                          color: r.canAfford ? AppColors.accentGreen : AppColors.textSecondary)),
+                          color: r.canAfford
+                              ? AppColors.accentGreen
+                              : AppColors.textSecondary)),
                 ],
               ),
             ),

@@ -41,7 +41,7 @@ pool.query = async (sql, values = []) => {
   const s = sql.replace(/\s+/g, ' ').trim();
   queries.push({ sql: s, values });
   if (s.includes('FROM users u') && s.includes('track_name')) return { rows: [USER_WITH_TRACK] };
-  if (s.includes('FROM users WHERE firebase_uid')) return { rows: [USER] };
+  if (s.includes('find_user_by_uid')) return { rows: [USER] };
   if (s.includes('INSERT INTO verification_analyses')) return { rows: [VERIFICATION_ROW] };
   if (s.includes('FROM verification_analyses')) return { rows: [VERIFICATION_ROW] };
   if (s.includes('FROM lab_lessons WHERE code')) return { rows: [LESSON] };

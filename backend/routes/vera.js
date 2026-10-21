@@ -1,5 +1,6 @@
 const express = require('express');
 const { verifyFirebaseToken } = require('../middleware/auth');
+const requireUser = require('../middleware/requireUser');
 const { aiLimit, writeLimit } = require('../middleware/rateLimits');
 const {
   chat,
@@ -13,12 +14,12 @@ const {
 
 const router = express.Router();
 
-router.post('/chat', verifyFirebaseToken, aiLimit, chat);
-router.get('/sessions', verifyFirebaseToken, listSessions);
-router.get('/sessions/:id', verifyFirebaseToken, getSession);
-router.get('/memory', verifyFirebaseToken, listMemory);
-router.post('/memory', verifyFirebaseToken, writeLimit, addMemory);
-router.delete('/memory/:id', verifyFirebaseToken, writeLimit, deleteMemory);
-router.get('/tips', verifyFirebaseToken, tips);
+router.post('/chat', verifyFirebaseToken, requireUser, aiLimit, chat);
+router.get('/sessions', verifyFirebaseToken, requireUser, listSessions);
+router.get('/sessions/:id', verifyFirebaseToken, requireUser, getSession);
+router.get('/memory', verifyFirebaseToken, requireUser, listMemory);
+router.post('/memory', verifyFirebaseToken, requireUser, writeLimit, addMemory);
+router.delete('/memory/:id', verifyFirebaseToken, requireUser, writeLimit, deleteMemory);
+router.get('/tips', verifyFirebaseToken, requireUser, tips);
 
 module.exports = router;

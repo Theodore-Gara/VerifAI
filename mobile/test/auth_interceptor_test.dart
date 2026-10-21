@@ -46,6 +46,9 @@ void main() {
       ..httpClientAdapter = adapter;
     dio.interceptors.add(AuthInterceptor(
       dio: dio,
+      // Requests in these tests set their own Authorization header, so the
+      // injector has nothing to add.
+      token: () async => null,
       refreshToken: () async {
         refreshCalls++;
         return refreshedToken;

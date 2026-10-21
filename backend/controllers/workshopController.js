@@ -1,19 +1,9 @@
 const pool = require('../db/pool');
 const { requiredString, optionalString, positiveIntegerParam, clampInt } = require('../middleware/validate');
-const { findUserByFirebaseUid } = require('../db/users');
 
 // A post is auto-hidden once this many distinct users report it, pending review.
 const HIDE_AFTER_REPORTS = 3;
 const REPORT_REASONS = new Set(['spam', 'abuse', 'off_topic', 'other']);
-
-async function requireUser(res, req) {
-  const user = await findUserByFirebaseUid(pool, req.firebaseUser.uid);
-  if (!user) {
-    res.status(404).json({ error: 'User not found. Call /api/auth/sync first.', request_id: req.requestId });
-    return null;
-  }
-  return user;
-}
 
 async function resolveLessonId(executor, code, trackId) {
   if (!code) return null;
@@ -27,8 +17,7 @@ async function resolveLessonId(executor, code, trackId) {
 // GET /api/workshop/posts?lesson=<code>&limit=&offset=
 async function listPosts(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
     if (!user.industry_track_id) {
       return res.status(400).json({ error: 'Select an industry track before using the Workshop.', request_id: req.requestId });
     }
@@ -73,8 +62,7 @@ async function listPosts(req, res, next) {
 // GET /api/workshop/posts/:id/replies
 async function listReplies(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const postId = positiveIntegerParam(req.params.id, 'post id');
     const parent = await pool.query(
@@ -107,8 +95,7 @@ async function listReplies(req, res, next) {
 // POST /api/workshop/posts  { body, lesson_code?, parent_id? }
 async function createPost(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
     if (!user.industry_track_id) {
       return res.status(400).json({ error: 'Select an industry track before using the Workshop.', request_id: req.requestId });
     }
@@ -152,8 +139,7 @@ async function createPost(req, res, next) {
 async function react(req, res, next) {
   let client = null;
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const postId = positiveIntegerParam(req.params.id, 'post id');
     client = await pool.connect();
@@ -208,8 +194,7 @@ async function react(req, res, next) {
 async function report(req, res, next) {
   let client = null;
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const postId = positiveIntegerParam(req.params.id, 'post id');
     const reason = requiredString(req.body.reason, 'reason', 40).toLowerCase();
@@ -268,8 +253,7 @@ async function report(req, res, next) {
 // DELETE /api/workshop/posts/:id — author only
 async function deletePost(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const postId = positiveIntegerParam(req.params.id, 'post id');
     const existing = await pool.query(

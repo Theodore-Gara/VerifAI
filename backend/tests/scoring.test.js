@@ -240,8 +240,10 @@ function fakeProgressClient(dayGap) {
     calls,
     async query(sql, values) {
       calls.push({ sql, values });
-      if (sql.includes('INSERT INTO user_progress')) return { rows: [PROGRESS_ROW] };
-      if (sql.includes('day_gap')) return { rows: [{ today: '2026-10-09', day_gap: dayGap }] };
+      // The progress row and the day gap arrive from one statement now.
+      if (sql.includes('INSERT INTO user_progress')) {
+        return { rows: [{ ...PROGRESS_ROW, day_gap: dayGap }] };
+      }
       if (sql.includes('INSERT INTO reward_token_events')) return { rows: [] };
       if (sql.includes('UPDATE user_progress') && sql.includes('SET xp')) {
         return { rows: [{ xp: 70, level: 1, streak: 2, readiness_score: 0, tier: 'Novice', tokens: 0 }] };
@@ -264,7 +266,7 @@ test('streak increments on a 1-day gap and pins the timezone, not the server clo
   assert.match(gapCall.sql, /AT TIME ZONE \$2/);
   assert.match(update.sql, /AT TIME ZONE \$5/);
   assert.doesNotMatch(update.sql, /last_activity_date = CURRENT_DATE/);
-  assert.deepEqual(gapCall.values, [1, process.env.STREAK_TIMEZONE || 'Africa/Johannesburg']);
+  assert.deepEqual(gapCall.values, [7, process.env.STREAK_TIMEZONE || 'Africa/Johannesburg']);
   assert.equal(update.values[4], process.env.STREAK_TIMEZONE || 'Africa/Johannesburg');
   // 1-day gap -> streak advances; 20 + 50 XP.
   assert.equal(update.values[0], 70);
@@ -302,9 +304,8 @@ test('crossing a level boundary levels up and credits level tokens', async () =>
     async query(sql, values) {
       this.calls.push({ sql, values });
       if (sql.includes('INSERT INTO user_progress')) {
-        return { rows: [{ id: 1, xp: 240, level: 1, streak: 1, last_activity_date: '2026-10-08' }] };
+        return { rows: [{ id: 1, xp: 240, level: 1, streak: 1, last_activity_date: '2026-10-08', day_gap: 0 }] };
       }
-      if (sql.includes('day_gap')) return { rows: [{ day_gap: 0 }] };
       if (sql.includes('INSERT INTO reward_token_events')) return { rows: [] };
       if (sql.includes('UPDATE user_progress') && sql.includes('SET xp')) {
         return { rows: [{ xp: 260, level: 2, streak: 1, readiness_score: 0, tier: 'Novice', tokens: 5 }] };

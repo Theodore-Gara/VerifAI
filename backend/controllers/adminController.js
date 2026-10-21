@@ -1,4 +1,5 @@
 const pool = require('../db/pool');
+const { findUserByFirebaseUid } = require('../db/users');
 const { awardXp } = require('../services/xpService');
 const { purgeAccount } = require('../services/accountPurge');
 const { STREAK_TIMEZONE } = require('../services/streak');
@@ -238,111 +239,21 @@ function parseLineTextFields(body) {
 //                               decisions: [{label, score}], reasons: [{label, score}]
 // ---------------------------------------------------------------------------
 async function createTask(req, res, next) {
-  const client = await pool.connect();
+  // One creation path: validate the body, then insert through the same helper
+  // the importer uses. This used to be a second, slightly different copy of
+  // insertTask (~110 duplicated lines).
+  const body = req.body || {};
   try {
-    const body = req.body || {};
-    const feature = String(body.feature || '').toLowerCase().trim();
-    if (!FEATURES.has(feature)) fail('feature must be one of: verification, judgement, risk_governance, prompt_design.');
-    if (feature === 'prompt_design') fail('Prompt Design tasks are not supported yet.');
-
-    const trackId = Number.parseInt(body.track_id, 10);
-    if (!Number.isInteger(trackId)) fail('track_id must be an integer.');
-    const track = await client.query('SELECT id FROM industry_tracks WHERE id = $1', [trackId]);
-    if (!track.rows.length) fail(`Track ${trackId} does not exist.`);
-
-    const title = reqString(body.title, 'title', 255);
-    const scenario = reqString(body.scenario, 'scenario');
-    // New tasks always start as drafts awaiting moderator approval; publishing
-    // happens through the approval queue, never at creation time.
-    const published = false;
-
-    await client.query('BEGIN');
-
-    // Stable, unique code derived from the slug + timestamp.
-    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'task';
-    const code = `admin-${slug}-${Date.now()}`;
-    const taskResult = await client.query(
-      `INSERT INTO tasks (code, feature, track_id, published) VALUES ($1, $2, $3, $4) RETURNING id, code`,
-      [code, feature, trackId, published]
-    );
-    const taskId = taskResult.rows[0].id;
-
-    if (feature === 'verification') {
-      const format = (body.format == null ? 'choice' : String(body.format).toLowerCase());
-      if (!['choice', 'line_text'].includes(format)) fail('verification format must be choice or line_text.');
-      const expectedAnswer = reqString(body.expected_answer, 'expected_answer');
-      const shared = {
-        title,
-        scenario,
-        embedded_flaw: reqString(body.embedded_flaw, 'embedded_flaw'),
-        expected_answer: expectedAnswer,
-        feedback: reqString(body.feedback, 'feedback'),
-        difficulty: String(body.difficulty || 'medium').toLowerCase(),
-      };
-      if (!DIFFICULTIES.has(shared.difficulty)) fail('difficulty must be easy, medium or hard.');
-
-      if (format === 'line_text') {
-        const lineFields = parseLineTextFields(body);
-        await client.query(
-          `INSERT INTO verification_tasks
-             (task_id, format, title, scenario, embedded_flaw, expected_answer, feedback, difficulty,
-              ai_output_lines, flaw_lines, fix_keywords, reason_keywords)
-           VALUES ($1, 'line_text', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-          [taskId, shared.title, shared.scenario, shared.embedded_flaw, shared.expected_answer,
-            shared.feedback, shared.difficulty, lineFields.ai_output_lines, lineFields.flaw_lines,
-            lineFields.fix_keywords, lineFields.reason_keywords]
-        );
-      } else {
-        const options = parseOptions(body.options, OPTION_KINDS.verification, 'options');
-        if (!options.some((o) => o.score >= 100)) fail('At least one option must score 100 (the correct answer).');
-        await client.query(
-          `INSERT INTO verification_tasks
-             (task_id, format, title, scenario, embedded_flaw, expected_answer, feedback, difficulty)
-           VALUES ($1, 'choice', $2, $3, $4, $5, $6, $7)`,
-          [taskId, shared.title, shared.scenario, shared.embedded_flaw, shared.expected_answer,
-            shared.feedback, shared.difficulty]
-        );
-        for (let i = 0; i < options.length; i += 1) {
-          await client.query(
-            `INSERT INTO task_options (task_id, kind, label, score, sort_order) VALUES ($1, 'answer', $2, $3, $4)`,
-            [taskId, options[i].label, options[i].score, i]
-          );
-        }
-      }
-    } else {
-      // judgement / risk_governance: decision + reason options.
-      const feedback = reqString(body.feedback, 'feedback');
-      const table = feature === 'judgement' ? 'judgement_tasks' : 'risk_governance_tasks';
-      await client.query(
-        `INSERT INTO ${table} (task_id, title, scenario, feedback) VALUES ($1, $2, $3, $4)`,
-        [taskId, title, scenario, feedback]
-      );
-      const decisions = parseOptions(body.decisions, ['decision'], 'decisions');
-      const reasons = parseOptions(body.reasons, ['reason'], 'reasons');
-      let sort = 0;
-      for (const option of [...decisions, ...reasons]) {
-        await client.query(
-          `INSERT INTO task_options (task_id, kind, label, score, sort_order) VALUES ($1, $2, $3, $4, $5)`,
-          [taskId, option.kind, option.label, option.score, sort]
-        );
-        sort += 1;
-      }
-    }
-
-    await client.query('COMMIT');
-
-    await logModeration(req.firebaseUser, { action: 'task_create', reason: `Task #${taskId} (${feature}) created${published ? '' : ' as draft'}: ${title}` });
-
-    return res.status(201).json({
-      task: { id: taskId, code, feature, track_id: trackId, title, published },
-      request_id: req.requestId,
+    await validateTaskBody(body);
+    const created = await insertTask(req);
+    await logModeration(req.firebaseUser, {
+      action: 'task_create',
+      reason: `Task #${created.id} (${created.feature}) created as draft: ${created.title}`,
     });
+    return res.status(201).json({ task: created, request_id: req.requestId });
   } catch (err) {
-    await client.query('ROLLBACK').catch(() => {});
     if (!err.status) return next(err);
     return res.status(err.status).json({ error: err.message, request_id: req.requestId });
-  } finally {
-    client.release();
   }
 }
 
@@ -551,8 +462,8 @@ async function setUserStatus(req, res, next) {
     // Admins must never be able to lock themselves out of the panel.
     const adminUid = req.firebaseUser.uid;
     if (adminUid) {
-      const self = await pool.query(`SELECT id FROM users WHERE firebase_uid = $1`, [adminUid]);
-      if (self.rows[0]?.id === userId) {
+      const self = await findUserByFirebaseUid(pool, adminUid);
+      if (self && self.id === userId) {
         return res.status(400).json({ error: 'You cannot change your own account status.', request_id: req.requestId });
       }
     }
@@ -1414,8 +1325,8 @@ async function hardDeleteUser(req, res, next) {
     if (!Number.isInteger(userId)) fail('User id must be an integer.');
     const adminUid = req.firebaseUser.uid;
     if (adminUid) {
-      const self = await pool.query('SELECT id FROM users WHERE firebase_uid = $1', [adminUid]);
-      if (self.rows[0]?.id === userId) fail('You cannot delete your own account from the panel.');
+      const self = await findUserByFirebaseUid(pool, adminUid);
+      if (self && self.id === userId) fail('You cannot delete your own account from the panel.');
     }
 
     const purge = await purgeAccount({ userId });

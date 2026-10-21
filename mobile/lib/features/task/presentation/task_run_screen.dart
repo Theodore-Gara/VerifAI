@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -67,6 +68,7 @@ class _TaskRunScreenState extends ConsumerState<TaskRunScreen> {
 
   Future<void> _handleSubmit() async {
     if (!_canSubmit) return;
+    HapticFeedback.mediumImpact();
     setState(() => _isSubmitting = true);
 
     try {
@@ -135,8 +137,8 @@ class _TaskRunScreenState extends ConsumerState<TaskRunScreen> {
         actions: [
           IconButton(
             tooltip: 'Ask the Learning Assistant',
-            icon: Icon(Icons.support_agent_rounded,
-                color: AppColors.primaryNavy),
+            icon:
+                Icon(Icons.support_agent_rounded, color: AppColors.primaryNavy),
             onPressed: () => context.push('/assistant', extra: widget.task),
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -293,7 +295,10 @@ class _TaskRunScreenState extends ConsumerState<TaskRunScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: InkWell(
-        onTap: () => setState(() => _selectedOptionId = option.id),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          setState(() => _selectedOptionId = option.id);
+        },
         borderRadius: BorderRadius.circular(AppRadius.card),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),

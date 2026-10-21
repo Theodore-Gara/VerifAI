@@ -30,11 +30,11 @@ class XPBar extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
             decoration: BoxDecoration(
-              color: AppColors.primaryNavy,
+              color: AppColors.primaryFill,
               borderRadius: BorderRadius.circular(AppRadius.pill),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primaryNavy.withValues(alpha: 0.3),
+                  color: AppColors.primaryFill.withValues(alpha: 0.3),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),
@@ -45,7 +45,7 @@ class XPBar extends StatelessWidget {
               style: AppTypography.textTheme.labelSmall?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w800,
-                fontSize: 9.5,
+                fontSize: 11.5,
                 letterSpacing: 0.5,
               ),
             ),
@@ -64,7 +64,7 @@ class XPBar extends StatelessWidget {
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [AppColors.primaryNavy, AppColors.accentCyan],
+                          colors: [AppColors.primaryFill, AppColors.accentCyan],
                         ),
                       ),
                     ),
@@ -103,11 +103,11 @@ class XPBar extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 3.5),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryNavy,
+                      color: AppColors.primaryFill,
                       borderRadius: BorderRadius.circular(AppRadius.pill),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primaryNavy.withValues(alpha: 0.3),
+                          color: AppColors.primaryFill.withValues(alpha: 0.3),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -118,7 +118,7 @@ class XPBar extends StatelessWidget {
                       style: AppTypography.textTheme.labelSmall?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,
-                        fontSize: 10,
+                        fontSize: 11.5,
                         letterSpacing: 0.6,
                       ),
                     ),
@@ -139,7 +139,7 @@ class XPBar extends StatelessWidget {
                 style: AppTypography.textTheme.labelSmall?.copyWith(
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w700,
-                  fontSize: 11,
+                  fontSize: 11.5,
                 ),
               ),
             ],
@@ -157,7 +157,7 @@ class XPBar extends StatelessWidget {
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [AppColors.primaryNavy, AppColors.accentCyan],
+                          colors: [AppColors.primaryFill, AppColors.accentCyan],
                         ),
                       ),
                     ),

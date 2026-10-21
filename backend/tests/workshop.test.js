@@ -21,7 +21,7 @@ let myReaction = false;
 
 pool.query = async (sql, values = []) => {
   const s = sql.replace(/\s+/g, ' ').trim();
-  if (s.includes('FROM users WHERE firebase_uid')) return { rows: [USER] };
+  if (s.includes('find_user_by_uid')) return { rows: [USER] };
   if (s.includes('INSERT INTO workshop_posts')) return { rows: [{ id: 5, parent_id: values[3], lesson_id: values[1], body: values[4], created_at: 'now' }] };
   if (s.includes('FROM workshop_posts p') && s.includes('p.parent_id = $2')) {
     return { rows: [{ id: 4, parent_id: 1, body: 'Try SAFLII.', created_at: 'now', edited_at: null, author_id: 9, author_name: 'Peer', is_mine: false, reaction_count: 0, reacted: false }] };

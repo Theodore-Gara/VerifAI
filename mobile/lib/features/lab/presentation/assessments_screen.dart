@@ -29,13 +29,17 @@ class LabAssessmentsScreen extends ConsumerWidget {
               context.canPop() ? context.pop() : context.go('/ai-lab'),
         ),
         title: Text('Assessments',
-            style: AppTypography.textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+            style: AppTypography.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
       ),
       body: async.when(
         loading: () => ListView(
           padding: const EdgeInsets.all(AppSpacing.screenPadding),
-          children: const [ShimmerLoader(height: 120), SizedBox(height: AppSpacing.md), ShimmerLoader(height: 120)],
+          children: const [
+            ShimmerLoader(height: 120),
+            SizedBox(height: AppSpacing.md),
+            ShimmerLoader(height: 120)
+          ],
         ),
         error: (e, _) => AsyncErrorView(
           error: e,
@@ -48,8 +52,8 @@ class LabAssessmentsScreen extends ConsumerWidget {
                 title: 'No assessments yet',
                 message: 'Capstone assessments for your track are coming soon.')
             : ListView(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.sm,
-                    AppSpacing.screenPadding, AppSpacing.xxl),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+                    AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.xxl),
                 children: [for (final a in list) _card(context, a)],
               ),
       ),
@@ -74,22 +78,30 @@ class LabAssessmentsScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppRadius.card),
-              border: Border.all(color: a.passed ? AppColors.accentGreen.withValues(alpha: .4) : AppColors.border),
+              border: Border.all(
+                  color: a.passed
+                      ? AppColors.accentGreen.withValues(alpha: .4)
+                      : AppColors.border),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(a.title,
-                    style: AppTypography.textTheme.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+                    style: AppTypography.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primaryNavy)),
                 const SizedBox(height: 4),
-                Text('${a.totalMarks} marks · ${a.questionCount} questions · ${(a.timeLimitSeconds / 60).round()} min',
-                    style: AppTypography.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
+                Text(
+                    '${a.totalMarks} marks · ${a.questionCount} questions · ${(a.timeLimitSeconds / 60).round()} min',
+                    style: AppTypography.textTheme.bodySmall
+                        ?.copyWith(color: AppColors.textSecondary)),
                 const SizedBox(height: 6),
                 Text(status,
                     style: AppTypography.textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.w800,
-                        color: a.passed ? AppColors.accentGreen : AppColors.textSecondary)),
+                        color: a.passed
+                            ? AppColors.accentGreen
+                            : AppColors.textSecondary)),
               ],
             ),
           ),

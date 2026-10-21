@@ -20,7 +20,7 @@ const REPORT = {
 
 pool.query = async (sql) => {
   const s = sql.replace(/\s+/g, ' ').trim();
-  if (s.includes('FROM users WHERE firebase_uid')) return { rows: [{ id: 7, industry_track_id: 1 }] };
+  if (s.includes('find_user_by_uid')) return { rows: [{ id: 7, industry_track_id: 1 }] };
   if (s.startsWith('INSERT INTO verification_analyses')) {
     return { rows: [{ id: 1, kind: 'claim', document_name: null, overall_status: REPORT.overall_status, items_requiring_review: 1, sources_confirmed: 0, summary: REPORT.summary, report: REPORT, created_at: 'now' }] };
   }

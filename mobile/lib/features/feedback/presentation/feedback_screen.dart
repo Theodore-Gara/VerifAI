@@ -7,6 +7,7 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/dashboard/providers.dart';
+import 'package:verifai/shared/widgets/dock_clearance.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/dimension_index_card.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
@@ -97,11 +98,11 @@ class FeedbackScreen extends ConsumerWidget {
           SafeArea(
             top: false,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 AppSpacing.screenPadding,
                 AppSpacing.sm,
                 AppSpacing.screenPadding,
-                100, // accommodate floating dock
+                dockClearance(context),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,7 +168,7 @@ class FeedbackScreen extends ConsumerWidget {
                                           ? AppColors.accentGreen
                                           : AppColors.error,
                                       fontWeight: FontWeight.w800,
-                                      fontSize: 9.5,
+                                      fontSize: 11.5,
                                       letterSpacing: 0.4,
                                     ),
                                   ),
@@ -199,7 +200,7 @@ class FeedbackScreen extends ConsumerWidget {
                                         ?.copyWith(
                                       color: AppColors.primaryNavy,
                                       fontWeight: FontWeight.w800,
-                                      fontSize: 10,
+                                      fontSize: 11.5,
                                       fontFeatures: const [
                                         FontFeature.tabularFigures()
                                       ],
@@ -252,7 +253,7 @@ class FeedbackScreen extends ConsumerWidget {
                                     color: AppColors.textSecondary,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 0.5,
-                                    fontSize: 9,
+                                    fontSize: 11.5,
                                   ),
                                 ),
                                 const SizedBox(height: 3),
@@ -297,7 +298,7 @@ class FeedbackScreen extends ConsumerWidget {
                                         ?.copyWith(
                                       color: AppColors.accentGreen,
                                       fontWeight: FontWeight.w800,
-                                      fontSize: 9.5,
+                                      fontSize: 11.5,
                                     ),
                                   ),
                                 ),
@@ -441,7 +442,7 @@ class _ConceptChip extends StatelessWidget {
             style: AppTypography.textTheme.labelSmall?.copyWith(
               color: matched ? AppColors.textPrimary : AppColors.textSecondary,
               fontWeight: FontWeight.w700,
-              fontSize: 11,
+              fontSize: 11.5,
             ),
           ),
         ],

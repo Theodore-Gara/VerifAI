@@ -33,10 +33,20 @@ function fakeClient({ scores, offered = [], interview = { total: 0, practised: 0
     calls,
     async query(sql, values) {
       calls.push({ sql, values });
-      if (sql.includes('FROM skill_scores')) return { rows: scores };
-      if (sql.includes('GROUP BY feature')) return { rows: offered };
-      if (sql.includes('FROM interview_questions')) return { rows: [interview] };
-      if (sql.includes('lab_capstone_attempts')) return { rows: [learning] };
+      // Readiness inputs now arrive as one row of JSON aggregates.
+      if (sql.includes('readiness_inputs')) {
+        return {
+          rows: [{
+            scores,
+            available: offered.map((row) => ({ feature: row.feature })),
+            capstone_offered: learning.offered,
+            capstone_average: learning.average,
+            interview_practised: interview.practised,
+            current_readiness: null,
+          }],
+        };
+      }
+      if (sql.includes('FROM interview_questions')) return { rows: [{ total: interview.total }] };
       return { rows: [] };
     },
   };

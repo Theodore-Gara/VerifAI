@@ -57,8 +57,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
               forgotEmail
                   ? 'For your privacy, VerifAI cannot reveal account email addresses here. Try the email accounts you may have registered with, check your inbox for earlier VerifAI messages, or contact your organisation’s support team.'
                   : 'Enter the email address associated with your account. If it is registered, Firebase will send a password-reset link.',
-              style:
-                  TextStyle(height: 1.5, color: AppColors.textSecondary)),
+              style: TextStyle(height: 1.5, color: AppColors.textSecondary)),
           if (!forgotEmail) ...[
             const SizedBox(height: 24),
             TextField(
@@ -76,8 +75,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
                         borderSide: BorderSide(color: AppColors.border)),
                     enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide:
-                            BorderSide(color: AppColors.border)))),
+                        borderSide: BorderSide(color: AppColors.border)))),
             const SizedBox(height: 14),
             SizedBox(
                 width: double.infinity,
@@ -93,7 +91,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
                     label:
                         Text(_sent ? 'Email request sent' : 'Send reset link'),
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryNavy,
+                        backgroundColor: AppColors.primaryFill,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(

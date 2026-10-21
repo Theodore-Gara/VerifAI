@@ -26,16 +26,21 @@ class LabChaptersScreen extends ConsumerWidget {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/ai-lab'),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/ai-lab'),
         ),
         title: Text('Book',
-            style: AppTypography.textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+            style: AppTypography.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
       ),
       body: detailAsync.when(
         loading: () => ListView(
           padding: const EdgeInsets.all(AppSpacing.screenPadding),
-          children: const [ShimmerLoader(height: 120), SizedBox(height: AppSpacing.md), ShimmerLoader(height: 200)],
+          children: const [
+            ShimmerLoader(height: 120),
+            SizedBox(height: AppSpacing.md),
+            ShimmerLoader(height: 200)
+          ],
         ),
         error: (e, _) => AsyncErrorView(
           error: e,
@@ -45,12 +50,13 @@ class LabChaptersScreen extends ConsumerWidget {
         data: (detail) {
           final chapters = detail.chapters;
           return ListView(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.sm,
-                AppSpacing.screenPadding, AppSpacing.xxl),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+                AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.xxl),
             children: [
               Text(detail.lesson.title,
-                  style: AppTypography.textTheme.headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+                  style: AppTypography.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primaryNavy)),
               const SizedBox(height: AppSpacing.xs),
               Text(detail.lesson.summary,
                   style: AppTypography.textTheme.bodyMedium
@@ -64,7 +70,8 @@ class LabChaptersScreen extends ConsumerWidget {
                     title: 'No chapters',
                     message: 'This book has no reading material yet.')
               else
-                for (var i = 0; i < chapters.length; i++) _chapterTile(context, detail, chapters[i], i),
+                for (var i = 0; i < chapters.length; i++)
+                  _chapterTile(context, detail, chapters[i], i),
               if (detail.activities.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.sm),
                 OutlinedButton.icon(
@@ -76,15 +83,16 @@ class LabChaptersScreen extends ConsumerWidget {
               if (detail.attributions.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.xl),
                 Text('Sources',
-                    style: AppTypography.textTheme.labelMedium
-                        ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.textSecondary)),
+                    style: AppTypography.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textSecondary)),
                 const SizedBox(height: AppSpacing.xs),
                 for (final a in detail.attributions)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Text(a.creditLine,
-                        style: AppTypography.textTheme.bodySmall
-                            ?.copyWith(color: AppColors.textSecondary, height: 1.4)),
+                        style: AppTypography.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary, height: 1.4)),
                   ),
               ],
             ],
@@ -100,11 +108,13 @@ class LabChaptersScreen extends ConsumerWidget {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 7),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: 7),
           decoration: BoxDecoration(
             color: AppColors.accentLight,
             borderRadius: BorderRadius.circular(AppRadius.pill),
-            border: Border.all(color: AppColors.accentGreen.withValues(alpha: .4)),
+            border:
+                Border.all(color: AppColors.accentGreen.withValues(alpha: .4)),
           ),
           child: Text('$done / $total topics read',
               style: AppTypography.textTheme.labelMedium?.copyWith(
@@ -118,7 +128,8 @@ class LabChaptersScreen extends ConsumerWidget {
     );
   }
 
-  Widget _chapterTile(BuildContext context, LabLessonDetail detail, LabSection chapter, int index) {
+  Widget _chapterTile(BuildContext context, LabLessonDetail detail,
+      LabSection chapter, int index) {
     final count = detail.topicsOf(chapter.id).length;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -138,17 +149,21 @@ class LabChaptersScreen extends ConsumerWidget {
               children: [
                 CircleAvatar(
                     radius: 14,
-                    backgroundColor: AppColors.primaryNavy,
+                    backgroundColor: AppColors.primaryFill,
                     child: Text('${index + 1}',
-                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800))),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800))),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(chapter.heading,
-                          style: AppTypography.textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.w700, color: AppColors.primaryNavy)),
+                          style: AppTypography.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryNavy)),
                       const SizedBox(height: 2),
                       Text('$count topic${count == 1 ? '' : 's'}',
                           style: AppTypography.textTheme.labelSmall
@@ -156,7 +171,8 @@ class LabChaptersScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                Icon(Icons.chevron_right_rounded,
+                    color: AppColors.textSecondary),
               ],
             ),
           ),

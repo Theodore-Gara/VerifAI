@@ -39,7 +39,8 @@ class RewardWallet {
   final int tokens;
   final int nextLevelXp;
 
-  const RewardWallet({this.xp = 0, this.level = 1, this.tokens = 0, this.nextLevelXp = 0});
+  const RewardWallet(
+      {this.xp = 0, this.level = 1, this.tokens = 0, this.nextLevelXp = 0});
 
   factory RewardWallet.fromJson(Map<String, dynamic> json) => RewardWallet(
         xp: int.tryParse('${json['xp']}') ?? 0,
@@ -53,13 +54,15 @@ class RewardsData {
   final List<Reward> rewards;
   final RewardWallet wallet;
 
-  const RewardsData({this.rewards = const [], this.wallet = const RewardWallet()});
+  const RewardsData(
+      {this.rewards = const [], this.wallet = const RewardWallet()});
 
   factory RewardsData.fromJson(Map<String, dynamic> json) => RewardsData(
         rewards: (json['rewards'] as List<dynamic>? ?? const [])
             .map((e) => Reward.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList(),
-        wallet: RewardWallet.fromJson((json['wallet'] as Map?)?.cast<String, dynamic>() ?? const {}),
+        wallet: RewardWallet.fromJson(
+            (json['wallet'] as Map?)?.cast<String, dynamic>() ?? const {}),
       );
 }
 
@@ -85,7 +88,8 @@ class RewardRedemptionResult {
       title: r['title'] as String? ?? '',
       costTokens: int.tryParse('${r['cost_tokens']}') ?? 0,
       status: r['status'] as String? ?? 'confirmed',
-      wallet: RewardWallet.fromJson((json['wallet'] as Map?)?.cast<String, dynamic>() ?? const {}),
+      wallet: RewardWallet.fromJson(
+          (json['wallet'] as Map?)?.cast<String, dynamic>() ?? const {}),
     );
   }
 }
@@ -118,12 +122,15 @@ class TokenHistory {
   final List<TokenEvent> events;
   final RewardWallet wallet;
 
-  const TokenHistory({this.events = const [], this.wallet = const RewardWallet()});
+  const TokenHistory(
+      {this.events = const [], this.wallet = const RewardWallet()});
 
   factory TokenHistory.fromJson(Map<String, dynamic> json) => TokenHistory(
         events: (json['events'] as List<dynamic>? ?? const [])
-            .map((e) => TokenEvent.fromJson(Map<String, dynamic>.from(e as Map)))
+            .map(
+                (e) => TokenEvent.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList(),
-        wallet: RewardWallet.fromJson((json['wallet'] as Map?)?.cast<String, dynamic>() ?? const {}),
+        wallet: RewardWallet.fromJson(
+            (json['wallet'] as Map?)?.cast<String, dynamic>() ?? const {}),
       );
 }

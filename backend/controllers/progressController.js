@@ -68,33 +68,15 @@ async function getActivityHistory(req, res, next) {
     }
 
     const activity = await pool.query(
-      `SELECT to_char(activity_date, 'YYYY-MM-DD') AS activity_date,
-              SUM(attempts)::int AS attempts,
-              SUM(xp)::int AS xp_earned,
-              SUM(passed)::int AS passed
-       FROM (
-         SELECT (ta.submitted_at::timestamptz AT TIME ZONE $3)::date AS activity_date,
-                1 AS attempts, ta.xp_earned AS xp,
-                CASE WHEN ta.passed THEN 1 ELSE 0 END AS passed
-         FROM task_attempts ta
-         WHERE ta.user_id = $1
-         UNION ALL
-         SELECT (la.submitted_at::timestamptz AT TIME ZONE $3)::date,
-                1, la.xp_awarded,
-                CASE WHEN la.passed THEN 1 ELSE 0 END
-         FROM lab_activity_attempts la
-         WHERE la.user_id = $1
-         UNION ALL
-         SELECT (ca.submitted_at::timestamptz AT TIME ZONE $3)::date,
-                1, CASE WHEN ca.passed THEN c.xp_reward ELSE 0 END,
-                CASE WHEN ca.passed THEN 1 ELSE 0 END
-         FROM lab_capstone_attempts ca
-         JOIN lab_capstone_assessments c ON c.id = ca.assessment_id
-         WHERE ca.user_id = $1 AND ca.submitted_at IS NOT NULL
-       ) t
-       WHERE activity_date >= (NOW() AT TIME ZONE $3)::date - ($2::int - 1)
-       GROUP BY activity_date
-       ORDER BY activity_date ASC`,
+      `SELECT to_char((created_at::timestamptz AT TIME ZONE $3)::date, 'YYYY-MM-DD') AS activity_date,
+              COUNT(*)::int AS attempts,
+              COALESCE(SUM(xp_earned), 0)::int AS xp_earned,
+              COUNT(*) FILTER (WHERE passed)::int AS passed
+       FROM user_activity
+       WHERE user_id = $1
+         AND (created_at::timestamptz AT TIME ZONE $3)::date >= (NOW() AT TIME ZONE $3)::date - ($2::int - 1)
+       GROUP BY 1
+       ORDER BY 1 ASC`,
       [me.rows[0].user_id, days, ACTIVITY_TIMEZONE]
     );
 

@@ -14,7 +14,7 @@ let missing = false;
 
 pool.query = async (sql) => {
   const s = sql.replace(/\s+/g, ' ').trim();
-  if (s.includes('FROM users WHERE firebase_uid')) return { rows: [{ id: 7, industry_track_id: 1 }] };
+  if (s.includes('find_user_by_uid')) return { rows: [{ id: 7, industry_track_id: 1 }] };
   if (s.includes('FROM industry_cases c')) return { rows: [{ id: 1, title: CASE.title, source_title: CASE.source_title, source_url: CASE.source_url, sort_order: 10, read }] };
   if (s.includes('SELECT id, title, scenario, cause, solution')) return { rows: missing ? [] : [{ id: 1, title: CASE.title, scenario: CASE.scenario, cause: CASE.cause, solution: CASE.solution, source_title: CASE.source_title, source_url: CASE.source_url }] };
   if (s.includes('SELECT id FROM industry_cases')) return { rows: missing ? [] : [{ id: 1 }] };

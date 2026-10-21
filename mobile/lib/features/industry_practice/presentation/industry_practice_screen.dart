@@ -26,13 +26,19 @@ class IndustryPracticeScreen extends ConsumerWidget {
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         title: Text('Industry Practice',
-            style: AppTypography.textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+            style: AppTypography.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
       ),
       body: async.when(
         loading: () => ListView(
           padding: const EdgeInsets.all(AppSpacing.screenPadding),
-          children: const [ShimmerLoader(height: 80), SizedBox(height: AppSpacing.sm), ShimmerLoader(height: 80), SizedBox(height: AppSpacing.sm), ShimmerLoader(height: 80)],
+          children: const [
+            ShimmerLoader(height: 80),
+            SizedBox(height: AppSpacing.sm),
+            ShimmerLoader(height: 80),
+            SizedBox(height: AppSpacing.sm),
+            ShimmerLoader(height: 80)
+          ],
         ),
         error: (e, _) => AsyncErrorView(
           error: e,
@@ -45,11 +51,13 @@ class IndustryPracticeScreen extends ConsumerWidget {
                 title: 'No case studies yet',
                 message: 'Real-world cases for your field are coming soon.')
             : ListView(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.sm,
-                    AppSpacing.screenPadding, AppSpacing.xxl),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+                    AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.xxl),
                 children: [
-                  Text('Learn from real workplace mistakes, then read what fixed them.',
-                      style: AppTypography.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary)),
+                  Text(
+                      'Learn from real workplace mistakes, then read what fixed them.',
+                      style: AppTypography.textTheme.bodyMedium
+                          ?.copyWith(color: AppColors.textSecondary)),
                   const SizedBox(height: AppSpacing.lg),
                   for (final c in cases) _card(context, c),
                 ],
@@ -66,24 +74,32 @@ class IndustryPracticeScreen extends ConsumerWidget {
           child: InkWell(
             borderRadius: BorderRadius.circular(AppRadius.card),
             onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => IndustryCaseDetailScreen(id: c.id, title: c.title))),
+                builder: (_) =>
+                    IndustryCaseDetailScreen(id: c.id, title: c.title))),
             child: Container(
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AppRadius.card),
-                border: Border.all(color: c.read ? AppColors.accentGreen.withValues(alpha: .4) : AppColors.border),
+                border: Border.all(
+                    color: c.read
+                        ? AppColors.accentGreen.withValues(alpha: .4)
+                        : AppColors.border),
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(c.title,
-                        style: AppTypography.textTheme.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy, height: 1.3)),
+                        style: AppTypography.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primaryNavy,
+                            height: 1.3)),
                   ),
                   if (c.read)
-                    Icon(Icons.check_circle_rounded, size: 18, color: AppColors.accentGreen)
+                    Icon(Icons.check_circle_rounded,
+                        size: 18, color: AppColors.accentGreen)
                   else
-                    Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                    Icon(Icons.chevron_right_rounded,
+                        color: AppColors.textSecondary),
                 ],
               ),
             ),
@@ -93,15 +109,18 @@ class IndustryPracticeScreen extends ConsumerWidget {
 }
 
 class IndustryCaseDetailScreen extends ConsumerStatefulWidget {
-  const IndustryCaseDetailScreen({super.key, required this.id, required this.title});
+  const IndustryCaseDetailScreen(
+      {super.key, required this.id, required this.title});
   final int id;
   final String title;
 
   @override
-  ConsumerState<IndustryCaseDetailScreen> createState() => _IndustryCaseDetailScreenState();
+  ConsumerState<IndustryCaseDetailScreen> createState() =>
+      _IndustryCaseDetailScreenState();
 }
 
-class _IndustryCaseDetailScreenState extends ConsumerState<IndustryCaseDetailScreen> {
+class _IndustryCaseDetailScreenState
+    extends ConsumerState<IndustryCaseDetailScreen> {
   @override
   void initState() {
     super.initState();
@@ -123,23 +142,25 @@ class _IndustryCaseDetailScreenState extends ConsumerState<IndustryCaseDetailScr
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         title: Text('Case study',
-            style: AppTypography.textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+            style: AppTypography.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
       ),
       body: async.when(
-        loading: () => const Padding(padding: EdgeInsets.all(AppSpacing.screenPadding), child: ShimmerLoader(height: 300)),
+        loading: () => const Padding(
+            padding: EdgeInsets.all(AppSpacing.screenPadding),
+            child: ShimmerLoader(height: 300)),
         error: (e, _) => AsyncErrorView(
           error: e,
           fallbackMessage: 'Failed to load this case.',
           onRetry: () => ref.invalidate(industryCaseProvider(widget.id)),
         ),
         data: (c) => ListView(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.sm,
-              AppSpacing.screenPadding, AppSpacing.xxl),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+              AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.xxl),
           children: [
             Text(c.title,
-                style: AppTypography.textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+                style: AppTypography.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
             const SizedBox(height: AppSpacing.lg),
             _block('WHAT HAPPENED', c.scenario, AppColors.primaryNavy),
             const SizedBox(height: AppSpacing.md),
@@ -149,15 +170,17 @@ class _IndustryCaseDetailScreenState extends ConsumerState<IndustryCaseDetailScr
             if (c.sourceTitle != null) ...[
               const SizedBox(height: AppSpacing.lg),
               Text('Source: ${c.sourceTitle}',
-                  style: AppTypography.textTheme.labelSmall?.copyWith(color: AppColors.textSecondary)),
+                  style: AppTypography.textTheme.labelSmall
+                      ?.copyWith(color: AppColors.textSecondary)),
               if (c.sourceUrl != null && c.sourceUrl!.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: InkWell(
                     onTap: () => _openUrl(context, c.sourceUrl!),
                     child: Text(c.sourceUrl!,
-                        style: AppTypography.textTheme.labelSmall
-                            ?.copyWith(color: AppColors.info, decoration: TextDecoration.underline)),
+                        style: AppTypography.textTheme.labelSmall?.copyWith(
+                            color: AppColors.info,
+                            decoration: TextDecoration.underline)),
                   ),
                 ),
             ],
@@ -179,10 +202,14 @@ class _IndustryCaseDetailScreenState extends ConsumerState<IndustryCaseDetailScr
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(label,
-                style: AppTypography.textTheme.labelSmall
-                    ?.copyWith(fontWeight: FontWeight.w800, color: accent, letterSpacing: .5)),
+                style: AppTypography.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: accent,
+                    letterSpacing: .5)),
             const SizedBox(height: 6),
-            Text(body, style: AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
+            Text(body,
+                style:
+                    AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
           ],
         ),
       );

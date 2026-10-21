@@ -132,43 +132,50 @@ class _MainNavShellState extends State<MainNavShell> {
                 ),
               ),
               _drawerSection('Home'),
-              _drawerLink(context, Icons.home_rounded, 'Dashboard', '/dashboard'),
+              _drawerLink(
+                  context, Icons.home_rounded, 'Dashboard', '/dashboard'),
               _drawerSection('Learn'),
-              _drawerLink(context, Icons.menu_book_rounded, 'Learn hub', '/learn'),
               _drawerLink(
-                  context, Icons.science_rounded, 'AI Lab lessons', '/ai-lab/lessons'),
-              _drawerLink(
-                  context, Icons.quiz_rounded, 'Recall practice', '/ai-lab/practice'),
+                  context, Icons.menu_book_rounded, 'Learn hub', '/learn'),
+              _drawerLink(context, Icons.science_rounded, 'AI Lab lessons',
+                  '/ai-lab/lessons'),
+              _drawerLink(context, Icons.quiz_rounded, 'Recall practice',
+                  '/ai-lab/practice'),
               _drawerLink(context, Icons.workspace_premium_rounded,
                   'Capstone assessments', '/ai-lab/assessments'),
               _drawerLink(
                   context, Icons.alt_route_rounded, 'Skill roadmap', '/track'),
               _drawerSection('Practice'),
-              _drawerLink(
-                  context, Icons.play_circle_outline_rounded, 'Practice hub', '/practice'),
+              _drawerLink(context, Icons.play_circle_outline_rounded,
+                  'Practice hub', '/practice'),
               _drawerLink(context, Icons.fact_check_rounded,
                   'Verification Studio', '/verification-studio'),
               _drawerLink(context, Icons.business_center_rounded,
                   'Industry practice', '/industry-practice'),
-              _drawerLink(context, Icons.history_rounded, 'Task history', '/task-history'),
+              _drawerLink(context, Icons.history_rounded, 'Task history',
+                  '/task-history'),
               _drawerSection('Progress'),
-              _drawerLink(context, Icons.insights_rounded, 'Progress', '/progress'),
               _drawerLink(
-                  context, Icons.leaderboard_rounded, 'Leaderboard', '/scoreboard'),
+                  context, Icons.insights_rounded, 'Progress', '/progress'),
+              _drawerLink(context, Icons.leaderboard_rounded, 'Leaderboard',
+                  '/scoreboard'),
               _drawerSection('Profile'),
-              _drawerLink(
-                  context, Icons.person_rounded, 'Profile & settings', '/profile'),
+              _drawerLink(context, Icons.person_rounded, 'Profile & settings',
+                  '/profile'),
               _drawerLink(
                   context, Icons.emoji_events_rounded, 'Rewards', '/rewards'),
               _drawerLink(
                   context, Icons.spa_rounded, 'Wellness centre', '/wellness'),
-              _drawerLink(context, Icons.auto_awesome_rounded, 'Ask Vera', '/assistant'),
+              _drawerLink(context, Icons.auto_awesome_rounded, 'Ask Vera',
+                  '/assistant'),
               const Divider(indent: 18, endIndent: 18),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
                 child: Text(
                   'AI assists. Humans verify.',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                  style:
+                      TextStyle(color: AppColors.textSecondary, fontSize: 11.5),
                 ),
               ),
             ],
@@ -182,6 +189,9 @@ class _MainNavShellState extends State<MainNavShell> {
             _tabs[i] ?? const SizedBox.shrink(),
         ],
       ),
+      // Scrollable tabs end their content above the floating dock rather than
+      // guessing a number: the dock's height plus the device's bottom inset, so
+      // the last card is never hidden behind it (and never over-padded).
       bottomNavigationBar: SafeArea(
         top: false,
         left: false,
@@ -244,7 +254,7 @@ class _MainNavShellState extends State<MainNavShell> {
           color: AppColors.textSecondary,
           fontWeight: FontWeight.w900,
           letterSpacing: 1.1,
-          fontSize: 10.5,
+          fontSize: 11.5,
         ),
       ),
     );
@@ -325,8 +335,7 @@ class _MainNavShellState extends State<MainNavShell> {
                   Icon(
                     icon,
                     size: 22,
-                    color:
-                        isSelected ? Colors.white : AppColors.textSecondary,
+                    color: isSelected ? Colors.white : AppColors.textSecondary,
                   ),
                   if (isSelected) ...[
                     const SizedBox(width: 6),

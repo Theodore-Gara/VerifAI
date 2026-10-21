@@ -1,6 +1,5 @@
 const pool = require('../db/pool');
 const { optionalString, clampInt, positiveIntegerParam } = require('../middleware/validate');
-const { findUserByFirebaseUid } = require('../db/users');
 const { getCoachReply, streamCoachReply, markRubric, generateCapstoneReport } = require('../services/nvidiaAssistant');
 const { gradeActivity } = require('../services/activityGrading');
 const { markQuestion, rubricAward } = require('../services/capstoneMarking');
@@ -21,15 +20,6 @@ const LESSON_FIELDS = `id, code, title, summary, estimated_minutes, level, compe
 
 function notFound(res, req, message = 'Lesson not found for your selected track.') {
   return res.status(404).json({ error: message, request_id: req.requestId });
-}
-
-async function requireUser(res, req) {
-  const user = await findUserByFirebaseUid(pool, req.firebaseUser.uid);
-  if (!user) {
-    res.status(404).json({ error: 'User not found. Call /api/auth/sync first.', request_id: req.requestId });
-    return null;
-  }
-  return user;
 }
 
 // A lesson is available when it is global (track_id NULL) or belongs to the
@@ -94,8 +84,7 @@ async function lessonShareAlike(executor, lessonId) {
 // GET /api/lab/lessons
 async function listLessons(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const result = await pool.query(
       `SELECT l.id, l.code, l.title, l.summary, l.estimated_minutes, l.level, l.competency, l.sort_order,
@@ -133,8 +122,7 @@ async function listLessons(req, res, next) {
 // gone longest without revisiting, so seen content is never locked away.
 async function getNextLesson(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const includeSeen = String(req.query.include_seen ?? 'true').toLowerCase() !== 'false';
 
@@ -170,8 +158,7 @@ async function getNextLesson(req, res, next) {
 // GET /api/lab/lessons/:code
 async function getLesson(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const lesson = await findLessonForUser(pool, req.params.code, user.industry_track_id);
     if (!lesson) return notFound(res, req);
@@ -242,8 +229,7 @@ async function getLesson(req, res, next) {
 async function recordProgress(req, res, next) {
   let client = null;
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const lesson = await findLessonForUser(pool, req.params.code, user.industry_track_id);
     if (!lesson) return notFound(res, req);
@@ -284,8 +270,7 @@ async function recordProgress(req, res, next) {
 async function submitAssessment(req, res, next) {
   let client = null;
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const lesson = await findLessonForUser(pool, req.params.code, user.industry_track_id);
     if (!lesson) return notFound(res, req);
@@ -363,8 +348,7 @@ async function submitAssessment(req, res, next) {
 async function submitActivity(req, res, next) {
   let client = null;
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const activityId = positiveIntegerParam(req.params.id, 'activity id');
     const practice = req.body.practice === true;
@@ -505,8 +489,7 @@ async function attemptsUsed(executor, userId, assessmentId) {
 // GET /api/lab/assessments
 async function listAssessments(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const result = await pool.query(
       `SELECT c.id, c.code, c.title, c.summary, c.total_marks, c.time_limit_seconds,
@@ -538,8 +521,7 @@ async function listAssessments(req, res, next) {
 // Shuffles questions (and multiple-choice options) and opens a timed attempt.
 async function startAssessment(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const assessment = await findCapstone(pool, req.params.code, user.industry_track_id);
     if (!assessment) {
@@ -633,8 +615,7 @@ async function applyCapstoneRewards(client, owner, assessment) {
 async function submitCapstone(req, res, next) {
   let client = null;
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const attemptId = positiveIntegerParam(req.body.attempt_id, 'attempt_id');
     const answers = req.body.answers;
@@ -787,8 +768,7 @@ async function submitCapstone(req, res, next) {
 // the attempts are exhausted, but the learner can always revisit it.
 async function getAssessmentPaper(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const assessment = await findCapstone(pool, req.params.code, user.industry_track_id);
     if (!assessment) {
@@ -933,8 +913,7 @@ async function markCapstone(req, res, next) {
 // stores it, but does not finalise. A human confirms via the mark endpoint.
 async function aiMarkCapstone(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const attemptId = positiveIntegerParam(req.params.id, 'attempt id');
     const assessment = await findCapstone(pool, req.params.code, user.industry_track_id);
@@ -1013,8 +992,7 @@ async function aiMarkCapstone(req, res, next) {
 // attempt. Owner-only.
 async function getAssessmentAnalysis(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const attemptId = positiveIntegerParam(req.params.id, 'attempt id');
     const assessment = await findCapstone(pool, req.params.code, user.industry_track_id);
@@ -1172,8 +1150,7 @@ async function coach(req, res, next) {
     const lessonCode = optionalString(req.body.lesson_code, 'lesson_code', 120);
     const messages = validateMessages(req.body.messages);
 
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     let lesson = null;
     if (lessonCode) {

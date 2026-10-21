@@ -1,23 +1,12 @@
 const pool = require('../db/pool');
 const { positiveIntegerParam } = require('../middleware/validate');
-const { findUserByFirebaseUid } = require('../db/users');
-
-async function requireUser(res, req) {
-  const user = await findUserByFirebaseUid(pool, req.firebaseUser.uid);
-  if (!user) {
-    res.status(404).json({ error: 'User not found. Call /api/auth/sync first.', request_id: req.requestId });
-    return null;
-  }
-  return user;
-}
 
 // GET /api/industry-practice/cases
 // Informational case studies for the user's track (plus cross-industry ones),
 // each with a `read` flag.
 async function listCases(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const result = await pool.query(
       `SELECT c.id, c.title, c.source_title, c.source_url, c.sort_order,
@@ -38,8 +27,7 @@ async function listCases(req, res, next) {
 // reading it marks it as read.
 async function getCase(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const id = positiveIntegerParam(req.params.id, 'case id');
     const result = await pool.query(
@@ -66,8 +54,7 @@ async function getCase(req, res, next) {
 // POST /api/industry-practice/cases/:id/read — idempotent.
 async function markRead(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const id = positiveIntegerParam(req.params.id, 'case id');
     const exists = await pool.query(

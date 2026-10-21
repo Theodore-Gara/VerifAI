@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
+import 'package:verifai/features/navigation/nav_drawer_controller.dart';
+import 'package:verifai/shared/widgets/dock_clearance.dart';
 import 'package:verifai/shared/widgets/hub_tile.dart';
 
 /// Learn — the hub for everything the learner reads, studies or is assessed on.
@@ -29,6 +31,12 @@ class LearnHubScreen extends StatelessWidget {
             color: AppColors.textPrimary,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.menu_rounded, color: AppColors.textPrimary),
+            onPressed: openVerifaiNavigationDrawer,
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -47,11 +55,11 @@ class LearnHubScreen extends StatelessWidget {
             ),
           ),
           ListView(
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               AppSpacing.screenPadding,
               AppSpacing.sm,
               AppSpacing.screenPadding,
-              110,
+              dockClearance(context),
             ),
             children: [
               Text(
@@ -64,7 +72,7 @@ class LearnHubScreen extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Lessons, scenarios and capstones — read it, practise it, prove it.',
+                'Lessons scenarios and capstones read it practise it prove it',
                 style: AppTypography.textTheme.bodyMedium?.copyWith(
                   color: AppColors.textSecondary,
                   height: 1.35,
@@ -75,7 +83,7 @@ class LearnHubScreen extends StatelessWidget {
               const HubTile(
                 entry: HubEntry(
                   title: 'AI Lab lessons',
-                  subtitle: 'Textbook lessons with chapters, topics and sources',
+                  subtitle: 'Textbook lessons with chapters topics and sources',
                   icon: Icons.science_rounded,
                   route: '/ai-lab/lessons',
                 ),
@@ -91,7 +99,8 @@ class LearnHubScreen extends StatelessWidget {
               const HubTile(
                 entry: HubEntry(
                   title: 'Capstone assessments',
-                  subtitle: 'Timed, scenario-based papers marked against a rubric',
+                  subtitle:
+                      'Timed scenario-based papers marked against a rubric',
                   icon: Icons.workspace_premium_rounded,
                   route: '/ai-lab/assessments',
                 ),

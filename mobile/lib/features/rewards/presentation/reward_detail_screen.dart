@@ -29,10 +29,15 @@ class _RewardDetailScreenState extends ConsumerState<RewardDetailScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Redeem ${widget.reward.title}?'),
-        content: Text('This spends ${widget.reward.costTokens} reward tokens from your balance.'),
+        content: Text(
+            'This spends ${widget.reward.costTokens} reward tokens from your balance.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Redeem')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Redeem')),
         ],
       ),
     );
@@ -40,7 +45,8 @@ class _RewardDetailScreenState extends ConsumerState<RewardDetailScreen> {
 
     setState(() => _redeeming = true);
     try {
-      final result = await ref.read(apiClientProvider).redeemReward(widget.reward.code);
+      final result =
+          await ref.read(apiClientProvider).redeemReward(widget.reward.code);
       if (!mounted) return;
       setState(() => _remainingTokens = result.wallet.tokens);
       ref.invalidate(rewardsProvider);
@@ -74,12 +80,12 @@ class _RewardDetailScreenState extends ConsumerState<RewardDetailScreen> {
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         title: Text('Reward',
-            style: AppTypography.textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+            style: AppTypography.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.sm,
-            AppSpacing.screenPadding, AppSpacing.xxl),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+            AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.xxl),
         children: [
           Container(
             height: 140,
@@ -90,14 +96,17 @@ class _RewardDetailScreenState extends ConsumerState<RewardDetailScreen> {
               ]),
               borderRadius: BorderRadius.circular(AppRadius.card),
             ),
-            child: Center(child: Icon(Icons.card_giftcard_rounded, size: 60, color: AppColors.primaryNavy)),
+            child: Center(
+                child: Icon(Icons.card_giftcard_rounded,
+                    size: 60, color: AppColors.primaryNavy)),
           ),
           const SizedBox(height: AppSpacing.lg),
           Text(r.title,
-              style: AppTypography.textTheme.headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+              style: AppTypography.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
           const SizedBox(height: 4),
-          Text(r.subtitle, style: AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
+          Text(r.subtitle,
+              style: AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
           const SizedBox(height: AppSpacing.lg),
           _row('Cost', '${r.costTokens} tokens'),
           if (tokens != null) _row('Your balance', '$tokens tokens'),
@@ -119,9 +128,15 @@ class _RewardDetailScreenState extends ConsumerState<RewardDetailScreen> {
           FilledButton.icon(
             onPressed: _redeeming || !canRedeem ? null : _redeem,
             icon: _redeeming
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.redeem_rounded),
-            label: Text(_redeeming ? 'Redeeming…' : (canRedeem ? 'Redeem reward' : 'Not enough tokens yet')),
+            label: Text(_redeeming
+                ? 'Redeeming…'
+                : (canRedeem ? 'Redeem reward' : 'Not enough tokens yet')),
           ),
         ],
       ),
@@ -132,10 +147,13 @@ class _RewardDetailScreenState extends ConsumerState<RewardDetailScreen> {
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
           children: [
-            Expanded(child: Text(label, style: AppTypography.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary))),
+            Expanded(
+                child: Text(label,
+                    style: AppTypography.textTheme.bodyMedium
+                        ?.copyWith(color: AppColors.textSecondary))),
             Text(value,
-                style: AppTypography.textTheme.bodyMedium
-                    ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+                style: AppTypography.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
           ],
         ),
       );
@@ -153,10 +171,12 @@ class _RewardDetailScreenState extends ConsumerState<RewardDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(title,
-                style: AppTypography.textTheme.labelMedium
-                    ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+                style: AppTypography.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
             const SizedBox(height: 4),
-            Text(body, style: AppTypography.textTheme.bodySmall?.copyWith(height: 1.45)),
+            Text(body,
+                style:
+                    AppTypography.textTheme.bodySmall?.copyWith(height: 1.45)),
           ],
         ),
       );

@@ -28,7 +28,7 @@ User _user() => const User(
       createdAt: '2026-10-01T00:00:00.000Z',
     );
 
-Future<void> _pumpShell(WidgetTester tester) async {
+Future<void> _pumpShell(WidgetTester tester, {double textScale = 1.0}) async {
   tester.view.physicalSize = const Size(900, 2000);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
@@ -40,7 +40,16 @@ Future<void> _pumpShell(WidgetTester tester) async {
         currentUserProvider.overrideWith((ref) async => _user()),
         dashboardProvider.overrideWith((ref) async => _dashboard()),
       ],
-      child: const MaterialApp(home: MainNavShell()),
+      child: MaterialApp(
+        home: MediaQuery.withNoTextScaling(
+          child: const MainNavShell(),
+        ),
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child ?? const SizedBox.shrink(),
+        ),
+      ),
     ),
   );
   await tester.pump();
@@ -76,6 +85,22 @@ void main() {
     expect(find.text('SKILL SCENARIOS'), findsOneWidget);
     expect(find.text('Verification Studio'), findsOneWidget);
     semantics.dispose();
+  });
+
+  testWidgets('Home, Learn and Practice survive a 200% text scale',
+      (tester) async {
+    // Regression guard for the text-scale audit: fixed-height cards and
+    // aspect-ratio grids used to overflow once the OS text setting doubled.
+    await _pumpShell(tester, textScale: 2.0);
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.byIcon(Icons.menu_book_rounded).last);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.byIcon(Icons.play_circle_outline_rounded).last);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('the drawer is still available as a secondary index',

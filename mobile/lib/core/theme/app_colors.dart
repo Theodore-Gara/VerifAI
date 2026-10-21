@@ -32,6 +32,8 @@ class AppPalette {
   final Color xpPurpleLight;
   final Color shadow;
   final Color shadowStrong;
+  final Color primaryFill;
+  final Color greenFill;
   final Color buttonDepthNavy;
   final Color buttonDepthGreen;
   final Color buttonDepthWhite;
@@ -71,6 +73,8 @@ class AppPalette {
     required this.xpPurpleLight,
     required this.shadow,
     required this.shadowStrong,
+    required this.primaryFill,
+    required this.greenFill,
     required this.buttonDepthNavy,
     required this.buttonDepthGreen,
     required this.buttonDepthWhite,
@@ -111,6 +115,8 @@ class AppPalette {
     xpPurpleLight: Color(0xFFEDE9FE),
     shadow: Color(0x1A102A23),
     shadowStrong: Color(0x33102A23),
+    primaryFill: Color(0xFF102A23),
+    greenFill: Color(0xFF176B4D),
     buttonDepthNavy: Color(0xFF071A14),
     buttonDepthGreen: Color(0xFF1C553F),
     buttonDepthWhite: Color(0xFFCBD5E1),
@@ -153,6 +159,11 @@ class AppPalette {
     xpPurpleLight: Color(0xFF2B2340),
     shadow: Color(0x66000000),
     shadowStrong: Color(0x99000000),
+    // Deep brand fills carrying white text. Unlike primaryNavy/accentGreen
+    // these do not lighten in dark mode: filled cards and buttons stay deep
+    // green in both modes instead of turning into bright slabs.
+    primaryFill: Color(0xFF173A2C),
+    greenFill: Color(0xFF176B4D),
     buttonDepthNavy: Color(0xFF050F0B),
     buttonDepthGreen: Color(0xFF173A2C),
     buttonDepthWhite: Color(0xFF4A5A52),
@@ -160,8 +171,8 @@ class AppPalette {
     glassSurfaceDark: Color(0xE60A1613),
     glassBorder: Color(0x2AFFFFFF),
     glassBorderDark: Color(0x403D544A),
-    ambientGreen: Color(0x22276B52),
-    ambientCyan: Color(0x1FD5B779),
+    ambientGreen: Color(0x10276B52),
+    ambientCyan: Color(0x15D5B779),
     ambientGold: Color(0x26C8A45D),
   );
 }
@@ -200,6 +211,8 @@ class AppColors {
   static Color get xpPurpleLight => palette.xpPurpleLight;
   static Color get shadow => palette.shadow;
   static Color get shadowStrong => palette.shadowStrong;
+  static Color get primaryFill => palette.primaryFill;
+  static Color get greenFill => palette.greenFill;
   static Color get buttonDepthNavy => palette.buttonDepthNavy;
   static Color get buttonDepthGreen => palette.buttonDepthGreen;
   static Color get buttonDepthWhite => palette.buttonDepthWhite;

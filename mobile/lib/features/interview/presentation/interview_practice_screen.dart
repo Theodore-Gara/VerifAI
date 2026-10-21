@@ -7,6 +7,7 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/interview/providers.dart';
+import 'package:verifai/shared/widgets/dock_clearance.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
@@ -79,11 +80,11 @@ class _InterviewPracticeScreenState
     final covered = questions.where((q) => q.practiced).length;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppSpacing.screenPadding,
         AppSpacing.sm,
         AppSpacing.screenPadding,
-        100, // accommodate floating dock
+        dockClearance(context),
       ),
       children: [
         Text(
@@ -199,7 +200,7 @@ class _InterviewPracticeScreenState
             color: AppColors.textSecondary,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.4,
-            fontSize: 9.5,
+            fontSize: 11.5,
           ),
         ),
         const SizedBox(height: 2),

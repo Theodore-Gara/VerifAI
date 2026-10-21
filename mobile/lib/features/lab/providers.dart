@@ -4,20 +4,21 @@ import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/shared/models.dart';
 
 /// AI Lab lesson catalogue (`GET /api/lab/lessons`).
-final labLessonsProvider =
-    FutureProvider<List<LabLesson>>((ref) => ref.watch(apiClientProvider).getLabLessons());
+final labLessonsProvider = FutureProvider<List<LabLesson>>(
+    (ref) => ref.watch(apiClientProvider).getLabLessons());
 
 /// One lesson with its sections, activities, questions and attributions.
 final labLessonProvider = FutureProvider.family<LabLessonDetail, String>(
     (ref, code) => ref.watch(apiClientProvider).getLabLesson(code));
 
 /// Capstone assessments available to the learner's track.
-final labAssessmentsProvider =
-    FutureProvider<List<LabAssessment>>((ref) => ref.watch(apiClientProvider).getLabAssessments());
+final labAssessmentsProvider = FutureProvider<List<LabAssessment>>(
+    (ref) => ref.watch(apiClientProvider).getLabAssessments());
 
 /// One assessment paper (scenario, instructions, questions) for the instructions screen.
-final assessmentPaperProvider = FutureProvider.family<LabAssessmentPaper, String>(
-    (ref, code) => ref.watch(apiClientProvider).getAssessmentPaper(code));
+final assessmentPaperProvider =
+    FutureProvider.family<LabAssessmentPaper, String>(
+        (ref, code) => ref.watch(apiClientProvider).getAssessmentPaper(code));
 
 class AssessmentKey {
   const AssessmentKey(this.code, this.attemptId);
@@ -26,7 +27,9 @@ class AssessmentKey {
 
   @override
   bool operator ==(Object other) =>
-      other is AssessmentKey && other.code == code && other.attemptId == attemptId;
+      other is AssessmentKey &&
+      other.code == code &&
+      other.attemptId == attemptId;
 
   @override
   int get hashCode => Object.hash(code, attemptId);
@@ -35,4 +38,6 @@ class AssessmentKey {
 /// Vera's post-capstone report (generated once, cached server-side).
 final assessmentAnalysisProvider =
     FutureProvider.family<LabAssessmentAnalysis, AssessmentKey>((ref, key) =>
-        ref.watch(apiClientProvider).getAssessmentAnalysis(key.code, key.attemptId));
+        ref
+            .watch(apiClientProvider)
+            .getAssessmentAnalysis(key.code, key.attemptId));

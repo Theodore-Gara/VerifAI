@@ -54,8 +54,8 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: p.primaryNavy,
-          foregroundColor: p == AppPalette.dark ? p.primaryDark : p.surface,
+          backgroundColor: p.primaryFill,
+          foregroundColor: p == AppPalette.dark ? p.textPrimary : p.surface,
           elevation: 0,
           shadowColor: p.shadow,
           minimumSize: const Size(double.infinity, AppSpacing.buttonHeight),
@@ -129,8 +129,7 @@ class AppTheme {
         hintStyle: textTheme.bodyMedium
             ?.copyWith(color: p.textSecondary.withValues(alpha: 0.6)),
         errorStyle: textTheme.bodySmall?.copyWith(color: p.error),
-        floatingLabelStyle:
-            textTheme.bodySmall?.copyWith(color: p.accentGreen),
+        floatingLabelStyle: textTheme.bodySmall?.copyWith(color: p.accentGreen),
       ),
       cardTheme: CardThemeData(
         color: p.surface,

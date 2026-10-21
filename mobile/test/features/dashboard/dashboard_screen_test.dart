@@ -66,9 +66,8 @@ void main() {
     expect(find.text('YOUR NEXT TASK'), findsOneWidget);
     expect(find.text('The Gross Profit Trap'), findsOneWidget);
     expect(find.text('Start task'), findsOneWidget);
-    // Level curve numbers come from the server, not a client-side copy.
-    expect(find.text('70 / 430 XP'), findsOneWidget);
-    expect(find.text('READINESS COMPETENCY INDEX'), findsOneWidget);
+    // Readiness score is shown at the top of the dashboard.
+    expect(find.text('42'), findsOneWidget);
     expect(find.text('Day streak'), findsOneWidget);
     // The stat tile is announced as one node, not "3" + "Day streak".
     final semantics = tester.ensureSemantics();

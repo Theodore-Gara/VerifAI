@@ -3,12 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/core/providers/app_reconnect.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/task/presentation/task_run_screen.dart';
-import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/daily_task_card.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
@@ -23,6 +23,23 @@ class VerificationScreen extends ConsumerStatefulWidget {
   ConsumerState<VerificationScreen> createState() => _VerificationScreenState();
 }
 
+/// One task per difficulty band. The dashboard only carries a single next
+/// task, so the Verification hub asks each band directly — the backend
+/// defaults to the verification feature and rotates exhausted bands into
+/// practice.
+final verificationTasksProvider =
+    FutureProvider.autoDispose<List<DailyTask>>((ref) async {
+  final api = ref.watch(apiClientProvider);
+  final tasks = await Future.wait([
+    for (final difficulty in const ['easy', 'medium', 'hard'])
+      api.getNextTask(difficulty: difficulty),
+  ]);
+  return [
+    for (final task in tasks)
+      if (task != null) task
+  ];
+});
+
 class _VerificationScreenState extends ConsumerState<VerificationScreen> {
   void _startTask(DailyTask task) {
     HapticFeedback.mediumImpact();
@@ -32,7 +49,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dashboardAsync = ref.watch(dashboardProvider);
+    final tasksAsync = ref.watch(verificationTasksProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -77,13 +94,21 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
           SafeArea(
             top: false,
             child: RefreshIndicator(
-              onRefresh: () async => ref.invalidate(dashboardProvider),
-              child: dashboardAsync.when(
-                data: (data) => _buildTasks(data),
-                loading: () => _buildShimmer(),
+              onRefresh: () async {
+                ref.invalidate(verificationTasksProvider);
+                try {
+                  // Await so the spinner covers the reload.
+                  await ref.read(verificationTasksProvider.future);
+                } on Object {
+                  // Rendered by the error branch below.
+                }
+              },
+              child: tasksAsync.when(
+                data: _buildTasks,
+                loading: _buildShimmer,
                 error: (error, stackTrace) => AsyncErrorView(
                   error: error,
-                  fallbackMessage: 'Failed to load your next task.',
+                  fallbackMessage: 'Failed to load your tasks.',
                   onRetry: () => reconnectApp(ref),
                 ),
               ),
@@ -94,11 +119,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
     );
   }
 
-  Widget _buildTasks(DashboardData data) {
-    final tasks = data.tasks.isNotEmpty
-        ? data.tasks
-        : [if (data.dailyTask != null) data.dailyTask!];
-
+  Widget _buildTasks(List<DailyTask> tasks) {
     if (tasks.isEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),

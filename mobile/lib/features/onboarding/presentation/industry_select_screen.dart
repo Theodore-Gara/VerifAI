@@ -180,7 +180,7 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
             style: AppTypography.textTheme.labelSmall?.copyWith(
               color: AppColors.accentGreen,
               fontWeight: FontWeight.w800,
-              fontSize: 10,
+              fontSize: 11.5,
               letterSpacing: 0.8,
             ),
           ),
@@ -324,7 +324,7 @@ class _TrackCard extends StatelessWidget {
                 track.description ?? '',
                 style: AppTypography.textTheme.bodySmall?.copyWith(
                   color: AppColors.textSecondary,
-                  fontSize: 11,
+                  fontSize: 11.5,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
@@ -338,7 +338,7 @@ class _TrackCard extends StatelessWidget {
                       ? AppColors.accentGreen
                       : AppColors.textSecondary,
                   fontWeight: FontWeight.w700,
-                  fontSize: 10,
+                  fontSize: 11.5,
                 ),
                 textAlign: TextAlign.center,
               ),

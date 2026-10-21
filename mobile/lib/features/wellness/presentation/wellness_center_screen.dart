@@ -42,7 +42,22 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
     super.dispose();
   }
 
-  String get _today => DateTime.now().toIso8601String().substring(0, 10);
+  /// The server's day, taken from whichever wellness response loaded last.
+  /// Reads and writes agree with the server, so a check-in made just after
+  /// midnight cannot be filed as yesterday.
+  String get _today {
+    final checkins =
+        ref.read(moodHistoryProvider).valueOrNull ?? const <MoodCheckin>[];
+    for (final checkin in checkins) {
+      if (checkin.serverToday.isNotEmpty) return checkin.serverToday;
+    }
+    final entries =
+        ref.read(journalEntriesProvider).valueOrNull ?? const <JournalEntry>[];
+    for (final entry in entries) {
+      if (entry.serverToday.isNotEmpty) return entry.serverToday;
+    }
+    return DateTime.now().toIso8601String().substring(0, 10);
+  }
 
   String _emojiFor(String mood) {
     for (final entry in _moods) {
@@ -87,7 +102,7 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
     }
 
     try {
-      await ref.read(apiClientProvider).saveJournalEntry(reflection, date: _today);
+      await ref.read(apiClientProvider).saveJournalEntry(reflection);
       if (!mounted) return true;
       ref.invalidate(journalEntriesProvider);
       ref.invalidate(wellnessWeekProvider);
@@ -166,8 +181,7 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
     final journalAsync = ref.watch(journalEntriesProvider);
     final weekAsync = ref.watch(wellnessWeekProvider);
     final checkins = moodAsync.valueOrNull ?? const <MoodCheckin>[];
-    final journalEntries =
-        journalAsync.valueOrNull ?? const <JournalEntry>[];
+    final journalEntries = journalAsync.valueOrNull ?? const <JournalEntry>[];
     final today = _todayCheckin(checkins);
     final selectedMood = _selectedMood ?? today?.mood;
 
@@ -259,17 +273,29 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
                 ),
           ),
           const SizedBox(height: AppSpacing.md),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 3,
-            mainAxisSpacing: AppSpacing.sm,
-            crossAxisSpacing: AppSpacing.sm,
-            childAspectRatio: 1.12,
-            children: [
-              for (final mood in _moods)
-                _moodTile(mood.$1, mood.$2, mood.$1 == selectedMood),
-            ],
+          // A fixed aspect-ratio grid clipped the emoji + label once the OS
+          // text scale grew. A Wrap of equally wide tiles lets each one take
+          // the height its text actually needs.
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const gap = AppSpacing.sm;
+              final tileWidth = (constraints.maxWidth - gap * 2) / 3;
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  for (final mood in _moods)
+                    SizedBox(
+                      width: tileWidth,
+                      child: _moodTile(
+                        mood.$1,
+                        mood.$2,
+                        mood.$1 == selectedMood,
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: AppSpacing.md),
           TextField(
@@ -443,9 +469,8 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
                         isToday ? const Color(0xFFDDF3E8) : AppColors.surface,
                     borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(
-                      color: isToday
-                          ? const Color(0xFF18805D)
-                          : AppColors.border,
+                      color:
+                          isToday ? const Color(0xFF18805D) : AppColors.border,
                     ),
                   ),
                   child: Column(
@@ -459,7 +484,7 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
                       Text(
                         checkin.mood,
                         style: const TextStyle(
-                          fontSize: 10,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w800,
                           color: Color(0xFF19372F),
                         ),
@@ -467,7 +492,7 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
                       Text(
                         isToday ? 'Today' : shortWellnessDate(checkin.date),
                         style: const TextStyle(
-                          fontSize: 9,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF52665C),
                         ),
@@ -534,7 +559,7 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
                   style: TextStyle(
                     color: Color(0xFFD6F3E5),
                     letterSpacing: 1.4,
-                    fontSize: 10,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -585,6 +610,10 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
+          // Grows with the text instead of clipping it; 64 dp also keeps the
+          // tap target above the 48 dp minimum.
+          constraints: const BoxConstraints(minHeight: 64),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
           decoration: BoxDecoration(
             color: selected ? const Color(0xFFDDF3E8) : AppColors.surface,
             borderRadius: BorderRadius.circular(AppRadius.md),
@@ -594,6 +623,7 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
             ),
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(emoji, style: const TextStyle(fontSize: 27)),
@@ -668,7 +698,7 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
                         color: Color(0xFF14745A),
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.7,
-                        fontSize: 10,
+                        fontSize: 11.5,
                       ),
                     ),
                   ],
@@ -831,7 +861,8 @@ class _InlineErrorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.sm, AppSpacing.sm),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, AppSpacing.sm, AppSpacing.sm, AppSpacing.sm),
       decoration: BoxDecoration(
         color: const Color(0xFFFDECEA),
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -855,9 +886,20 @@ class _InlineErrorCard extends StatelessWidget {
   }
 }
 
-String shortWellnessDate(String isoDate) {  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+String shortWellnessDate(String isoDate) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   final parts = isoDate.split('-');
   if (parts.length != 3) return isoDate;
@@ -986,7 +1028,8 @@ class _JournalReflectionSheetState extends State<_JournalReflectionSheet> {
                     context: context,
                     builder: (dialogContext) => AlertDialog(
                       title: Text(shortWellnessDate(entry.date)),
-                      content: SingleChildScrollView(child: Text(entry.content)),
+                      content:
+                          SingleChildScrollView(child: Text(entry.content)),
                       actions: [
                         TextButton(
                           onPressed: () {
@@ -1027,7 +1070,8 @@ class _BreathingSheetState extends State<_BreathingSheet>
     with SingleTickerProviderStateMixin {
   static const _inhaleWeight = 40;
   static const _exhaleWeight = 60;
-  static const _inhaleFraction = _inhaleWeight / (_inhaleWeight + _exhaleWeight);
+  static const _inhaleFraction =
+      _inhaleWeight / (_inhaleWeight + _exhaleWeight);
   static const _duration = Duration(seconds: 60);
   // A tap that ends the exercise almost immediately should not count as a
   // completed self-care moment. Ticks track the 1s timer (fake-clock friendly).

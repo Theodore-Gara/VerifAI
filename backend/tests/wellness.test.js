@@ -16,7 +16,7 @@ let lastQuery = null;
 
 pool.query = async (sql, values = []) => {
   const s = sql.replace(/\s+/g, ' ').trim();
-  if (s.includes('FROM users WHERE firebase_uid')) return { rows: [USER] };
+  if (s.includes('find_user_by_uid')) return { rows: [USER] };
 
   lastQuery = { s, values };
 
@@ -87,7 +87,15 @@ test('PUT /api/wellness/mood upserts one check-in per day', async () => {
 test('PUT /api/wellness/mood saves an optional note', async () => {
   const response = await auth(request(app).put('/api/wellness/mood')).send({ mood: 'Calm', note: '  Slow morning.  ' });
   assert.equal(response.status, 200);
-  assert.deepEqual(lastQuery.values, [USER.id, null, 'Calm', 'Slow morning.', true]);
+  // An omitted date is filed against the server's configured day (not the UTC
+  // CURRENT_DATE, and not the device clock).
+  const serverToday = new Intl.DateTimeFormat('en-CA', {
+    timeZone: process.env.STREAK_TIMEZONE || 'Africa/Johannesburg',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+  assert.deepEqual(lastQuery.values, [USER.id, serverToday, 'Calm', 'Slow morning.', true]);
 
   const tooLong = await auth(request(app).put('/api/wellness/mood')).send({ mood: 'Calm', note: 'x'.repeat(201) });
   assert.equal(tooLong.status, 400);

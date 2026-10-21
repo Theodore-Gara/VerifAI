@@ -5,26 +5,34 @@
 const XP_PER_LEVEL_TOKENS = Number(process.env.TOKENS_PER_LEVEL) || 10;
 const TOKENS_PER_ACHIEVEMENT = Number(process.env.TOKENS_PER_ACHIEVEMENT) || 5;
 
-// Applies each grant, skipping ones already recorded, then adds the net new
-// total to the user's balance. Returns the number of tokens actually granted.
+// Applies every grant in one statement (one round trip instead of N), skipping
+// ones already recorded, then adds the net new total to the user's balance.
+// Returns the number of tokens actually granted.
 async function grantTokens(client, userId, grants) {
-  let granted = 0;
-  for (const grant of grants) {
-    const result = await client.query(
-      `INSERT INTO reward_token_events (user_id, delta, reason, ref)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (user_id, reason, ref) DO NOTHING`,
-      [userId, grant.delta, grant.reason, grant.ref],
-    );
-    if (result.rowCount) granted += grant.delta;
-  }
-  if (granted > 0) {
-    await client.query(
-      `UPDATE user_progress SET tokens = tokens + $1 WHERE user_id = $2`,
-      [granted, userId],
-    );
-  }
-  return granted;
+  if (!grants || !grants.length) return 0;
+  const result = await client.query(
+    `WITH pending AS (
+       INSERT INTO reward_token_events (user_id, delta, reason, ref)
+       SELECT $1, g.delta, g.reason, g.ref
+       FROM UNNEST($2::int[], $3::text[], $4::text[]) AS g(delta, reason, ref)
+       ON CONFLICT (user_id, reason, ref) DO NOTHING
+       RETURNING delta
+     ), total AS (
+       SELECT COALESCE(SUM(delta), 0)::int AS granted FROM pending
+     ), wallet AS (
+       UPDATE user_progress
+       SET tokens = tokens + (SELECT granted FROM total)
+       WHERE user_id = $1 AND (SELECT granted FROM total) > 0
+     )
+     SELECT granted FROM total`,
+    [
+      userId,
+      grants.map((grant) => grant.delta),
+      grants.map((grant) => grant.reason),
+      grants.map((grant) => grant.ref),
+    ],
+  );
+  return Number(result.rows[0] && result.rows[0].granted) || 0;
 }
 
 // One ledger entry per level gained, keyed by the level number so re-running

@@ -23,7 +23,8 @@ class AssessmentOutcome {
 
 /// The assessment instructions / results screen.
 class LabAssessmentInstructionsScreen extends ConsumerStatefulWidget {
-  const LabAssessmentInstructionsScreen({super.key, required this.code, this.outcome});
+  const LabAssessmentInstructionsScreen(
+      {super.key, required this.code, this.outcome});
   final String code;
   final AssessmentOutcome? outcome;
 
@@ -37,7 +38,8 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
   Future<void> _start() async {
     setState(() => _starting = true);
     try {
-      final start = await ref.read(apiClientProvider).startAssessment(widget.code);
+      final start =
+          await ref.read(apiClientProvider).startAssessment(widget.code);
       if (!mounted) return;
       context.push('/ai-lab/assessments/${widget.code}/paper',
           extra: PaperArgs(code: widget.code, start: start));
@@ -63,11 +65,13 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/ai-lab/assessments'),
+          onPressed: () => context.canPop()
+              ? context.pop()
+              : context.go('/ai-lab/assessments'),
         ),
         title: Text('Assessment',
-            style: AppTypography.textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+            style: AppTypography.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
         actions: [
           TextButton(
             onPressed: () => context.go('/ai-lab/assessments'),
@@ -76,23 +80,25 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
         ],
       ),
       body: paperAsync.when(
-        loading: () => ListView(padding: const EdgeInsets.all(AppSpacing.screenPadding), children: const [
-          ShimmerLoader(height: 40),
-          SizedBox(height: AppSpacing.md),
-          ShimmerLoader(height: 200)
-        ]),
+        loading: () => ListView(
+            padding: const EdgeInsets.all(AppSpacing.screenPadding),
+            children: const [
+              ShimmerLoader(height: 40),
+              SizedBox(height: AppSpacing.md),
+              ShimmerLoader(height: 200)
+            ]),
         error: (e, _) => AsyncErrorView(
           error: e,
           fallbackMessage: 'Failed to load the assessment.',
           onRetry: () => ref.invalidate(assessmentPaperProvider(widget.code)),
         ),
         data: (paper) => ListView(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.sm,
-              AppSpacing.screenPadding, AppSpacing.xxl),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+              AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.xxl),
           children: [
             Text(paper.assessment.title,
-                style: AppTypography.textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+                style: AppTypography.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
             if (paper.assessment.summary.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.xs),
               Text(paper.assessment.summary,
@@ -103,16 +109,32 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
             _metaRow(paper.assessment),
             if (paper.assessment.instructions.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.lg),
-              _block('RULES', paper.assessment.instructions.map((e) => '• $e').join('\n')),
+              _block('RULES',
+                  paper.assessment.instructions.map((e) => '• $e').join('\n')),
             ],
             const SizedBox(height: AppSpacing.lg),
             _marksBreakdown(paper),
             const SizedBox(height: AppSpacing.xl),
             if (widget.outcome == null)
+              // Starting a paper is a network round trip before navigation, so
+              // the button reports that it is working instead of looking dead.
               FilledButton.icon(
-                onPressed: _starting || paper.assessment.viewOnly ? null : _start,
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: Text(paper.assessment.viewOnly ? 'View only: attempts used' : 'Start attempt'),
+                onPressed:
+                    _starting || paper.assessment.viewOnly ? null : _start,
+                icon: _starting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.play_arrow_rounded),
+                label: Text(
+                  paper.assessment.viewOnly
+                      ? 'View only: attempts used'
+                      : _starting
+                          ? 'Starting…'
+                          : 'Start attempt',
+                ),
               )
             else
               _resultPanel(context, paper, widget.outcome!),
@@ -135,15 +157,17 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
       children: [
         for (final c in chips)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 7),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: 7),
             decoration: BoxDecoration(
               color: AppColors.accentLight,
               borderRadius: BorderRadius.circular(AppRadius.pill),
-              border: Border.all(color: AppColors.accentGreen.withValues(alpha: .35)),
+              border: Border.all(
+                  color: AppColors.accentGreen.withValues(alpha: .35)),
             ),
             child: Text(c,
-                style: AppTypography.textTheme.labelMedium
-                    ?.copyWith(color: AppColors.primaryNavy, fontWeight: FontWeight.w800)),
+                style: AppTypography.textTheme.labelMedium?.copyWith(
+                    color: AppColors.primaryNavy, fontWeight: FontWeight.w800)),
           ),
       ],
     );
@@ -160,8 +184,10 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('QUESTION BREAKDOWN',
-            style: AppTypography.textTheme.labelSmall
-                ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: .5)),
+            style: AppTypography.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: AppColors.textSecondary,
+                letterSpacing: .5)),
         const SizedBox(height: AppSpacing.sm),
         Container(
           decoration: BoxDecoration(
@@ -178,13 +204,17 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          entry.key == null ? 'Question' : 'Question ${entry.key}',
+                          entry.key == null
+                              ? 'Question'
+                              : 'Question ${entry.key}',
                           style: AppTypography.textTheme.bodyMedium,
                         ),
                       ),
-                      Text('${entry.value.fold<int>(0, (s, q) => s + q.marks)} marks',
-                          style: AppTypography.textTheme.labelMedium
-                              ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+                      Text(
+                          '${entry.value.fold<int>(0, (s, q) => s + q.marks)} marks',
+                          style: AppTypography.textTheme.labelMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryNavy)),
                     ],
                   ),
                 ),
@@ -199,50 +229,68 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-              style: AppTypography.textTheme.labelSmall
-                  ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: .5)),
+              style: AppTypography.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textSecondary,
+                  letterSpacing: .5)),
           const SizedBox(height: 6),
-          Text(body, style: AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
+          Text(body,
+              style: AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
         ],
       );
 
-  Widget _resultPanel(BuildContext context, LabAssessmentPaper paper, AssessmentOutcome outcome) {
+  Widget _resultPanel(BuildContext context, LabAssessmentPaper paper,
+      AssessmentOutcome outcome) {
     final r = outcome.result;
-    final analysisAsync = ref.watch(assessmentAnalysisProvider(AssessmentKey(widget.code, outcome.attemptId)));
+    final analysisAsync = ref.watch(assessmentAnalysisProvider(
+        AssessmentKey(widget.code, outcome.attemptId)));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
-            color: (r.passed ? AppColors.accentGreen : AppColors.warning).withValues(alpha: .08),
+            color: (r.passed ? AppColors.accentGreen : AppColors.warning)
+                .withValues(alpha: .08),
             borderRadius: BorderRadius.circular(AppRadius.card),
-            border: Border.all(color: (r.passed ? AppColors.accentGreen : AppColors.warning).withValues(alpha: .4)),
+            border: Border.all(
+                color: (r.passed ? AppColors.accentGreen : AppColors.warning)
+                    .withValues(alpha: .4)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(r.pendingMarking ? 'Submitted, awaiting marking' : (r.passed ? 'Passed' : 'Not passed'),
-                  style: AppTypography.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+              Text(
+                  r.pendingMarking
+                      ? 'Submitted, awaiting marking'
+                      : (r.passed ? 'Passed' : 'Not passed'),
+                  style: AppTypography.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primaryNavy)),
               const SizedBox(height: 6),
-              Text('${r.marksAwarded} / ${r.totalMarks} marks  ·  ${r.score}%'
+              Text(
+                  '${r.marksAwarded} / ${r.totalMarks} marks  ·  ${r.score}%'
                   '${r.timedOut ? '  ·  time expired' : ''}',
-                  style: AppTypography.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700)),
+                  style: AppTypography.textTheme.bodyLarge
+                      ?.copyWith(fontWeight: FontWeight.w700)),
               if (r.xpEarned > 0 || r.tokensEarned > 0) ...[
                 const SizedBox(height: 6),
-                Text('Earned ${r.xpEarned} XP and ${r.tokensEarned} tokens'
+                Text(
+                    'Earned ${r.xpEarned} XP and ${r.tokensEarned} tokens'
                     '${r.achievement != null ? ' · badge unlocked' : ''}',
-                    style: AppTypography.textTheme.labelMedium
-                        ?.copyWith(color: AppColors.accentGreen, fontWeight: FontWeight.w800)),
+                    style: AppTypography.textTheme.labelMedium?.copyWith(
+                        color: AppColors.accentGreen,
+                        fontWeight: FontWeight.w800)),
               ],
             ],
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
         Text('PER-QUESTION',
-            style: AppTypography.textTheme.labelSmall
-                ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: .5)),
+            style: AppTypography.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: AppColors.textSecondary,
+                letterSpacing: .5)),
         const SizedBox(height: AppSpacing.sm),
         for (final q in r.questions)
           Padding(
@@ -252,11 +300,15 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
                 Icon(
                     q.pending
                         ? Icons.hourglass_empty_rounded
-                        : (q.correct == true ? Icons.check_circle_rounded : Icons.cancel_rounded),
+                        : (q.correct == true
+                            ? Icons.check_circle_rounded
+                            : Icons.cancel_rounded),
                     size: 16,
                     color: q.pending
                         ? AppColors.textSecondary
-                        : (q.correct == true ? AppColors.accentGreen : AppColors.warning)),
+                        : (q.correct == true
+                            ? AppColors.accentGreen
+                            : AppColors.warning)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text('${q.awarded ?? '-'} / ${q.max} marks',
@@ -267,13 +319,18 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
           ),
         const SizedBox(height: AppSpacing.lg),
         Text("VERA'S ANALYSIS",
-            style: AppTypography.textTheme.labelSmall
-                ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: .5)),
+            style: AppTypography.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: AppColors.textSecondary,
+                letterSpacing: .5)),
         const SizedBox(height: AppSpacing.sm),
         analysisAsync.when(
-          loading: () => const Padding(padding: EdgeInsets.all(AppSpacing.md), child: ShimmerLoader(height: 60)),
+          loading: () => const Padding(
+              padding: EdgeInsets.all(AppSpacing.md),
+              child: ShimmerLoader(height: 60)),
           error: (e, _) => Text('Analysis unavailable right now.',
-              style: AppTypography.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
+              style: AppTypography.textTheme.bodySmall
+                  ?.copyWith(color: AppColors.textSecondary)),
           data: (a) => Container(
             padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
@@ -286,16 +343,20 @@ class _State extends ConsumerState<LabAssessmentInstructionsScreen> {
               children: [
                 if (a.headline.isNotEmpty)
                   Text(a.headline,
-                      style: AppTypography.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+                      style: AppTypography.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primaryNavy)),
                 if (a.report.isNotEmpty) ...[
                   const SizedBox(height: 6),
-                  Text(a.report, style: AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
+                  Text(a.report,
+                      style: AppTypography.textTheme.bodyMedium
+                          ?.copyWith(height: 1.5)),
                 ],
                 if (a.focus.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.sm),
                   Text('Focus next: ${a.focus.join('; ')}',
-                      style: AppTypography.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
+                      style: AppTypography.textTheme.bodySmall
+                          ?.copyWith(color: AppColors.textSecondary)),
                 ],
               ],
             ),

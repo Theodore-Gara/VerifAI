@@ -19,7 +19,10 @@ const fakeClient = {
   async query(sql, values = []) {
     const s = sql.replace(/\s+/g, ' ').trim();
     if (['BEGIN', 'COMMIT', 'ROLLBACK'].includes(s)) return { rows: [] };
-    if (s.includes('FROM users WHERE firebase_uid')) return { rows: [{ id: 7, industry_track_id: 1 }] };
+    if (s.includes('readiness_inputs')) {
+      return { rows: [{ scores: [{ dimension: 'AI Judgement', score: 100 }], available: [{ feature: 'judgement' }], capstone_offered: 0, capstone_average: 0, interview_practised: 0, current_readiness: 50 }] };
+    }
+    if (s.includes('find_user_by_uid')) return { rows: [{ id: 7, industry_track_id: 1 }] };
     if (s.includes('FROM tasks WHERE id') && s.includes('FOR SHARE')) return { rows: [{ id: 5, feature: 'judgement', track_id: 1, published: true }] };
     if (s.includes('FROM task_options')) return { rows: [...DECISIONS, ...REASONS] };
     if (s.includes('FROM judgement_tasks')) return { rows: [{ title: 'Month-End Agenda', feedback: 'Good call.' }] };
@@ -37,7 +40,8 @@ const fakeClient = {
       return { rows: [{ xp: 310, level: 2, streak: 1, last_activity_date: '2026-10-12', tier: 'Novice', tier_tasks_completed: 1, readiness_score: 100, tokens: 10 }] };
     }
     if (s.includes('readiness_score')) return { rows: [] };
-    if (s.includes('SUM(xp_earned)')) return { rows: [{ attempts: 1, xp: 310 }] };
+    if (s.includes('SUM(xp_earned)')) return { rows: [] };
+    if (s.includes('SELECT e.id, e.code, e.name, e.description')) return { rows: [] };
     if (s.includes('MAX(score)')) return { rows: [{ best_dimension: 100 }] };
     if (s.includes('FROM skill_scores')) return { rows: [{ dimension: 'AI Judgement', score: 100 }] };
     if (s.includes('COUNT(*)::int AS total FROM interview_questions')) return { rows: [{ total: 0 }] };
@@ -62,5 +66,7 @@ test('a level-up submission credits reward tokens once and reports the new balan
   assert.equal(response.status, 201);
   assert.equal(response.body.progress.level, 2);
   assert.equal(response.body.progress.tokens, 10);
-  assert.deepEqual(ledger, [[7, 10, 'level_up', 'level-2']]);
+  // Grants are applied as one batched statement: user id plus parallel arrays
+  // of delta / reason / ref.
+  assert.deepEqual(ledger, [[7, [10], ['level_up'], ['level-2']]]);
 });

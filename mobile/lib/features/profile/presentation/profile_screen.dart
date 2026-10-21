@@ -15,7 +15,9 @@ import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/profile/presentation/admin_panel_screen.dart';
 import 'package:verifai/features/profile/providers.dart';
+import 'package:verifai/features/navigation/nav_drawer_controller.dart';
 import 'package:verifai/features/scoreboard/providers.dart';
+import 'package:verifai/shared/widgets/dock_clearance.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
@@ -52,7 +54,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       'API_BASE_URL',
       defaultValue: 'https://verifai-2wnm.onrender.com/api/',
     );
-    final trimmed = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+    final trimmed =
+        base.endsWith('/') ? base.substring(0, base.length - 1) : base;
     return trimmed.endsWith('/api')
         ? '${trimmed.substring(0, trimmed.length - 4)}/admin/'
         : '$trimmed/admin/';
@@ -143,6 +146,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          tooltip: 'Menu',
+          onPressed: openVerifaiNavigationDrawer,
+          icon: Icon(Icons.menu_rounded, color: AppColors.textPrimary),
+        ),
         title: Text(
           'Profile',
           style: AppTypography.textTheme.headlineMedium?.copyWith(
@@ -150,7 +158,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             letterSpacing: -0.5,
           ),
         ),
-        centerTitle: false,
+        centerTitle: true,
         actions: [
           IconButton(
             tooltip: 'Account & privacy',
@@ -210,11 +218,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 AppSpacing.screenPadding,
                 AppSpacing.sm,
                 AppSpacing.screenPadding,
-                100, // accommodate floating navigation dock
+                dockClearance(context),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,7 +232,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(AppSpacing.xl),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryNavy,
+                      color: AppColors.primaryFill,
                       borderRadius: BorderRadius.circular(AppRadius.card),
                       border: Border.all(color: AppColors.border),
                       boxShadow: [
@@ -267,25 +275,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   ),
                                 ],
                               ),
-                              child: GestureDetector(
-                                onTap: _chooseProfileImage,
-                                child: CircleAvatar(
-                                  radius: 42,
-                                  backgroundColor: AppColors.primaryNavy,
-                                  backgroundImage: _localProfileImage == null
-                                      ? null
-                                      : MemoryImage(_localProfileImage!),
-                                  child: _localProfileImage == null
-                                      ? Text(
-                                          initial,
-                                          style: AppTypography
-                                              .textTheme.displaySmall
-                                              ?.copyWith(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        )
-                                      : null,
+                              child: Semantics(
+                                button: true,
+                                label: 'Change profile photo',
+                                child: InkWell(
+                                  customBorder: const CircleBorder(),
+                                  onTap: _chooseProfileImage,
+                                  child: CircleAvatar(
+                                    radius: 42,
+                                    backgroundColor: AppColors.primaryFill,
+                                    backgroundImage: _localProfileImage == null
+                                        ? null
+                                        : MemoryImage(_localProfileImage!),
+                                    child: _localProfileImage == null
+                                        ? Text(
+                                            initial,
+                                            style: AppTypography
+                                                .textTheme.displaySmall
+                                                ?.copyWith(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          )
+                                        : null,
+                                  ),
                                 ),
                               ),
                             ),
@@ -374,8 +387,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ),
                             child: Text(
                               _adminRoleLabel(adminRole),
-                              style: AppTypography.textTheme.labelSmall
-                                  ?.copyWith(
+                              style:
+                                  AppTypography.textTheme.labelSmall?.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.6,
@@ -405,8 +418,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         title: const Text(
                           'Open Admin Panel',
                           style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700),
+                              color: Colors.white, fontWeight: FontWeight.w700),
                         ),
                         subtitle: Text(
                           'Task approvals, users, analytics',
@@ -417,8 +429,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             color: Colors.white),
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute<void>(
-                            builder: (_) => AdminPanelScreen(
-                                panelUrl: _adminPanelUrl()),
+                            builder: (_) =>
+                                AdminPanelScreen(panelUrl: _adminPanelUrl()),
                           ),
                         ),
                       ),
@@ -452,7 +464,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   const SizedBox(height: AppSpacing.xl),
 
                   _buildAchievements(ref, achievementsAsync),
-                  const SizedBox(height: AppSpacing.xl),
+                  const SizedBox(height: AppSpacing.sm),
                   _buildAppearance(ref),
                   const SizedBox(height: AppSpacing.xl),
                   _buildDestinations(),
@@ -493,50 +505,55 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     bool accent = false,
   }) {
     return Expanded(
-      child: GestureDetector(
-        onTap: accent || label == 'LEAGUE RANK'
-            ? () => ref.context.push('/scoreboard')
-            : null,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            border: Border.all(
-              color: accent
-                  ? AppColors.accentGreen.withValues(alpha: 0.4)
-                  : AppColors.border,
+      child: Semantics(
+        button: accent || label == 'LEAGUE RANK',
+        child: InkWell(
+          onTap: accent || label == 'LEAGUE RANK'
+              ? () => ref.context.push('/scoreboard')
+              : null,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.card),
+              border: Border.all(
+                color: accent
+                    ? AppColors.accentGreen.withValues(alpha: 0.4)
+                    : AppColors.border,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.shadow,
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.shadow,
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Text(
-                value,
-                style: AppTypography.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
-                  color: AppColors.textPrimary,
+            child: Column(
+              children: [
+                Text(
+                  value,
+                  style: AppTypography.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: AppTypography.textTheme.labelSmall?.copyWith(
-                  color:
-                      accent ? AppColors.accentGreen : AppColors.textSecondary,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.3,
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: AppTypography.textTheme.labelSmall?.copyWith(
+                    color: accent
+                        ? AppColors.accentGreen
+                        : AppColors.textSecondary,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.3,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -545,8 +562,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Widget _buildAppearance(WidgetRef ref) {
     final mode = ref.watch(themeModeProvider);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
         Text(
           'Appearance',
@@ -555,7 +571,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             color: AppColors.primaryNavy,
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
+        const Spacer(),
         SegmentedButton<ThemeMode>(
           showSelectedIcon: false,
           segments: const [
@@ -576,9 +592,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ],
           selected: {mode},
-          onSelectionChanged: (selection) => ref
-              .read(themeModeProvider.notifier)
-              .setMode(selection.first),
+          onSelectionChanged: (selection) =>
+              ref.read(themeModeProvider.notifier).setMode(selection.first),
         ),
       ],
     );
@@ -793,7 +808,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             badge.description,
             style: AppTypography.textTheme.bodySmall?.copyWith(
               color: AppColors.textSecondary.withValues(alpha: 0.8),
-              fontSize: 10.5,
+              fontSize: 11.5,
               height: 1.2,
             ),
             maxLines: 2,

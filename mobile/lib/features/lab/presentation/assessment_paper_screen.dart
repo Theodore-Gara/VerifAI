@@ -231,16 +231,22 @@ class _LabAssessmentPaperScreenState
     final last = _page == _groups.length - 1;
     if (!last) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, 0, AppSpacing.screenPadding, AppSpacing.md),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screenPadding, 0, AppSpacing.screenPadding, AppSpacing.md),
       child: FilledButton.icon(
         onPressed: _submitting ? null : _submit,
         icon: _submitting
-            ? const SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            ? const SizedBox(
+                width: 17,
+                height: 17,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.white))
             : const Icon(Icons.check_rounded, size: 17),
         label: Text(_submitting ? 'Submitting…' : 'Submit paper'),
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(48),
-          backgroundColor: AppColors.primaryNavy,
+          backgroundColor: AppColors.primaryFill,
+          foregroundColor: Colors.white,
         ),
       ),
     );

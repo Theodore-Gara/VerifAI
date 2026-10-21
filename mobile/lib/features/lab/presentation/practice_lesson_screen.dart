@@ -26,13 +26,19 @@ class LabPracticeScreen extends ConsumerWidget {
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         title: Text('Practice',
-            style: AppTypography.textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+            style: AppTypography.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
       ),
       body: detailAsync.when(
         loading: () => ListView(
           padding: const EdgeInsets.all(AppSpacing.screenPadding),
-          children: const [ShimmerLoader(height: 70), SizedBox(height: AppSpacing.sm), ShimmerLoader(height: 70), SizedBox(height: AppSpacing.sm), ShimmerLoader(height: 70)],
+          children: const [
+            ShimmerLoader(height: 70),
+            SizedBox(height: AppSpacing.sm),
+            ShimmerLoader(height: 70),
+            SizedBox(height: AppSpacing.sm),
+            ShimmerLoader(height: 70)
+          ],
         ),
         error: (e, _) => AsyncErrorView(
           error: e,
@@ -42,21 +48,27 @@ class LabPracticeScreen extends ConsumerWidget {
         data: (detail) {
           final activities = detail.activities;
           return ListView(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.sm,
-                AppSpacing.screenPadding, AppSpacing.xxl),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+                AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.xxl),
             children: [
               Text(detail.lesson.title,
-                  style: AppTypography.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primaryNavy)),
+                  style: AppTypography.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primaryNavy)),
               const SizedBox(height: 4),
-              Text('${activities.where((a) => a.passed).length} / ${activities.length} passed',
-                  style: AppTypography.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
+              Text(
+                  '${activities.where((a) => a.passed).length} / ${activities.length} passed',
+                  style: AppTypography.textTheme.bodySmall
+                      ?.copyWith(color: AppColors.textSecondary)),
               const SizedBox(height: AppSpacing.md),
               if (activities.isEmpty)
                 const EmptyState(
-                    icon: Icons.quiz_outlined, title: 'No questions', message: 'Practice questions are coming soon.')
+                    icon: Icons.quiz_outlined,
+                    title: 'No questions',
+                    message: 'Practice questions are coming soon.')
               else
-                for (var i = 0; i < activities.length; i++) _tile(context, ref, activities[i], i),
+                for (var i = 0; i < activities.length; i++)
+                  _tile(context, ref, activities[i], i),
             ],
           );
         },
@@ -64,7 +76,8 @@ class LabPracticeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _tile(BuildContext context, WidgetRef ref, LabActivity activity, int index) {
+  Widget _tile(
+      BuildContext context, WidgetRef ref, LabActivity activity, int index) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Material(
@@ -73,7 +86,8 @@ class LabPracticeScreen extends ConsumerWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.card),
           onTap: () async {
-            await context.push('/ai-lab/practice/activity', extra: ActivityArgs(activity: activity, code: code));
+            await context.push('/ai-lab/practice/activity',
+                extra: ActivityArgs(activity: activity, code: code));
             ref.invalidate(labLessonProvider(code));
           },
           child: Container(
@@ -81,7 +95,9 @@ class LabPracticeScreen extends ConsumerWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppRadius.card),
               border: Border.all(
-                  color: activity.passed ? AppColors.accentGreen.withValues(alpha: .4) : AppColors.border),
+                  color: activity.passed
+                      ? AppColors.accentGreen.withValues(alpha: .4)
+                      : AppColors.border),
             ),
             child: Row(
               children: [
@@ -89,11 +105,15 @@ class LabPracticeScreen extends ConsumerWidget {
                     radius: 13,
                     backgroundColor: activity.passed
                         ? AppColors.accentGreen
-                        : (activity.attempted ? AppColors.textSecondary : AppColors.primaryNavy),
+                        : (activity.attempted
+                            ? AppColors.textSecondary
+                            : AppColors.primaryNavy),
                     child: Icon(
                         activity.passed
                             ? Icons.check_rounded
-                            : (activity.attempted ? Icons.replay_rounded : Icons.help_outline_rounded),
+                            : (activity.attempted
+                                ? Icons.replay_rounded
+                                : Icons.help_outline_rounded),
                         size: 15,
                         color: Colors.white)),
                 const SizedBox(width: AppSpacing.md),
@@ -101,11 +121,15 @@ class LabPracticeScreen extends ConsumerWidget {
                   child: Text(activity.prompt,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTypography.textTheme.bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w600, height: 1.35)),
+                      style: AppTypography.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600, height: 1.35)),
                 ),
-                Text(activity.attempted ? 'Practice' : '+${activity.xpReward} XP',
-                    style: AppTypography.textTheme.labelSmall?.copyWith(color: AppColors.textSecondary)),
+                Text(
+                    activity.attempted
+                        ? 'Practice'
+                        : '+${activity.xpReward} XP',
+                    style: AppTypography.textTheme.labelSmall
+                        ?.copyWith(color: AppColors.textSecondary)),
               ],
             ),
           ),

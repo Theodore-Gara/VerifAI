@@ -42,6 +42,10 @@ final Provider<Dio> dioProvider = Provider<Dio>((ref) {
   // router sends the user back to the login screen.
   dio.interceptors.add(AuthInterceptor(
     dio: dio,
+    // A normal (cached) token for every request; a forced refresh only when a
+    // request comes back 401.
+    token: () async =>
+        firebase_auth.FirebaseAuth.instance.currentUser?.getIdToken(),
     refreshToken: () async {
       final user = firebase_auth.FirebaseAuth.instance.currentUser;
       if (user == null) return null;

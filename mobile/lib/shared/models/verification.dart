@@ -37,7 +37,8 @@ class VerificationItem {
 
   const VerificationItem({required this.claim, required this.concern});
 
-  factory VerificationItem.fromJson(Map<String, dynamic> json) => VerificationItem(
+  factory VerificationItem.fromJson(Map<String, dynamic> json) =>
+      VerificationItem(
         claim: json['claim'] as String? ?? '',
         concern: json['concern'] as String? ?? '',
       );
@@ -48,9 +49,11 @@ class VerificationInput {
   final String label;
   final int chars;
 
-  const VerificationInput({required this.type, required this.label, required this.chars});
+  const VerificationInput(
+      {required this.type, required this.label, required this.chars});
 
-  factory VerificationInput.fromJson(Map<String, dynamic> json) => VerificationInput(
+  factory VerificationInput.fromJson(Map<String, dynamic> json) =>
+      VerificationInput(
         type: json['type'] as String? ?? '',
         label: json['label'] as String? ?? '',
         chars: int.tryParse('${json['chars']}') ?? 0,
@@ -84,17 +87,23 @@ class VerificationResult {
     this.createdAt,
   });
 
-  bool get needsReview => overallStatus == 'human_review_required' || overallStatus == 'insufficient_evidence';
+  bool get needsReview =>
+      overallStatus == 'human_review_required' ||
+      overallStatus == 'insufficient_evidence';
 
   /// Parses the `analysis` row plus the top-level `sources`/`inputs` of the
   /// analyze response, or a stored analysis row from the history list. Note the
   /// row's `items_requiring_review` is a COUNT; the list lives in `report`.
   factory VerificationResult.fromJson(Map<String, dynamic> json) {
-    final analysis = (json['analysis'] as Map?)?.cast<String, dynamic>() ?? json;
-    final report = (analysis['report'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final items = (report['items_requiring_review'] as List<dynamic>? ?? const [])
-        .map((e) => VerificationItem.fromJson(Map<String, dynamic>.from(e as Map)))
-        .toList();
+    final analysis =
+        (json['analysis'] as Map?)?.cast<String, dynamic>() ?? json;
+    final report =
+        (analysis['report'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final items =
+        (report['items_requiring_review'] as List<dynamic>? ?? const [])
+            .map((e) =>
+                VerificationItem.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
     final sourcesJson = (json['sources'] as List<dynamic>?) ??
         (report['sources'] as List<dynamic>?) ??
         const [];
@@ -103,7 +112,8 @@ class VerificationResult {
       id: int.tryParse('${analysis['id']}') ?? 0,
       kind: analysis['kind'] as String? ?? '',
       documentName: analysis['document_name'] as String?,
-      overallStatus: analysis['overall_status'] as String? ?? 'human_review_required',
+      overallStatus:
+          analysis['overall_status'] as String? ?? 'human_review_required',
       items: items,
       sourcesConfirmed: int.tryParse('${analysis['sources_confirmed']}') ?? 0,
       summary: analysis['summary'] as String? ?? '',
@@ -111,7 +121,8 @@ class VerificationResult {
           .map((e) => VeraSource.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList(),
       inputs: inputsJson
-          .map((e) => VerificationInput.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map((e) =>
+              VerificationInput.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList(),
       webSearched: json['web_searched'] as bool? ?? false,
       createdAt: analysis['created_at'] as String?,

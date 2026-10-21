@@ -155,8 +155,8 @@ class _State extends ConsumerState<VerificationStudioScreen> {
           IconButton(
             tooltip: 'Ask Vera',
             onPressed: () => context.push('/assistant'),
-            icon: Icon(Icons.auto_awesome_rounded,
-                color: AppColors.primaryNavy),
+            icon:
+                Icon(Icons.auto_awesome_rounded, color: AppColors.primaryNavy),
           ),
         ],
       ),

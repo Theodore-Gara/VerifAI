@@ -67,11 +67,11 @@ class _VerifAIButtonState extends State<VerifAIButton> {
 
     switch (widget.variant) {
       case VerifAIButtonVariant.primary:
-        backgroundColor = AppColors.primaryNavy;
+        backgroundColor = AppColors.primaryFill;
         foregroundColor = Colors.white;
         bottomDepthColor = AppColors.buttonDepthNavy;
       case VerifAIButtonVariant.verification:
-        backgroundColor = AppColors.accentGreen;
+        backgroundColor = AppColors.greenFill;
         foregroundColor = Colors.white;
         bottomDepthColor = AppColors.buttonDepthGreen;
       case VerifAIButtonVariant.gold:

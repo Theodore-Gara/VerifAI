@@ -1,6 +1,5 @@
 const pool = require('../db/pool');
 const { clampInt } = require('../middleware/validate');
-const { findUserByFirebaseUid } = require('../db/users');
 
 const MOODS = new Set(['Great', 'Calm', 'Okay', 'Stressed', 'Tired', 'Low']);
 const ACTIVITIES = new Set(['breathing', 'journal', 'step_outside']);
@@ -14,15 +13,6 @@ const JOURNAL_TRASH_DAYS = 30;
 // for the future: a future date produced impossible streaks and "days
 // journalled" counts that could never be reached.
 const MAX_BACKFILL_DAYS = 365;
-
-async function requireUser(res, req) {
-  const user = await findUserByFirebaseUid(pool, req.firebaseUser.uid);
-  if (!user) {
-    res.status(404).json({ error: 'User not found. Call /api/auth/sync first.', request_id: req.requestId });
-    return null;
-  }
-  return user;
-}
 
 // undefined when absent, null when malformed. The client sends its own local
 // date so a check-in lands on the day the learner saw it.
@@ -60,8 +50,7 @@ function badRequest(res, req, message) {
 // GET /api/wellness/mood?limit=30
 async function listMood(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
     const limit = clampInt(req.query.limit, 30, 1, 90);
 
     const result = await pool.query(
@@ -73,7 +62,11 @@ async function listMood(req, res, next) {
       [user.id, limit],
     );
 
-    return res.status(200).json({ checkins: result.rows, request_id: req.requestId });
+    return res.status(200).json({
+      checkins: result.rows,
+      today: todayInTimezone(),
+      request_id: req.requestId,
+    });
   } catch (err) {
     return next(err);
   }
@@ -83,8 +76,7 @@ async function listMood(req, res, next) {
 // re-saving updates it. Omitting `note` leaves any existing note untouched.
 async function saveMood(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const mood = typeof req.body?.mood === 'string' ? req.body.mood.trim() : '';
     if (!MOODS.has(mood)) {
@@ -103,15 +95,19 @@ async function saveMood(req, res, next) {
     }
     const note = rawNote || null;
 
+    // No date supplied: use the server's configured day, not the database's UTC
+    // CURRENT_DATE. Near midnight those are different days, so a check-in could
+    // land on yesterday from the learner's point of view.
+    const entryDate = date ?? todayInTimezone();
     const result = await pool.query(
       `INSERT INTO wellness_mood_checkins (user_id, check_in_date, mood, note)
-       VALUES ($1, COALESCE($2::date, CURRENT_DATE), $3, $4)
+       VALUES ($1, $2::date, $3, $4)
        ON CONFLICT (user_id, check_in_date)
        DO UPDATE SET mood = EXCLUDED.mood,
                      note = CASE WHEN $5::boolean THEN EXCLUDED.note
                                  ELSE wellness_mood_checkins.note END
        RETURNING check_in_date::text AS date, mood, note, updated_at`,
-      [user.id, date ?? null, mood, note, hasNote],
+      [user.id, entryDate, mood, note, hasNote],
     );
 
     return res.status(200).json({ checkin: result.rows[0], request_id: req.requestId });
@@ -123,8 +119,7 @@ async function saveMood(req, res, next) {
 // GET /api/wellness/journal?limit=30
 async function listJournal(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
     const limit = clampInt(req.query.limit, 30, 1, 90);
 
     // Trash is purged by scripts/purge-wellness-trash.js. This used to run a
@@ -139,7 +134,11 @@ async function listJournal(req, res, next) {
       [user.id, limit],
     );
 
-    return res.status(200).json({ entries: result.rows, request_id: req.requestId });
+    return res.status(200).json({
+      entries: result.rows,
+      today: todayInTimezone(),
+      request_id: req.requestId,
+    });
   } catch (err) {
     return next(err);
   }
@@ -149,8 +148,7 @@ async function listJournal(req, res, next) {
 // Saving a previously deleted day revives that entry.
 async function saveJournal(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const content = typeof req.body?.content === 'string' ? req.body.content.trim() : '';
     if (!content) return badRequest(res, req, 'content is required.');
@@ -163,13 +161,14 @@ async function saveJournal(req, res, next) {
       return badRequest(res, req, `date must not be in the future or more than ${MAX_BACKFILL_DAYS} days ago.`);
     }
 
+    const entryDate = date ?? todayInTimezone();
     const result = await pool.query(
       `INSERT INTO wellness_journal_entries (user_id, entry_date, content)
-       VALUES ($1, COALESCE($2::date, CURRENT_DATE), $3)
+       VALUES ($1, $2::date, $3)
        ON CONFLICT (user_id, entry_date)
        DO UPDATE SET content = EXCLUDED.content, deleted_at = NULL
        RETURNING entry_date::text AS date, content, updated_at`,
-      [user.id, date ?? null, content],
+      [user.id, entryDate, content],
     );
 
     return res.status(200).json({ entry: result.rows[0], request_id: req.requestId });
@@ -181,8 +180,7 @@ async function saveJournal(req, res, next) {
 // DELETE /api/wellness/journal/:date — moves the day's entry to the trash.
 async function deleteJournal(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
     const date = parseDate(req.params.date);
     if (!date) return badRequest(res, req, 'date must be YYYY-MM-DD.');
 
@@ -204,8 +202,7 @@ async function deleteJournal(req, res, next) {
 // POST /api/wellness/journal/:date/restore — undoes a delete (idempotent).
 async function restoreJournal(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
     const date = parseDate(req.params.date);
     if (!date) return badRequest(res, req, 'date must be YYYY-MM-DD.');
 
@@ -229,8 +226,7 @@ async function restoreJournal(req, res, next) {
 // editing an entry cannot inflate the count and deleting one removes it.
 async function listActivities(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
     const days = clampInt(req.query.days, 7, 1, 30);
 
     const result = await pool.query(
@@ -261,8 +257,7 @@ async function listActivities(req, res, next) {
 // POST /api/wellness/activities  body { activity }
 async function logActivity(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const activity = typeof req.body?.activity === 'string' ? req.body.activity.trim() : '';
     if (!ACTIVITIES.has(activity)) {

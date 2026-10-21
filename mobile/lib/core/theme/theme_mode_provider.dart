@@ -38,9 +38,8 @@ class ThemeModeController extends StateNotifier<ThemeMode> {
   }
 }
 
-final themeModeProvider =
-    StateNotifierProvider<ThemeModeController, ThemeMode>(
-        (ref) => ThemeModeController());
+final themeModeProvider = StateNotifierProvider<ThemeModeController, ThemeMode>(
+    (ref) => ThemeModeController());
 
 /// Resolves the palette for a mode and the platform brightness.
 AppPalette paletteFor(ThemeMode mode, Brightness platformBrightness) {

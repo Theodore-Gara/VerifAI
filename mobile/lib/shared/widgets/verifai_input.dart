@@ -136,8 +136,7 @@ class _VerifAIInputState extends State<VerifAIInput> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.input),
-              borderSide:
-                  BorderSide(color: AppColors.primaryNavy, width: 2),
+              borderSide: BorderSide(color: AppColors.primaryNavy, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.input),

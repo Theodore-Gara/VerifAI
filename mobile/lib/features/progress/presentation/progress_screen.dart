@@ -7,8 +7,10 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/dashboard/providers.dart';
+import 'package:verifai/features/navigation/nav_drawer_controller.dart';
 import 'package:verifai/features/progress/providers.dart';
 import 'package:verifai/features/scoreboard/providers.dart';
+import 'package:verifai/shared/widgets/dock_clearance.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/dimension_index_card.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
@@ -36,6 +38,13 @@ class ProgressScreen extends ConsumerWidget {
             color: AppColors.textPrimary,
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Menu',
+            onPressed: openVerifaiNavigationDrawer,
+            icon: Icon(Icons.menu_rounded, color: AppColors.textPrimary),
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -72,7 +81,8 @@ class ProgressScreen extends ConsumerWidget {
                 ref.invalidate(activityProvider);
               },
               child: dashboardAsync.when(
-                data: (data) => _buildContent(ref, data, activityAsync),
+                data: (data) =>
+                    _buildContent(context, ref, data, activityAsync),
                 loading: () => _buildShimmer(),
                 error: (error, stackTrace) => AsyncErrorView(
                   error: error,
@@ -87,15 +97,15 @@ class ProgressScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildContent(WidgetRef ref, DashboardData data,
+  Widget _buildContent(BuildContext context, WidgetRef ref, DashboardData data,
       AsyncValue<ActivityData> activityAsync) {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppSpacing.screenPadding,
         AppSpacing.sm,
         AppSpacing.screenPadding,
-        100, // accommodate floating dock
+        dockClearance(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,8 +234,7 @@ class ProgressScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right_rounded,
-                  color: AppColors.textSecondary),
+              Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
             ],
           ),
         ),
@@ -278,7 +287,7 @@ class ProgressScreen extends ConsumerWidget {
                   style: AppTypography.textTheme.labelSmall?.copyWith(
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w700,
-                    fontSize: 9,
+                    fontSize: 11.5,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -298,7 +307,7 @@ class ProgressScreen extends ConsumerWidget {
                   style: AppTypography.textTheme.labelSmall?.copyWith(
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w700,
-                    fontSize: 9,
+                    fontSize: 11.5,
                   ),
                 ),
               ],
@@ -349,7 +358,7 @@ class ProgressScreen extends ConsumerWidget {
               style: AppTypography.textTheme.labelSmall?.copyWith(
                 color: accent ? AppColors.accentGreen : AppColors.textSecondary,
                 fontWeight: FontWeight.w700,
-                fontSize: 10,
+                fontSize: 11.5,
               ),
             ),
           ],

@@ -390,8 +390,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/feedback/:attemptId',
         name: 'feedback-attempt',
         builder: (context, state) => AttemptFeedbackScreen(
-          attemptId:
-              int.tryParse(state.pathParameters['attemptId'] ?? '') ?? 0,
+          attemptId: int.tryParse(state.pathParameters['attemptId'] ?? '') ?? 0,
         ),
       ),
       GoRoute(

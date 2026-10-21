@@ -1,8 +1,16 @@
 // Verification Studio input extraction: turn an uploaded document, a pasted
 // URL, or free text into analysable text. Nothing is persisted.
-const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB decoded
+const { parseDocument } = require('./documentParser');
+// 5 MB decoded is a 40-page text PDF or a long DOCX. The previous 10 MB ceiling
+// meant a 14 MB JSON body and a parser run that could hold a whole instance.
+const MAX_FILE_BYTES = Number(process.env.VERIFICATION_MAX_DOCUMENT_BYTES) || 5 * 1024 * 1024;
+// Base64 inflates by ~4/3; reject oversized payloads before allocating a buffer.
+const MAX_BASE64_CHARS = Math.ceil((MAX_FILE_BYTES * 4) / 3) + 1024;
 const MAX_TEXT = 60000;
 const MAX_URL_TEXT = 20000;
+// Parsing stops after this many PDF pages, so a 2,000-page upload cannot make
+// the worker read the whole file before the character cap applies.
+const MAX_PDF_PAGES = Number(process.env.VERIFICATION_MAX_PDF_PAGES) || 40;
 
 function errorWith(status, message) {
   const error = new Error(message);
@@ -31,6 +39,9 @@ async function extractDocument({ base64, mime, name } = {}) {
   if (typeof base64 !== 'string' || !base64.trim()) {
     throw errorWith(400, 'document.base64 is required.');
   }
+  if (base64.length > MAX_BASE64_CHARS) {
+    throw errorWith(413, 'Document must be 5MB or smaller.');
+  }
   let buffer;
   try {
     buffer = Buffer.from(base64, 'base64');
@@ -38,24 +49,33 @@ async function extractDocument({ base64, mime, name } = {}) {
     throw errorWith(400, 'document.base64 is not valid base64.');
   }
   if (!buffer.length) throw errorWith(400, 'document is empty.');
-  if (buffer.length > MAX_FILE_BYTES) throw errorWith(413, 'Document must be 10MB or smaller.');
+  if (buffer.length > MAX_FILE_BYTES) throw errorWith(413, 'Document must be 5MB or smaller.');
 
   const type = String(mime || '').toLowerCase();
   const lower = String(name || '').toLowerCase();
+  const isPdf = type.includes('pdf') || lower.endsWith('.pdf');
+  const isDocx = type.includes('word') || type.includes('officedocument') || lower.endsWith('.docx');
+  const label = name || 'Document';
 
   try {
-    if (type.includes('pdf') || lower.endsWith('.pdf')) {
-      const pdf = require('pdf-parse/lib/pdf-parse.js');
-      const data = await pdf(buffer);
-      return { label: name || 'Document', text: String(data.text || '').replace(/\s+\n/g, '\n').trim().slice(0, MAX_TEXT) };
-    }
-    if (type.includes('word') || type.includes('officedocument') || lower.endsWith('.docx')) {
-      const mammoth = require('mammoth');
-      const result = await mammoth.extractRawText({ buffer });
-      return { label: name || 'Document', text: String(result.value || '').trim().slice(0, MAX_TEXT) };
+    if (isPdf || isDocx) {
+      // Parsed on a worker thread: pdf-parse and mammoth are CPU-bound and used
+      // to block the API's event loop for the length of the document.
+      const parsed = await parseDocument({
+        kind: isPdf ? 'pdf' : 'docx',
+        buffer,
+        maxPages: MAX_PDF_PAGES,
+      });
+      const text = String(parsed.text || '');
+      return {
+        label,
+        text: (isPdf ? text.replace(/\s+\n/g, '\n') : text).trim().slice(0, MAX_TEXT),
+        pages: parsed.pages,
+        truncated: text.length > MAX_TEXT || (isPdf && parsed.pages > MAX_PDF_PAGES),
+      };
     }
     // txt / md / anything else: treat as UTF-8 text.
-    return { label: name || 'Document', text: buffer.toString('utf8').trim().slice(0, MAX_TEXT) };
+    return { label, text: buffer.toString('utf8').trim().slice(0, MAX_TEXT) };
   } catch (err) {
     if (err && err.status) throw err;
     throw errorWith(422, `Could not read the document: ${err.message}`);
@@ -86,4 +106,11 @@ async function fetchUrl(url, { fetchImpl = fetch } = {}) {
   return { label: parsed.hostname, url: parsed.toString(), text: stripHtml(html).slice(0, MAX_URL_TEXT) };
 }
 
-module.exports = { extractDocument, fetchUrl, stripHtml, MAX_FILE_BYTES, MAX_TEXT };
+module.exports = {
+  extractDocument,
+  fetchUrl,
+  stripHtml,
+  MAX_FILE_BYTES,
+  MAX_TEXT,
+  MAX_PDF_PAGES,
+};

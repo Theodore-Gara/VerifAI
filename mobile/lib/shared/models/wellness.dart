@@ -1,27 +1,34 @@
 // Wellness data: daily mood check-ins, private journal entries and the weekly
 // self-care summary. Plain classes (no codegen).
 class MoodCheckin {
-  final String date; // YYYY-MM-DD, the learner's local day
+  final String date; // YYYY-MM-DD
   final String mood;
   final String? note;
   final String updatedAt;
+
+  /// The server's idea of "today" for this response. The device clock is not
+  /// used: near midnight, or in another timezone, it disagrees with the day the
+  /// server stored the check-in against.
+  final String serverToday;
 
   const MoodCheckin({
     required this.date,
     required this.mood,
     this.note,
     this.updatedAt = '',
+    this.serverToday = '',
   });
 
-  bool get isToday => date == _todayIso();
+  bool get isToday => date == _today(serverToday);
 
-  factory MoodCheckin.fromJson(Map<String, dynamic> json) {
+  factory MoodCheckin.fromJson(Map<String, dynamic> json, {String? today}) {
     final rawNote = (json['note'] as String?)?.trim();
     return MoodCheckin(
       date: json['date'] as String? ?? '',
       mood: json['mood'] as String? ?? '',
       note: rawNote == null || rawNote.isEmpty ? null : rawNote,
       updatedAt: json['updated_at'] as String? ?? '',
+      serverToday: today ?? json['today'] as String? ?? '',
     );
   }
 }
@@ -30,19 +37,23 @@ class JournalEntry {
   final String date; // YYYY-MM-DD
   final String content;
   final String updatedAt;
+  final String serverToday;
 
   const JournalEntry({
     required this.date,
     required this.content,
     this.updatedAt = '',
+    this.serverToday = '',
   });
 
-  bool get isToday => date == _todayIso();
+  bool get isToday => date == _today(serverToday);
 
-  factory JournalEntry.fromJson(Map<String, dynamic> json) => JournalEntry(
+  factory JournalEntry.fromJson(Map<String, dynamic> json, {String? today}) =>
+      JournalEntry(
         date: json['date'] as String? ?? '',
         content: json['content'] as String? ?? '',
         updatedAt: json['updated_at'] as String? ?? '',
+        serverToday: today ?? json['today'] as String? ?? '',
       );
 }
 
@@ -74,4 +85,8 @@ class WellnessWeek {
   }
 }
 
-String _todayIso() => DateTime.now().toIso8601String().substring(0, 10);
+// Falls back to the device only when the server did not report its day (an
+// older backend); normally [serverToday] is authoritative.
+String _today(String serverToday) => serverToday.isNotEmpty
+    ? serverToday
+    : DateTime.now().toIso8601String().substring(0, 10);

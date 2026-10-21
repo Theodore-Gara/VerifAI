@@ -7,7 +7,7 @@
 // desync from the XP balance.
 const { calculateLevel } = require('./scoringService');
 const { grantTokens, levelGrants } = require('./rewardTokens');
-const { computeStreak, STREAK_TIMEZONE } = require('./streak');
+const { streakFromGap, STREAK_TIMEZONE } = require('./streak');
 
 // amount === 0 is meaningful: a graded-but-unscored attempt (a failed task)
 // marks the day as active without paying out anything. Admin adjustments pass
@@ -15,17 +15,23 @@ const { computeStreak, STREAK_TIMEZONE } = require('./streak');
 async function awardXp(client, userId, amount, { advanceStreak = true } = {}) {
   const xp = Math.max(0, Math.floor(Number(amount) || 0));
 
+  // The day gap comes back with the row, so the streak no longer needs its own
+  // round trip on the scored-attempt path.
   const ensured = await client.query(
     `INSERT INTO user_progress (user_id, xp, level)
      VALUES ($1, 0, 1)
      ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id
-     RETURNING id, xp, level, streak, last_activity_date`,
-    [userId],
+     RETURNING id, xp, level, streak, last_activity_date,
+               CASE WHEN last_activity_date IS NULL THEN NULL
+                    ELSE (NOW() AT TIME ZONE $2)::date - last_activity_date END AS day_gap`,
+    [userId, STREAK_TIMEZONE],
   );
   const row = ensured.rows[0];
   const newXp = Number(row.xp) + xp;
   const newLevel = calculateLevel(newXp);
-  const newStreak = advanceStreak ? await computeStreak(client, row) : Number(row.streak) || 0;
+  const newStreak = advanceStreak
+    ? streakFromGap(row, row.day_gap)
+    : Number(row.streak) || 0;
 
   if (newLevel > Number(row.level)) {
     await grantTokens(client, userId, levelGrants(Number(row.level), newLevel));

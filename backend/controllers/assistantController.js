@@ -1,4 +1,5 @@
 const pool = require('../db/pool');
+const { findUserByFirebaseUid } = require('../db/users');
 const { positiveIntegerParam, requiredString } = require('../middleware/validate');
 const {
   getAssistantReply,
@@ -151,14 +152,11 @@ async function sendMessage(req, res, next) {
 // GET /api/assistant/sessions/:taskId — load chat history for a task
 async function getSession(req, res, next) {
   try {
-    const userResult = await pool.query(
-      `SELECT id FROM users WHERE firebase_uid = $1`,
-      [req.firebaseUser.uid],
-    );
-    if (!userResult.rows.length) {
+    const user = await findUserByFirebaseUid(pool, req.firebaseUser.uid);
+    if (!user) {
       return res.status(404).json({ error: 'User not found.', request_id: req.requestId });
     }
-    const userId = userResult.rows[0].id;
+    const userId = user.id;
     const taskId = positiveIntegerParam(req.params.taskId, 'task_id');
 
     const session = await pool.query(

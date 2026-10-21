@@ -13,7 +13,7 @@ import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/task/presentation/task_run_screen.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets.dart';
-import 'package:verifai/shared/widgets/dimension_index_card.dart';
+import 'package:verifai/shared/widgets/dock_clearance.dart';
 
 /// Home. Leads with the one thing the learner can do next — a recommended task,
 /// their XP progress and their assessed dimensions — then the exploration grid.
@@ -27,11 +27,18 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _starting = false;
+  DateTime? _updatedAt;
 
   @override
   Widget build(BuildContext context) {
     final dashboardAsync = ref.watch(dashboardProvider);
     final user = ref.watch(currentUserProvider).valueOrNull;
+
+    // Every refresh (button, pull, resume) lands here, so the hint below the
+    // content always describes the data actually on screen.
+    ref.listen<AsyncValue<DashboardData>>(dashboardProvider, (previous, next) {
+      if (next.hasValue) _updatedAt = DateTime.now();
+    });
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -50,27 +57,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 color: AppColors.textPrimary,
               ),
             ),
+            const SizedBox(height: 2),
             Text(
               user?.trackName ?? 'Choose your specialization',
               style: AppTypography.textTheme.labelSmall?.copyWith(
                 color: AppColors.accentGreen,
                 fontWeight: FontWeight.w700,
-                fontSize: 11,
+                fontSize: 11.5,
               ),
             ),
           ],
         ),
         actions: [
-          IconButton(
-            tooltip: 'Refresh dashboard',
-            icon: Icon(
-              Icons.refresh_rounded,
-              color: AppColors.textPrimary,
-            ),
-            onPressed: () {
-              ref.invalidate(dashboardProvider);
-            },
-          ),
           // Secondary navigation: the dock is primary, so the full index sits
           // here at low emphasis instead of taking every screen's leading slot.
           IconButton(
@@ -142,6 +140,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  String get _updatedLabel {
+    final at = _updatedAt;
+    if (at == null) return 'Updating…';
+    final minutes = DateTime.now().difference(at).inMinutes;
+    if (minutes < 1) return 'Updated just now';
+    if (minutes == 1) return 'Updated 1 minute ago';
+    return 'Updated $minutes minutes ago';
+  }
+
   static String _greeting(String? name) {
     final hour = DateTime.now().hour;
     final part = hour < 12
@@ -169,23 +176,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _buildDashboard(DashboardData data) {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppSpacing.screenPadding,
         AppSpacing.sm,
         AppSpacing.screenPadding,
-        100, // accommodate floating dock
+        dockClearance(context),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildNextAction(data),
+          // Readiness score at top
+          _buildReadinessCard(data),
           const SizedBox(height: AppSpacing.md),
-          XPBar(
-            currentXP: data.xpIntoLevel,
-            nextLevelXP: data.xpForNextLevel,
-            level: data.level,
-          ),
-          const SizedBox(height: AppSpacing.md),
+          // Streak and tasks
           Row(
             children: [
               Expanded(
@@ -207,11 +210,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          _buildReadinessCard(data),
+          // Next task
+          _buildNextAction(data),
           const SizedBox(height: AppSpacing.md),
-          DimensionIndexCard(scores: data.dimensionScores),
-          const SizedBox(height: AppSpacing.md),
+          // Keep going section
           _buildQuickLaunches(context),
+          const SizedBox(height: AppSpacing.md),
+          Center(
+            child: Text(
+              _updatedLabel,
+              style: AppTypography.textTheme.labelSmall?.copyWith(
+                color: AppColors.textSecondary,
+                fontSize: 11.5,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -309,7 +322,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     color: AppColors.accentGreen,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.1,
-                    fontSize: 11,
+                    fontSize: 11.5,
                   ),
                 ),
                 const Spacer(),
@@ -327,7 +340,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       style: AppTypography.textTheme.labelSmall?.copyWith(
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w800,
-                        fontSize: 10,
+                        fontSize: 11.5,
                         letterSpacing: 0.6,
                       ),
                     ),
@@ -509,9 +522,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 label,
                 textAlign: TextAlign.center,
                 style: AppTypography.textTheme.labelSmall?.copyWith(
-                  color: accent ? AppColors.accentGreen : AppColors.textSecondary,
+                  color:
+                      accent ? AppColors.accentGreen : AppColors.textSecondary,
                   fontWeight: FontWeight.w700,
-                  fontSize: 11,
+                  fontSize: 11.5,
                 ),
               ),
             ],
@@ -649,8 +663,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 item.subtitle,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: AppTypography.textTheme.bodySmall
-                                    ?.copyWith(
+                                style:
+                                    AppTypography.textTheme.bodySmall?.copyWith(
                                   fontSize: 11.5,
                                   color: AppColors.textSecondary,
                                 ),

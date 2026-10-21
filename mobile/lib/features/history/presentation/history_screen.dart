@@ -126,8 +126,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         surfaceTintColor: Colors.transparent,
         title: Text('Task History',
             style: AppTypography.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: AppColors.primaryNavy)),
+                fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
       ),
       body: Column(
         children: [
@@ -256,9 +255,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           borderRadius: BorderRadius.circular(AppRadius.card),
           // A task attempt can be reopened by id: the feedback screen re-fetches
           // it, so it no longer depends on the result object it was pushed with.
-          onTap: e.type == 'task'
-              ? () => context.push('/feedback/${e.id}')
-              : null,
+          onTap:
+              e.type == 'task' ? () => context.push('/feedback/${e.id}') : null,
           child: Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
@@ -317,7 +315,20 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   String _date(String iso) {
     final dt = DateTime.tryParse(iso)?.toLocal();
     if (dt == null) return '';
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     return '${dt.day} ${months[dt.month - 1]}';
   }
 }

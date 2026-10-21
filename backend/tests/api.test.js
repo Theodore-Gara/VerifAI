@@ -34,12 +34,24 @@ const REASON_OPTIONS = [
 pool.query = async (sql, values = []) => {
   queries.push(sql);
   queryCalls.push({ sql, values });
+  if (sql.includes('readiness_inputs')) {
+    return {
+      rows: [{
+        scores: [{ dimension: 'AI Judgement', score: 100 }],
+        available: [{ feature: 'judgement' }],
+        capstone_offered: 0,
+        capstone_average: 0,
+        interview_practised: 2,
+        current_readiness: 50,
+      }],
+    };
+  }
   if (sql.includes('FROM industry_tracks')) return { rows: [{ id: 1, name: 'Finance', description: 'Finance' }] };
   // Activity-history mocks (must precede the leaderboard/generic users rules).
   if (sql.includes('last_activity_date') && sql.includes('firebase_uid')) {
     return { rows: [{ user_id: 7, streak: 3, last_activity_date: '2026-10-09' }] };
   }
-  if (sql.includes('FROM task_attempts ta') && sql.includes('GROUP BY')) {
+  if (sql.includes('FROM user_activity') && sql.includes('GROUP BY')) {
     return { rows: [
       { activity_date: '2026-10-08', attempts: 2, xp_earned: 70, passed: 1 },
       { activity_date: '2026-10-09', attempts: 1, xp_earned: 25, passed: 1 },
@@ -129,7 +141,19 @@ const fakeClient = {
     queries.push(sql);
     const s = sql.replace(/\s+/g, ' ').trim();
     if (s === 'BEGIN' || s === 'COMMIT' || s === 'ROLLBACK') return { rows: [] };
-    if (s.includes('FROM users WHERE firebase_uid')) return { rows: [{ id: 7, industry_track_id: 1, level: 1 }] };
+    if (s.includes('readiness_inputs')) {
+      return {
+        rows: [{
+          scores: [{ dimension: 'AI Judgement', score: 100 }],
+          available: [{ feature: 'judgement' }],
+          capstone_offered: 0,
+          capstone_average: 0,
+          interview_practised: 0,
+          current_readiness: 50,
+        }],
+      };
+    }
+    if (s.includes('find_user_by_uid')) return { rows: [{ id: 7, industry_track_id: 1, level: 1 }] };
     if (s.includes('FROM tasks WHERE id') && s.includes('FOR SHARE')) return { rows: [{ id: 5, feature: 'judgement', track_id: 1, published: true }] };
     if (s.includes('FROM task_options')) return { rows: SCORED_OPTIONS };
     if (s.includes('FROM judgement_tasks')) return { rows: [{ title: 'The Month-End Agenda', feedback: 'Good call.' }] };
@@ -236,12 +260,12 @@ test('GET /api/progress/me/activity returns daily activity and streak', async ()
   assert.equal(response.body.activity[0].activity_date, '2026-10-08');
   assert.equal(response.body.activity[0].xp_earned, 70);
   assert.equal(response.body.activity[0].passed, 1);
-  const sql = queries.find((q) => q.includes('FROM task_attempts ta'));
+  const sql = queries.find((q) => q.includes('FROM user_activity'));
   assert.match(sql, /GROUP BY/);
-  assert.match(sql, /submitted_at::timestamptz AT TIME ZONE \$3/);
+  assert.match(sql, /created_at::timestamptz AT TIME ZONE \$3/);
   assert.match(sql, /NOW\(\) AT TIME ZONE \$3/);
   assert.doesNotMatch(sql, /CURRENT_DATE/);
-  const activityCall = queryCalls.find((call) => call.sql.includes('FROM task_attempts ta'));
+  const activityCall = queryCalls.find((call) => call.sql.includes('FROM user_activity'));
   assert.deepEqual(activityCall.values, [7, 30, process.env.STREAK_TIMEZONE || 'Africa/Johannesburg']);
 });
 
@@ -573,9 +597,14 @@ test('marking a question practised is idempotent and refreshes readiness', async
   // Interview coverage feeds the weighted readiness score, so it is recomputed
   // after each practice. Readiness is written as an upsert now (a plain UPDATE
   // silently did nothing for a learner with no user_progress row yet).
-  const updates = queries.filter((sql) => sql.includes('user_progress') && sql.includes('readiness_score'));
+  const updates = queries.filter(
+    (sql) => sql.includes('INSERT INTO user_progress') && sql.includes('readiness_score'),
+  );
   assert.equal(updates.length, 2, 'readiness recomputed after every practice');
   assert.match(updates[0], /ON CONFLICT \(user_id\) DO UPDATE/);
+  // The inputs are fetched in a single statement rather than four round trips.
+  const inputs = queries.filter((sql) => sql.includes('readiness_inputs'));
+  assert.equal(inputs.length, 2);
 });
 
 test('a question from another track is rejected', async () => {

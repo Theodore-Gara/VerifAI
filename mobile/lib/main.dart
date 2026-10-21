@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'core/router/app_router.dart';
+import 'core/services/resume_refresh.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_provider.dart';
@@ -19,6 +20,11 @@ void main() async {
 class VerifAIApp extends ConsumerWidget {
   const VerifAIApp({super.key});
 
+  /// Last palette applied. `AppColors` is static, so widgets that don't
+  /// rebuild on their own keep their old-mode colours; when the palette flips
+  /// we force a full reassemble so every screen picks it up immediately.
+  static AppPalette? _activePalette;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
@@ -29,13 +35,22 @@ class VerifAIApp extends ConsumerWidget {
 
     // `AppColors` reads from the active palette, so every existing reference in
     // the widget tree follows the chosen mode without being rewritten.
+    final paletteChanged = _activePalette != null && _activePalette != palette;
     AppColors.palette = palette;
+    _activePalette = palette;
+    if (paletteChanged) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => WidgetsBinding.instance.reassembleApplication(),
+      );
+    }
 
-    return MaterialApp.router(
-      title: 'VerifAI',
-      theme: AppTheme.themeFor(palette),
-      routerConfig: router,
-      debugShowCheckedModeBanner: false,
+    return ResumeRefresh(
+      child: MaterialApp.router(
+        title: 'VerifAI',
+        theme: AppTheme.themeFor(palette),
+        routerConfig: router,
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }

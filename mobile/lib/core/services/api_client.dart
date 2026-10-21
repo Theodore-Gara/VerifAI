@@ -77,7 +77,8 @@ abstract class ApiClient {
     required int attemptId,
     required Map<int, dynamic> answers,
   });
-  Future<LabAssessmentAnalysis> getAssessmentAnalysis(String code, int attemptId);
+  Future<LabAssessmentAnalysis> getAssessmentAnalysis(
+      String code, int attemptId);
 
   // --- Industry Practice ---
   Future<List<IndustryCase>> getIndustryCases();
@@ -197,12 +198,15 @@ class AssistantSessionDetail {
 
   const AssistantSessionDetail({required this.session, required this.messages});
 
-  factory AssistantSessionDetail.fromJson(Map<String, dynamic> json) => AssistantSessionDetail(
+  factory AssistantSessionDetail.fromJson(Map<String, dynamic> json) =>
+      AssistantSessionDetail(
         session: json['session'] != null
-            ? AssistantSession.fromJson(Map<String, dynamic>.from(json['session'] as Map))
+            ? AssistantSession.fromJson(
+                Map<String, dynamic>.from(json['session'] as Map))
             : null,
         messages: ((json['messages'] as List<dynamic>?) ?? const [])
-            .map((e) => AssistantMessageModel.fromJson(Map<String, dynamic>.from(e as Map)))
+            .map((e) => AssistantMessageModel.fromJson(
+                Map<String, dynamic>.from(e as Map)))
             .toList(),
       );
 }

@@ -1,17 +1,7 @@
 const pool = require('../db/pool');
 const { clampInt } = require('../middleware/validate');
-const { findUserByFirebaseUid } = require('../db/users');
 const { xpForLevel } = require('../services/scoringService');
 const { contentCache } = require('../utils/ttlCache');
-
-async function requireUser(res, req) {
-  const user = await findUserByFirebaseUid(pool, req.firebaseUser.uid);
-  if (!user) {
-    res.status(404).json({ error: 'User not found. Call /api/auth/sync first.', request_id: req.requestId });
-    return null;
-  }
-  return user;
-}
 
 async function loadWallet(executor, userId) {
   const result = await executor.query(
@@ -31,8 +21,7 @@ function walletView(wallet) {
 // GET /api/rewards
 async function listRewards(req, res, next) {
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const wallet = await loadWallet(pool, user.id);
     // The catalogue itself changes only when an admin edits it, so it is cached;
@@ -61,8 +50,7 @@ async function listRewards(req, res, next) {
 async function redeemReward(req, res, next) {
   let client = null;
   try {
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     client = await pool.connect();
     await client.query('BEGIN');
@@ -129,8 +117,7 @@ async function redeemReward(req, res, next) {
 async function tokenHistory(req, res, next) {
   try {
     const limit = clampInt(req.query.limit, 20, 1, 100);
-    const user = await requireUser(res, req);
-    if (!user) return undefined;
+    const user = req.user;
 
     const result = await pool.query(
       `SELECT id, delta, reason, ref, created_at

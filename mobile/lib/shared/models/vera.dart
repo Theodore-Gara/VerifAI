@@ -57,11 +57,13 @@ class VeraSessionDetail {
 
   const VeraSessionDetail({required this.session, required this.messages});
 
-  factory VeraSessionDetail.fromJson(Map<String, dynamic> json) => VeraSessionDetail(
+  factory VeraSessionDetail.fromJson(Map<String, dynamic> json) =>
+      VeraSessionDetail(
         session: VeraSession.fromJson(
             Map<String, dynamic>.from(json['session'] as Map? ?? const {})),
         messages: ((json['messages'] as List<dynamic>?) ?? const [])
-            .map((e) => VeraMessage.fromJson(Map<String, dynamic>.from(e as Map)))
+            .map((e) =>
+                VeraMessage.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList(),
       );
 }

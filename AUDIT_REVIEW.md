@@ -8,7 +8,7 @@
 
 ## 0. Fix rounds — what changed
 
-Verified after the second round: **backend `npm test` → 186 passed, 0 failed**; **`flutter analyze` → no issues**; **`flutter test` → 49 passed, 0 failed**.
+Verified after the third round: **backend `npm test` → 186 passed, 0 failed**; **`flutter analyze` → no issues**; **`flutter test` → 50 passed, 0 failed**.
 
 ### Round 2 — layout restructure, scalability, theming
 
@@ -69,20 +69,27 @@ Verified after that round: **backend `npm test` → 186 passed, 0 failed**; **`f
 | **7.4** fixed-height grid overflow | Home's explore grid uses `mainAxisExtent` with wrapping/ellipsised labels instead of `childAspectRatio`; captions moved from 9.5–11 px to 11–12.5 px. |
 | **7.9** inconsistent error handling | All 12 direct `showSnackBar` call sites (6 files) now use the shared `showFeedback` banner; `FeedbackOverlay` is mounted once in `MaterialApp.builder`, so nothing renders a raw Material snackbar anymore. |
 
-### Still open (not covered by either round)
+### Round 3 — remaining audit items
 
-These were listed in the original report but are outside what the two fix rounds changed:
+| Finding | Fix |
+|---|---|
+| **2.7** document parsing on the request thread | `services/documentParser.js` is a small pool of forked children (pdf.js cannot initialise inside a worker thread) with a queue limit, a 20 s timeout and a hard kill on timeout; `extract.js` caps decoded bytes at 5 MB **before** parsing, stops after 40 PDF pages, and the route body limit dropped from 14 MB to 8 MB. `extractDocument` now reports `pages`/`truncated`. |
+| **5.3** ~12 round trips on a submission | The attempt and its `answer_logs` row are written in one CTE; the progress row and streak day-gap come back from one statement; readiness inputs are one JSON-aggregate statement plus a cached per-track interview total, and the recompute is skipped when coverage did not move; achievements are checked and inserted in one statement; token grants are batched into one `UNNEST` insert. |
+| **6.5** providers had no lifetime | `core/services/resume_refresh.dart` invalidates the learner's data providers when the app returns to the foreground, throttled to once every 30 s. |
+| **6.6** duplicated auth headers | `AuthInterceptor` now attaches the ID token in `onRequest` (with a `skip_auth` opt-out); every manual `_authHeaders`/`_idToken` use is gone and the helpers deleted, so each call behaves the same on a 401. |
+| **7.3** touch targets and semantics | Remaining `GestureDetector` actions (daily task card, profile photo, profile stat tiles) became `InkWell` + `Semantics`; mood tiles carry a 64 dp minimum; the widget suite pins the five dock tabs. |
+| **7.4** text scale | The micro-label floor is now 11.5 px across the app, the wellness mood grid is a `Wrap` with content-height tiles (the fixed `childAspectRatio` clipped at scale), and shell pages pad their bottom from the real dock height + safe-area inset. A widget test pumps Home/Learn/Practice at **200% text scale** and asserts no overflow. |
+| **7.7** action looked frozen | Starting a capstone shows a spinner and "Starting…" while the attempt is created; scenario submit has a haptic and a busy button. |
+| **7.8** wellness dates from the device clock | The server files an omitted date against `STREAK_TIMEZONE`'s day (not UTC `CURRENT_DATE`), returns `today` on both reads, and the client derives `isToday`/`_today` from that value; saves omit the date entirely. Backend test asserts the configured day is used. |
+| **7.11** polish | Dashboard shows a "Updated just now / N minutes ago" hint; the app bar already leads with a greeting + track; dock clearance is computed (`shared/widgets/dock_clearance.dart`) instead of a hardcoded 100; option selection and submit have haptics. |
+| **§4** duplication | `middleware/requireUser.js` resolves the user once per request for seven routers (49 controller-level copies deleted); `findUserByFirebaseUid` is the single lookup (now also used by tasks, interview, assistant and admin self-checks); `createTask` is a 10-line wrapper over `validateTaskBody` + `insertTask`; `/api/history` and `/api/progress/me/activity` read one `user_activity` view (migration 028 + `schema.sql`). |
 
-- **2.7** document parsing still runs on the request thread (needs a worker/queue plus a byte cap before parsing).
+### Still open
+
 - **3.6** the streak rule is documented in `awardXp` but still counts any graded attempt rather than only passes; the product decision is yours.
-- **5.3** the scored-attempt path is still ~12 round trips in one transaction.
 - **5.9** admin CSV exports still build the whole file in memory.
-- **6.5** some providers are still non-`autoDispose` globals without a refresh-on-resume hook.
-- **6.6** ~20 API methods still pass `Authorization` manually alongside the interceptor.
-- **7.3 / 7.4** touch targets and semantics are fixed on the dock, Home and hubs; the text-scale audit across every secondary screen has not been done.
-- **7.7, 7.8, 7.11** continue-button busy state, device-clock wellness dates, and the small polish items.
-- **§8** no Postgres integration suite; `google-services.json` is still tracked; README/`/api/docs` drift.
-- **§4** the duplication inventory (shared `requireUser`, user lookup, `createTask`/`insertTask`, activity view) is untouched.
+- **§8** no Postgres integration suite; `mobile/android/app/google-services.json` is still tracked; `/api/docs` is still a hand-maintained list (the README is now accurate).
+- **Reward images** remain unimplemented (`image_asset` is ignored by the catalogue), as agreed for this round.
 
 ---
 
