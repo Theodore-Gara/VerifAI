@@ -141,8 +141,8 @@ VerifAI/
 ├── render.yaml                 Render blueprint (migrate-then-start)
 ├── codemagic.yaml              Mobile build pipeline
 ├── AUDIT_REVIEW.md             Engineering audit and the fixes applied from it
-├── BACKEND_TASKS.md            Backlog by area
-└── FRONTEND_TASKS.md
+├── SPRINT2_BACKEND.md          Sprint 2 backend QA response and work plan
+└── SPRINT2_FRONTEND.md         Sprint 2 frontend QA response and work plan
 ```
 
 ### How the parts fit together
