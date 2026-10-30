@@ -46,6 +46,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
         onPageFinished: (_) {
           if (mounted) setState(() => _loading = false);
           _postToken();
+          if (_lastToken == null || _lastToken!.isEmpty) {
+            unawaited(_renewToken());
+          }
           // Firebase ID tokens last about an hour; hand a fresh one over
           // every 40 minutes so a long admin session never drops mid-work.
           _renewalTimer?.cancel();

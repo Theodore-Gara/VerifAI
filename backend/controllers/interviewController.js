@@ -68,6 +68,15 @@ async function markPracticed(req, res, next) {
     // Interview coverage is part of the weighted readiness score.
     await refreshReadiness(pool, user.id, user.industry_track_id);
 
+    // Practising questions can unlock the interview achievement at the moment
+    // it happens. Non-fatal: an award failure must not fail this request.
+    try {
+      const { awardAchievements } = require('./tasksController');
+      await awardAchievements(pool, user.id);
+    } catch (achievementErr) {
+      console.error('Achievement award after interview practice failed:', achievementErr.message);
+    }
+
     const counts = await pool.query(
       `SELECT COUNT(*)::int AS total,
               COUNT(*) FILTER (

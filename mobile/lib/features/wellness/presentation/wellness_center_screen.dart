@@ -10,6 +10,7 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/features/navigation/main_nav_shell.dart';
 import 'package:verifai/features/navigation/nav_drawer_controller.dart';
+import 'package:verifai/features/navigation/sections.dart';
 import 'package:verifai/features/wellness/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
@@ -226,6 +227,16 @@ class _WellnessCenterScreenState extends ConsumerState<WellnessCenterScreen> {
             tooltip: 'Ask Vera',
             onPressed: () => context.push('/assistant'),
             icon: const Icon(Icons.auto_awesome_rounded),
+          ),
+          IconButton(
+            tooltip: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            onPressed: () => goHome(context),
+          ),
+          IconButton(
+            tooltip: 'All sections',
+            icon: const Icon(Icons.menu_rounded),
+            onPressed: () => showAllSectionsSheet(context),
           ),
         ],
       ),

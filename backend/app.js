@@ -173,6 +173,7 @@ app.use('/api/industry-practice', industryPracticeRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/wellness', wellnessRoutes);
+app.use('/api/meta', require('./routes/meta'));
 app.use('/api/admin', adminRoutes);
 
 // Admin dashboard: a static single-page app served by the API itself.

@@ -5,6 +5,7 @@ import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
+import 'package:verifai/features/navigation/sections.dart';
 
 /// AI Lab home: the three pillars: Learning material, Practice, Assessments.
 class LabHomeScreen extends StatelessWidget {
@@ -47,6 +48,18 @@ class LabHomeScreen extends StatelessWidget {
         title: Text('AI Lab',
             style: AppTypography.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
+        actions: [
+          IconButton(
+            tooltip: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            onPressed: () => goHome(context),
+          ),
+          IconButton(
+            tooltip: 'All sections',
+            icon: const Icon(Icons.menu_rounded),
+            onPressed: () => showAllSectionsSheet(context),
+          ),
+        ],
       ),
       body: SafeArea(
         child: ListView(

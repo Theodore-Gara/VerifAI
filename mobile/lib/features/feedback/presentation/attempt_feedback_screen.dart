@@ -7,6 +7,7 @@ import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/features/feedback/presentation/feedback_screen.dart';
+import 'package:verifai/features/navigation/sections.dart';
 
 /// Feedback for one attempt, fetched by id.
 ///
@@ -45,6 +46,18 @@ class AttemptFeedbackScreen extends ConsumerWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           title: const Text('Feedback'),
+          actions: [
+            IconButton(
+              tooltip: 'Home',
+              icon: const Icon(Icons.home_outlined),
+              onPressed: () => goHome(context),
+            ),
+            IconButton(
+              tooltip: 'All sections',
+              icon: const Icon(Icons.menu_rounded),
+              onPressed: () => showAllSectionsSheet(context),
+            ),
+          ],
         ),
         body: EmptyState(
           icon: Icons.rate_review_rounded,

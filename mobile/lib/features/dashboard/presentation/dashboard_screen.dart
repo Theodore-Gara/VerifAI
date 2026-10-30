@@ -14,6 +14,7 @@ import 'package:verifai/features/task/presentation/task_run_screen.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets.dart';
 import 'package:verifai/shared/widgets/dock_clearance.dart';
+import 'package:verifai/shared/widgets/getting_started_card.dart';
 
 /// Home. Leads with the one thing the learner can do next — a recommended task,
 /// their XP progress and their assessed dimensions — then the exploration grid.
@@ -51,12 +52,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ),
             const SizedBox(height: 2),
-            Text(
-              user?.trackName ?? 'Choose your specialization',
-              style: AppTypography.textTheme.labelSmall?.copyWith(
-                color: AppColors.accentGreen,
-                fontWeight: FontWeight.w700,
-                fontSize: 11.5,
+            // Tapping the track opens industry change — one of the three
+            // entry points (dashboard, drawer, Profile).
+            GestureDetector(
+              onTap: () => context.push('/change-industry'),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      user?.trackName ?? 'Choose your specialization',
+                      style: AppTypography.textTheme.labelSmall?.copyWith(
+                        color: AppColors.accentGreen,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11.5,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.swap_horiz_rounded,
+                      size: 14, color: AppColors.accentGreen),
+                ],
               ),
             ),
           ],
@@ -169,6 +186,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Dismissible first-run card; swiping either direction or ✕ removes
+          // it for good (persisted locally).
+          const GettingStartedCard(),
+          const SizedBox(height: AppSpacing.md),
           // Readiness score at top
           _buildReadinessCard(data),
           const SizedBox(height: AppSpacing.md),
