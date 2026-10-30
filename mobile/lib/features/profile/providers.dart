@@ -12,7 +12,10 @@ final achievementsProvider = FutureProvider<List<Achievement>>((ref) async {
 /// Staff identity for the signed-in user (GET /api/auth/me). Null role means
 /// a regular learner; 'super' | 'admin' | 'moderator' drives the profile role
 /// badge and the Admin Panel entry point.
-final adminIdentityProvider = FutureProvider<AdminIdentity?>((ref) async {
+/// autoDispose so the check re-runs every time the profile screen opens: an
+/// account promoted to staff while the app is running gets the entry point on
+/// the next profile visit instead of only after an app restart.
+final adminIdentityProvider = FutureProvider.autoDispose<AdminIdentity?>((ref) async {
   final apiClient = ref.watch(apiClientProvider);
   try {
     return await apiClient.getMe();

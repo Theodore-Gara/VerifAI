@@ -47,6 +47,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
+  Future<void> _openAdminPanel(WidgetRef ref, String? role) async {
+    // Hand the dashboard the app's own Firebase session (URL fragment — it
+    // never reaches a server), so a staff member does not sign in a second
+    // time. The panel falls back to a clear message if the token is missing.
+    String url = _adminPanelUrl();
+    String? token;
+    try {
+      token = await ref.read(apiClientProvider).getAuthToken();
+      if (token != null && token.isNotEmpty) {
+        url += '#token=${Uri.encodeComponent(token)}';
+      }
+    } catch (_) {
+      // Token fetch failed — the panel shows its "open from the app" gate.
+    }
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AdminPanelScreen(
+          panelUrl: url,
+          tokenProvider: () => ref.read(apiClientProvider).getAuthToken(),
+        ),
+      ),
+    );
+  }
+
   /// Admin dashboard URL derived from the app's API base URL
   /// (.../api/ becomes .../admin/). Same backend that serves the app.
   String _adminPanelUrl() {
@@ -427,12 +452,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                         trailing: const Icon(Icons.chevron_right,
                             color: Colors.white),
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) =>
-                                AdminPanelScreen(panelUrl: _adminPanelUrl()),
-                          ),
-                        ),
+                        onTap: () => _openAdminPanel(ref, adminRole),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
