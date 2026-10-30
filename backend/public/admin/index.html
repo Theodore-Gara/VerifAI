@@ -4,9 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VerifAI Admin</title>
-<!-- The panel needs no Firebase SDK or sign-in of its own: the VerifAI app
-     hands over its own session token in the URL fragment when it opens the
-     panel, so a staff member goes straight in. -->
+<!-- Primary path: the VerifAI app hands over its own session token in the URL
+     fragment when it opens the panel, so a staff member goes straight in with
+     no second sign-in. Fallback path (only when that handover never arrives —
+     e.g. an outdated app build): sign in below with the staff account that has
+     admin access. -->
+<script src="vendor/firebase-app-compat.js"></script>
+<script src="vendor/firebase-auth-compat.js"></script>
 <style>
   :root {
     --brand: #102A23; --brand2: #176B4D; --gold: #D6B76E;
@@ -184,12 +188,19 @@
 <div class="ambient"></div>
 
 <!-- Waiting for the app's session token (arrives in the URL fragment). If the
-     panel is opened directly by a staff member without the app, they get a
-     clear message instead of a second sign-in form. -->
+     handover never arrives, the fallback sign-in appears after a few seconds. -->
 <div id="pendingView" class="hidden">
   <h2 style="margin-top:0"><span style="color:var(--accent)">Verif</span>AI Admin</h2>
   <div id="pendingSpinner" class="spin"></div>
   <p id="pendingText" class="muted">Connecting to your VerifAI session…</p>
+  <div id="fallbackLogin" class="hidden" style="margin-top:18px; text-align:left">
+    <p style="font-size:12px; color:var(--muted); margin:0 0 10px">
+      Staff sign-in (fallback) — your VerifAI account with admin access:</p>
+    <input id="fallbackEmail" type="email" placeholder="Email" autocomplete="username" style="width:100%; margin-bottom:10px">
+    <input id="fallbackPassword" type="password" placeholder="Password" autocomplete="current-password" style="width:100%; margin-bottom:12px">
+    <button id="fallbackBtn" class="primary" style="width:100%">Sign in</button>
+    <div class="error" id="fallbackError"></div>
+  </div>
 </div>
 
 <!-- Dashboard -->
@@ -803,13 +814,42 @@ function boot(token) {
     }
   });
   showPending('Connecting to your VerifAI session…', true);
+  // If the app handover never arrives (outdated app build, panel opened
+  // directly, …), offer the fallback sign-in instead of a dead-end spinner —
+  // same Firebase project as the app, so any staff account with admin access
+  // gets in. The handover stays primary: it wins whenever it lands.
   pendingTimer = setTimeout(() => {
-    if (sessionToken || $('appView').classList.contains('hidden') === false) return;
+    if (sessionToken || !$('appView').classList.contains('hidden')) return;
     $('pendingSpinner').classList.add('hidden');
     $('pendingText').textContent =
-      'No session token received. Open Admin Panel from the VerifAI app while signed in.';
-  }, 12000);
+      'No VerifAI session was handed over (is your app up to date?). You can sign in below instead.';
+    $('fallbackLogin').classList.remove('hidden');
+  }, 6000);
 })();
+
+// ------------------------------------------------------------ fallback login
+firebase.initializeApp({
+  apiKey: 'AIzaSyABa2VQB4aN9ExXa-yDHD-YIhR9Cu572P0',
+  authDomain: 'verif-ai-5a435.firebaseapp.com',
+  projectId: 'verif-ai-5a435',
+});
+
+$('fallbackBtn').onclick = async () => {
+  $('fallbackError').textContent = '';
+  $('fallbackBtn').disabled = true;
+  try {
+    const credential = await firebase.auth().signInWithEmailAndPassword(
+        $('fallbackEmail').value, $('fallbackPassword').value);
+    boot(await credential.user.getIdToken());
+  } catch (err) {
+    $('fallbackError').textContent = err.message || 'Sign-in failed.';
+  } finally {
+    $('fallbackBtn').disabled = false;
+  }
+};
+$('fallbackPassword').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('fallbackBtn').click();
+});
 
 function toast(message, isError) {
   const el = $('toast');
