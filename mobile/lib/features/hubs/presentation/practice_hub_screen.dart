@@ -22,7 +22,7 @@ class PracticeHubScreen extends StatelessWidget {
       ),
       const HubEntry(
         title: 'AI Judgement',
-        subtitle: 'Decide when AI should or shouldnt be used',
+        subtitle: 'Decide when AI should or should not be used',
         icon: Icons.psychology_rounded,
         route: '/judgement',
       ),

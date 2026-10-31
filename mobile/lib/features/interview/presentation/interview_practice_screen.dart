@@ -7,6 +7,7 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/interview/providers.dart';
+import 'package:verifai/features/navigation/sections.dart';
 import 'package:verifai/shared/widgets/dock_clearance.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
@@ -56,6 +57,18 @@ class _InterviewPracticeScreenState
             color: AppColors.textPrimary,
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            onPressed: () => goHome(context),
+          ),
+          IconButton(
+            tooltip: 'All sections',
+            icon: const Icon(Icons.menu_rounded),
+            onPressed: () => showAllSectionsSheet(context),
+          ),
+        ],
       ),
       body: questionsAsync.when(
         loading: () => _shimmer(),

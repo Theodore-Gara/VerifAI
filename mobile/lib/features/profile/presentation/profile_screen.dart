@@ -47,6 +47,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
+  Future<void> _openAdminPanel(WidgetRef ref, String? role) async {
+    // Hand the dashboard the app's own Firebase session (URL fragment — it
+    // never reaches a server), so a staff member does not sign in a second
+    // time. The panel falls back to a clear message if the token is missing.
+    String url = _adminPanelUrl();
+    String? token;
+    try {
+      token = await ref.read(apiClientProvider).getAuthToken();
+      if (token != null && token.isNotEmpty) {
+        url += '#token=${Uri.encodeComponent(token)}';
+      }
+    } catch (_) {
+      // Token fetch failed — the panel shows its "open from the app" gate.
+    }
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AdminPanelScreen(
+          panelUrl: url,
+          tokenProvider: () => ref.read(apiClientProvider).getAuthToken(),
+        ),
+      ),
+    );
+  }
+
   /// Admin dashboard URL derived from the app's API base URL
   /// (.../api/ becomes .../admin/). Same backend that serves the app.
   String _adminPanelUrl() {
@@ -427,12 +452,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                         trailing: const Icon(Icons.chevron_right,
                             color: Colors.white),
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) =>
-                                AdminPanelScreen(panelUrl: _adminPanelUrl()),
-                          ),
-                        ),
+                        onTap: () => _openAdminPanel(ref, adminRole),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
@@ -468,6 +488,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   _buildAppearance(ref),
                   const SizedBox(height: AppSpacing.xl),
                   _buildDestinations(),
+                  const SizedBox(height: AppSpacing.xl),
+                  _buildHelpAbout(),
                   const SizedBox(height: AppSpacing.xl),
                 ],
               ),
@@ -636,6 +658,91 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             subtitle: 'See how your readiness ranks in your track',
             icon: Icons.leaderboard_rounded,
             onTap: () => context.push('/scoreboard'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Help & About: the explanatory copy (what VerifAI is, how readiness is
+  /// scored) and the tour replay live here instead of cluttering the hubs.
+  Widget _buildHelpAbout() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Help & About',
+          style: AppTypography.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: AppColors.primaryNavy,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'About VerifAI',
+                style: AppTypography.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.primaryNavy,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'VerifAI helps you practise the judgement needed to work with '
+                'AI responsibly. Every task puts you in a realistic scenario: '
+                'verify AI output, decide when AI should or should not be '
+                'used, and spot the risks. AI assists; you verify.',
+                style: AppTypography.textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                  fontSize: 12.5,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'How your readiness score works',
+                style: AppTypography.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.primaryNavy,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Readiness blends your graded results across the assessed '
+                'skills — verification, judgement and risk & governance. It '
+                'is a learning signal, not a guarantee of job readiness. '
+                'Practice attempts do not affect it.',
+                style: AppTypography.textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                  fontSize: 12.5,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => context.push('/welcome-tour'),
+                  icon: const Icon(Icons.play_circle_outline_rounded,
+                      size: 18),
+                  label: const Text('Replay the welcome tour'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.accentGreen,
+                    textStyle: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -1007,4 +1114,54 @@ final List<_BadgeSpec> _badgeCatalog = [
       'Reach a score of at least 80 in one readiness skill.',
       Icons.workspace_premium_rounded,
       AppColors.info),
+  _BadgeSpec('xp-2000', '2000 XP', 'Earn at least 2,000 XP.',
+      Icons.local_fire_department_rounded, AppColors.gold),
+  _BadgeSpec(
+      'streak-7',
+      'Week Streak',
+      'Keep a seven-day practice streak.',
+      Icons.event_available_rounded,
+      AppColors.accentGreen),
+  _BadgeSpec(
+      'streak-30',
+      'Month Streak',
+      'Keep a thirty-day practice streak.',
+      Icons.calendar_month_rounded,
+      AppColors.gold),
+  _BadgeSpec(
+      'all-features',
+      'Triple Threat',
+      'Pass at least one task in each feature: verification, AI judgement and risk & governance.',
+      Icons.balance_rounded,
+      AppColors.accentCyan),
+  _BadgeSpec(
+      'verification-10',
+      'Verification Specialist',
+      'Pass ten verification tasks.',
+      Icons.shield_rounded,
+      AppColors.accentGreen),
+  _BadgeSpec(
+      'judgement-10',
+      'Sound Judgement',
+      'Pass ten AI judgement tasks.',
+      Icons.psychology_rounded,
+      AppColors.info),
+  _BadgeSpec(
+      'risk-10',
+      'Guardian',
+      'Pass ten risk & governance tasks.',
+      Icons.gavel_rounded,
+      AppColors.xpPurple),
+  _BadgeSpec(
+      'capstone-1',
+      'Capstone Earner',
+      'Pass a capstone assessment.',
+      Icons.workspace_premium_rounded,
+      AppColors.gold),
+  _BadgeSpec(
+      'interview-5',
+      'Interview Ready',
+      'Practise five interview questions.',
+      Icons.question_answer_rounded,
+      AppColors.accentCyan),
 ];

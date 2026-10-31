@@ -617,7 +617,12 @@ async function awardAchievements(client, userId) {
   const earned = await client.query(
     `WITH stats AS (
        SELECT COUNT(DISTINCT task_id) FILTER (WHERE passed)::int AS passed_tasks,
-              COALESCE(SUM(xp_earned), 0)::int AS xp
+              COALESCE(SUM(xp_earned), 0)::int AS xp,
+              COUNT(DISTINCT feature) FILTER (WHERE passed
+                AND feature IN ('verification', 'judgement', 'risk_governance'))::int AS features_passed,
+              COUNT(DISTINCT task_id) FILTER (WHERE passed AND feature = 'verification')::int AS verification_passed,
+              COUNT(DISTINCT task_id) FILTER (WHERE passed AND feature = 'judgement')::int AS judgement_passed,
+              COUNT(DISTINCT task_id) FILTER (WHERE passed AND feature = 'risk_governance')::int AS risk_passed
        FROM task_attempts WHERE user_id = $1 AND practice = FALSE
      ), eligible AS (
        SELECT a.id, a.code, a.name, a.description
@@ -627,7 +632,18 @@ async function awardAchievements(client, userId) {
           OR (a.code = 'ten-tasks' AND (SELECT passed_tasks FROM stats) >= 10)
           OR (a.code = 'xp-500' AND (SELECT xp FROM stats) >= 500)
           OR (a.code = 'dimension-80'
-              AND (SELECT COALESCE(MAX(score), 0) FROM skill_scores WHERE user_id = $1) >= 80))
+              AND (SELECT COALESCE(MAX(score), 0) FROM skill_scores WHERE user_id = $1) >= 80)
+          OR (a.code = 'xp-2000' AND (SELECT xp FROM stats) >= 2000)
+          OR (a.code = 'streak-7' AND (SELECT streak FROM users WHERE id = $1) >= 7)
+          OR (a.code = 'streak-30' AND (SELECT streak FROM users WHERE id = $1) >= 30)
+          OR (a.code = 'all-features' AND (SELECT features_passed FROM stats) >= 3)
+          OR (a.code = 'verification-10' AND (SELECT verification_passed FROM stats) >= 10)
+          OR (a.code = 'judgement-10' AND (SELECT judgement_passed FROM stats) >= 10)
+          OR (a.code = 'risk-10' AND (SELECT risk_passed FROM stats) >= 10)
+          OR (a.code = 'capstone-1'
+              AND EXISTS (SELECT 1 FROM lab_assessment_attempts WHERE user_id = $1 AND passed))
+          OR (a.code = 'interview-5'
+              AND (SELECT COUNT(*) FROM interview_practice WHERE user_id = $1) >= 5))
        AND NOT EXISTS (
          SELECT 1 FROM user_achievements ua WHERE ua.user_id = $1 AND ua.achievement_id = a.id
        )

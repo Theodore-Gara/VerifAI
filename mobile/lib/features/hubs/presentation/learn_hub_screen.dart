@@ -72,7 +72,8 @@ class LearnHubScreen extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Lessons scenarios and capstones read it practise it prove it',
+                'Read the lessons, practise each concept, then prove it with a '
+                'capstone assessment.',
                 style: AppTypography.textTheme.bodyMedium?.copyWith(
                   color: AppColors.textSecondary,
                   height: 1.35,

@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:verifai/core/providers/app_reconnect.dart';
+import 'package:verifai/core/providers/track_scope.dart';
 import 'package:verifai/core/services/api_error.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
-import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/onboarding/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
@@ -132,7 +132,10 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
       // same cached error without ever reaching the network.
       await ref.read(trackRepositoryProvider).selectTrack(trackId);
       ref.read(selectedTrackProvider.notifier).state = trackId;
-      ref.invalidate(dashboardProvider);
+      // The old track's tasks, lessons, leaderboard and readiness are now
+      // stale: invalidate every track-scoped provider in one place so no
+      // screen keeps rendering the previous industry.
+      invalidateTrackScopedProviders(ref);
       if (!widget.isChangingIndustry) {
         await ref.read(authNotifierProvider.notifier).completeOnboarding();
       }
@@ -160,6 +163,46 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (widget.isChangingIndustry) ...[
+            // Set expectations for switching: what moves with the learner and
+            // what stays behind, so choosing a new industry is not a surprise.
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              margin: const EdgeInsets.only(bottom: AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.accentLight.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(AppRadius.card),
+                border: Border.all(
+                    color: AppColors.accentGreen.withValues(alpha: 0.35)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'What switching means',
+                    style: AppTypography.textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primaryNavy,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Kept — your XP, streak, achievements, tokens and '
+                    'account stay exactly as they are.\n'
+                    'Changes — tasks, lessons, your skill roadmap and the '
+                    'leaderboard switch to the new industry. You can switch '
+                    'back at any time.',
+                    style: AppTypography.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                      height: 1.45,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           Text(
             'Select Your Industry',
             style: AppTypography.textTheme.headlineMedium?.copyWith(

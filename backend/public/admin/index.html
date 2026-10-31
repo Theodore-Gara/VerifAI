@@ -4,86 +4,137 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VerifAI Admin</title>
-<!-- Firebase compat SDK (vendored locally, no CDN dependency): sign in with
-     the same Firebase project as the app, then call the API with the ID token
-     as a Bearer header. -->
+<!-- Primary path: the VerifAI app hands over its own session token in the URL
+     fragment when it opens the panel, so a staff member goes straight in with
+     no second sign-in. Fallback path (only when that handover never arrives —
+     e.g. an outdated app build): sign in below with the staff account that has
+     admin access. -->
 <script src="vendor/firebase-app-compat.js"></script>
 <script src="vendor/firebase-auth-compat.js"></script>
 <style>
   :root {
-    --bg: #0d1220; --panel: #151b2e; --panel2: #1b2340; --line: #2a3352;
-    --text: #e8ecf7; --muted: #8e97b3; --accent: #6c8cff; --accent2: #38c793;
-    --danger: #ff5c72; --warn: #ffb84d;
+    --brand: #102A23; --brand2: #176B4D; --gold: #D6B76E;
+    --bg: #F4F3EC; --line: rgba(16, 42, 35, .08); --line-strong: rgba(16, 42, 35, .14);
+    --glass: rgba(255, 255, 255, .62); --glass-strong: rgba(255, 255, 255, .78);
+    --glass-soft: rgba(255, 255, 255, .38); --glass-header: rgba(16, 42, 35, .86);
+    --glass-dark: rgba(16, 42, 35, .55);
+    --text: #18231E; --muted: #5F6C64; --accent: #176B4D; --accent2: #3C8968;
+    --danger: #EF4444; --warn: #B77936;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
-         font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  header { display: flex; align-items: center; gap: 14px; padding: 14px 22px;
-           border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
-  header h1 { font-size: 17px; margin: 0; letter-spacing: .3px; }
-  header h1 span { color: var(--accent); }
+         font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+         min-height: 100vh; }
+  /* Ambient backdrop: soft green/gold light fields the glass surfaces blur. */
+  .ambient { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+  .ambient::before, .ambient::after {
+    content: ''; position: absolute; border-radius: 50%; filter: blur(80px);
+  }
+  .ambient::before {
+    width: 520px; height: 520px; top: -180px; right: -120px;
+    background: radial-gradient(circle, rgba(23,107,77,.20), rgba(23,107,77,0) 70%);
+  }
+  .ambient::after {
+    width: 460px; height: 460px; bottom: -160px; left: -140px;
+    background: radial-gradient(circle, rgba(214,183,110,.24), rgba(214,183,110,0) 70%);
+  }
+  /* Frosted glass recipe shared by every surface. */
+  .glass, header, nav.tabs, .card, .panel, table, dialog, #pendingView,
+  .toolbar select, .toolbar input, dialog select, dialog input, dialog textarea {
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    backdrop-filter: blur(18px) saturate(1.5);
+    border: 1px solid rgba(255, 255, 255, .72);
+    box-shadow: 0 8px 24px rgba(16, 42, 35, .07), 0 1px 2px rgba(16, 42, 35, .05);
+  }
+  @supports not (backdrop-filter: blur(1px)) {
+    .glass, header, nav.tabs, .card, .panel, table, dialog, #pendingView { background: rgba(255,255,255,.92); }
+  }
+  header { display: flex; align-items: center; gap: 14px; padding: 16px 22px;
+           color: #fff; flex-wrap: wrap; position: sticky; top: 0; z-index: 20;
+           background: var(--glass-header);
+           border-bottom: 1px solid rgba(255, 255, 255, .14);
+           box-shadow: 0 8px 28px rgba(16, 42, 35, .22); }
+  header h1 { font-size: 17px; margin: 0; letter-spacing: .3px; color: #fff; }
+  header h1 span { color: var(--gold); }
   header .spacer { flex: 1; }
-  #userEmail { color: var(--muted); font-size: 13px; }
-  #roleBadge { font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 20px;
-               background: #2c2a52; color: #c0b3ff; text-transform: uppercase; letter-spacing: .5px; }
-  button { cursor: pointer; border: 1px solid var(--line); background: var(--panel2);
-           color: var(--text); border-radius: 8px; padding: 7px 14px; font-size: 13px; }
-  button:hover { border-color: var(--accent); }
-  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-  button.danger { background: transparent; border-color: var(--danger); color: var(--danger); padding: 4px 10px; }
+  #userEmail { color: rgba(255,255,255,.78); font-size: 13px; }
+  #roleBadge { font-size: 11px; font-weight: 700; padding: 4px 13px; border-radius: 20px;
+               background: rgba(214,183,110,.16); color: var(--gold); text-transform: uppercase; letter-spacing: .5px;
+               border: 1px solid rgba(214,183,110,.35); }
+  button { cursor: pointer; border: 1px solid rgba(16, 42, 35, .14);
+           background: var(--glass-strong);
+           -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+           color: var(--text); border-radius: 12px; padding: 8px 15px; font-size: 13px; font-weight: 600;
+           transition: background .15s, border-color .15s, transform .1s; }
+  button:hover { border-color: var(--accent); background: rgba(23, 107, 77, .10); }
+  button:active { transform: scale(.98); }
+  button.primary { background: linear-gradient(135deg, var(--brand2), var(--accent2)); border-color: transparent;
+                   color: #fff; font-weight: 700; box-shadow: 0 4px 14px rgba(23, 107, 77, .30); }
+  button.primary:hover { background: linear-gradient(135deg, var(--accent), var(--accent2)); filter: brightness(1.05); }
+  button.danger { background: transparent; border-color: rgba(239, 68, 68, .5); color: var(--danger); padding: 4px 10px; }
   button.danger:hover { background: var(--danger); color: #fff; }
-  button.warnbtn { background: transparent; border-color: var(--warn); color: var(--warn); padding: 4px 10px; }
-  button.warnbtn:hover { background: var(--warn); color: #21283f; }
-  button.ghost { background: transparent; }
-  button.small { padding: 3px 9px; font-size: 12px; }
+  button.warnbtn { background: transparent; border-color: rgba(183, 121, 54, .5); color: var(--warn); padding: 4px 10px; }
+  button.warnbtn:hover { background: var(--warn); color: #fff; }
+  button.ghost { background: var(--glass-soft); }
+  header button.ghost { background: rgba(255,255,255,.10); color: #fff; border-color: rgba(255,255,255,.35); }
+  header button.ghost:hover { background: rgba(255,255,255,.20); }
+  button.small { padding: 3px 10px; font-size: 12px; border-radius: 9px; }
   button:disabled { opacity: .4; cursor: default; }
-  nav.tabs { display: flex; gap: 4px; padding: 0 22px; background: var(--panel);
+  nav.tabs { display: flex; gap: 4px; padding: 6px 16px 4px; position: sticky; top: 57px; z-index: 19;
+             border-left: none; border-right: none; border-top: none;
              border-bottom: 1px solid var(--line); overflow-x: auto; }
-  nav.tabs button { border: none; background: transparent; color: var(--muted);
-                    padding: 11px 16px; border-bottom: 2px solid transparent; border-radius: 0; white-space: nowrap; }
-  nav.tabs button.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+  nav.tabs button { border: 1px solid transparent; background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none;
+                    color: var(--muted); padding: 9px 15px; border-radius: 10px;
+                    box-shadow: none; white-space: nowrap; font-weight: 500; }
+  nav.tabs button:hover { background: rgba(23, 107, 77, .08); color: var(--text); border-color: transparent; }
+  nav.tabs button.active { background: rgba(23, 107, 77, .12); color: var(--accent);
+                           border-color: rgba(23, 107, 77, .25); font-weight: 700; }
   main { max-width: 1180px; margin: 0 auto; padding: 22px; overflow-x: clip; }
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 22px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
-  .card .n { font-size: 26px; font-weight: 700; }
+  .card { border-radius: 18px; padding: 14px 16px; }
+  .card .n { font-size: 26px; font-weight: 800; color: var(--brand); }
   .card .l { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
   .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
   select, input, textarea {
-    background: var(--panel2); border: 1px solid var(--line); color: var(--text);
-    border-radius: 8px; padding: 7px 10px; font: inherit;
+    background: var(--glass-strong); border: 1px solid var(--line-strong); color: var(--text);
+    border-radius: 12px; padding: 8px 11px; font: inherit;
   }
-  select:focus, input:focus, textarea:focus { outline: none; border-color: var(--accent); }
-  table { width: 100%; border-collapse: collapse; background: var(--panel);
-          border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  select:focus, input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(23,107,77,.14); }
+  table { border-radius: 18px; overflow: hidden; }
   th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 13px; }
-  th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; background: var(--panel2); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .6px;
+       background: rgba(23, 107, 77, .06); white-space: nowrap; }
+  tbody tr { transition: background .12s; }
+  tbody tr:hover { background: rgba(23, 107, 77, .045); }
   tr:last-child td { border-bottom: none; }
   td.title-cell { max-width: 420px; }
-  .pill { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
-  .pill.verification { background: #24365e; color: #9db9ff; }
-  .pill.judgement { background: #1f3d33; color: #6fe0b4; }
-  .pill.risk_governance { background: #42321c; color: #ffcf7a; }
-  .pill.prompt_design { background: #3a2440; color: #e0a0f0; }
-  .pill.st-active { background: #1f3d33; color: #6fe0b4; }
-  .pill.st-suspended { background: #42321c; color: #ffcf7a; }
-  .pill.st-banned { background: #45202a; color: #ff8fa0; }
-  .pill.draft { background: #453a1c; color: #ffd66e; }
-  .pill.live { background: #1f3d33; color: #6fe0b4; }
-  .pill.admin-super { background: #2c2a52; color: #c0b3ff; }
-  .pill.admin-admin { background: #24365e; color: #9db9ff; }
-  .pill.admin-moderator { background: #42321c; color: #ffcf7a; }
-  .pill.admin-none { background: var(--panel2); color: var(--muted); }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap;
+          border: 1px solid rgba(16, 42, 35, .07); }
+  .pill.verification { background: #E3F0EA; color: #176B4D; }
+  .pill.judgement { background: #E8F1E2; color: #3C7A2E; }
+  .pill.risk_governance { background: #F4EAD3; color: #8D6C2E; }
+  .pill.prompt_design { background: #EDE9FE; color: #6D28D9; }
+  .pill.st-active { background: #E3F0EA; color: #176B4D; }
+  .pill.st-suspended { background: #F4EAD3; color: #8D6C2E; }
+  .pill.st-banned { background: #FDE8E8; color: #C0392B; }
+  .pill.draft { background: #FFF6DC; color: #8D6C2E; }
+  .pill.live { background: #E3F0EA; color: #176B4D; }
+  .pill.admin-super { background: #F4EAD3; color: #8D6C2E; }
+  .pill.admin-admin { background: #E3F0EA; color: #176B4D; }
+  .pill.admin-moderator { background: #E8F1E2; color: #3C7A2E; }
+  .pill.admin-none { background: rgba(23, 107, 77, .08); color: var(--muted); }
   .statusdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
   .statusdot.active { background: var(--accent2); }
   .statusdot.suspended { background: var(--warn); }
   .statusdot.banned { background: var(--danger); }
   .muted { color: var(--muted); }
   .right { text-align: right; }
-  dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line);
-           border-radius: 14px; padding: 22px; width: min(720px, 94vw);
+  dialog { color: var(--text); border-radius: 20px; padding: 24px; width: min(720px, 94vw);
            max-height: 90vh; margin-top: 5vh; overflow-y: auto; }
   dialog.wide { width: min(940px, 96vw); }
-  dialog::backdrop { background: rgba(5, 8, 18, .7); }
+  dialog::backdrop { background: rgba(16, 42, 35, .45);
+                     -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .form-grid .full { grid-column: 1 / -1; }
   label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
@@ -93,28 +144,30 @@
   .section-title { font-weight: 600; margin: 16px 0 8px; }
   .error { color: var(--danger); font-size: 13px; margin-top: 10px; white-space: pre-wrap; }
   .ok { color: var(--accent2); font-size: 13px; margin-top: 10px; }
-  #loginView { max-width: 360px; margin: 12vh auto; background: var(--panel);
-               border: 1px solid var(--line); border-radius: 14px; padding: 28px; }
-  #loginView h2 { margin-top: 0; }
-  #loginView input { width: 100%; margin-bottom: 10px; }
-  #loginView button { width: 100%; }
+  #pendingView { max-width: 420px; margin: 18vh auto; border-radius: 20px; padding: 32px; text-align: center; }
+  #pendingView .spin { width: 26px; height: 26px; margin: 0 auto 14px; border-radius: 50%;
+                       border: 3px solid rgba(23, 107, 77, .15); border-top-color: var(--accent);
+                       animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
   .hidden { display: none !important; }
-  .toast { position: fixed; bottom: 20px; right: 20px; background: var(--panel2);
-           border: 1px solid var(--line); border-radius: 10px; padding: 12px 18px;
-           opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 50; }
+  .toast { position: fixed; bottom: 20px; right: 20px; background: var(--glass-header);
+           -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+           color: #fff; border: 1px solid rgba(255, 255, 255, .18); border-radius: 14px; padding: 12px 18px;
+           opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 50;
+           box-shadow: 0 8px 26px rgba(16,42,35,.35); }
   .toast.show { opacity: 1; }
-  .toast.err { border-color: var(--danger); }
-  .bar { height: 10px; background: var(--panel2); border-radius: 6px; overflow: hidden; min-width: 70px; display: inline-block; }
-  .bar > div { height: 100%; background: var(--accent); border-radius: 6px; }
+  .toast.err { background: rgba(239, 68, 68, .92); border-color: rgba(255, 255, 255, .25); }
+  .bar { height: 10px; background: rgba(23, 107, 77, .10); border-radius: 6px; overflow: hidden; min-width: 70px; display: inline-block; }
+  .bar > div { height: 100%; background: linear-gradient(90deg, var(--brand2), var(--accent2)); border-radius: 6px; }
   .chart { display: flex; align-items: flex-end; gap: 6px; height: 130px; margin: 10px 0 4px; min-width: 0; overflow: hidden; padding-right: 8px; }
   .chart .col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; height: 100%; min-width: 0; overflow: hidden; }
   .chart .stack { width: 100%; max-width: 42px; flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: flex-end; }
   .chart .pass { background: var(--accent2); border-radius: 4px 4px 0 0; width: 100%; }
-  .chart .fail { background: #3a466e; width: 100%; }
+  .chart .fail { background: #DCE3DA; width: 100%; }
   .chart .lbl { font-size: 10px; color: var(--muted); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
   .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
-  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-  .panel h3 { margin: 0 0 10px; font-size: 14px; }
+  .panel { border-radius: 18px; padding: 18px; margin-bottom: 16px; }
+  .panel h3 { margin: 0 0 10px; font-size: 14px; letter-spacing: .2px; }
   .kv { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 13px; gap: 12px; }
   .kv:last-child { border-bottom: none; }
   .detail-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
@@ -126,30 +179,38 @@
   .heatmap { width: 100%; border-collapse: collapse; }
   .heatmap td, .heatmap th { border: 1px solid var(--line); padding: 8px 10px; font-size: 13px; text-align: center; }
   .heatmap td:first-child, .heatmap th:first-child { text-align: left; }
-  .banner { background: #42321c; color: #ffcf7a; border: 1px solid #5c4526; border-radius: 10px;
-            padding: 10px 16px; margin-bottom: 16px; font-size: 13px; }
+  .banner { background: rgba(214, 183, 110, .18); color: #8D6C2E; border: 1px solid rgba(141, 108, 46, .30);
+            border-radius: 14px; padding: 10px 16px; margin-bottom: 16px; font-size: 13px;
+            -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
 </style>
 </head>
 <body>
+<div class="ambient"></div>
 
-<!-- Sign-in -->
-<div id="loginView">
-  <h2><span style="color:var(--accent)">Verif</span>AI Admin</h2>
-  <p class="muted">Sign in with an admin account (listed in ADMIN_EMAILS).</p>
-  <input id="loginEmail" type="email" placeholder="Email" autocomplete="username">
-  <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password">
-  <button class="primary" id="loginBtn">Sign in</button>
-  <div class="error" id="loginError"></div>
+<!-- Waiting for the app's session token (arrives in the URL fragment). If the
+     handover never arrives, the fallback sign-in appears after a few seconds. -->
+<div id="pendingView" class="hidden">
+  <h2 style="margin-top:0"><span style="color:var(--accent)">Verif</span>AI Admin</h2>
+  <div id="pendingSpinner" class="spin"></div>
+  <p id="pendingText" class="muted">Connecting to your VerifAI session…</p>
+  <div id="fallbackLogin" class="hidden" style="margin-top:18px; text-align:left">
+    <p style="font-size:12px; color:var(--muted); margin:0 0 10px">
+      Staff sign-in (fallback) — your VerifAI account with admin access:</p>
+    <input id="fallbackEmail" type="email" placeholder="Email" autocomplete="username" style="width:100%; margin-bottom:10px">
+    <input id="fallbackPassword" type="password" placeholder="Password" autocomplete="current-password" style="width:100%; margin-bottom:12px">
+    <button id="fallbackBtn" class="primary" style="width:100%">Sign in</button>
+    <div class="error" id="fallbackError"></div>
+  </div>
 </div>
 
 <!-- Dashboard -->
 <div id="appView" class="hidden">
   <header>
-    <h1><span style="color:var(--accent)">Verif</span>AI Admin</h1>
+    <h1><span style="color:var(--gold)">Verif</span>AI Admin</h1>
     <span id="roleBadge"></span>
     <span class="spacer"></span>
     <span id="userEmail"></span>
-    <button class="ghost" id="logoutBtn">Sign out</button>
+    <button class="ghost" id="backBtn" title="Return to the app">Back to app</button>
   </header>
   <main>
     <div id="maintenanceBanner" class="banner hidden">Maintenance mode is ON — learner API traffic is being refused with 503.</div>
@@ -178,7 +239,7 @@
         <div class="panel">
           <h3>Attempts — last 14 days</h3>
           <div class="chart" id="miniChart"></div>
-          <div class="muted" style="font-size:12px">Green = passed · grey-blue = failed</div>
+          <div class="muted" style="font-size:12px">Green = passed · grey = failed</div>
         </div>
         <div class="panel">
           <h3>Tasks per track</h3>
@@ -312,7 +373,7 @@
         <div class="panel">
           <h3>Attempts — last 30 days</h3>
           <div class="chart" id="anActivityChart"></div>
-          <div class="muted" style="font-size:12px">Green = passed · grey-blue = failed</div>
+          <div class="muted" style="font-size:12px">Green = passed · grey = failed</div>
         </div>
       </div>
       <div class="grid2">
@@ -365,7 +426,7 @@
       <div class="panel">
         <h3>Attempts — last 14 days</h3>
         <div class="chart" id="activityChart"></div>
-        <div class="muted" style="font-size:12px">Green = passed · grey-blue = failed</div>
+        <div class="muted" style="font-size:12px">Green = passed · grey = failed</div>
       </div>
       <div id="trackCards"></div>
       <div class="panel">
@@ -679,13 +740,13 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// Same Firebase project as the Flutter app (mobile/lib/firebase_options.dart,
-// Android entrypoint values).
-firebase.initializeApp({
-  apiKey: 'AIzaSyABa2VQB4aN9ExXa-yDHD-YIhR9Cu572P0',
-  authDomain: 'verif-ai-5a435.firebaseapp.com',
-  projectId: 'verif-ai-5a435',
-});
+// Auth model: there is NO separate admin sign-in. The VerifAI app already
+// signs its staff in with Firebase and hands this panel its session token in
+// the URL fragment (#token=...). A refreshed token arrives via postMessage
+// before the original expires, so a long session never drops mid-work.
+// Admin access itself is decided server-side (Firebase custom claim,
+// ADMIN_EMAILS, or the admin_accounts registry) — the panel merely carries
+// the same credentials the learner app uses.
 
 const $ = (id) => document.getElementById(id);
 let tracks = [];
@@ -693,6 +754,102 @@ let myRole = 'admin';
 let usersPage = 0;
 const USERS_PAGE_SIZE = 50;
 let editingTaskId = null; // set when the add dialog edits an existing task
+let sessionToken = null; // Firebase ID token handed over by the app
+let tokenExpAt = 0; // seconds since epoch, from the token payload
+let pendingTimer = null;
+
+function parseJwtPayload(token) {
+  try {
+    const part = token.split('.')[1];
+    return JSON.parse(decodeURIComponent(escape(atob(part.replace(/-/g, '+').replace(/_/g, '/')))));
+  } catch { return {}; }
+}
+
+function showPending(message, waitingForToken = false) {
+  clearTimeout(pendingTimer);
+  $('pendingText').textContent = message;
+  $('pendingSpinner').classList.toggle('hidden', !waitingForToken);
+  $('pendingView').classList.remove('hidden');
+  $('appView').classList.add('hidden');
+}
+
+function boot(token) {
+  clearTimeout(pendingTimer);
+  sessionToken = token;
+  const payload = parseJwtPayload(token);
+  tokenExpAt = payload.exp || 0;
+  $('userEmail').textContent = payload.email || '';
+  $('roleBadge').textContent = 'staff';
+  $('pendingView').classList.add('hidden');
+  $('appView').classList.remove('hidden');
+  loadAll().catch((err) => {
+    toast(err.message, true);
+    if (/Admin access required/i.test(err.message)) {
+      sessionToken = null;
+      showPending('This account does not have admin access. Ask a super admin to grant it from the System tab, then reopen the panel from the app.');
+    }
+  });
+}
+
+(function acceptHandover() {
+  // 1) Token in the fragment: #token=<jwt> — fragments never reach the server.
+  const match = /(?:^|[#&])token=([^&]+)/.exec(location.hash);
+  if (match) {
+    history.replaceState(null, '', location.pathname + location.search); // keep it out of copy/paste links
+    boot(decodeURIComponent(match[1]));
+    return;
+  }
+  // 2) The app posts the token after load (or a fresh one later).
+  window.addEventListener('message', (event) => {
+    // Accept handover from the app (injected synthetic event has no source),
+    // from our own page, or from an opener tab. The token is still verified
+    // server-side on every API call, so a bad handover simply fails 401.
+    const data = event.data || {};
+    if (data.type === 'verifai-admin-token' && typeof data.token === 'string' && data.token) {
+      const hadSession = !!sessionToken;
+      sessionToken = data.token;
+      tokenExpAt = parseJwtPayload(data.token).exp || 0;
+      if (!hadSession || $('appView').classList.contains('hidden')) boot(data.token);
+      else $('userEmail').textContent = parseJwtPayload(data.token).email || $('userEmail').textContent;
+    }
+  });
+  showPending('Connecting to your VerifAI session…', true);
+  // If the app handover never arrives (outdated app build, panel opened
+  // directly, …), offer the fallback sign-in instead of a dead-end spinner —
+  // same Firebase project as the app, so any staff account with admin access
+  // gets in. The handover stays primary: it wins whenever it lands.
+  pendingTimer = setTimeout(() => {
+    if (sessionToken || !$('appView').classList.contains('hidden')) return;
+    $('pendingSpinner').classList.add('hidden');
+    $('pendingText').textContent =
+      'No VerifAI session was handed over (is your app up to date?). You can sign in below instead.';
+    $('fallbackLogin').classList.remove('hidden');
+  }, 6000);
+})();
+
+// ------------------------------------------------------------ fallback login
+firebase.initializeApp({
+  apiKey: 'AIzaSyABa2VQB4aN9ExXa-yDHD-YIhR9Cu572P0',
+  authDomain: 'verif-ai-5a435.firebaseapp.com',
+  projectId: 'verif-ai-5a435',
+});
+
+$('fallbackBtn').onclick = async () => {
+  $('fallbackError').textContent = '';
+  $('fallbackBtn').disabled = true;
+  try {
+    const credential = await firebase.auth().signInWithEmailAndPassword(
+        $('fallbackEmail').value, $('fallbackPassword').value);
+    boot(await credential.user.getIdToken());
+  } catch (err) {
+    $('fallbackError').textContent = err.message || 'Sign-in failed.';
+  } finally {
+    $('fallbackBtn').disabled = false;
+  }
+};
+$('fallbackPassword').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('fallbackBtn').click();
+});
 
 function toast(message, isError) {
   const el = $('toast');
@@ -702,12 +859,14 @@ function toast(message, isError) {
 }
 
 async function api(path, options = {}) {
-  const token = await firebase.auth().currentUser.getIdToken();
+  if (!sessionToken) throw new Error('No VerifAI session. Reopen the admin panel from the app.');
+  // Refresh silently from the app just before expiry (Firebase tokens last 1h).
+  if (tokenExpAt && Date.now() / 1000 > tokenExpAt - 120) requestTokenRenewal();
   const res = await fetch('/api/admin' + path, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      Authorization: 'Bearer ' + token,
+      Authorization: 'Bearer ' + sessionToken,
       ...(options.headers || {}),
     },
   });
@@ -716,6 +875,12 @@ async function api(path, options = {}) {
     return res.text();
   }
   const body = await res.json().catch(() => ({}));
+  if (res.status === 401 && sessionToken) {
+    // Session expired or revoked — drop the handover and ask for a re-open.
+    sessionToken = null;
+    showPending('Your session expired. Reopen the admin panel from the VerifAI app to continue.');
+    throw new Error('Session expired.');
+  }
   if (!res.ok) throw new Error(body.error || ('HTTP ' + res.status));
   return body;
 }
@@ -729,32 +894,13 @@ function downloadText(filename, text) {
   URL.revokeObjectURL(a.href);
 }
 
-// ---------------------------------------------------------------- sign-in
-firebase.auth().onAuthStateChanged(async (user) => {
-  if (!user) {
-    $('loginView').classList.remove('hidden');
-    $('appView').classList.add('hidden');
-    return;
-  }
-  $('loginView').classList.add('hidden');
-  $('appView').classList.remove('hidden');
-  $('userEmail').textContent = user.email || '';
-  await loadAll().catch((err) => {
-    toast(err.message, true);
-    if (/Admin access required|requires/i.test(err.message)) firebase.auth().signOut();
-  });
-});
-
-$('loginBtn').onclick = async () => {
-  $('loginError').textContent = '';
-  try {
-    await firebase.auth().signInWithEmailAndPassword($('loginEmail').value, $('loginPassword').value);
-  } catch (err) {
-    $('loginError').textContent = err.message;
-  }
-};
-$('loginPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('loginBtn').click(); });
-$('logoutBtn').onclick = () => firebase.auth().signOut();
+function requestTokenRenewal() {
+  // The host page (app webview / opener) listens for this and replies with a
+  // fresh token via postMessage. Best effort — the current token usually has
+  // enough life left either way.
+  try { window.parent.postMessage({ type: 'verifai-token-needed' }, '*');
+        window.opener && window.opener.postMessage({ type: 'verifai-token-needed' }, '*'); } catch {}
+}
 
 // ---------------------------------------------------------------- tabs
 for (const btn of document.querySelectorAll('nav.tabs button')) {
@@ -896,7 +1042,7 @@ function renderTasks(tasks) {
         <strong>${escapeHtml(t.title || '(untitled)')}</strong><br>
         <span class="muted">${escapeHtml((t.scenario || '').slice(0, 100))}${(t.scenario || '').length > 100 ? '…' : ''}</span>
       </td>
-      <td>${t.published === false ? (t.approval === 'pending' ? '<span class="pill draft">pending approval</span>' : t.approval === 'rejected' ? '<span class="pill" style="background:#45202a;color:#ff8fa0">rejected</span>' : '<span class="pill draft">draft</span>') : '<span class="pill live">live</span>'}</td>
+      <td>${t.published === false ? (t.approval === 'pending' ? '<span class="pill draft">pending approval</span>' : t.approval === 'rejected' ? '<span class="pill" style="background:#FDE8E8;color:#C0392B">rejected</span>' : '<span class="pill draft">draft</span>') : '<span class="pill live">live</span>'}</td>
       <td>${t.difficulty ? escapeHtml(t.difficulty) : '<span class="muted">—</span>'}</td>
       <td class="muted">${t.option_count}</td>
       <td class="muted">${t.attempt_count}</td>
@@ -959,7 +1105,7 @@ async function openTaskPreview(taskId) {
       <div class="panel">
         <h3>AI output (tap flawed lines)</h3>
         ${lines.map((line, i) => `
-          <div class="kv" style="${flawLines.includes(i + 1) ? 'background:#453a1c;border-radius:6px;padding:5px 8px' : ''}">
+          <div class="kv" style="${flawLines.includes(i + 1) ? 'background:#FFF6DC;border-radius:6px;padding:5px 8px' : ''}">
             <span><span class="muted">${i + 1}.</span> ${escapeHtml(line)}</span>
             ${flawLines.includes(i + 1) ? '<span class="pill draft">flaw</span>' : ''}
           </div>`).join('')}
@@ -1234,7 +1380,7 @@ $('saveTask').onclick = async () => {
   try {
     const result = await api('/tasks', { method: 'POST', body: JSON.stringify(body) });
     $('addDialog').close();
-    toast(`Task #${result.task.id} created${published ? '' : ' as draft'}.`);
+    toast(`Task #${result.task.id} created as a draft.`);
     await loadAll();
   } catch (err) {
     $('addError').textContent = err.message;
@@ -1604,9 +1750,8 @@ $('udGrantBtn').onclick = async () => {
 $('udExportBtn').onclick = async () => {
   if (!currentUser) return;
   try {
-    const token = await firebase.auth().currentUser.getIdToken();
     const res = await fetch(`/api/admin/users/${currentUser.id}/export`, {
-      headers: { Authorization: 'Bearer ' + token },
+      headers: { Authorization: 'Bearer ' + sessionToken },
     });
     if (!res.ok) throw new Error('Export failed.');
     const blob = await res.blob();
@@ -1684,7 +1829,7 @@ async function loadTrackProgress() {
       <tr>
         <td>${escapeHtml(r.track)}</td>
         ${[r.verification, r.judgement, r.risk_governance].map((n) => `
-          <td style="background:rgba(108,140,255,${(0.08 + 0.5 * n / maxCount).toFixed(2)})">${n}</td>`).join('')}
+          <td style="background:rgba(23,107,77,${(0.08 + 0.5 * n / maxCount).toFixed(2)})">${n}</td>`).join('')}
         <td>${r.drafts ? `<span class="pill draft">${r.drafts}</span>` : '<span class="muted">0</span>'}</td>
       </tr>`).join('')}</tbody></table>`;
 
@@ -1933,7 +2078,7 @@ async function loadApprovals() {
       <td class="title-cell">${escapeHtml(t.title)}</td>
       <td>${t.approval === 'pending' ? '<span class="pill draft">pending</span>'
             : t.approval === 'approved' ? '<span class="pill live">approved</span>'
-            : '<span class="pill" style="background:#45202a;color:#ff8fa0">rejected</span>'}
+            : '<span class="pill" style="background:#FDE8E8;color:#C0392B">rejected</span>'}
           ${t.published ? '<span class="pill live">live</span>' : ''}</td>
       <td class="title-cell muted">${escapeHtml(t.approved_by || '—')}${t.approval_note ? '<br>' + escapeHtml(t.approval_note) : ''}</td>
       <td class="right" style="white-space:nowrap">

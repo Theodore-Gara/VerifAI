@@ -9,6 +9,11 @@ abstract class ApiClient {
 
   /// Who the signed-in user is on the staff side (GET /api/auth/me).
   Future<AdminIdentity> getMe();
+
+  /// The signed-in user's current Firebase ID token, or null when signed out.
+  /// Used to hand the admin panel the app's own session so no second sign-in
+  /// is needed there.
+  Future<String?> getAuthToken();
   Future<DashboardData> getDashboard();
   Future<DailyTask?> getNextTask({String? feature, String? difficulty});
   Future<List<Achievement>> getAchievements();

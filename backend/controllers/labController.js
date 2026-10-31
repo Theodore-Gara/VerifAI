@@ -5,6 +5,7 @@ const { gradeActivity } = require('../services/activityGrading');
 const { markQuestion, rubricAward } = require('../services/capstoneMarking');
 const { awardXp } = require('../services/xpService');
 const { grantTokens } = require('../services/rewardTokens');
+const { awardAchievements } = require('./tasksController');
 const { refreshReadiness } = require('../services/readinessService');
 const { validateMessages } = require('./assistantController');
 const { handleAiError } = require('../middleware/aiError');
@@ -327,6 +328,17 @@ async function submitAssessment(req, res, next) {
     );
     await recomputeStatus(client, user.id, lesson.id);
     await client.query('COMMIT');
+
+    // Passing a capstone unlocks the capstone achievement immediately, not at
+    // the next task submission. Non-fatal: an award failure must not fail the
+    // submission the learner just completed.
+    if (passed) {
+      try {
+        await awardAchievements(pool, user.id);
+      } catch (achievementErr) {
+        console.error('Achievement award after capstone failed:', achievementErr.message);
+      }
+    }
 
     return res.status(201).json({
       result: { score, passed, correct_count: correctCount, total: questions.rows.length },

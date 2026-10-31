@@ -6,6 +6,7 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
+import 'package:verifai/features/navigation/sections.dart';
 import 'package:verifai/features/scoreboard/providers.dart';
 import 'package:verifai/shared/widgets/dock_clearance.dart';
 import 'package:verifai/shared/models.dart';
@@ -78,11 +79,22 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen>
           ],
         ),
         centerTitle: false,
-        actions: const [
-          Padding(
+        actions: [
+          const Padding(
             padding: EdgeInsets.only(right: AppSpacing.screenPadding),
             child: Center(child: _LiveBenchmarkPill()),
           ),
+          IconButton(
+            tooltip: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            onPressed: () => goHome(context),
+          ),
+          IconButton(
+            tooltip: 'All sections',
+            icon: const Icon(Icons.menu_rounded),
+            onPressed: () => showAllSectionsSheet(context),
+          ),
+          const SizedBox(width: AppSpacing.xs),
         ],
       ),
       body: SafeArea(

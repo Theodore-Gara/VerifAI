@@ -7,6 +7,7 @@ import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/lab/providers.dart';
+import 'package:verifai/features/navigation/sections.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets.dart';
 
@@ -124,6 +125,16 @@ class _LabTopicReaderScreenState extends ConsumerState<LabTopicReaderScreen> {
                   ? context.pop()
                   : context.go('/ai-lab/lessons/${widget.code}'),
               child: const Text('Contents')),
+          IconButton(
+            tooltip: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            onPressed: () => goHome(context),
+          ),
+          IconButton(
+            tooltip: 'All sections',
+            icon: const Icon(Icons.menu_rounded),
+            onPressed: () => showAllSectionsSheet(context),
+          ),
         ],
       ),
       body: detailAsync.when(

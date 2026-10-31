@@ -2,14 +2,17 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_typography.dart';
+import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:verifai/features/hubs/presentation/learn_hub_screen.dart';
 import 'package:verifai/features/hubs/presentation/practice_hub_screen.dart';
 import 'package:verifai/features/navigation/nav_drawer_controller.dart';
+import 'package:verifai/features/navigation/sections.dart';
 import 'package:verifai/features/profile/presentation/profile_screen.dart';
 import 'package:verifai/features/progress/presentation/progress_screen.dart';
 
@@ -55,7 +58,7 @@ class _NavTab {
   const _NavTab({required this.label, required this.icon});
 }
 
-class MainNavShell extends StatefulWidget {
+class MainNavShell extends ConsumerStatefulWidget {
   final int initialIndex;
 
   const MainNavShell({
@@ -64,10 +67,10 @@ class MainNavShell extends StatefulWidget {
   });
 
   @override
-  State<MainNavShell> createState() => _MainNavShellState();
+  ConsumerState<MainNavShell> createState() => _MainNavShellState();
 }
 
-class _MainNavShellState extends State<MainNavShell> {
+class _MainNavShellState extends ConsumerState<MainNavShell> {
   late int _currentIndex;
 
   // Tabs are built on first visit. An IndexedStack builds every child, so the
@@ -120,8 +123,7 @@ class _MainNavShellState extends State<MainNavShell> {
       drawer: Drawer(
         backgroundColor: AppColors.background,
         child: SafeArea(
-          child: ListView(
-            padding: EdgeInsets.zero,
+          child: Column(
             children: [
               Container(
                 padding: const EdgeInsets.fromLTRB(22, 26, 22, 24),
@@ -148,53 +150,27 @@ class _MainNavShellState extends State<MainNavShell> {
                   ],
                 ),
               ),
-              _drawerSection('Home'),
-              _drawerLink(
-                  context, Icons.home_rounded, 'Dashboard', '/dashboard'),
-              _drawerSection('Learn'),
-              _drawerLink(
-                  context, Icons.menu_book_rounded, 'Learn hub', '/learn'),
-              _drawerLink(context, Icons.science_rounded, 'AI Lab lessons',
-                  '/ai-lab/lessons'),
-              _drawerLink(context, Icons.quiz_rounded, 'Recall practice',
-                  '/ai-lab/practice'),
-              _drawerLink(context, Icons.workspace_premium_rounded,
-                  'Capstone assessments', '/ai-lab/assessments'),
-              _drawerLink(
-                  context, Icons.alt_route_rounded, 'Skill roadmap', '/track'),
-              _drawerSection('Practice'),
-              _drawerLink(context, Icons.play_circle_outline_rounded,
-                  'Practice hub', '/practice'),
-              _drawerLink(context, Icons.fact_check_rounded,
-                  'Verification Studio', '/verification-studio'),
-              _drawerLink(context, Icons.business_center_rounded,
-                  'Industry practice', '/industry-practice'),
-              _drawerLink(context, Icons.history_rounded, 'Task history',
-                  '/task-history'),
-              _drawerSection('Progress'),
-              _drawerLink(
-                  context, Icons.insights_rounded, 'Progress', '/progress'),
-              _drawerLink(context, Icons.leaderboard_rounded, 'Leaderboard',
-                  '/scoreboard'),
-              _drawerSection('Profile'),
-              _drawerLink(context, Icons.person_rounded, 'Profile & settings',
-                  '/profile'),
-              _drawerLink(
-                  context, Icons.emoji_events_rounded, 'Rewards', '/rewards'),
-              _drawerLink(
-                  context, Icons.spa_rounded, 'Wellness centre', '/wellness'),
-              _drawerLink(context, Icons.auto_awesome_rounded, 'Ask Vera',
-                  '/assistant'),
-              const Divider(indent: 18, endIndent: 18),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
-                child: Text(
-                  'AI assists. Humans verify.',
-                  style:
-                      TextStyle(color: AppColors.textSecondary, fontSize: 11.5),
+              Expanded(
+                // The complete destination index, generated from the shared
+                // allSections list so the drawer and the all-sections sheet
+                // can never drift apart.
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    for (var i = 0; i < allSections.length; i++) ...[
+                      if (i == 0 ||
+                          allSections[i].section != allSections[i - 1].section)
+                        _drawerSection(allSections[i].section),
+                      _drawerLink(context, allSections[i].icon,
+                          allSections[i].label, allSections[i].route),
+                    ],
+                  ],
                 ),
               ),
+              // Account footer: log out lives here on every screen, with a
+              // confirm dialog so a stray tap cannot sign the learner out.
+              const Divider(indent: 18, endIndent: 18, height: 1),
+              _drawerLogout(context),
             ],
           ),
         ),
@@ -300,6 +276,63 @@ class _MainNavShellState extends State<MainNavShell> {
           context.push(route);
         }
       },
+    );
+  }
+
+  Widget _drawerLogout(BuildContext context) {
+    return ListTile(
+      dense: true,
+      leading: Icon(Icons.logout_rounded, color: AppColors.error, size: 20),
+      title: Text('Log out',
+          style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+              color: AppColors.error)),
+      onTap: () {
+        Navigator.of(context).pop(); // close the drawer first
+        _confirmLogout(context);
+      },
+    );
+  }
+
+  void _confirmLogout(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.modal)),
+        title: Text('Log out?',
+            style: AppTypography.textTheme.titleLarge
+                ?.copyWith(fontWeight: FontWeight.w800)),
+        content: const Text(
+            'You will need to sign in again to continue where you left off.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _performLogout(context);
+            },
+            child: Text('Log out',
+                style: TextStyle(
+                    color: AppColors.error, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _performLogout(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    // Sign-out clears auth state; the router redirect lands on /login and the
+    // auth listener in app_router.dart invalidates every user-scoped cache,
+    // so no signed-out screen ever shows the previous user's data.
+    await ref.read(authNotifierProvider.notifier).logout();
+    messenger.showSnackBar(
+      const SnackBar(content: Text('You are signed out.')),
     );
   }
 

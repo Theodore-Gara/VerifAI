@@ -115,9 +115,17 @@ ApiFailure _classifyStatus(DioException error) {
     return ApiFailure(ApiFailureKind.server, _serverMessage,
         statusCode: status);
   }
-  // 4xx: the backend sends `{ "error": "<readable message>" }`.
+  // 4xx: the backend sends `{ "error": "<readable message>", "code": "..." }`.
+  // When the machine code is present, map it to vetted copy here — the raw
+  // server string can vary or leak internals; the code is the contract
+  // (documented in GET /api/meta → error_codes).
   final data = error.response?.data;
   final serverMessage = data is Map ? data['error'] : null;
+  final code = data is Map ? data['code'] : null;
+  if (code is String && _codeMessages.containsKey(code)) {
+    return ApiFailure(ApiFailureKind.client, _codeMessages[code]!,
+        statusCode: status);
+  }
   return ApiFailure(
     ApiFailureKind.client,
     serverMessage is String && serverMessage.trim().isNotEmpty
@@ -126,3 +134,21 @@ ApiFailure _classifyStatus(DioException error) {
     statusCode: status,
   );
 }
+
+/// Machine-readable error codes the backend can return (GET /api/meta), each
+/// mapped to user-facing copy. Codes without an entry here fall back to the
+/// server's `error` string.
+const _codeMessages = <String, String>{
+  'AI_UNAVAILABLE':
+      'The AI service is briefly unavailable. Try again in a moment.',
+  'AI_RATE_LIMITED':
+      'You have hit the AI request limit. Try again in a minute.',
+  'ACCOUNT_SUSPENDED':
+      'Your account is suspended. Contact support to reinstate it.',
+  'ACCOUNT_BANNED': 'This account has been banned.',
+  'MAINTENANCE_MODE':
+      'VerifAI is briefly offline for scheduled maintenance. Please try again shortly.',
+  'VALIDATION_ERROR': 'That request was not valid. Please check and retry.',
+  'NOT_FOUND': "That item does not exist (or is not available on your track).",
+  'RATE_LIMITED': 'Too many requests. Slow down and try again shortly.',
+};

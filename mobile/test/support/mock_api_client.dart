@@ -144,6 +144,9 @@ class MockApiClient implements ApiClient {
   }
 
   @override
+  Future<String?> getAuthToken() async => 'mock-token';
+
+  @override
   Future<void> deleteAccount() async {}
 
   @override
