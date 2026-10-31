@@ -11,6 +11,7 @@
      admin access. -->
 <script src="vendor/firebase-app-compat.js"></script>
 <script src="vendor/firebase-auth-compat.js"></script>
+<script src="/admin/firebase-config.js"></script>
 <style>
   :root {
     --brand: #102A23; --brand2: #176B4D; --gold: #D6B76E;
@@ -828,14 +829,17 @@ function boot(token) {
 })();
 
 // ------------------------------------------------------------ fallback login
-firebase.initializeApp({
-  apiKey: 'AIzaSyABa2VQB4aN9ExXa-yDHD-YIhR9Cu572P0',
-  authDomain: 'verif-ai-5a435.firebaseapp.com',
-  projectId: 'verif-ai-5a435',
-});
+if (window.verifaiFirebaseConfig) {
+  firebase.initializeApp(window.verifaiFirebaseConfig);
+}
 
 $('fallbackBtn').onclick = async () => {
   $('fallbackError').textContent = '';
+  if (!window.verifaiFirebaseConfig) {
+    $('fallbackError').textContent =
+      'Fallback sign-in is not configured. Open the admin panel from the VerifAI app.';
+    return;
+  }
   $('fallbackBtn').disabled = true;
   try {
     const credential = await firebase.auth().signInWithEmailAndPassword(

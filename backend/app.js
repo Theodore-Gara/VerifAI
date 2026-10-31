@@ -178,6 +178,21 @@ app.use('/api/admin', adminRoutes);
 
 // Admin dashboard: a static single-page app served by the API itself.
 const path = require('path');
+app.get('/admin/firebase-config.js', (req, res) => {
+  const apiKey = process.env.FIREBASE_WEB_API_KEY?.trim();
+  res.set('Cache-Control', 'no-store');
+  res.type('application/javascript');
+
+  if (!apiKey) {
+    return res.send('window.verifaiFirebaseConfig = null;');
+  }
+
+  return res.send(`window.verifaiFirebaseConfig = ${JSON.stringify({
+    apiKey,
+    authDomain: 'verif-ai-5a435.firebaseapp.com',
+    projectId: 'verif-ai-5a435',
+  })};`);
+});
 app.use('/admin', express.static(path.join(__dirname, 'public', 'admin')));
 
 app.get('/api/docs', (req, res) => {
