@@ -1957,4 +1957,5 @@ module.exports = {
   grantAdjust, exportUserData, hardDeleteUser, setFirebaseDisabled,
   getSystem, getConfigValues, updateConfigValues, listAdmins, addAdmin, removeAdmin,
   exportUsersCsv, exportAttemptsCsv, exportTracksCsv,
+  logModeration,
 };

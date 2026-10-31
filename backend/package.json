@@ -13,7 +13,8 @@
     "db:migrate": "node scripts/db-setup.js migrate",
     "db:local": "node scripts/local-db.js",
     "db:readiness": "node scripts/recompute-readiness.js",
-    "wellness:purge": "node scripts/purge-wellness-trash.js"
+    "wellness:purge": "node scripts/purge-wellness-trash.js",
+    "support:prune": "node scripts/prune-support.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

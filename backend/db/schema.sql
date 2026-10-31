@@ -36,7 +36,8 @@ CREATE TABLE IF NOT EXISTS moderation_events (
     'workshop_delete', 'workshop_hide',
     'lab_update',
     'config_update',
-    'admin_add', 'admin_remove')),
+    'admin_add', 'admin_remove',
+    'support_content_update', 'support_message_update')),
   reason TEXT,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -833,3 +834,186 @@ SELECT ca.user_id,
 FROM lab_capstone_attempts ca
 JOIN lab_capstone_assessments c ON c.id = ca.assessment_id
 WHERE ca.submitted_at IS NOT NULL;
+
+  id SERIAL PRIMARY KEY,
+  slug VARCHAR(120) NOT NULL UNIQUE,
+  title VARCHAR(200) NOT NULL,
+  summary TEXT NOT NULL,
+  body_md TEXT NOT NULL,
+  category VARCHAR(40) NOT NULL,
+  audience VARCHAR(20) NOT NULL DEFAULT 'all',
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  published BOOLEAN NOT NULL DEFAULT TRUE,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_help_articles_listing
+  ON help_articles (category, sort_order, id) WHERE published;
+
+CREATE TABLE IF NOT EXISTS faqs (
+  id SERIAL PRIMARY KEY,
+  slug VARCHAR(120) NOT NULL UNIQUE,
+  question TEXT NOT NULL,
+  answer_md TEXT NOT NULL,
+  topic VARCHAR(40) NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  published BOOLEAN NOT NULL DEFAULT TRUE,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_faqs_listing
+  ON faqs (topic, sort_order, id) WHERE published;
+
+CREATE TABLE IF NOT EXISTS industry_guides (
+  id SERIAL PRIMARY KEY,
+  track_id INTEGER NOT NULL UNIQUE REFERENCES industry_tracks(id) ON DELETE CASCADE,
+  slug VARCHAR(80) NOT NULL UNIQUE,
+  tagline TEXT NOT NULL,
+  overview_md TEXT NOT NULL,
+  -- { "who_for": "<md>", "by_the_end": ["...", ...] }
+  outcomes JSONB NOT NULL DEFAULT '{}'::jsonb,
+  -- Ordered sections: [{ "key", "title", "body_md" | "items": [...] }]
+  feature_tour JSONB NOT NULL DEFAULT '[]'::jsonb,
+  -- { "first_session": [...], "common_mistakes": [...], "related_faqs": [slug, ...] }
+  how_to JSONB NOT NULL DEFAULT '{}'::jsonb,
+  hero_image VARCHAR(120),
+  body_image VARCHAR(120),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- One manifest per industry plus one global manifest (track_id NULL).
+CREATE TABLE IF NOT EXISTS support_tours (
+  tour_key VARCHAR(60) PRIMARY KEY,
+  track_id INTEGER UNIQUE REFERENCES industry_tracks(id) ON DELETE CASCADE,
+  title VARCHAR(200) NOT NULL,
+  -- [{ "id", "title", "body_md", "media": null | { kind, url, captions_url, poster, duration_seconds } }]
+  steps JSONB NOT NULL DEFAULT '[]'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- At most one global tour.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_support_tours_global
+  ON support_tours ((track_id IS NULL)) WHERE track_id IS NULL;
+
+CREATE TABLE IF NOT EXISTS support_pages (
+  slug VARCHAR(80) PRIMARY KEY,
+  title VARCHAR(200) NOT NULL,
+  data JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 033 — Contact intake, support analytics and audit vocabulary.
+--
+-- Privacy: both tables are wiped for an account on deletion (user_id cascades;
+-- services/accountPurge.js also removes anonymous tickets that used the same
+-- email) and pruned by scripts/prune-support.js.
+
+CREATE TABLE IF NOT EXISTS support_messages (
+  id SERIAL PRIMARY KEY,
+  -- Public, non-sequential reference returned to the sender.
+  public_ref VARCHAR(20) NOT NULL UNIQUE,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(254) NOT NULL,
+  subject VARCHAR(150) NOT NULL,
+  message TEXT NOT NULL,
+  category VARCHAR(20) NOT NULL CHECK (category IN
+    ('bug', 'account', 'content', 'verification', 'feedback', 'other')),
+  app_version VARCHAR(40),
+  status VARCHAR(20) NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'in_progress', 'resolved')),
+  internal_note TEXT,
+  request_id VARCHAR(64),
+  resolved_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_support_messages_status ON support_messages (status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_support_messages_category ON support_messages (category, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_support_messages_user ON support_messages (user_id) WHERE user_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_support_messages_email ON support_messages (lower(email));
+CREATE INDEX IF NOT EXISTS idx_support_messages_resolved ON support_messages (resolved_at) WHERE status = 'resolved';
+
+CREATE TABLE IF NOT EXISTS support_events (
+  id BIGSERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  event VARCHAR(30) NOT NULL CHECK (event IN (
+    'help_open', 'article_view', 'faq_expand', 'faq_search',
+    'tour_start', 'tour_complete', 'tour_skip',
+    'contact_open', 'contact_submit')),
+  target VARCHAR(80),
+  -- Allowlisted keys, slugs/ids/counts only (see controllers/supportController.js).
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_support_events_created ON support_events (created_at);
+CREATE INDEX IF NOT EXISTS idx_support_events_event ON support_events (event, created_at);
+CREATE INDEX IF NOT EXISTS idx_support_events_user ON support_events (user_id) WHERE user_id IS NOT NULL;
+
+-- ---------------------------------------------------------------------------
+-- Milestone tracker (migration 035)
+-- ---------------------------------------------------------------------------
+-- 035 — Milestone tracker: ordered stages and evidence-based milestones.
+--
+-- There is deliberately no per-user roadmap table. Status is derived from the
+-- learner's existing work on every read (task_attempts, lab_capstone_attempts,
+-- industry_case_reads, lab_activity_attempts, user_track_progress,
+-- user_tutorials), and that evidence only ever grows, so a derived read cannot
+-- drift and nothing a learner earned can be taken back.
+--
+-- Migration 034 is intentionally skipped: it is reserved for the achievement
+-- migration (BF-9) owned by the other backend workstream.
+
+CREATE TABLE IF NOT EXISTS roadmap_stages (
+  id SERIAL PRIMARY KEY,
+  track_id INTEGER NOT NULL REFERENCES industry_tracks(id) ON DELETE CASCADE,
+  code VARCHAR(40) NOT NULL,
+  title VARCHAR(120) NOT NULL,
+  outcome TEXT NOT NULL,
+  description TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  credential_title VARCHAR(120),
+  credential_description TEXT,
+  UNIQUE (track_id, code)
+);
+
+CREATE INDEX IF NOT EXISTS idx_roadmap_stages_track ON roadmap_stages (track_id, sort_order);
+
+CREATE TABLE IF NOT EXISTS roadmap_milestones (
+  id SERIAL PRIMARY KEY,
+  stage_id INTEGER NOT NULL REFERENCES roadmap_stages(id) ON DELETE CASCADE,
+  code VARCHAR(60) NOT NULL,
+  title VARCHAR(160) NOT NULL,
+  description TEXT NOT NULL,
+  requirement_type VARCHAR(40) NOT NULL CHECK (requirement_type IN (
+    'tutorial_completed', 'tasks_passed', 'capstone_score',
+    'industry_cases_read', 'activities_passed', 'readiness_score'
+  )),
+  requirement_target INTEGER NOT NULL CHECK (requirement_target > 0),
+  requirement_filter JSONB,
+  action_label VARCHAR(80),
+  -- Shown instead of action_label once the milestone is complete ("Replay tour").
+  action_label_done VARCHAR(80),
+  action_route VARCHAR(200),
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  UNIQUE (stage_id, code)
+);
+
+CREATE INDEX IF NOT EXISTS idx_roadmap_milestones_stage ON roadmap_milestones (stage_id, sort_order);
+
+CREATE TABLE IF NOT EXISTS help_articles (
+  id SERIAL PRIMARY KEY,
+  slug VARCHAR(120) NOT NULL UNIQUE,
+  title VARCHAR(200) NOT NULL,
+  summary TEXT NOT NULL,
+  body_md TEXT NOT NULL,
+  category VARCHAR(40) NOT NULL,
+  audience VARCHAR(20) NOT NULL DEFAULT 'all',
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  published BOOLEAN NOT NULL DEFAULT TRUE,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_help_articles_listing
+  ON help_articles (category, sort_order, id) WHERE published;

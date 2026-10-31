@@ -23,8 +23,25 @@ async function purgeAccount({ userId = null, firebaseUid = null } = {}) {
 
   let hadProfile = false;
   if (user) {
-    const deleted = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id', [user.id]);
-    hadProfile = deleted.rows.length > 0;
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('DELETE FROM support_events WHERE user_id = $1', [user.id]);
+      await client.query(
+        `DELETE FROM support_messages
+          WHERE user_id = $1
+             OR (user_id IS NULL AND $2::text IS NOT NULL AND lower(email) = lower($2))`,
+        [user.id, user.email || null],
+      );
+      const deleted = await client.query('DELETE FROM users WHERE id = $1 RETURNING id', [user.id]);
+      await client.query('COMMIT');
+      hadProfile = deleted.rows.length > 0;
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   let firebaseDeleted = false;

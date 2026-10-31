@@ -106,6 +106,8 @@ async function fetchUrl(url, { fetchImpl = fetch } = {}) {
   return { label: parsed.hostname, url: parsed.toString(), text: stripHtml(html).slice(0, MAX_URL_TEXT) };
 }
 
+const ACCEPTED_DOCUMENT_FORMATS = ['pdf', 'docx', 'txt', 'md'];
+
 module.exports = {
   extractDocument,
   fetchUrl,
@@ -113,4 +115,5 @@ module.exports = {
   MAX_FILE_BYTES,
   MAX_TEXT,
   MAX_PDF_PAGES,
+  ACCEPTED_DOCUMENT_FORMATS,
 };

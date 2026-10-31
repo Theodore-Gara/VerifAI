@@ -24,6 +24,9 @@ const historyRoutes = require('./routes/history');
 const dashboardRoutes = require('./routes/dashboard');
 const wellnessRoutes = require('./routes/wellness');
 const adminRoutes = require('./routes/admin');
+const supportRoutes = require('./routes/support');
+const metaRoutes = require('./routes/meta');
+const roadmapRoutes = require('./routes/roadmap');
 const { maintenanceGate } = require('./middleware/adminRoles');
 const errorHandler = require('./middleware/errorHandler');
 const { PostgresRateLimitStore } = require('./utils/pgRateStore');
@@ -173,8 +176,10 @@ app.use('/api/industry-practice', industryPracticeRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/wellness', wellnessRoutes);
-app.use('/api/meta', require('./routes/meta'));
 app.use('/api/admin', adminRoutes);
+app.use('/api/support', supportRoutes);
+app.use('/api/meta', metaRoutes);
+app.use('/api/roadmap', roadmapRoutes);
 
 // Admin dashboard: a static single-page app served by the API itself.
 const path = require('path');
