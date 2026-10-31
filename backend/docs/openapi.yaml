@@ -148,3 +148,142 @@ paths:
         '400': { description: Invalid id }
         '403': { description: Question does not belong to the user's track }
         '404': { description: Question not found }
+  /api/meta:
+    get:
+      summary: Verification limits, accepted formats, tour version and contact rate limit
+      responses:
+        '200': { description: Meta document (ETag-cached; 304 on revalidation) }
+  /api/support/help:
+    get:
+      summary: Published help articles (public)
+      parameters:
+        - { name: category, in: query, required: false, schema: { type: string } }
+      responses:
+        '200': { description: Articles, categories and content version (ETag) }
+  /api/support/help/{slug}:
+    get:
+      summary: One help article with related articles (public)
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Article }
+        '404': { description: help_article_not_found }
+  /api/support/faqs:
+    get:
+      summary: Published FAQs, filterable by topic and searchable (public)
+      parameters:
+        - { name: topic, in: query, required: false, schema: { type: string } }
+        - { name: q, in: query, required: false, schema: { type: string, maxLength: 100 } }
+      responses:
+        '200': { description: FAQs, topics and content version (ETag) }
+  /api/support/industry-guides:
+    get:
+      summary: Industry guide summaries (public)
+      responses:
+        '200': { description: Guides and content version (ETag) }
+  /api/support/industry-guides/{slug}:
+    get:
+      summary: Full industry guide with resolved related FAQs (public)
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Guide }
+        '404': { description: industry_guide_not_found }
+  /api/support/about:
+    get:
+      summary: About page content, contact details and app version (public)
+      responses:
+        '200': { description: About content (ETag) }
+  /api/support/tour:
+    get:
+      summary: Tour manifest; global, or global plus an industry's steps (public)
+      parameters:
+        - { name: track, in: query, required: false, schema: { type: string }, description: Guide slug or track id }
+      responses:
+        '200': { description: Manifest with autoplay false and a transcript on every step }
+        '404': { description: track_not_found }
+  /api/support/contact:
+    post:
+      summary: Send a support message (public; linked to the account when signed in)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, subject, message, category]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 100 }
+                email: { type: string, maxLength: 254 }
+                subject: { type: string, minLength: 3, maxLength: 150 }
+                message: { type: string, minLength: 10, maxLength: 4000 }
+                category: { type: string, enum: [bug, account, content, verification, feedback, other] }
+                app_version: { type: string, maxLength: 40 }
+                website: { type: string, description: Honeypot; leave empty }
+      responses:
+        '201': { description: Ticket reference and expected reply time }
+        '400': { description: Validation error with a code }
+        '429': { description: Rate limited (5 per hour) }
+  /api/support/events:
+    post:
+      summary: Record one allowlisted support analytics event (best effort)
+      responses:
+        '202': { description: Accepted; recorded false if the write was dropped }
+        '400': { description: invalid_event or invalid_target }
+  /api/roadmap:
+    get:
+      summary: Milestone tracker for the active (or ?track=) industry
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: track, in: query, required: false, schema: { type: integer, minimum: 1 } }
+      responses:
+        '200': { description: Stages, milestones with evidence, next action and credential state }
+        '400': { description: invalid_track or track_required }
+        '404': { description: track_not_found }
+  /api/admin/support/help:
+    get:
+      summary: All help articles incl. unpublished (moderator+)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Articles }
+  /api/admin/support/help/{id}:
+    put:
+      summary: Edit or publish/unpublish a help article (admin+; audited)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Updated article and a change summary }
+        '400': { description: Validation error }
+        '403': { description: Admin role required }
+        '404': { description: Not found }
+  /api/admin/support/faqs:
+    get:
+      summary: All FAQs incl. unpublished (moderator+)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: FAQs }
+  /api/admin/support/faqs/{id}:
+    put:
+      summary: Edit or publish/unpublish an FAQ (admin+; audited)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Updated FAQ and a change summary }
+  /api/admin/support/messages:
+    get:
+      summary: Contact inbox, filter by status and category (moderator+)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Messages, total, limit, offset }
+  /api/admin/support/messages/{id}:
+    put:
+      summary: Set a message status and/or internal note (admin+; audited)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Updated message }
+  /api/admin/support/insights:
+    get:
+      summary: Support analytics over a window (moderator+)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: days, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 365, default: 30 } }
+      responses:
+        '200': { description: Top articles, FAQ topics, no-result search rate, tour skip rate, contact volume }

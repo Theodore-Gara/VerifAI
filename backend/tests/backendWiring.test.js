@@ -100,3 +100,22 @@ test('GET /api/history merges tasks, activities and capstones newest first', asy
   assert.equal(response.body.entries.length, 3);
   assert.deepEqual(response.body.entries.map((e) => e.type), ['capstone', 'task', 'activity']);
 });
+
+test('GET /api/meta equals the constants the validators and the contact limiter use', async () => {
+  const extract = require('../services/extract');
+  const { CONTACT_RATE_PER_HOUR } = require('../middleware/rateLimits');
+  const res = await request(app).get('/api/meta');
+  assert.equal(res.status, 200);
+  assert.deepEqual(res.body.verification, {
+    max_document_bytes: extract.MAX_FILE_BYTES,
+    max_pages: extract.MAX_PDF_PAGES,
+    max_total_chars: extract.MAX_TEXT,
+    accepted_formats: extract.ACCEPTED_DOCUMENT_FORMATS,
+  });
+  assert.equal(res.body.limits.contact_rate_per_hour, CONTACT_RATE_PER_HOUR);
+  assert.equal(res.body.api_version, require('../package.json').version);
+  assert.ok('tour_version' in res.body.support);
+
+  const again = await request(app).get('/api/meta').set('If-None-Match', res.headers.etag);
+  assert.equal(again.status, 304);
+});

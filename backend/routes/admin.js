@@ -13,14 +13,18 @@ const {
   exportUsersCsv, exportAttemptsCsv, exportTracksCsv,
 } = require('../controllers/adminController');
 
+const {
+  listHelp, updateHelp, listFaqs, updateFaq, listMessages, updateMessage, getInsights,
+} = require('../controllers/adminSupportController');
+
 const router = express.Router();
 
 // Every admin route requires a verified Firebase token AND admin status
 // (an `admin: true` custom claim or an email in ADMIN_EMAILS). Role then
 // decides which of these endpoints the caller may use:
-//   moderator  — read-mostly: overview, lists, workshop, audit log
-//   admin      — content + user management (the default allowlist role)
-//   super      — also config, admin registry and destructive GDPR actions
+//   moderator  – read-mostly: overview, lists, workshop, audit log
+//   admin      – content + user management (the default allowlist role)
+//   super      – also config, admin registry and destructive GDPR actions
 router.use(requireAdminAuth);
 router.use(requireRole('moderator'));
 
@@ -67,6 +71,15 @@ router.post('/users/:id/grant', requireRole('admin'), grantAdjust);
 router.get('/users/:id/export', requireRole('admin'), exportUserData);
 router.post('/users/:id/firebase', requireRole('admin'), setFirebaseDisabled);
 router.delete('/users/:id(\\d+)', requireRole('super'), hardDeleteUser);
+
+// Support console: moderators read, admins write. Every write is audited.
+router.get('/support/help', listHelp);
+router.put('/support/help/:id(\\d+)', requireRole('admin'), updateHelp);
+router.get('/support/faqs', listFaqs);
+router.put('/support/faqs/:id(\\d+)', requireRole('admin'), updateFaq);
+router.get('/support/messages', listMessages);
+router.put('/support/messages/:id(\\d+)', requireRole('admin'), updateMessage);
+router.get('/support/insights', getInsights);
 
 // Audit log
 router.get('/moderation', listModeration);
