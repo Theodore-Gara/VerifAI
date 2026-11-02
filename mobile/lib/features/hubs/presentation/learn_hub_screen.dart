@@ -31,6 +31,11 @@ class LearnHubScreen extends StatelessWidget {
             color: AppColors.textPrimary,
           ),
         ),
+        leading: IconButton(
+          tooltip: 'Back to dashboard',
+          icon: Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
+          onPressed: () => switchShellTab(0),
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.menu_rounded, color: AppColors.textPrimary),

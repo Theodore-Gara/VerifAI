@@ -8,7 +8,7 @@ class IndustryGuideScreen extends StatelessWidget {
 
   static const _driveWalkthrough = 'https://drive.google.com/file/d/1ytfv2GYsXvcV5FOYtnQUJliTTIzqQNe3/view?usp=drivesdk';
 
-  _GuideData get data {
+  _GuideData get _data {
     final key = industry.toLowerCase().replaceAll(' ', '').replaceAll('/', '');
     if (key.contains('finance')) return const _GuideData(name: 'Finance', tagline: 'Build confidence working with financial information, reports and AI-supported decisions.', about: 'Finance is the work of managing, analyzing and making decisions about money, budgets, investments and financial performance.', outcomes: 'Understand financial data, check calculations and sources, and communicate findings responsibly.', icon: Icons.account_balance_rounded, image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1200');
     if (key.contains('legal')) return const _GuideData(name: 'Legal', tagline: 'Explore how AI can support careful legal research, document review and evidence checking.', about: 'The legal industry works with laws, regulations, contracts, case information and the rights and responsibilities of people and organizations.', outcomes: 'Learn to examine clauses, trace citations and identify information that needs human legal review.', icon: Icons.gavel_rounded, image: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1200');
@@ -16,9 +16,21 @@ class IndustryGuideScreen extends StatelessWidget {
     return const _GuideData(name: 'Business Consulting', tagline: 'Learn to assess business information and use AI thoughtfully when exploring strategy and operations.', about: 'Business consulting helps organizations understand challenges, improve operations and make informed decisions about strategy, people and performance.', outcomes: 'Practice evaluating recommendations, checking evidence and communicating responsible business decisions.', icon: Icons.business_center_rounded, image: 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1200');
   }
 
+  Future<void> _openWalkthrough(BuildContext context, {required bool download}) async {
+    final uri = download
+        ? Uri.parse('https://drive.google.com/uc?export=download&id=1ytfv2GYsXvcV5FOYtnQUJliTTIzqQNe3')
+        : Uri.parse(_driveWalkthrough);
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('The walkthrough could not be opened. Please check your connection and try again.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final d = data;
+    final d = _data;
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFFF7F5EF),
@@ -60,9 +72,35 @@ class IndustryGuideScreen extends StatelessWidget {
         const _SectionTitle('Watch the walkthrough'),
         const Text('Follow the walkthrough to see how to move through VerifAI and use its main features step by step.', style: TextStyle(height: 1.5, color: Color(0xFF64716A))),
         const SizedBox(height: 12),
-        InkWell(onTap: () async { final uri = Uri.parse(_driveWalkthrough); await launchUrl(uri, mode: LaunchMode.externalApplication); }, borderRadius: BorderRadius.circular(18), child: Container(padding: const EdgeInsets.all(18), decoration: BoxDecoration(color: const Color(0xFF102A23), borderRadius: BorderRadius.circular(18)), child: const Row(children: [
-          CircleAvatar(backgroundColor: Color(0xFFD6B76E), child: Icon(Icons.play_arrow_rounded, color: Color(0xFF102A23), size: 28)), SizedBox(width: 14), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Open VerifAI video guide', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)), SizedBox(height: 4), Text('Step-by-step walkthrough • Google Drive', style: TextStyle(color: Color(0xFFD7E1DA), fontSize: 12))])), Icon(Icons.open_in_new_rounded, color: Colors.white),
-        ]))),
+        InkWell(
+          onTap: () => _openWalkthrough(context, download: false),
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(color: const Color(0xFF102A23), borderRadius: BorderRadius.circular(18)),
+            child: const Row(children: [
+              CircleAvatar(backgroundColor: Color(0xFFD6B76E), child: Icon(Icons.play_arrow_rounded, color: Color(0xFF102A23), size: 28)),
+              SizedBox(width: 14),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Watch VerifAI walkthrough', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                SizedBox(height: 4),
+                Text('Opens the shared Google Drive video in your browser', style: TextStyle(color: Color(0xFFD7E1DA), fontSize: 12)),
+              ])),
+              Icon(Icons.open_in_new_rounded, color: Colors.white),
+            ]),
+          ),
+        ),
+        const SizedBox(height: 9),
+        OutlinedButton.icon(
+          onPressed: () => _openWalkthrough(context, download: true),
+          icon: const Icon(Icons.download_rounded),
+          label: const Text('Try downloading the walkthrough'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFF176B4D),
+            side: const BorderSide(color: Color(0xFFB7C9BC)),
+            padding: const EdgeInsets.symmetric(vertical: 13),
+          ),
+        ),
         const SizedBox(height: 20),
         OutlinedButton.icon(onPressed: () => context.pop(), icon: const Icon(Icons.arrow_back_rounded), label: const Text('Back to Choose Your Industry'), style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFF176B4D), side: const BorderSide(color: Color(0xFF176B4D)), padding: const EdgeInsets.symmetric(vertical: 15))),
       ]),

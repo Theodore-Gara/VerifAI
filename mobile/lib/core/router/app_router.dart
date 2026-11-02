@@ -46,6 +46,7 @@ import 'package:verifai/features/wellness/presentation/wellness_center_screen.da
 import 'package:verifai/features/onboarding/presentation.dart';
 import 'package:verifai/features/onboarding/presentation/industry_guide_screen.dart';
 import 'package:verifai/features/scoreboard/presentation/scoreboard_screen.dart';
+import 'package:verifai/features/support/presentation/support_screens.dart';
 import 'package:verifai/features/verification/presentation/verification_screen.dart';
 import 'package:verifai/features/judgement/presentation/judgement_screen.dart';
 import 'package:verifai/features/risk_governance/presentation/risk_governance_screen.dart';
@@ -185,6 +186,26 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/industry-select',
         name: 'industry-select',
         builder: (context, state) => const IndustrySelectScreen(),
+      ),
+      GoRoute(
+        path: '/about',
+        name: 'about',
+        builder: (context, state) => const AboutVerifaiScreen(),
+      ),
+      GoRoute(
+        path: '/support',
+        name: 'support',
+        builder: (context, state) => const HelpSupportScreen(),
+      ),
+      GoRoute(
+        path: '/support/faq',
+        name: 'support-faq',
+        builder: (context, state) => const VerifaiFaqScreen(),
+      ),
+      GoRoute(
+        path: '/support/contact',
+        name: 'support-contact',
+        builder: (context, state) => const ContactSupportScreen(),
       ),
       GoRoute(
         path: '/industry-guide/:industry',

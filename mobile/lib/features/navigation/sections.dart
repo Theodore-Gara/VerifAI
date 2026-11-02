@@ -43,6 +43,11 @@ const allSections = <({String section, String label, IconData icon, String route
   (section: 'Profile', label: 'Wellness centre', icon: Icons.spa_rounded, route: '/wellness'),
   (section: 'Profile', label: 'Ask Vera', icon: Icons.auto_awesome_rounded, route: '/assistant'),
   (section: 'Profile', label: 'Change industry', icon: Icons.swap_horiz_rounded, route: '/change-industry'),
+  // Help & information
+  (section: 'Help & information', label: 'Help & Customer Support', icon: Icons.support_agent_rounded, route: '/support'),
+  (section: 'Help & information', label: 'Frequently Asked Questions', icon: Icons.quiz_rounded, route: '/support/faq'),
+  (section: 'Help & information', label: 'Contact Us', icon: Icons.mail_outline_rounded, route: '/support/contact'),
+  (section: 'Help & information', label: 'About VerifAI', icon: Icons.info_outline_rounded, route: '/about'),
 ];
 
 /// Shell routes that must switch the dock in place rather than `go`/`push`
