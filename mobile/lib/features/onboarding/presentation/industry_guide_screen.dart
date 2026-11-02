@@ -8,7 +8,7 @@ class IndustryGuideScreen extends StatelessWidget {
 
   static const _driveWalkthrough = 'https://drive.google.com/file/d/1ytfv2GYsXvcV5FOYtnQUJliTTIzqQNe3/view?usp=drivesdk';
 
-  _GuideData get data {
+  _GuideData get _data {
     final key = industry.toLowerCase().replaceAll(' ', '').replaceAll('/', '');
     if (key.contains('finance')) return const _GuideData(name: 'Finance', tagline: 'Build confidence working with financial information, reports and AI-supported decisions.', about: 'Finance is the work of managing, analyzing and making decisions about money, budgets, investments and financial performance.', outcomes: 'Understand financial data, check calculations and sources, and communicate findings responsibly.', icon: Icons.account_balance_rounded, image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1200');
     if (key.contains('legal')) return const _GuideData(name: 'Legal', tagline: 'Explore how AI can support careful legal research, document review and evidence checking.', about: 'The legal industry works with laws, regulations, contracts, case information and the rights and responsibilities of people and organizations.', outcomes: 'Learn to examine clauses, trace citations and identify information that needs human legal review.', icon: Icons.gavel_rounded, image: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1200');
@@ -18,7 +18,7 @@ class IndustryGuideScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final d = data;
+    final d = _data;
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFFF7F5EF),
