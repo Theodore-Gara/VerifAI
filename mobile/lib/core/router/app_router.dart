@@ -44,6 +44,7 @@ import 'package:verifai/features/navigation/main_nav_shell.dart';
 import 'package:verifai/features/track/presentation/track_roadmap_screen.dart';
 import 'package:verifai/features/wellness/presentation/wellness_center_screen.dart';
 import 'package:verifai/features/onboarding/presentation.dart';
+import 'package:verifai/features/onboarding/presentation/industry_guide_screen.dart';
 import 'package:verifai/features/scoreboard/presentation/scoreboard_screen.dart';
 import 'package:verifai/features/verification/presentation/verification_screen.dart';
 import 'package:verifai/features/judgement/presentation/judgement_screen.dart';
@@ -184,6 +185,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/industry-select',
         name: 'industry-select',
         builder: (context, state) => const IndustrySelectScreen(),
+      ),
+      GoRoute(
+        path: '/industry-guide/:industry',
+        name: 'industry-guide',
+        builder: (context, state) => IndustryGuideScreen(
+          industry: state.pathParameters['industry'] ?? 'Finance',
+        ),
       ),
       GoRoute(
         path: '/change-industry',

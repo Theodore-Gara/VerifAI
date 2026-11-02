@@ -164,6 +164,15 @@ class _MainNavShellState extends ConsumerState<MainNavShell> {
                       _drawerLink(context, allSections[i].icon,
                           allSections[i].label, allSections[i].route),
                     ],
+                    _drawerSection('HELP & INDUSTRY GUIDES'),
+                    for (final guide in const [
+                      ('Finance guide', 'Finance', Icons.account_balance_rounded),
+                      ('Legal guide', 'Legal', Icons.gavel_rounded),
+                      ('IT / Software guide', 'IT%20%2F%20Software', Icons.code_rounded),
+                      ('Business Consulting guide', 'Business%20Consulting', Icons.business_center_rounded),
+                    ])
+                      _drawerLink(context, guide.$3, guide.$1,
+                          '/industry-guide/${guide.$2}'),
                   ],
                 ),
               ),

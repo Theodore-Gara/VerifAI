@@ -243,6 +243,7 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
                 return _TrackCard(
                   track: track,
                   isSelected: isSelected,
+                  onLearnMore: () => context.push('/industry-guide/${Uri.encodeComponent(track.name)}'),
                   onTap: () {
                     if (_isSubmitting) return;
                     setState(() {
@@ -296,11 +297,13 @@ class _TrackCard extends StatelessWidget {
   final IndustryTrack track;
   final bool isSelected;
   final VoidCallback onTap;
+  final VoidCallback onLearnMore;
 
   const _TrackCard({
     required this.track,
     required this.isSelected,
     required this.onTap,
+    required this.onLearnMore,
   });
 
   @override
@@ -384,6 +387,17 @@ class _TrackCard extends StatelessWidget {
                   fontSize: 11.5,
                 ),
                 textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 3),
+              TextButton(
+                onPressed: onLearnMore,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.accentGreen,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  minimumSize: const Size(0, 28),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('Learn More  →', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11.5)),
               ),
             ],
           ),
