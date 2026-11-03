@@ -16,112 +16,114 @@ class AboutVerifaiScreen extends StatelessWidget {
       backgroundColor: _paper,
       appBar: AppBar(
         backgroundColor: _paper,
-        title: const Text('About VerifAI'),
+        foregroundColor: _forest,
+        elevation: 0,
+        title: const Text('About Us', style: TextStyle(fontWeight: FontWeight.w900)),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 36),
         children: [
           const _HeroPanel(
-            eyebrow: 'OUR PURPOSE',
-            title: 'AI assists. Humans verify.',
-            subtitle:
-                'Build the confidence to work thoughtfully, critically and responsibly with artificial intelligence.',
-            icon: Icons.verified_user_rounded,
+            eyebrow: 'WELCOME TO VERIFAI',
+            title: 'The future of AI needs human intelligence.',
+            subtitle: 'A learning and verification experience helping people understand artificial intelligence, question its outputs and use it responsibly in the real world.',
+            icon: Icons.auto_awesome_rounded,
+          ),
+          const SizedBox(height: 24),
+          const _InfoSection(title: '01. Who we are', body: 'VerifAI is an AI literacy, learning and verification platform designed to help people develop the knowledge, practical skills and confidence to navigate an increasingly AI-enabled world. It brings learning resources, interactive practice, workplace-inspired scenarios, progress tools and an AI learning assistant into one connected experience. Our focus is not simply teaching people how to access AI tools. It is helping them understand what those tools can do, where they can fail and how to make informed decisions when using them.'),
+          const _InfoSection(title: '02. Why we exist', body: 'Artificial intelligence is transforming education, business, finance, technology, healthcare, law and many other industries. It is changing how people research, communicate, analyse information and solve problems. Yet the ability to generate an AI response does not automatically mean that the response is accurate, ethical, relevant or safe to use. People need more than access to technology. They need the ability to question information, recognise limitations, examine evidence, identify potential risks and take responsibility for their decisions. VerifAI exists to help develop those abilities through practical, accessible and engaging learning.'),
+          const _InfoSection(title: '03. Our mission', body: 'Our mission is to make responsible artificial intelligence education accessible and practical. We aim to equip learners, students, professionals and organisations with the skills to understand AI, critically evaluate AI-generated information, recognise potential errors and apply human judgment when making important decisions. Through structured learning, realistic scenarios and guided feedback, we want to turn AI awareness into practical capability.'),
+          const _InfoSection(title: '04. Our vision', body: 'We envision a world in which people from different backgrounds, communities and industries can confidently participate in the AI-powered economy. We want responsible AI literacy to become an essential part of lifelong learning and workplace development. Our ambition is to contribute to a future where technological progress is accompanied by critical thinking, transparency, accountability and meaningful human oversight. We believe the benefits of AI should be accessible to more people, not limited to those who already have advanced technical knowledge.'),
+          const _InfoSection(title: '05. The problem we are addressing', body: 'AI-generated content can sound convincing even when it contains inaccurate facts, fabricated references, outdated information or misleading conclusions. People may rely on an answer without checking its source, understanding its context or considering the consequences. In professional environments, these mistakes can affect decisions, customers, organisations and public trust. Traditional learning can explain AI concepts, but learners also need opportunities to practise identifying problems and making decisions. VerifAI is designed to connect knowledge with practical application.'),
+          const _InfoSection(title: '06. Who VerifAI is for', body: 'VerifAI is designed for students preparing for an AI-enabled workplace, graduates developing professional skills, employees learning to use AI responsibly, educators exploring AI literacy and individuals who want to become more confident and informed technology users. Industry pathways help make learning more relevant to different professional environments. Whether someone is beginning their AI journey or strengthening existing knowledge, the goal is to provide a structured place to learn, practise and improve.'),
+          const _InfoSection(title: '07. How the platform works', body: 'Users begin by selecting an industry pathway that helps shape their learning context. They can explore lessons, practise through scenarios, complete assessments, use Vera for learning support and review their development through progress tools. Each area supports a continuous cycle: understand a concept, apply it, receive feedback, reflect on the result and improve. The exact activities available can depend on the account and features enabled in the current app version.'),
+          const _InfoSection(title: '08. Learn: build your knowledge', body: 'The Learn area is where users develop foundational understanding. It brings together learning materials, lessons, recall activities and assessments where available. Users can explore topics at their own pace, revisit concepts and strengthen their understanding before applying what they have learned. The objective is to make AI education approachable while encouraging curiosity, independent thinking and continuous development.'),
+          const _InfoSection(title: '09. Practice: turn knowledge into ability', body: 'The Practice area helps users apply concepts to realistic questions and workplace-inspired situations. Activities can explore verification, AI judgment, risk and governance, and interview preparation. Rather than only memorising definitions, users are encouraged to assess situations, consider evidence, identify risks and explain their reasoning. Responsible AI use requires judgment, not just theoretical knowledge.'),
+          const _InfoSection(title: '10. Verification Studio: question the output', body: 'Verification Studio provides a dedicated environment for reviewing supported AI-generated content and examining potential issues. Its purpose is to encourage users to look beyond an answer that appears convincing. Users should consider supporting evidence, source quality, context, accuracy and limitations. Verification tools can assist with the review process, but no automated result should be treated as an absolute guarantee that information is true. Human evaluation remains essential.'),
+          const _InfoSection(title: '11. Meet Vera: your AI learning companion', body: 'Vera is the AI assistant within the VerifAI experience. She is designed to support learning by helping users explore concepts, ask questions, request explanations and think through unfamiliar topics. Users can ask for examples, simpler explanations or step-by-step guidance. Vera is intended to support the learning journey rather than replace independent thinking. Like other AI systems, her responses may contain mistakes or omissions, so important information should always be checked.'),
+          const _InfoSection(title: '12. Progress, achievements and development', body: 'Learning is a journey, and progress tools help users reflect on that journey. The Progress and Profile areas bring together available indicators such as completed activities, experience points, streaks, readiness skills and achievements. These features are intended to encourage consistency, highlight areas for improvement and make learning milestones visible. They are learning indicators rather than formal qualifications or guarantees of professional competence.'),
+          const _InfoSection(title: '13. Industry-focused learning', body: 'AI does not affect every industry in exactly the same way. The risks, responsibilities and opportunities can differ between finance, legal services, software development, business consulting and other professional environments. Industry pathways help connect AI learning to relevant scenarios and professional contexts. Users can explore a pathway that reflects their interests and revisit their industry selection when their learning goals change.'),
+          const _InfoSection(title: '14. Our commitment to responsible AI', body: 'We believe AI should be used thoughtfully and responsibly. This means recognising that automated systems can make errors, understanding that outputs may reflect limitations in their training data, protecting private information and considering the people affected by AI-assisted decisions. We encourage users to seek reliable evidence, question unsupported claims, recognise uncertainty and apply appropriate human oversight. Technology should strengthen human capability, not remove human responsibility.'),
+          const _InfoSection(title: '15. Our values', body: 'Human-centered innovation: people remain at the centre of meaningful technological progress. Critical thinking: users should be encouraged to question, investigate and understand. Responsibility: AI should be used with awareness of its potential impact. Accessibility: learning should be approachable for people with different levels of technical experience. Transparency: limitations should be acknowledged rather than hidden. Continuous improvement: learning and technology must evolve as the world changes.'),
+          const _InfoSection(title: '16. Our commitment to South Africa and beyond', body: 'South Africa has an opportunity to participate meaningfully in the global AI economy. Building digital confidence and practical AI literacy can help learners and professionals prepare for changing workplace expectations. People should have opportunities to understand emerging technologies regardless of whether they come from a technical background. VerifAI aims to contribute to that opportunity through practical learning experiences that can grow and adapt over time.'),
+          const _InfoSection(title: '17. Looking ahead', body: 'The development of VerifAI is an ongoing journey. As AI technologies, industries and workplace expectations evolve, learning experiences must evolve too. Our ambition is to continue improving the platform, strengthening its educational value, making its user experience more accessible and creating opportunities for people to practise responsible AI use in increasingly relevant contexts. We want VerifAI to be a place where curiosity becomes knowledge, knowledge becomes practical skill and practical skill supports better decisions.'),
+          const SizedBox(height: 24),
+          const Text('18. Meet the team behind VerifAI', style: TextStyle(color: _forest, fontSize: 20, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 8),
+          const Text('VerifAI is brought to life by a collaborative team working to make responsible AI learning practical, accessible and meaningful. We believe that building better technology takes different perspectives, shared effort and a commitment to continuous improvement.', style: TextStyle(color: Color(0xFF53645B), height: 1.65, fontSize: 14)),
+          const SizedBox(height: 14),
+          const _TeamMemberCard(name: 'Lawandle Naledi Mvelase'),
+          const SizedBox(height: 10),
+          const _TeamMemberCard(name: 'Mpho Mokoena'),
+          const SizedBox(height: 10),
+          const _TeamMemberCard(name: 'Theodore Nangara'),
+          const SizedBox(height: 10),
+          const _TeamMemberCard(name: 'Vusani Mludzi'),
+          const SizedBox(height: 10),
+          const _TeamMemberCard(name: 'Meshaque Kalonji'),
+          Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [_forest, Color(0xFF1B5942)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Icon(Icons.verified_user_rounded, color: _gold, size: 34),
+              SizedBox(height: 16),
+              Text('OUR GUIDING PRINCIPLE', style: TextStyle(color: _gold, fontWeight: FontWeight.w900, letterSpacing: 1.5, fontSize: 11)),
+              SizedBox(height: 10),
+              Text('AI assists. Humans verify.', style: TextStyle(color: Colors.white, fontSize: 25, fontWeight: FontWeight.w900, height: 1.2)),
+              SizedBox(height: 12),
+              Text('We believe the future belongs to people who know how to work with technology while retaining the judgment, curiosity and responsibility that make us human.', style: TextStyle(color: Color(0xFFE1EAE4), height: 1.6, fontSize: 14)),
+            ]),
           ),
           const SizedBox(height: 22),
-          const _InfoSection(
-            title: 'Who we are',
-            body:
-                'VerifAI is an AI learning and verification platform designed to help people develop practical AI literacy and workplace-readiness skills. It brings learning, guided practice, an AI assistant and verification tools into one experience so that people can build knowledge and apply it with care.',
-          ),
-          const _InfoSection(
-            title: 'Why VerifAI exists',
-            body:
-                'AI tools are becoming part of study, work and everyday decision-making. Access to these tools is not enough: people also need to understand their limitations, question outputs, check supporting evidence and take responsibility for the decisions they make. VerifAI is designed to make that learning journey more approachable and practical.',
-          ),
-          const _InfoSection(
-            title: 'Our mission',
-            body:
-                'To make responsible AI learning more accessible by helping learners understand AI, practise real-world judgment and build the confidence to evaluate AI-assisted work.',
-          ),
-          const _InfoSection(
-            title: 'Our vision',
-            body:
-                'A future in which people across South Africa and beyond can participate confidently in an AI-enabled world, with the knowledge to use technology productively while keeping human judgment, accountability and critical thinking at the center.',
-          ),
-          const _InfoSection(
-            title: 'The South African opportunity',
-            body:
-                'South Africa’s education and employment landscape is changing as digital tools become more common. Practical AI literacy can help learners, job seekers and working professionals understand new tools, identify risks and prepare for changing workplace expectations. VerifAI aims to support that development through accessible learning pathways and practice.',
-          ),
-          const _InfoSection(
-            title: 'How the platform works',
-            body:
-                'Learners choose an industry pathway and explore learning materials, practice activities and assessments. Vera can help explain concepts and support learning. Verification Studio provides a place to submit supported content for checks and review the evidence and limitations shown. Progress tools help learners reflect on activity and identify areas to strengthen.',
-          ),
-          const _InfoSection(
-            title: 'Our approach to AI',
-            body:
-                'AI can be useful, but it can also produce inaccurate, incomplete or misleading information. VerifAI encourages users to question outputs, check important claims against reliable sources, protect sensitive information and apply human review before relying on consequential results. A verification result is not a guarantee of truth.',
-          ),
-          const _InfoSection(
-            title: 'Our values',
-            body:
-                'Responsible innovation, transparency about limitations, human oversight, accessibility, continuous learning and respect for the people affected by technology guide the experience we aim to provide.',
-          ),
+          const Text('Explore VerifAI', style: TextStyle(color: _forest, fontSize: 21, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 12),
+          _ActionCard(icon: Icons.menu_book_rounded, title: 'Explore the learning experience', subtitle: 'Discover lessons, learning materials and assessments.', label: 'Go to Learn', onTap: () => context.go('/learn')),
+          const SizedBox(height: 12),
+          _ActionCard(icon: Icons.support_agent_rounded, title: 'Need assistance?', subtitle: 'Visit our help and customer support centre.', label: 'Get help', onTap: () => context.push('/support')),
+          const SizedBox(height: 24),
+          const Center(child: Text('VerifAI\nAI assists. Humans verify.', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF64716A), height: 1.7, fontWeight: FontWeight.w700))),
+        ],
+      ),
+    );
+  }
+}
+
+class _TeamMemberCard extends StatelessWidget {
+  final String name;
+  const _TeamMemberCard({required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2EAE4)),
+      ),
+      child: Row(
+        children: [
           Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8EFE9),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: _green.withValues(alpha: .16)),
+            width: 42,
+            height: 42,
+            decoration: const BoxDecoration(
+              color: Color(0xFFE8F1EB),
+              shape: BoxShape.circle,
             ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'A human-centered principle',
-                  style: TextStyle(
-                    color: _forest,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'AI assists. Humans verify.',
-                  style: TextStyle(
-                    color: _green,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Use AI as a support tool. Keep people responsible for checking, interpreting and acting on important information.',
-                  style: TextStyle(
-                    height: 1.55,
-                    color: Color(0xFF42554A),
-                  ),
-                ),
-              ],
-            ),
+            child: const Icon(Icons.person_rounded, color: _forest),
           ),
-          const SizedBox(height: 18),
-          const Text(
-            'The people behind VerifAI',
-            style: TextStyle(
-              color: _forest,
-              fontSize: 19,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'This section is intentionally focused on the platform and its purpose. Founder names, team biographies, company registration details and formal contact information should be added once the VerifAI team confirms the approved wording.',
-            style: TextStyle(
-              color: Color(0xFF64716A),
-              height: 1.55,
+          const SizedBox(width: 13),
+          Expanded(
+            child: Text(
+              name,
+              style: const TextStyle(
+                color: _forest,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ],
@@ -385,7 +387,7 @@ class _VerifaiFaqScreenState extends State<VerifaiFaqScreen> {
     _FaqItem(
       'Getting started',
       'What if I skip the onboarding tutorial?',
-      'You can still return to the Help & Support area and open the industry guides and FAQs whenever you need them.',
+      'You can still use the app and return to Help & Support whenever you need guidance. If the app provides a Replay Tutorial option in your account or onboarding screen, use it to revisit the introduction. Skipping the tutorial should not be treated as deleting your account or learning progress.',
     ),
     _FaqItem(
       'Learning',
