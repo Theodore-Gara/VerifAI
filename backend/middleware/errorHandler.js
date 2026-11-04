@@ -1,25 +1,48 @@
+const { sendApiError } = require('../utils/apiError');
+
 function errorHandler(err, req, res, next) {
-  // A malformed JSON body is a client error. Its parser message quotes part of
-  // the body, and bodies on some routes (the support contact form) are private,
-  // so neither the log nor the response repeats it.
+  // Malformed JSON: never log or return the submitted body.
   if (err && err.type === 'entity.parse.failed') {
-    console.error(`[${req.requestId || 'no-request-id'}] malformed JSON body on ${req.method} ${req.path}`);
-    return res.status(400).json({
-      error: 'Request body is not valid JSON.',
-      code: 'invalid_json',
-      request_id: req.requestId,
-    });
+    console.error(
+      `[${req.requestId || 'no-request-id'}] malformed JSON body on ${req.method} ${req.path}`
+    );
+
+    return sendApiError(
+      req,
+      res,
+      400,
+      'invalid_json',
+      'Request body is not valid JSON.',
+      { retryable: false }
+    );
   }
 
-  console.error(`[${req.requestId || 'no-request-id'}]`, err.stack || err);
+  // Log diagnostic information, but do not expose stack traces to clients.
+  console.error(
+    `[${req.requestId || 'no-request-id'}]`,
+    err.stack || err
+  );
 
   const status = Number(err.status) || 500;
-  const isProduction = process.env.NODE_ENV === 'production';
 
-  res.status(status).json({
-    error: status >= 500 && isProduction ? 'Internal server error.' : (err.message || 'Internal server error.'),
-    request_id: req.requestId,
-  });
+  const message = status >= 500
+    ? 'Internal server error.'
+    : (err.publicMessage || err.message || 'Request failed.');
+
+  const code = err.apiCode
+    || (status >= 500 ? 'internal_error' : 'request_failed');
+
+  return sendApiError(
+    req,
+    res,
+    status,
+    code,
+    message,
+    {
+      hint: err.hint,
+      retryable: err.retryable,
+    }
+  );
 }
 
 module.exports = errorHandler;

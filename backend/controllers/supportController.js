@@ -1,3 +1,4 @@
+const { sendApiError: sendError } = require('../utils/apiError');
 const crypto = require('crypto');
 const pool = require('../db/pool');
 const { sendJsonWithEtag } = require('../utils/httpCache');
@@ -12,11 +13,6 @@ const { version: APP_VERSION } = require('../package.json');
 
 const SLUG_RE = /^[a-z0-9][a-z0-9._-]{0,79}$/;
 
-// Standard error envelope with a machine-readable code (the app maps codes to
-// messages; QA can reproduce a failure from the code and request_id).
-function sendError(req, res, status, code, message) {
-  return res.status(status).json({ error: message, code, request_id: req.requestId });
-}
 
 // ---------------------------------------------------------------------------
 // Help articles
