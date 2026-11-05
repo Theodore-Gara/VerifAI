@@ -11,6 +11,7 @@
     "check": "node scripts/check.js",
     "db:setup": "node scripts/db-setup.js",
     "db:migrate": "node scripts/db-setup.js migrate",
+    "db:baseline": "node scripts/db-setup.js baseline",
     "db:local": "node scripts/local-db.js",
     "db:readiness": "node scripts/recompute-readiness.js",
     "wellness:purge": "node scripts/purge-wellness-trash.js",

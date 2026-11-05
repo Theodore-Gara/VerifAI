@@ -13,7 +13,7 @@ ON CONFLICT (code) DO UPDATE SET
   estimated_minutes = EXCLUDED.estimated_minutes, level = EXCLUDED.level,
   competency = EXCLUDED.competency, sort_order = EXCLUDED.sort_order;
 
-DELETE FROM lab_lessons WHERE code IN ('business-ai-in-decisions', 'business-stakeholder-risk');
+SELECT retire_lessons(ARRAY['business-ai-in-decisions', 'business-stakeholder-risk']);
 
 DELETE FROM lab_lesson_sections WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'business-book');
 

@@ -308,6 +308,8 @@ CREATE TABLE IF NOT EXISTS lab_lessons (
   reviewed_by TEXT,
   competency VARCHAR(40),
   sort_order INTEGER NOT NULL DEFAULT 0,
+  -- Retired content is hidden but kept so learner progress/attempts survive.
+  retired BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -737,6 +739,7 @@ CREATE INDEX IF NOT EXISTS idx_user_track_changes_user ON user_track_changes(use
 CREATE INDEX IF NOT EXISTS idx_skill_scores_user_track ON skill_scores(user_id, track_id);
 CREATE INDEX IF NOT EXISTS idx_verification_analyses_user ON verification_analyses(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_lab_lessons_track ON lab_lessons(track_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_lab_lessons_visible ON lab_lessons(track_id, sort_order) WHERE retired = FALSE;
 CREATE INDEX IF NOT EXISTS idx_lab_sections_lesson ON lab_lesson_sections(lesson_id, sort_order);
 CREATE INDEX IF NOT EXISTS idx_lab_activities_lesson ON lab_activities(lesson_id, sort_order);
 CREATE INDEX IF NOT EXISTS idx_lab_questions_lesson ON lab_questions(lesson_id, sort_order);

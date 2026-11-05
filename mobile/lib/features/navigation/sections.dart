@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
+import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/navigation/nav_drawer_controller.dart';
 
 /// The five dock areas (route, label, icon) in dock order. Mirrors
@@ -140,6 +142,46 @@ Future<void> showAllSectionsSheet(BuildContext context) {
                 },
               ),
             ],
+            const Divider(height: AppSpacing.lg),
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.logout_rounded,
+                  color: AppColors.error, size: 20),
+              title: Text(
+                'Log out',
+                style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: AppColors.error),
+              ),
+              onTap: () async {
+                final container =
+                    ProviderScope.containerOf(sheetContext, listen: false);
+                final confirmed = await showDialog<bool>(
+                  context: sheetContext,
+                  builder: (dialogContext) => AlertDialog(
+                    title: const Text('Log out?'),
+                    content: const Text(
+                        'Log out of VerifAI? You can sign back in any time.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext, false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext, true),
+                        child: Text('Log out',
+                            style: TextStyle(color: AppColors.error)),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed != true) return;
+                if (sheetContext.mounted) Navigator.pop(sheetContext);
+                await container.read(authNotifierProvider.notifier).logout();
+              },
+            ),
           ],
         ),
       ),

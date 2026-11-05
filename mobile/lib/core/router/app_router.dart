@@ -30,7 +30,6 @@ import 'package:verifai/features/history/providers.dart';
 import 'package:verifai/features/scoreboard/providers.dart';
 import 'package:verifai/features/rewards/providers.dart';
 import 'package:verifai/features/profile/providers.dart';
-import 'package:verifai/features/track/providers.dart';
 import 'package:verifai/features/lab/providers.dart';
 import 'package:verifai/features/interview/providers.dart';
 import 'package:verifai/features/judgement/providers.dart';
@@ -66,7 +65,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     ref.invalidate(historyProvider);
     ref.invalidate(rewardsProvider);
     ref.invalidate(achievementsProvider);
-    ref.invalidate(milestonesProvider);
     ref.invalidate(labLessonsProvider);
     ref.invalidate(labAssessmentsProvider);
     ref.invalidate(interviewQuestionsProvider);
@@ -194,7 +192,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/welcome-tour',
         name: 'welcome-tour',
-        builder: (context, state) => const WelcomeTutorialScreen(),
+        builder: (context, state) => WelcomeTutorialScreen(
+          trackId: state.extra is int ? state.extra as int : null,
+        ),
       ),
       GoRoute(
         path: '/dashboard',

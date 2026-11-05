@@ -113,6 +113,7 @@ class _MainNavShellState extends ConsumerState<MainNavShell> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).padding.bottom;
+    final trackName = ref.watch(currentUserProvider).valueOrNull?.trackName;
 
     return Scaffold(
       key: verifaiMainScaffoldKey,
@@ -147,6 +148,45 @@ class _MainNavShellState extends ConsumerState<MainNavShell> {
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.white70, fontSize: 12),
                     ),
+                    if (trackName != null && trackName.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          context.push('/change-industry');
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.35)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  trackName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              const Icon(Icons.edit_rounded,
+                                  size: 13, color: Colors.white70),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

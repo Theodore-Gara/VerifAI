@@ -552,7 +552,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ),
       (
         title: 'Rewards',
-        subtitle: 'XP & milestones',
+        subtitle: 'XP & achievements',
         icon: Icons.workspace_premium_rounded,
         route: '/rewards',
       ),

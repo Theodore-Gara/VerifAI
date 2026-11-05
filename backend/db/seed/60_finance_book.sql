@@ -17,7 +17,7 @@ ON CONFLICT (code) DO UPDATE SET
 
 -- Retire the old two-lesson finance material; its content is folded in below as
 -- the "AI in finance" chapter.
-DELETE FROM lab_lessons WHERE code IN ('finance-read-the-numbers', 'finance-verify-a-forecast');
+SELECT retire_lessons(ARRAY['finance-read-the-numbers', 'finance-verify-a-forecast']);
 
 DELETE FROM lab_lesson_sections WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'finance-book');
 

@@ -48,7 +48,8 @@ async function buildUserContext(executor, userId) {
   const lessonsResult = await executor.query(
     `SELECT l.title, p.status, p.assessment_best_score
      FROM lab_lesson_progress p JOIN lab_lessons l ON l.id = p.lesson_id
-     WHERE p.user_id = $1 ORDER BY p.updated_at DESC LIMIT 8`,
+     WHERE p.user_id = $1 AND l.retired = FALSE
+     ORDER BY p.updated_at DESC LIMIT 8`,
     [userId],
   );
   const lessons = lessonsResult.rows;
@@ -282,7 +283,9 @@ async function buildAppKnowledge(executor, userId, trackId) {
     [trackId],
   );
   const lessons = await executor.query(
-    `SELECT title FROM lab_lessons WHERE track_id IS NULL OR track_id = $1 ORDER BY sort_order`,
+    `SELECT title FROM lab_lessons
+      WHERE retired = FALSE AND (track_id IS NULL OR track_id = $1)
+      ORDER BY sort_order`,
     [trackId],
   );
   const capstones = await executor.query(

@@ -51,11 +51,49 @@ class DioApiClient implements ApiClient {
   }
 
   @override
-  Future<void> updateProfile(int trackId) async {
-    await _dio.put<void>(
-      'users/profile',
-      data: {'industry_track_id': trackId},
+  Future<IndustrySwitchResult> switchIndustry(int trackId,
+      {bool reoffer = false}) async {
+    final response = await _dio.put<Map<String, dynamic>>(
+      'users/industry',
+      data: {'track_id': trackId, if (reoffer) 'reoffer': true},
     );
+    return IndustrySwitchResult.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<TutorialState> getTourState(
+      {int? trackId, bool reoffer = false}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      'onboarding/tour',
+      queryParameters: {
+        if (trackId != null) 'track_id': trackId,
+        if (reoffer) 'reoffer': '1',
+      },
+    );
+    return TutorialState.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<TutorialState> setTourStatus({
+    required String status,
+    int? trackId,
+    bool reoffer = false,
+  }) async {
+    final response = await _dio.put<Map<String, dynamic>>(
+      'onboarding/tour',
+      data: {
+        'status': status,
+        if (trackId != null) 'track_id': trackId,
+        if (reoffer) 'reoffer': true,
+      },
+    );
+    return TutorialState.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<VerificationMeta> getVerificationMeta() async {
+    final response = await _dio.get<Map<String, dynamic>>('meta');
+    return VerificationMeta.fromJson(response.data ?? const {});
   }
 
   @override
@@ -161,14 +199,12 @@ class DioApiClient implements ApiClient {
   }
 
   @override
-  Future<List<Milestone>> getMilestones({int? trackId}) async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      'achievements/milestones',
-      queryParameters: {if (trackId != null) 'track': trackId},
-    );
-    final list = response.data?['milestones'] as List<dynamic>? ?? const [];
+  Future<List<Achievement>> getAchievementCatalog() async {
+    final response = await _dio.get<Map<String, dynamic>>('achievements');
+    final list = response.data?['achievements'] as List<dynamic>? ?? const [];
     return list
-        .map((e) => Milestone.fromJson(Map<String, dynamic>.from(e as Map)))
+        .map((item) =>
+            Achievement.fromJson(Map<String, dynamic>.from(item as Map)))
         .toList();
   }
 

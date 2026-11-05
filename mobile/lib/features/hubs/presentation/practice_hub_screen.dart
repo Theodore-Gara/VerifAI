@@ -28,7 +28,7 @@ class PracticeHubScreen extends StatelessWidget {
       ),
       const HubEntry(
         title: 'Risk & Governance',
-        subtitle: 'Spot privacy bias and compliance risks',
+        subtitle: 'Spot privacy, bias and compliance risks',
         icon: Icons.gavel_rounded,
         route: '/risk-governance',
       ),
@@ -96,7 +96,7 @@ class PracticeHubScreen extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'One scenario at a time, then check what changed.',
+                'Choose a skill, work through the scenario, then review your feedback.',
                 style: AppTypography.textTheme.bodyMedium?.copyWith(
                   color: AppColors.textSecondary,
                   height: 1.35,

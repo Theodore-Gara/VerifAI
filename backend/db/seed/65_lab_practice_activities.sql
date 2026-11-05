@@ -10,8 +10,9 @@
 --   matching        {"left":[...],"right":[...]} correct {"mapping":{left:right}}
 --   ordering        {"items":[...]}             correct {"order":[...]}
 
--- One clear per book; each former lesson's activity set is appended below.
-DELETE FROM lab_activities WHERE lesson_id IN (SELECT id FROM lab_lessons WHERE code IN ('finance-book', 'legal-book', 'it-book', 'business-book', 'ai-literacy-book'));
+-- Idempotent and data-safe: only insert an activity when no row with the same
+-- (lesson, sort order) exists. Existing rows are never deleted, so a re-seed
+-- cannot cascade learner attempts away.
 
 -- ---------------------------------------------------------------------------
 -- finance-read-the-numbers
@@ -59,7 +60,9 @@ FROM lab_lessons l, (VALUES
    '{}', '{"answer":false}', 'A business can be profitable and still run short of cash if customers pay late or stock is bought upfront.',
    'Financial Management for Small Businesses', 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'finance-book';
+WHERE l.code = 'finance-book'
+  AND NOT EXISTS (SELECT 1 FROM lab_activities a WHERE a.lesson_id = l.id AND a.sort_order = v.sort_order)
+;
 
 -- ---------------------------------------------------------------------------
 -- finance-verify-a-forecast
@@ -107,7 +110,9 @@ FROM lab_lessons l, (VALUES
    '{}', '{"accepted":["positive","greater than zero","above zero"]}', 'A positive NPV means the project earns more than the required return.',
    'Corporate Finance', 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'finance-book';
+WHERE l.code = 'finance-book'
+  AND NOT EXISTS (SELECT 1 FROM lab_activities a WHERE a.lesson_id = l.id AND a.sort_order = v.sort_order)
+;
 
 -- ---------------------------------------------------------------------------
 -- legal-primary-sources
@@ -157,7 +162,9 @@ FROM lab_lessons l, (VALUES
    '{}', '{"answer":false}', 'Only the wording of the provision is authoritative; a paraphrase that differs is unreliable.',
    'South African legislation and court judgments', 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'legal-book';
+WHERE l.code = 'legal-book'
+  AND NOT EXISTS (SELECT 1 FROM lab_activities a WHERE a.lesson_id = l.id AND a.sort_order = v.sort_order)
+;
 
 -- ---------------------------------------------------------------------------
 -- legal-ai-citation-check
@@ -206,7 +213,9 @@ FROM lab_lessons l, (VALUES
    '{}', '{"accepted":["juristic"]}', 'Companies Act s.19 makes a company a juristic person, separate from its shareholders and directors.',
    'South African legislation and court judgments', 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'legal-book';
+WHERE l.code = 'legal-book'
+  AND NOT EXISTS (SELECT 1 FROM lab_activities a WHERE a.lesson_id = l.id AND a.sort_order = v.sort_order)
+;
 
 -- ---------------------------------------------------------------------------
 -- it-verify-generated-code
@@ -255,7 +264,9 @@ FROM lab_lessons l, (VALUES
    '{}', '{"answer":true}', 'Overfitting means it fails to generalise to unseen data.',
    'Dive into Deep Learning', 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'it-book';
+WHERE l.code = 'it-book'
+  AND NOT EXISTS (SELECT 1 FROM lab_activities a WHERE a.lesson_id = l.id AND a.sort_order = v.sort_order)
+;
 
 -- ---------------------------------------------------------------------------
 -- it-model-limits
@@ -303,7 +314,9 @@ FROM lab_lessons l, (VALUES
    '{}', '{"answer":true}', 'Models produce likely continuations; confident wording is not evidence of truth.',
    'Dive into Deep Learning', 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'it-book';
+WHERE l.code = 'it-book'
+  AND NOT EXISTS (SELECT 1 FROM lab_activities a WHERE a.lesson_id = l.id AND a.sort_order = v.sort_order)
+;
 
 -- ---------------------------------------------------------------------------
 -- business-ai-in-decisions (original)
@@ -351,7 +364,9 @@ FROM lab_lessons l, (VALUES
    '{}', '{"accepted":["evidence","rationale","reasoning"]}', 'The record should show what evidence supported the decision.',
    NULL, 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'business-book';
+WHERE l.code = 'business-book'
+  AND NOT EXISTS (SELECT 1 FROM lab_activities a WHERE a.lesson_id = l.id AND a.sort_order = v.sort_order)
+;
 
 -- ---------------------------------------------------------------------------
 -- business-stakeholder-risk (original)
@@ -399,7 +414,9 @@ FROM lab_lessons l, (VALUES
    '{}', '{"accepted":["disparate","disparate impact"]}', 'Disparate-impact checks surface unfairness that overall accuracy hides.',
    NULL, 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'business-book';
+WHERE l.code = 'business-book'
+  AND NOT EXISTS (SELECT 1 FROM lab_activities a WHERE a.lesson_id = l.id AND a.sort_order = v.sort_order)
+;
 
 -- ---------------------------------------------------------------------------
 -- risk-ai-governance-nist
@@ -447,7 +464,9 @@ FROM lab_lessons l, (VALUES
    '{}', '{"answer":false}', 'Risk management is continuous: document, monitor and review as things change.',
    'NIST AI Risk Management Framework', 10)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'ai-literacy-book';
+WHERE l.code = 'ai-literacy-book'
+  AND NOT EXISTS (SELECT 1 FROM lab_activities a WHERE a.lesson_id = l.id AND a.sort_order = v.sort_order)
+;
 
 -- ---------------------------------------------------------------------------
 -- Finance: subject chapters (activities cover the reading material itself)
@@ -561,7 +580,9 @@ FROM lab_lessons l, (VALUES
    '{}', '{"answer":true}', 'Matching the term of the finance to the need avoids avoidable risk.',
    'Corporate Finance', 30)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'finance-book';
+WHERE l.code = 'finance-book'
+  AND NOT EXISTS (SELECT 1 FROM lab_activities a WHERE a.lesson_id = l.id AND a.sort_order = v.sort_order)
+;
 
 -- ---------------------------------------------------------------------------
 -- Legal: subject chapters
@@ -676,7 +697,9 @@ FROM lab_lessons l, (VALUES
    '{}', '{"answer":false}', 'Reckless trading or trading while insolvent can attract personal liability.',
    'South African legislation and court judgments', 30)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'legal-book';
+WHERE l.code = 'legal-book'
+  AND NOT EXISTS (SELECT 1 FROM lab_activities a WHERE a.lesson_id = l.id AND a.sort_order = v.sort_order)
+;
 
 -- ---------------------------------------------------------------------------
 -- IT / Software: subject chapters
@@ -789,7 +812,9 @@ FROM lab_lessons l, (VALUES
    '{}', '{"answer":true}', 'Observability is how you learn the system is failing.',
    'Critical Infrastructure Cybersecurity', 30)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'it-book';
+WHERE l.code = 'it-book'
+  AND NOT EXISTS (SELECT 1 FROM lab_activities a WHERE a.lesson_id = l.id AND a.sort_order = v.sort_order)
+;
 
 -- ---------------------------------------------------------------------------
 -- Business Consulting: subject chapters
@@ -902,4 +927,6 @@ FROM lab_lessons l, (VALUES
    '{}', '{"answer":false}', 'People adopt change when they understand why and are supported through it.',
    'Project Management', 30)
 ) AS v(type, prompt, payload, correct, explanation, source_title, sort_order)
-WHERE l.code = 'business-book';
+WHERE l.code = 'business-book'
+  AND NOT EXISTS (SELECT 1 FROM lab_activities a WHERE a.lesson_id = l.id AND a.sort_order = v.sort_order)
+;

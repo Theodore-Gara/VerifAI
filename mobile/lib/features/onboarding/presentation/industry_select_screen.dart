@@ -9,6 +9,7 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/auth/providers.dart';
+import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/onboarding/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
@@ -35,6 +36,8 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
   @override
   Widget build(BuildContext context) {
     final tracksAsync = ref.watch(tracksProvider);
+    final user = ref.watch(currentUserProvider).valueOrNull;
+    final currentTrackId = int.tryParse(user?.trackId ?? '');
 
     return Scaffold(
       appBar: AppBar(
@@ -46,8 +49,9 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
         automaticallyImplyLeading: widget.isChangingIndustry,
         leading: widget.isChangingIndustry
             ? IconButton(
+                tooltip: 'Back',
                 icon: const Icon(Icons.arrow_back_rounded),
-                onPressed: () => context.go('/profile'),
+                onPressed: _cancel,
               )
             : null,
       ),
@@ -61,7 +65,7 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
                 actionLabel: 'Refresh',
                 onAction: () => ref.invalidate(tracksProvider),
               )
-            : _buildTracksList(tracks),
+            : _buildTracksList(tracks, currentTrackId),
         loading: () => _buildShimmerList(),
         error: (error, stackTrace) => AsyncErrorView(
           error: error,
@@ -118,9 +122,43 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
     );
   }
 
+  void _cancel() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/dashboard');
+    }
+  }
+
   Future<void> _handleContinue() async {
     final trackId = _selectedTrackId;
     if (trackId == null || _isSubmitting) return;
+    final user = ref.read(currentUserProvider).valueOrNull;
+    final currentTrackId = int.tryParse(user?.trackId ?? '');
+    if (currentTrackId == trackId) return;
+
+    final tracks = ref.read(tracksProvider).valueOrNull ?? const [];
+    IndustryTrack? target;
+    for (final track in tracks) {
+      if (track.id == trackId) {
+        target = track;
+        break;
+      }
+    }
+    if (target == null) return;
+
+    if (widget.isChangingIndustry) {
+      final hasProgress = await _loadHasProgress();
+      if (!mounted) return;
+      if (hasProgress) {
+        final confirmed = await _confirmSwitch(
+          user?.trackName ?? 'Your current industry',
+          target.name,
+        );
+        if (confirmed != true || !mounted) return;
+      }
+    }
+
     setState(() {
       _isSubmitting = true;
       _submitError = null;
@@ -130,7 +168,8 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
       // Call the repository directly: selectTrackProvider is a cached
       // FutureProvider.family, so after one failure a retry would re-throw the
       // same cached error without ever reaching the network.
-      await ref.read(trackRepositoryProvider).selectTrack(trackId);
+      final result =
+          await ref.read(trackRepositoryProvider).selectTrack(trackId);
       ref.read(selectedTrackProvider.notifier).state = trackId;
       // The old track's tasks, lessons, leaderboard and readiness are now
       // stale: invalidate every track-scoped provider in one place so no
@@ -141,7 +180,21 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
       }
 
       if (!mounted) return;
-      context.go(widget.isChangingIndustry ? '/dashboard' : '/welcome-tour');
+      if (!widget.isChangingIndustry) {
+        context.go('/welcome-tour', extra: trackId);
+        return;
+      }
+
+      // New track: offer its introduction once, without blocking Home.
+      final targetName =
+          result.trackName.isEmpty ? target.name : result.trackName;
+      if (result.tour?.shouldOffer == true && await _offerTour(targetName)) {
+        if (!mounted) return;
+        context.go('/welcome-tour', extra: trackId);
+        return;
+      }
+      if (!mounted) return;
+      context.go('/dashboard');
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -157,7 +210,59 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
     }
   }
 
-  Widget _buildTracksList(List<IndustryTrack> tracks) {
+  Future<bool> _loadHasProgress() async {
+    try {
+      final data = await ref.read(dashboardProvider.future);
+      return data.completedTasks > 0 || data.overallScore > 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool?> _confirmSwitch(String currentName, String targetName) {
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Switch industry?'),
+        content: Text(
+          'Your $currentName progress is saved. $targetName starts at Novice.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Switch'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool> _offerTour(String targetName) async {
+    final take = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('New to $targetName?'),
+        content: const Text('Take the 60-second introduction.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Not now'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Take the tour'),
+          ),
+        ],
+      ),
+    );
+    return take == true;
+  }
+
+  Widget _buildTracksList(List<IndustryTrack> tracks, int? currentTrackId) {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       child: Column(
@@ -188,11 +293,11 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Kept — your XP, streak, achievements, tokens and '
-                    'account stay exactly as they are.\n'
-                    'Changes — tasks, lessons, your skill roadmap and the '
-                    'leaderboard switch to the new industry. You can switch '
-                    'back at any time.',
+                    'Kept — your XP, level, streak and tokens stay as they '
+                    'are, and your previous progress is saved.\n'
+                    'Changes — tasks, lessons, readiness and the tutorial '
+                    'switch to the new industry. You can switch back at any '
+                    'time.',
                     style: AppTypography.textTheme.bodySmall?.copyWith(
                       color: AppColors.textSecondary,
                       height: 1.45,
@@ -234,17 +339,19 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
                 crossAxisCount: 2,
                 crossAxisSpacing: AppSpacing.md,
                 mainAxisSpacing: AppSpacing.md,
-                mainAxisExtent: 240,
+                mainAxisExtent: 252,
               ),
               itemCount: tracks.length,
               itemBuilder: (context, index) {
                 final track = tracks[index];
                 final isSelected = _selectedTrackId == track.id;
+                final isCurrent = currentTrackId == track.id;
                 return _TrackCard(
                   track: track,
                   isSelected: isSelected,
+                  isCurrent: isCurrent,
                   onTap: () {
-                    if (_isSubmitting) return;
+                    if (_isSubmitting || isCurrent) return;
                     setState(() {
                       _selectedTrackId = track.id;
                       _submitError = null;
@@ -280,7 +387,7 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
                 crossAxisCount: 2,
                 crossAxisSpacing: AppSpacing.md,
                 mainAxisSpacing: AppSpacing.md,
-                mainAxisExtent: 240,
+                mainAxisExtent: 252,
               ),
               itemCount: 4,
               itemBuilder: (context, index) => const ShimmerLoader.card(),
@@ -295,11 +402,13 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
 class _TrackCard extends StatelessWidget {
   final IndustryTrack track;
   final bool isSelected;
+  final bool isCurrent;
   final VoidCallback onTap;
 
   const _TrackCard({
     required this.track,
     required this.isSelected,
+    required this.isCurrent,
     required this.onTap,
   });
 
@@ -363,6 +472,18 @@ class _TrackCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 2),
+              if (isCurrent)
+                Text(
+                  'CURRENT INDUSTRY',
+                  style: AppTypography.textTheme.labelSmall?.copyWith(
+                    color: AppColors.accentGreen,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 10,
+                    letterSpacing: 0.6,
+                  ),
+                )
+              else
+                const SizedBox.shrink(),
               Text(
                 track.description ?? '',
                 style: AppTypography.textTheme.bodySmall?.copyWith(

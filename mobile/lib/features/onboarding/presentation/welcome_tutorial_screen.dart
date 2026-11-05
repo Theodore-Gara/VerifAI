@@ -1,21 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/core/theme/app_colors.dart';
+import 'package:verifai/features/auth/providers.dart';
+import 'package:verifai/features/onboarding/providers.dart';
 
 /// First-run, skippable guide that explains the existing VerifAI experience.
-/// Completion is stored locally; it does not require a backend endpoint.
-class WelcomeTutorialScreen extends StatefulWidget {
-  const WelcomeTutorialScreen({super.key});
+/// Completion is stored per track on the server, with local storage as an
+/// offline cache.
+class WelcomeTutorialScreen extends ConsumerStatefulWidget {
+  const WelcomeTutorialScreen({super.key, this.trackId});
+
+  final int? trackId;
 
   @override
-  State<WelcomeTutorialScreen> createState() => _WelcomeTutorialScreenState();
+  ConsumerState<WelcomeTutorialScreen> createState() =>
+      _WelcomeTutorialScreenState();
 }
 
-class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
+class _WelcomeTutorialScreenState extends ConsumerState<WelcomeTutorialScreen>
     with SingleTickerProviderStateMixin {
-  static const _completionKey = 'verifai_welcome_tutorial_completed_v1';
+  String get _completionKey {
+    final trackId = widget.trackId ??
+        int.tryParse(ref.read(currentUserProvider).valueOrNull?.trackId ?? '');
+    return trackId == null
+        ? 'verifai_tutorial_current_status_v1'
+        : 'verifai_tutorial_${trackId}_status_v1';
+  }
+
   final PageController _pageController = PageController();
   late final AnimationController _animationController;
   int _page = 0;
@@ -121,17 +136,34 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
     super.dispose();
   }
 
-  Future<void> _finish() async {
+  Future<void> _finish({bool skipped = false}) async {
     if (_saving) return;
     setState(() => _saving = true);
+    final status = skipped ? 'skipped' : 'completed';
+    try {
+      await ref.read(apiClientProvider).setTourStatus(
+            status: status,
+            trackId: widget.trackId,
+          );
+    } catch (_) {
+      // Offline: the local cache below keeps the learner moving. The server
+      // remains the source of truth on the next online open.
+    }
     try {
       final preferences = await SharedPreferences.getInstance();
-      await preferences.setBool(_completionKey, true);
+      await preferences.setString(_completionKey, status);
     } catch (_) {
       // Navigation should remain possible if local storage is unavailable.
     }
+    ref.invalidate(tourStateProvider);
     if (!mounted) return;
-    context.go('/dashboard');
+    // A pushed tour (Profile/Help replay) returns to its caller. Onboarding
+    // opens it as a root route, so fall back to Home.
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/dashboard');
+    }
   }
 
   void _next() {
@@ -177,10 +209,16 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
                   children: [
                     Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('${_page + 1} of ${_steps.length}',
-                          style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w700)),
+                      child: context.canPop()
+                          ? IconButton(
+                              tooltip: 'Back',
+                              onPressed: _saving ? null : () => context.pop(),
+                              icon: const Icon(Icons.arrow_back_rounded),
+                            )
+                          : Text('${_page + 1} of ${_steps.length}',
+                              style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w700)),
                     ),
                     Text('VerifAI',
                         style: TextStyle(
@@ -191,8 +229,9 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: _saving ? null : () => _finish(),
-                        child: const Text('Skip tutorial'),
+                        onPressed:
+                            _saving ? null : () => _finish(skipped: true),
+                        child: const Text('Skip for now'),
                       ),
                     ),
                   ],
@@ -382,7 +421,7 @@ class _WelcomeTutorialScreenState extends State<WelcomeTutorialScreen>
                               : Icons.arrow_forward_rounded,
                           size: 18),
                       label: Text(_saving
-                          ? 'Opening…'
+                          ? 'Saving…'
                           : (_page == _steps.length - 1
                               ? 'Start learning'
                               : 'Next')),

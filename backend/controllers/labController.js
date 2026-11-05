@@ -27,7 +27,8 @@ function notFound(res, req, message = 'Lesson not found for your selected track.
 // user's track.
 async function findLessonForUser(executor, code, trackId) {
   const result = await executor.query(
-    `SELECT ${LESSON_FIELDS} FROM lab_lessons WHERE code = $1 AND (track_id IS NULL OR track_id = $2)`,
+    `SELECT ${LESSON_FIELDS} FROM lab_lessons
+      WHERE code = $1 AND retired = FALSE AND (track_id IS NULL OR track_id = $2)`,
     [code, trackId],
   );
   return result.rows[0] || null;
@@ -105,7 +106,7 @@ async function listLessons(req, res, next) {
               (p.user_id IS NOT NULL) AS seen
        FROM lab_lessons l
        LEFT JOIN lab_lesson_progress p ON p.lesson_id = l.id AND p.user_id = $1
-       WHERE l.track_id IS NULL OR l.track_id = $2
+       WHERE (l.track_id IS NULL OR l.track_id = $2) AND l.retired = FALSE
        ORDER BY l.sort_order, l.id`,
       [user.id, user.industry_track_id],
     );
@@ -128,7 +129,7 @@ async function getNextLesson(req, res, next) {
     const includeSeen = String(req.query.include_seen ?? 'true').toLowerCase() !== 'false';
 
     const params = [user.id, user.industry_track_id];
-    let where = 'WHERE (l.track_id IS NULL OR l.track_id = $2)';
+    let where = 'WHERE (l.track_id IS NULL OR l.track_id = $2) AND l.retired = FALSE';
     if (!includeSeen) where += ' AND p.user_id IS NULL';
 
     const result = await pool.query(
@@ -369,7 +370,7 @@ async function submitActivity(req, res, next) {
       `SELECT a.id, a.lesson_id, a.type, a.correct, a.explanation, a.xp_reward
        FROM lab_activities a
        JOIN lab_lessons l ON l.id = a.lesson_id
-       WHERE a.id = $1 AND (l.track_id IS NULL OR l.track_id = $2)`,
+       WHERE a.id = $1 AND l.retired = FALSE AND (l.track_id IS NULL OR l.track_id = $2)`,
       [activityId, user.industry_track_id],
     );
     if (!activityResult.rows.length) {
@@ -1117,7 +1118,7 @@ async function getSource(req, res, next) {
       `SELECT l.id, l.code, l.title, ls.use_type, ls.changes_made
        FROM lesson_sources ls
        JOIN lab_lessons l ON l.id = ls.lesson_id
-       WHERE ls.source_id = $1
+       WHERE ls.source_id = $1 AND l.retired = FALSE
        ORDER BY l.sort_order, l.id`,
       [id],
     );

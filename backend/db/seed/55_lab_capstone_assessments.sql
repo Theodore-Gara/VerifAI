@@ -26,7 +26,8 @@ ON CONFLICT (code) DO UPDATE SET
   xp_reward = EXCLUDED.xp_reward, token_reward = EXCLUDED.token_reward,
   achievement_code = EXCLUDED.achievement_code, sort_order = EXCLUDED.sort_order;
 
-DELETE FROM lab_capstone_questions WHERE assessment_id = (SELECT id FROM lab_capstone_assessments WHERE code = 'cap-fin');
+-- Questions are upserted by (assessment_id, prompt), never deleted: attempts
+-- store answers keyed by question id and must keep pointing at the same row.
 INSERT INTO lab_capstone_questions
   (assessment_id, type, section, scenario, competency, cognitive_level, source_refs, prompt, payload, correct,
    explanation, rubric, model_answer, code_lines, word_limit, marks, marking, sort_order)
@@ -319,7 +320,9 @@ Change in bank balance | -R40,000
 Annual depot inflow (3 years) | R120,000
 Depot cost today | R300,000', 'Recommendation', 'evaluate', '["FIN-02","FIN-03","FIN-04","FIN-05"]'::jsonb, '6.1 Write a recommendation (150 to 250 words) to Sipho on whether to open the depot. Use the NPV of the depot, the current ratio, and the difference between profit and cash to support your advice, and suggest one action to improve his cash position.', '{"question_no":6,"word_limit":{"min":150,"max":250}}'::jsonb, NULL, NULL, '[{"criterion":"Clear recommendation consistent with the negative NPV (do not proceed as planned, or delay or renegotiate)","marks":4},{"criterion":"Cites the NPV figure (about -R11,780) and explains that the depot is expected to earn less than the required return","marks":4},{"criterion":"Uses the current ratio of 0.8 to explain the liquidity risk, and links profit not equalling cash to the slow-paying clients","marks":4},{"criterion":"Proposes a relevant action (e.g. collect from clients sooner, improve liquidity before expanding, find a cheaper option with positive NPV)","marks":2},{"criterion":"Clear, professional wording a non-specialist can follow","marks":1}]'::jsonb, 'Sipho, I recommend that you do not open the depot as planned. At your required return of 12%, the three inflows of R120,000 are worth about R288,220 today, which is less than the R300,000 cost. The NPV is therefore about negative R11,780, so the depot is expected to earn less than you require. Your cash position also worries me. Your current ratio is 0.8, which means you have only 80 cents of current assets for every rand of current liabilities, so you may struggle to pay short-term debts. Last year''s profit of R85,000 did not stop your bank balance falling by R40,000, because clients take about 75 days to pay. A R300,000 project now would put even more pressure on your cash, and you could struggle to pay suppliers on time. I suggest you first collect from clients sooner and strengthen your liquidity, and then look again at expansion, perhaps with a cheaper option that earns a positive NPV.', NULL, '{"min":150,"max":250}'::jsonb, 15, 'rubric', 22)
 ) AS v(type, section, scenario, competency, cognitive_level, source_refs, prompt, payload, correct, explanation, rubric, model_answer, code_lines, word_limit, marks, marking, sort_order)
-WHERE c.code = 'cap-fin';
+WHERE c.code = 'cap-fin'
+  AND NOT EXISTS (SELECT 1 FROM lab_capstone_questions q WHERE q.assessment_id = c.id AND q.sort_order = v.sort_order)
+;
 
 INSERT INTO achievements (code, name, description) VALUES ('capstone-it', 'IT / Software Capstone', 'Passed the IT / Software Capstone.')
 ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description;
@@ -340,7 +343,6 @@ ON CONFLICT (code) DO UPDATE SET
   xp_reward = EXCLUDED.xp_reward, token_reward = EXCLUDED.token_reward,
   achievement_code = EXCLUDED.achievement_code, sort_order = EXCLUDED.sort_order;
 
-DELETE FROM lab_capstone_questions WHERE assessment_id = (SELECT id FROM lab_capstone_assessments WHERE code = 'cap-it');
 INSERT INTO lab_capstone_questions
   (assessment_id, type, section, scenario, competency, cognitive_level, source_refs, prompt, payload, correct,
    explanation, rubric, model_answer, code_lines, word_limit, marks, marking, sort_order)
@@ -552,7 +554,9 @@ The team plans to release a new checkout feature and an updated model on Friday.
 • To reach 90% accuracy, the team repeatedly adjusted the model''s settings and re-checked the results against the test set until the score was high enough.
 • To save time, the team wants to skip human review of the AI-generated code before Friday.', 'Release readiness', 'create', '["IT-01","IT-02","IT-03","IT-04","IT-05"]'::jsonb, '6.1 Write a pre-release checklist of at least FIVE checks the team must complete before shipping the checkout feature and the updated model on Friday. Give a one-line reason for each check.', '{"question_no":6}'::jsonb, NULL, NULL, '[{"criterion":"Five distinct, valid checks (1 mark each, max 5). Examples: human review of AI-generated code, server-side validation and authorisation of price and quantity, parameterised queries, salted slow password hashing, tuning only on the validation set, using the test set once, checking the train-validation gap for overfitting, logging and monitoring, updating dependencies","marks":10},{"criterion":"Gives a correct one-line reason for at least three of the checks","marks":4},{"criterion":"Organised and clear, with at least one check covering the model and one covering the code","marks":2}]'::jsonb, '1. A human reviews all AI-generated code before release, because the assistant can produce insecure patterns. 2. Validate price and quantity on the server for every checkout request, because anyone can bypass the app. 3. Confirm that all database queries are parameterised, to stop injection. 4. Retune the model using the validation set only, because tuning on the test set uses it up. 5. Evaluate the final model once on a fresh test set, so the score is an honest estimate. 6. Compare training and validation scores to check for overfitting, so the model works on real listings. 7. Turn on logging and monitoring, so problems after release are noticed quickly.', NULL, NULL, 16, 'rubric', 26)
 ) AS v(type, section, scenario, competency, cognitive_level, source_refs, prompt, payload, correct, explanation, rubric, model_answer, code_lines, word_limit, marks, marking, sort_order)
-WHERE c.code = 'cap-it';
+WHERE c.code = 'cap-it'
+  AND NOT EXISTS (SELECT 1 FROM lab_capstone_questions q WHERE q.assessment_id = c.id AND q.sort_order = v.sort_order)
+;
 
 INSERT INTO achievements (code, name, description) VALUES ('capstone-legal', 'Legal Capstone', 'Passed the Legal Capstone.')
 ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description;
@@ -573,7 +577,6 @@ ON CONFLICT (code) DO UPDATE SET
   xp_reward = EXCLUDED.xp_reward, token_reward = EXCLUDED.token_reward,
   achievement_code = EXCLUDED.achievement_code, sort_order = EXCLUDED.sort_order;
 
-DELETE FROM lab_capstone_questions WHERE assessment_id = (SELECT id FROM lab_capstone_assessments WHERE code = 'cap-leg');
 INSERT INTO lab_capstone_questions
   (assessment_id, type, section, scenario, competency, cognitive_level, source_refs, prompt, payload, correct,
    explanation, rubric, model_answer, code_lines, word_limit, marks, marking, sort_order)
@@ -771,7 +774,9 @@ TutorLink is launching Study Rooms, where students learn together in shared onli
 • Chat data will be sent to an analytics company, but no written agreement with that company has been signed.
 • The lessons in the rooms will quote sections of POPIA and the Consumer Protection Act word for word.', 'Legal opinion', 'create', '["LEG-01","LEG-02","LEG-03"]'::jsonb, '6.1 Write a short advisory note (150 to 250 words) to Nomsa on the Study Rooms plan. Identify TWO POPIA problems in the plan and say how to fix each. Then say whether quoting the statutes in the lessons creates a copyright problem.', '{"question_no":6,"word_limit":{"min":150,"max":250}}'::jsonb, NULL, NULL, '[{"criterion":"First POPIA problem correctly identified, with a sensible fix (e.g. indefinite retention without a stated purpose: tell students the purpose, keep logs only as long as necessary, ask consent for new uses)","marks":5},{"criterion":"Second POPIA problem correctly identified, with a sensible fix (e.g. showing full names and emails by default: share only what is needed; or no written agreement with the analytics company: sign a contract requiring security)","marks":5},{"criterion":"Concludes that quoting the official statute text is not a copyright problem","marks":3},{"criterion":"Gives the reason (section 12(8)(a) excludes official legislative and legal texts) and notes that other people''s commentary may still be protected","marks":3},{"criterion":"Clear structure and professional wording for a non-lawyer","marks":5}]'::jsonb, 'Nomsa, I have three comments on the Study Rooms plan. First, keeping chat logs indefinitely for possible future AI training is a problem, because personal information should be collected for a specific purpose and not kept longer than needed. We should tell students what the logs are used for, keep them only as long as necessary, and ask for consent before any new use. Second, showing every student''s full name and university email to the whole room by default shares more than the service needs. We should show only a display name by default and let students choose to share more. A third gap is sending chat data to the analytics company without a written agreement, so we should sign a contract that requires it to protect the data. On the lessons, quoting POPIA and the Consumer Protection Act is not a copyright problem, because section 12(8)(a) of the Copyright Act excludes official legislative texts from copyright. This covers the official text only, so commentary written by others may still be protected.', NULL, '{"min":150,"max":250}'::jsonb, 21, 'rubric', 26)
 ) AS v(type, section, scenario, competency, cognitive_level, source_refs, prompt, payload, correct, explanation, rubric, model_answer, code_lines, word_limit, marks, marking, sort_order)
-WHERE c.code = 'cap-leg';
+WHERE c.code = 'cap-leg'
+  AND NOT EXISTS (SELECT 1 FROM lab_capstone_questions q WHERE q.assessment_id = c.id AND q.sort_order = v.sort_order)
+;
 
 INSERT INTO achievements (code, name, description) VALUES ('capstone-business', 'Business Consulting Capstone', 'Passed the Business Consulting Capstone.')
 ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description;
@@ -792,7 +797,6 @@ ON CONFLICT (code) DO UPDATE SET
   xp_reward = EXCLUDED.xp_reward, token_reward = EXCLUDED.token_reward,
   achievement_code = EXCLUDED.achievement_code, sort_order = EXCLUDED.sort_order;
 
-DELETE FROM lab_capstone_questions WHERE assessment_id = (SELECT id FROM lab_capstone_assessments WHERE code = 'cap-bus');
 INSERT INTO lab_capstone_questions
   (assessment_id, type, section, scenario, competency, cognitive_level, source_refs, prompt, payload, correct,
    explanation, rubric, model_answer, code_lines, word_limit, marks, marking, sort_order)
@@ -1017,5 +1021,7 @@ Thandi Khumalo owns Khula Cleaning Services, which cleans office buildings in Pr
 • Several new low-cost cleaning companies have entered the Pretoria market.
 • About 70% of Khula''s revenue comes from two clients.', 'Consulting recommendation', 'create', '["BUS-02","BUS-04","BUS-05"]'::jsonb, '6.1 Write a recommendation (150 to 250 words) to Thandi. Name ONE strategic priority justified by a SWOT analysis of Khula, state a SMART goal for it, and describe how she will control progress towards the goal.', '{"question_no":6,"word_limit":{"min":150,"max":250}}'::jsonb, NULL, NULL, '[{"criterion":"Names one strategic priority and links it clearly to items in the SWOT analysis","marks":5},{"criterion":"States a goal that is specific and measurable","marks":3},{"criterion":"The goal is achievable and relevant to the priority","marks":3},{"criterion":"The goal has a deadline","marks":3},{"criterion":"Describes the control process: a standard, measuring actual results, comparing, and corrective action","marks":5},{"criterion":"Clear, professional wording a non-specialist can follow","marks":2}]'::jsonb, 'Thandi, I recommend that your priority is to grow your eco-friendly cleaning service for corporate clients. Your trained, reliable staff are a strength, and growing demand for green cleaning is an opportunity. It also reduces your risk from the new low-cost competitors, because you would compete on quality rather than price, and it would help you win more clients so you depend less on your two big ones. Your manual booking is a weakness, so we should set up a simple digital booking system first. My goal is that green cleaning contracts with at least six new corporate clients will be signed by 30 June 2027. To control progress, set monthly targets as your standard, measure the actual number of contracts won each month, and compare them with the target. If you fall behind, find the cause, for example slow quotes or too little marketing, and take action. Review results with your team every month.', NULL, '{"min":150,"max":250}'::jsonb, 21, 'rubric', 26)
 ) AS v(type, section, scenario, competency, cognitive_level, source_refs, prompt, payload, correct, explanation, rubric, model_answer, code_lines, word_limit, marks, marking, sort_order)
-WHERE c.code = 'cap-bus';
+WHERE c.code = 'cap-bus'
+  AND NOT EXISTS (SELECT 1 FROM lab_capstone_questions q WHERE q.assessment_id = c.id AND q.sort_order = v.sort_order)
+;
 

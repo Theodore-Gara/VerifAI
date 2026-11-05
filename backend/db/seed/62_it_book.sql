@@ -13,7 +13,7 @@ ON CONFLICT (code) DO UPDATE SET
   estimated_minutes = EXCLUDED.estimated_minutes, level = EXCLUDED.level,
   is_original = EXCLUDED.is_original, competency = EXCLUDED.competency, sort_order = EXCLUDED.sort_order;
 
-DELETE FROM lab_lessons WHERE code IN ('it-verify-generated-code', 'it-model-limits');
+SELECT retire_lessons(ARRAY['it-verify-generated-code', 'it-model-limits']);
 
 DELETE FROM lab_lesson_sections WHERE lesson_id = (SELECT id FROM lab_lessons WHERE code = 'it-book');
 

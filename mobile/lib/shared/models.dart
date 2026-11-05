@@ -6,7 +6,7 @@ export 'models/auth_state.dart';
 export 'models/achievement.dart';
 export 'models/leaderboard.dart';
 export 'models/activity.dart';
-export 'models/milestone.dart';
+export 'models/industry_switch.dart';
 export 'models/vera.dart';
 export 'models/verification.dart';
 export 'models/lab.dart';

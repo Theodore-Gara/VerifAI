@@ -66,8 +66,8 @@ void main() {
     await tester.pump(const Duration(seconds: 2)); // track save + backend sync
     await tester.pumpAndSettle();
 
-    expect(find.text('Skip tutorial'), findsOneWidget);
-    await tester.tap(find.text('Skip tutorial'));
+    expect(find.text('Skip for now'), findsOneWidget);
+    await tester.tap(find.text('Skip for now'));
     await tester.pumpAndSettle();
     // Flush the dashboard's mock fetch (MockApiClient delays 300-800ms
     // randomly); pumpAndSettle alone can finish before the timer fires,

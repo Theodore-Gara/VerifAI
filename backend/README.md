@@ -28,18 +28,30 @@ Copy `.env.example` to `.env` and configure the database and Firebase credential
 
 ## Database
 
-Fresh database:
+Fresh database (first time only; refuses a database that already has users):
 
-```text
-db/schema.sql
-db/seed.sql
+```bash
+npm run db:setup
 ```
 
-Existing prototype database:
+Existing database (the normal deploy path; applies pending migrations only):
 
-```text
-db/migrate_d4.sql
+```bash
+npm run db:migrate
 ```
+
+Re-apply content seeds without touching learner data:
+
+```bash
+npm run db:setup seed
+```
+
+The seed path now upserts task options, lab activities and capstone questions by
+stable keys, and retires old lessons instead of deleting them. Re-running it no
+longer cascades attempts or progress away. If a database has learner data but
+its `schema_migrations` ledger was lost, `db:migrate` refuses to replay from
+001 (002 truncates progression); restore the ledger, or run `npm run db:baseline`
+if the schema is known to be current.
 
 Back up an existing database before migration.
 

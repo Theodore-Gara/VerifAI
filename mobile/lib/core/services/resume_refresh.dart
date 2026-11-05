@@ -11,7 +11,6 @@ import 'package:verifai/features/profile/providers.dart';
 import 'package:verifai/features/progress/providers.dart';
 import 'package:verifai/features/rewards/providers.dart';
 import 'package:verifai/features/scoreboard/providers.dart';
-import 'package:verifai/features/track/providers.dart';
 
 /// Refreshes the learner's data when the app comes back to the foreground.
 ///
@@ -70,7 +69,6 @@ class _ResumeRefreshState extends ConsumerState<ResumeRefresh>
     ref.invalidate(dashboardProvider);
     ref.invalidate(activityProvider);
     ref.invalidate(achievementsProvider);
-    ref.invalidate(milestonesProvider);
     ref.invalidate(historyProvider);
     ref.invalidate(rewardsProvider);
     ref.invalidate(labLessonsProvider);

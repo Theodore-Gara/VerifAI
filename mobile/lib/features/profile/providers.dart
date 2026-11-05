@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/shared/models.dart';
 
-/// Achievements the signed-in user has earned (GET /api/achievements/me).
+/// Achievements catalog with earned and locked state (GET /api/achievements).
 final achievementsProvider = FutureProvider<List<Achievement>>((ref) async {
   final apiClient = ref.watch(apiClientProvider);
-  return await apiClient.getAchievements();
+  return await apiClient.getAchievementCatalog();
 });
 
 /// Staff identity for the signed-in user (GET /api/auth/me). Null role means
