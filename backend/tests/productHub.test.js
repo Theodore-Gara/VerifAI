@@ -91,14 +91,12 @@ global.fetch = async (url, options) => {
   const body = JSON.parse(options.body);
   fetchLog.push(body);
   const system = body.messages[0].content;
-  const content = system.includes('verification analyst')
-    ? JSON.stringify({
-        overall_status: 'insufficient_evidence',
-        items_requiring_review: [{ claim: 'Revenue grew 15%', concern: 'No source cited' }],
-        sources_confirmed: 0,
-        summary: 'Needs human review.',
-      })
-    : 'Here is a helpful hint.';
+  let content = 'Here is a helpful hint.';
+  if (system.includes('find factual claims')) {
+    content = JSON.stringify({ claims: [{ text: 'Revenue grew 15% in 2025.', page: null, kind: 'statistic' }] });
+  } else if (system.includes('verification analyst')) {
+    content = JSON.stringify({ verdicts: [{ id: 1, verdict: 'unverified', concern: 'No source supplied.', evidence: [] }] });
+  }
   return { ok: true, json: async () => ({ choices: [{ message: { content } }], usage: {} }) };
 };
 
@@ -117,7 +115,15 @@ test('POST /api/verification/analyze stores metadata + report and never the raw 
 
   assert.equal(response.status, 201);
   assert.equal(response.body.analysis.overall_status, 'insufficient_evidence');
-  assert.equal(fetchLog[0].model, 'nvidia/nemotron-3.5-super-vl-120b-a12b');
+  assert.equal(response.body.analysis.version, 2);
+  // BF-2: no verification call may use a thinking profile, and the verdict call
+  // uses the dedicated verification profile rather than the old analysis one.
+  const { MODELS } = require('../services/llm/profiles');
+  assert.ok(fetchLog.length >= 2);
+  assert.ok(fetchLog.every((body) => body.chat_template_kwargs?.enable_thinking === false));
+  assert.equal(fetchLog[0].model, MODELS.light, 'claim extraction uses the light model');
+  assert.equal(fetchLog[1].model, MODELS.analysis, 'verdicts use the analysis model');
+  assert.equal(fetchLog[1].reasoning_budget, undefined, 'no reasoning budget is sent');
 
   const insert = queries.find((q) => q.sql.startsWith('INSERT INTO verification_analyses'));
   assert.ok(insert);

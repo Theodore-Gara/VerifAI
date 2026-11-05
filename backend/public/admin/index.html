@@ -885,7 +885,15 @@ async function api(path, options = {}) {
     showPending('Your session expired. Reopen the admin panel from the VerifAI app to continue.');
     throw new Error('Session expired.');
   }
-  if (!res.ok) throw new Error(body.error || ('HTTP ' + res.status));
+  if (!res.ok) {
+    if (res.status === 404 && path !== '/system') {
+      // A 404 on an admin endpoint almost always means the deployed backend
+      // predates this panel or the endpoint — say so instead of a bare code.
+      throw new Error(
+        `API endpoint ${path} was not found (HTTP 404). The deployed backend is likely older than this panel — redeploy the backend, then press Refresh.`);
+    }
+    throw new Error(body.error || ('HTTP ' + res.status));
+  }
   return body;
 }
 
@@ -907,22 +915,59 @@ function requestTokenRenewal() {
 }
 
 // ---------------------------------------------------------------- tabs
+// Renders a friendly error banner at the top of a section (with Retry) so a
+// failed load never leaves a tab silently blank.
+function showSectionError(sectionId, message) {
+  const section = $(sectionId);
+  if (!section) return;
+  const existing = section.querySelector('.loadError');
+  if (existing) existing.remove();
+  const box = document.createElement('div');
+  box.className = 'banner loadError';
+  const text = document.createElement('span');
+  text.textContent = message;
+  const retry = document.createElement('button');
+  retry.className = 'small';
+  retry.textContent = 'Retry';
+  retry.style.marginLeft = '10px';
+  retry.onclick = () => { box.remove(); retryActiveTab(); };
+  box.appendChild(text);
+  box.appendChild(retry);
+  section.prepend(box);
+}
+
+function retryActiveTab() {
+  const active = document.querySelector('nav.tabs button.active');
+  if (active) active.click();
+}
+
 for (const btn of document.querySelectorAll('nav.tabs button')) {
   btn.onclick = async () => {
     for (const b of document.querySelectorAll('nav.tabs button')) b.classList.toggle('active', b === btn);
     for (const s of document.querySelectorAll('main > section')) s.classList.toggle('hidden', s.id !== 'tab-' + btn.dataset.tab);
+    const loaders = {
+      tasks: reloadTasks,
+      users: reloadUsers,
+      progress: loadTrackProgress,
+      moderation: loadModeration,
+      content: loadLab,
+      workshop: loadWorkshop,
+      system: loadSystem,
+      approvals: loadApprovals,
+      analytics: loadAnalytics,
+      overview: loadAll,
+    };
+    const loader = loaders[btn.dataset.tab];
+    if (!loader) return;
     try {
-      if (btn.dataset.tab === 'tasks') await reloadTasks();
-      if (btn.dataset.tab === 'users') await reloadUsers();
-      if (btn.dataset.tab === 'progress') await loadTrackProgress();
-      if (btn.dataset.tab === 'moderation') await loadModeration();
-      if (btn.dataset.tab === 'content') await loadLab();
-      if (btn.dataset.tab === 'workshop') await loadWorkshop();
-      if (btn.dataset.tab === 'system') await loadSystem();
-      if (btn.dataset.tab === 'approvals') await loadApprovals();
-      if (btn.dataset.tab === 'analytics') await loadAnalytics();
-      if (btn.dataset.tab === 'overview') await loadAll();
-    } catch (err) { toast(err.message, true); }
+      await loader();
+      // Load succeeded — clear any stale error banner.
+      const stale = $('tab-' + btn.dataset.tab).querySelector('.loadError');
+      if (stale) stale.remove();
+    } catch (err) {
+      toast(err.message, true);
+      showSectionError('tab-' + btn.dataset.tab, 'This tab could not load: ' + err.message);
+    }
   };
 }
 

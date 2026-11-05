@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:verifai/core/providers/app_providers.dart';
+import 'package:verifai/core/services/api_error.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
@@ -13,6 +14,7 @@ import 'package:verifai/features/navigation/sections.dart';
 import 'package:verifai/features/verification_studio/presentation/verification_result_screen.dart';
 import 'package:verifai/features/verification_studio/providers.dart';
 import 'package:verifai/shared/models.dart';
+import 'package:verifai/shared/widgets.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 
 /// Verification Studio: Vera verifies text, documents, links and citations.
@@ -39,6 +41,8 @@ class _State extends ConsumerState<VerificationStudioScreen> {
   final _context = TextEditingController();
   bool _webSearch = true;
   bool _running = false;
+  String? _failureMessage;
+  bool _failureRetryable = false;
 
   @override
   void dispose() {
@@ -50,41 +54,72 @@ class _State extends ConsumerState<VerificationStudioScreen> {
   }
 
   Future<void> _pickDocument() async {
+    final meta = ref.read(verificationMetaProvider).valueOrNull ??
+        const VerificationMeta();
+    final formats = meta.acceptedFormats.map((f) => f.toLowerCase()).toList();
     try {
-      final picked = await FilePicker.platform.pickFiles(withData: true);
+      final picked = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions:
+            formats.isEmpty ? const ['pdf', 'docx', 'txt', 'md'] : formats,
+        withData: true,
+      );
       final file = picked?.files.single;
       final bytes = file?.bytes;
-      if (file == null || bytes == null) {
+      if (file == null || bytes == null) return;
+
+      final extension = (file.extension ?? '').toLowerCase();
+      final allowed =
+          formats.isEmpty ? const ['pdf', 'docx', 'txt', 'md'] : formats;
+      if (!allowed.contains(extension)) {
+        setState(() {
+          _failureMessage =
+              'That file type is not supported. Use ${meta.formatsLabel}, or paste the text.';
+          _failureRetryable = false;
+        });
         return;
       }
-      const maxBytes = 10 * 1024 * 1024;
-      if (bytes.length > maxBytes) {
-        if (mounted) {
-          showFeedback(
-              context, FeedbackKind.error, 'Document must be 10MB or smaller.');
-        }
+      if (file.size > meta.maxDocumentBytes) {
+        setState(() {
+          _failureMessage =
+              'That file is ${_formatBytes(file.size)}. The limit is ${meta.maxFileLabel}.';
+          _failureRetryable = false;
+        });
         return;
       }
-      setState(() => _sources.add(VerificationSourceInput(
-            type: 'document',
-            name: file.name,
-            mime: _mimeFor(file.extension),
-            base64: base64Encode(bytes),
-          )));
+      setState(() {
+        _failureMessage = null;
+        _sources.add(VerificationSourceInput(
+          type: 'document',
+          name: file.name,
+          mime: _mimeFor(extension),
+          base64: base64Encode(bytes),
+        ));
+      });
     } catch (_) {
-      if (mounted) {
-        showFeedback(context, FeedbackKind.error, 'Could not read that file.');
-      }
+      if (!mounted) return;
+      setState(() {
+        _failureMessage =
+            'We could not read that file. Try another one or paste the text.';
+        _failureRetryable = false;
+      });
     }
   }
 
-  String _mimeFor(String? ext) => switch ((ext ?? '').toLowerCase()) {
+  String _mimeFor(String ext) => switch (ext.toLowerCase()) {
         'pdf' => 'application/pdf',
         'docx' =>
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'md' => 'text/markdown',
         _ => 'text/plain',
       };
+
+  String _formatBytes(int bytes) {
+    final mb = bytes / (1024 * 1024);
+    return mb >= 1
+        ? '${mb.toStringAsFixed(1)} MB'
+        : '${(bytes / 1024).ceil()} KB';
+  }
 
   void _addUrl() {
     final url = _url.text.trim();
@@ -115,7 +150,10 @@ class _State extends ConsumerState<VerificationStudioScreen> {
           'Add some text, a document, a link or a citation first.');
       return;
     }
-    setState(() => _running = true);
+    setState(() {
+      _running = true;
+      _failureMessage = null;
+    });
     try {
       final result = await ref.read(apiClientProvider).analyzeVerification(
             kind: _kind,
@@ -124,21 +162,38 @@ class _State extends ConsumerState<VerificationStudioScreen> {
             webSearch: _webSearch,
           );
       if (!mounted) return;
-      setState(() {
-        _text.clear();
-        _context.clear();
-        _sources.clear();
-      });
+      // Keep the form intact: the report's "Edit input" returns here with the
+      // original text and sources still in place.
       ref.invalidate(verificationHistoryProvider);
-      await Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => VerificationResultScreen(result: result),
+      final retry = await Navigator.of(context).push<bool>(MaterialPageRoute(
+        builder: (_) =>
+            VerificationResultScreen(result: result, canRetry: true),
       ));
+      if (retry == true && mounted) await _run();
     } catch (e) {
       if (!mounted) return;
-      showFeedback(context, FeedbackKind.error, 'Verification failed. $e');
+      final failure = classifyError(e);
+      final meta = ref.read(verificationMetaProvider).valueOrNull ??
+          const VerificationMeta();
+      setState(() {
+        _failureMessage = _failureCopy(failure, meta);
+        _failureRetryable = failure.isRetryable ||
+            failure.code == 'rate_limited' ||
+            failure.code == 'report_unreadable';
+      });
     } finally {
       if (mounted) setState(() => _running = false);
     }
+  }
+
+  String _failureCopy(ApiFailure failure, VerificationMeta meta) {
+    return switch (failure.code) {
+      'document_too_large' =>
+        'That file is larger than the ${meta.maxFileLabel} limit. Choose a smaller file or paste the text.',
+      'document_unsupported' =>
+        'That file type is not supported. Use ${meta.formatsLabel}, or paste the text.',
+      _ => failure.message,
+    };
   }
 
   @override
@@ -291,6 +346,10 @@ class _State extends ConsumerState<VerificationStudioScreen> {
                 : const Icon(Icons.fact_check_rounded),
             label: Text(_running ? 'Verifying…' : 'Run verification'),
           ),
+          if (_failureMessage != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            _failureCard(),
+          ],
           const SizedBox(height: AppSpacing.xl),
           Text('RECENT VERIFICATIONS',
               style: AppTypography.textTheme.labelSmall?.copyWith(
@@ -302,9 +361,11 @@ class _State extends ConsumerState<VerificationStudioScreen> {
             loading: () => const Padding(
                 padding: EdgeInsets.all(AppSpacing.md),
                 child: CircularProgressIndicator()),
-            error: (e, _) => Text('History unavailable.',
-                style: AppTypography.textTheme.bodySmall
-                    ?.copyWith(color: AppColors.textSecondary)),
+            error: (e, _) => InlineErrorCard(
+              error: e,
+              fallbackMessage: 'History unavailable.',
+              onRetry: () => ref.invalidate(verificationHistoryProvider),
+            ),
             data: (items) => items.isEmpty
                 ? Text('No verifications yet.',
                     style: AppTypography.textTheme.bodySmall
@@ -331,6 +392,17 @@ class _State extends ConsumerState<VerificationStudioScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _failureCard() {
+    return FeedbackBanner(
+      kind: FeedbackKind.error,
+      message: _failureMessage!,
+      actionLabel: _failureRetryable ? 'Retry' : null,
+      onAction: _failureRetryable
+          ? _run
+          : () => setState(() => _failureMessage = null),
     );
   }
 

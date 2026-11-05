@@ -67,6 +67,34 @@ class _TaskRunScreenState extends ConsumerState<TaskRunScreen> {
         _selectedOptionId != null;
   }
 
+  bool get _hasUnsavedInput =>
+      _selectedOptionId != null ||
+      _selectedLines.isNotEmpty ||
+      _fixController.text.trim().isNotEmpty ||
+      _reasonController.text.trim().isNotEmpty;
+
+  Future<void> _confirmLeave() async {
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Discard this answer?'),
+        content: const Text(
+            'Your selections and notes will be lost if you leave now.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Keep editing'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
+    );
+    if (leave == true && mounted) Navigator.of(context).pop();
+  }
+
   Future<void> _handleSubmit() async {
     if (!_canSubmit) return;
     HapticFeedback.mediumImpact();
@@ -127,90 +155,96 @@ class _TaskRunScreenState extends ConsumerState<TaskRunScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(
-          _dimensionLabel(widget.task.dimension),
-          style: AppTypography.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.2,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Ask the Learning Assistant',
-            icon:
-                Icon(Icons.support_agent_rounded, color: AppColors.primaryNavy),
-            onPressed: () => context.push('/assistant', extra: widget.task),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.screenPadding,
-          AppSpacing.sm,
-          AppSpacing.screenPadding,
-          AppSpacing.xxl,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.task.title,
-              style: AppTypography.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
+    return PopScope(
+      canPop: !_hasUnsavedInput,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _confirmLeave();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(
+            _dimensionLabel(widget.task.dimension),
+            style: AppTypography.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.2,
+              color: AppColors.textPrimary,
             ),
-            const SizedBox(height: AppSpacing.md),
-            if (widget.task.scenario != null) ...[
-              _scenarioCard(),
-              const SizedBox(height: AppSpacing.md),
-            ],
-            if (widget.task.embeddedFlaw?.isNotEmpty == true) ...[
-              _flawCard(),
-              const SizedBox(height: AppSpacing.lg),
-            ],
-            Text(
-              widget.task.format == 'line_text'
-                  ? 'Select the flawed line(s), then enter a correction and reason.'
-                  : widget.practice
-                      ? 'Practice: choose the best response'
-                      : 'What would you do with this output?',
-              style: AppTypography.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
+          ),
+          actions: [
+            IconButton(
+              tooltip: 'Ask the Learning Assistant',
+              icon: Icon(Icons.support_agent_rounded,
+                  color: AppColors.primaryNavy),
+              onPressed: () => context.push('/assistant', extra: widget.task),
             ),
-            const SizedBox(height: AppSpacing.md),
-            if (widget.task.format == 'line_text')
-              _buildLineTextAnswer()
-            else if (widget.task.format == 'choice' &&
-                widget.task.options.isNotEmpty)
-              ...widget.task.options.map(_buildOption)
-            else
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                child: Text(
-                  'This task does not include supported answer content. Refresh your task list and try again.',
-                ),
-              ),
+            const SizedBox(width: AppSpacing.sm),
           ],
         ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.screenPadding),
-          child: VerifAIButton(
-            label: widget.practice ? 'Submit Practice' : 'Submit Answer',
-            variant: VerifAIButtonVariant.verification,
-            isLoading: _isSubmitting,
-            onPressed: _canSubmit ? _handleSubmit : null,
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screenPadding,
+            AppSpacing.sm,
+            AppSpacing.screenPadding,
+            AppSpacing.xxl,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.task.title,
+                style: AppTypography.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              if (widget.task.scenario != null) ...[
+                _scenarioCard(),
+                const SizedBox(height: AppSpacing.md),
+              ],
+              if (widget.task.embeddedFlaw?.isNotEmpty == true) ...[
+                _flawCard(),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+              Text(
+                widget.task.format == 'line_text'
+                    ? 'Select the flawed line(s), then enter a correction and reason.'
+                    : widget.practice
+                        ? 'Practice: choose the best response'
+                        : 'What would you do with this output?',
+                style: AppTypography.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              if (widget.task.format == 'line_text')
+                _buildLineTextAnswer()
+              else if (widget.task.format == 'choice' &&
+                  widget.task.options.isNotEmpty)
+                ...widget.task.options.map(_buildOption)
+              else
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                  child: Text(
+                    'This task does not include supported answer content. Refresh your task list and try again.',
+                  ),
+                ),
+            ],
+          ),
+        ),
+        bottomNavigationBar: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.screenPadding),
+            child: VerifAIButton(
+              label: widget.practice ? 'Submit Practice' : 'Submit Answer',
+              variant: VerifAIButtonVariant.verification,
+              isLoading: _isSubmitting,
+              onPressed: _canSubmit ? _handleSubmit : null,
+            ),
           ),
         ),
       ),

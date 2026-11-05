@@ -35,6 +35,30 @@ const PROFILES = {
     timeoutMs: 90000,
     firstTokenTimeoutMs: 15000,
   },
+  // Verification analysis: no reasoning. Classifying claims against supplied
+  // evidence does not need a thinking trace, and disabling it removes the
+  // "empty content" failure class (BF-2). Explicit fallback keeps a provider
+  // hiccup from turning into a dead end.
+  verification: {
+    model: MODELS.analysis,
+    fallbackModel: MODELS.fallback,
+    temperature: 0.1,
+    topP: 1,
+    maxTokens: 2500,
+    thinking: false,
+    timeoutMs: 45000,
+  },
+  // Claim extraction: cheap, deterministic JSON. Falls back to the reliable
+  // utility model; a failure here is handled by the deterministic extractor.
+  claims: {
+    model: MODELS.light,
+    fallbackModel: MODELS.fallback,
+    temperature: 0,
+    topP: 1,
+    maxTokens: 1200,
+    thinking: false,
+    timeoutMs: 30000,
+  },
   general: {
     model: MODELS.chat,
     fallbackModel: MODELS.light,

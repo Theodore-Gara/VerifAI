@@ -18,9 +18,13 @@ final tracksProvider = FutureProvider<List<IndustryTrack>>((ref) async {
 
 final selectedTrackProvider = StateProvider<int?>((ref) => null);
 
-final selectTrackProvider =
-    FutureProvider.family<void, int>((ref, trackId) async {
-  final repository = ref.watch(trackRepositoryProvider);
-  await repository.selectTrack(trackId);
-  ref.read(selectedTrackProvider.notifier).state = trackId;
+/// Server-side tour state for the current track. Null means the call failed;
+/// the UI falls back to local completion storage instead of blocking.
+final tourStateProvider = FutureProvider<TutorialState?>((ref) async {
+  final apiClient = ref.watch(apiClientProvider);
+  try {
+    return await apiClient.getTourState();
+  } catch (_) {
+    return null;
+  }
 });

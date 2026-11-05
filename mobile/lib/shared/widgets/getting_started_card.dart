@@ -3,29 +3,41 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
+import 'package:verifai/features/auth/providers.dart';
+import 'package:verifai/features/onboarding/providers.dart';
 
 /// Dismissible "Getting started" card on the dashboard.
 ///
-/// Shows until the learner dismisses it (persisted locally) or completes their
-/// first task, whichever comes first. "Replay tour" reopens the welcome
-/// tutorial; it can also be replayed later from Profile → Help & About.
+/// Visible until the learner completes the tour for the current track or
+/// dismisses it. "Not now" marks the tour skipped on the server so the guidance
+/// stays recoverable instead of disappearing for good.
 class GettingStartedCard extends ConsumerStatefulWidget {
   const GettingStartedCard({super.key, this.onDismissed});
 
   final VoidCallback? onDismissed;
 
   @override
-  ConsumerState<GettingStartedCard> createState() =>
-      _GettingStartedCardState();
+  ConsumerState<GettingStartedCard> createState() => _GettingStartedCardState();
 }
 
 class _GettingStartedCardState extends ConsumerState<GettingStartedCard> {
-  static const _dismissedKey = 'verifai_getting_started_dismissed_v1';
   bool? _dismissed;
+
+  int? get _trackId =>
+      int.tryParse(ref.read(currentUserProvider).valueOrNull?.trackId ?? '');
+
+  String get _dismissedKey => _trackId == null
+      ? 'verifai_getting_started_dismissed_v1'
+      : 'verifai_getting_started_dismissed_${_trackId}_v1';
+
+  String get _statusKey => _trackId == null
+      ? 'verifai_tutorial_current_status_v1'
+      : 'verifai_tutorial_${_trackId}_status_v1';
 
   @override
   void initState() {
@@ -37,7 +49,12 @@ class _GettingStartedCardState extends ConsumerState<GettingStartedCard> {
     try {
       final preferences = await SharedPreferences.getInstance();
       if (!mounted) return;
-      setState(() => _dismissed = preferences.getBool(_dismissedKey) ?? false);
+      final dismissed = preferences.getBool(_dismissedKey) ?? false;
+      // Older builds stored a boolean under a separate key; treat either as
+      // completion so the card does not reappear after an upgrade.
+      final completed = preferences.getString(_statusKey) == 'completed' ||
+          (preferences.getBool(_statusKey) ?? false);
+      setState(() => _dismissed = dismissed || completed);
     } catch (_) {
       // Storage unavailable: show the card; dismissal just will not persist.
       if (mounted) setState(() => _dismissed = false);
@@ -52,12 +69,19 @@ class _GettingStartedCardState extends ConsumerState<GettingStartedCard> {
     } catch (_) {
       // Non-fatal: the card reappears next session instead.
     }
+    try {
+      await ref.read(apiClientProvider).setTourStatus(status: 'skipped');
+    } catch (_) {
+      // Keep the local dismissal; the next online open can sync.
+    }
+    ref.invalidate(tourStateProvider);
     widget.onDismissed?.call();
   }
 
   @override
   Widget build(BuildContext context) {
-    final visible = _dismissed == false;
+    final tour = ref.watch(tourStateProvider).valueOrNull;
+    final visible = _dismissed == false && (tour == null || !tour.completed);
     if (!visible) return const SizedBox.shrink();
 
     return Dismissible(
@@ -88,7 +112,8 @@ class _GettingStartedCardState extends ConsumerState<GettingStartedCard> {
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.card),
-          border: Border.all(color: AppColors.accentGreen.withValues(alpha: 0.35)),
+          border:
+              Border.all(color: AppColors.accentGreen.withValues(alpha: 0.35)),
           boxShadow: [
             BoxShadow(
               color: AppColors.shadow,
@@ -120,21 +145,34 @@ class _GettingStartedCardState extends ConsumerState<GettingStartedCard> {
                 ),
               ],
             ),
-            _step('Confirm your industry', 'It tailors every task to your domain.'),
-            _step('Run your first task', 'Start from the Your next task card below.'),
-            _step('Track progress', 'Skill roadmap and readiness update as you go.'),
+            _step('Confirm your industry',
+                'It tailors every task to your domain.'),
+            _step('Run your first task',
+                'Start from the Your next task card below.'),
+            _step('Track progress',
+                'Skill roadmap and readiness update as you go.'),
             const SizedBox(height: AppSpacing.xs),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: () => context.push('/welcome-tour'),
-                icon: const Icon(Icons.play_circle_outline_rounded, size: 18),
-                label: const Text('Replay tour'),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.accentGreen,
-                  textStyle: const TextStyle(fontWeight: FontWeight.w800),
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: AppSpacing.xs,
+              children: [
+                TextButton(
+                  onPressed: _dismiss,
+                  child: const Text('Not now'),
                 ),
-              ),
+                TextButton.icon(
+                  onPressed: () async {
+                    await context.push('/welcome-tour');
+                    if (mounted) await _load();
+                  },
+                  icon: const Icon(Icons.play_circle_outline_rounded, size: 18),
+                  label: const Text('Take the 60-second tour'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.accentGreen,
+                    textStyle: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

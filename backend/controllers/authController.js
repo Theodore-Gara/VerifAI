@@ -1,7 +1,8 @@
 const pool = require('../db/pool');
 const { resolveRole } = require('../middleware/adminRoles');
+const { tutorialState } = require('../services/industrySwitch');
 
-const USER_COLUMNS = 'id, firebase_uid, email, display_name, created_at';
+const USER_COLUMNS = 'id, firebase_uid, email, display_name, industry_track_id, created_at';
 
 // Every learner gets a progress row from their first sign-in. Without it the
 // readiness recompute (a write to user_progress) had nowhere to land until a
@@ -95,9 +96,20 @@ async function me(req, res, next) {
 
     await ensureProgress(user.id);
 
+    // BF-7: first-run state without SharedPreferences. Null when the learner has
+    // not chosen an industry yet.
+    let tutorial = null;
+    if (user.industry_track_id) {
+      tutorial = {
+        ...(await tutorialState(pool, user.id, user.industry_track_id)),
+        track_id: user.industry_track_id,
+      };
+    }
+
     const role = await resolveRole(req.firebaseUser);
     return res.status(200).json({
       user,
+      tutorial,
       is_admin: !!role,
       role: role || null,
       request_id: req.requestId,

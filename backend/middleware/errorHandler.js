@@ -1,24 +1,51 @@
+const { sendApiError } = require('../utils/apiError');
+
+// Body-parser raises these before a controller runs, so they are mapped here
+// rather than in a route.
+const BODY_ERRORS = {
+  'entity.parse.failed': {
+    status: 400,
+    code: 'invalid_json',
+    message: 'Request body is not valid JSON.',
+    hint: 'Check the JSON and try again.',
+    retryable: false,
+  },
+  'entity.too.large': {
+    status: 413,
+    code: 'document_too_large',
+    message: 'The request is too large.',
+    hint: 'Choose a smaller file or paste the text instead.',
+    retryable: false,
+  },
+};
+
 function errorHandler(err, req, res, next) {
-  // A malformed JSON body is a client error. Its parser message quotes part of
-  // the body, and bodies on some routes (the support contact form) are private,
-  // so neither the log nor the response repeats it.
-  if (err && err.type === 'entity.parse.failed') {
-    console.error(`[${req.requestId || 'no-request-id'}] malformed JSON body on ${req.method} ${req.path}`);
-    return res.status(400).json({
-      error: 'Request body is not valid JSON.',
-      code: 'invalid_json',
-      request_id: req.requestId,
+  const requestId = req.requestId || 'no-request-id';
+
+  if (err && BODY_ERRORS[err.type]) {
+    const mapped = BODY_ERRORS[err.type];
+    // Never log the submitted body: support messages and documents are private.
+    console.error(`[${requestId}] ${err.type} on ${req.method} ${req.path}`);
+    return sendApiError(req, res, mapped.status, mapped.code, mapped.message, {
+      hint: mapped.hint,
+      retryable: mapped.retryable,
     });
   }
 
-  console.error(`[${req.requestId || 'no-request-id'}]`, err.stack || err);
+  // Log diagnostics server-side, but never expose a stack or provider text.
+  console.error(`[${requestId}]`, err.stack || err);
+
+  if (res.headersSent) return next(err);
 
   const status = Number(err.status) || 500;
-  const isProduction = process.env.NODE_ENV === 'production';
+  const code = err.apiCode || (status >= 500 ? 'internal_error' : 'request_failed');
+  const message = status >= 500
+    ? (err.publicMessage || 'Internal server error.')
+    : (err.publicMessage || err.message || 'Request failed.');
 
-  res.status(status).json({
-    error: status >= 500 && isProduction ? 'Internal server error.' : (err.message || 'Internal server error.'),
-    request_id: req.requestId,
+  return sendApiError(req, res, status, code, message, {
+    hint: err.hint,
+    retryable: err.retryable,
   });
 }
 

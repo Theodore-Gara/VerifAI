@@ -50,6 +50,9 @@ const ACTIVITY = { id: 3, lesson_id: 1, type: 'multiple_choice', correct: { answ
 let priorAttempt = false;
 let activityMissing = false;
 let xpAwardCalls = 0;
+// awardXp runs even when the amount is 0: it marks the day active and lets the
+// streak/level badges be evaluated at grading time (BF-9). The XP amount is
+// asserted separately on each response.
 
 pool.query = async (sql) => {
   const s = sql.replace(/\s+/g, ' ').trim();
@@ -114,7 +117,7 @@ test('a repeat pass is practice and earns no XP', async () => {
   assert.equal(response.body.result.passed, true);
   assert.equal(response.body.result.practice, true);
   assert.equal(response.body.result.xp_earned, 0);
-  assert.equal(xpAwardCalls, 0);
+  assert.equal(xpAwardCalls, 1);
 });
 
 test('a correct answer after a wrong first attempt is practice (no XP)', async () => {
@@ -125,7 +128,7 @@ test('a correct answer after a wrong first attempt is practice (no XP)', async (
   assert.equal(response.body.result.correct, true);
   assert.equal(response.body.result.practice, true);
   assert.equal(response.body.result.xp_earned, 0);
-  assert.equal(xpAwardCalls, 0);
+  assert.equal(xpAwardCalls, 1);
 });
 
 test('an incorrect attempt passes nothing and earns no XP', async () => {
@@ -135,7 +138,7 @@ test('an incorrect attempt passes nothing and earns no XP', async () => {
   assert.equal(response.status, 200);
   assert.equal(response.body.result.correct, false);
   assert.equal(response.body.result.xp_earned, 0);
-  assert.equal(xpAwardCalls, 0);
+  assert.equal(xpAwardCalls, 1);
 });
 
 test('an activity outside the selected track is not found', async () => {

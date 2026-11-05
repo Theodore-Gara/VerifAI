@@ -7,17 +7,25 @@ const { nextTier } = require('./tiers');
 
 async function buildUserContext(executor, userId) {
   const progressResult = await executor.query(
-    `SELECT COALESCE(xp, 0)::int AS xp, COALESCE(level, 1)::int AS level,
-            COALESCE(streak, 0)::int AS streak, COALESCE(tokens, 0)::int AS tokens,
-            COALESCE(readiness_score, 0)::int AS readiness_score,
-            COALESCE(tier, 'Novice') AS tier
-     FROM user_progress WHERE user_id = $1`,
+    `SELECT COALESCE(p.xp, 0)::int AS xp, COALESCE(p.level, 1)::int AS level,
+            COALESCE(p.streak, 0)::int AS streak, COALESCE(p.tokens, 0)::int AS tokens,
+            COALESCE(tp.readiness_score, p.readiness_score, 0)::int AS readiness_score,
+            COALESCE(tp.tier, p.tier, 'Novice') AS tier
+     FROM user_progress p
+     LEFT JOIN users u ON u.id = p.user_id
+     LEFT JOIN user_track_progress tp
+       ON tp.user_id = p.user_id AND tp.track_id = u.industry_track_id
+     WHERE p.user_id = $1`,
     [userId],
   );
   const progress = progressResult.rows[0] || { xp: 0, level: 1, streak: 0, tokens: 0, readiness_score: 0, tier: 'Novice' };
 
   const skillsResult = await executor.query(
-    `SELECT dimension, score, attempts_count FROM skill_scores WHERE user_id = $1 ORDER BY score ASC`,
+    `SELECT ss.dimension, ss.score, ss.attempts_count
+     FROM skill_scores ss
+     JOIN users u ON u.id = ss.user_id
+     WHERE ss.user_id = $1 AND ss.track_id = u.industry_track_id
+     ORDER BY ss.score ASC`,
     [userId],
   );
   const skills = skillsResult.rows;
@@ -40,7 +48,8 @@ async function buildUserContext(executor, userId) {
   const lessonsResult = await executor.query(
     `SELECT l.title, p.status, p.assessment_best_score
      FROM lab_lesson_progress p JOIN lab_lessons l ON l.id = p.lesson_id
-     WHERE p.user_id = $1 ORDER BY p.updated_at DESC LIMIT 8`,
+     WHERE p.user_id = $1 AND l.retired = FALSE
+     ORDER BY p.updated_at DESC LIMIT 8`,
     [userId],
   );
   const lessons = lessonsResult.rows;
@@ -60,8 +69,13 @@ async function buildUserContext(executor, userId) {
 // Leaderboard context: user's global and track rank, plus nearby peers.
 async function buildLeaderboardContext(executor, userId, industryTrackId) {
   const meResult = await executor.query(
-    `SELECT COALESCE(xp, 0)::int AS xp, COALESCE(readiness_score, 0)::int AS readiness_score
-     FROM user_progress WHERE user_id = $1`,
+    `SELECT COALESCE(p.xp, 0)::int AS xp,
+            COALESCE(tp.readiness_score, p.readiness_score, 0)::int AS readiness_score
+     FROM user_progress p
+     LEFT JOIN users u ON u.id = p.user_id
+     LEFT JOIN user_track_progress tp
+       ON tp.user_id = p.user_id AND tp.track_id = u.industry_track_id
+     WHERE p.user_id = $1`,
     [userId],
   );
   const me = meResult.rows[0] || { xp: 0, readiness_score: 0 };
@@ -70,7 +84,9 @@ async function buildLeaderboardContext(executor, userId, industryTrackId) {
     `SELECT (COUNT(*)::int + 1) AS global_rank
      FROM users u
      LEFT JOIN user_progress p ON p.user_id = u.id
-     WHERE (COALESCE(p.xp, 0), COALESCE(p.readiness_score, 0), u.id) > ($1, $2, $3)`,
+     LEFT JOIN user_track_progress tp
+       ON tp.user_id = u.id AND tp.track_id = u.industry_track_id
+     WHERE (COALESCE(p.xp, 0), COALESCE(tp.readiness_score, 0), u.id) > ($1, $2, $3)`,
     [me.xp, me.readiness_score, userId],
   );
 
@@ -81,8 +97,10 @@ async function buildLeaderboardContext(executor, userId, industryTrackId) {
       `SELECT (COUNT(*)::int + 1) AS track_rank
        FROM users u
        LEFT JOIN user_progress p ON p.user_id = u.id
+       LEFT JOIN user_track_progress tp
+         ON tp.user_id = u.id AND tp.track_id = u.industry_track_id
        WHERE u.industry_track_id = $1
-         AND (COALESCE(p.xp, 0), COALESCE(p.readiness_score, 0), u.id) > ($2, $3, $4)`,
+         AND (COALESCE(p.xp, 0), COALESCE(tp.readiness_score, 0), u.id) > ($2, $3, $4)`,
       [industryTrackId, me.xp, me.readiness_score, userId],
     );
     trackRank = trackResult.rows[0]?.track_rank;
@@ -99,11 +117,13 @@ async function buildLeaderboardContext(executor, userId, industryTrackId) {
   if (industryTrackId) {
     const peersResult = await executor.query(
       `SELECT u.display_name, COALESCE(p.xp, 0) AS xp,
-              COALESCE(p.readiness_score, 0) AS readiness_score,
-              COALESCE(p.tier, 'Novice') AS tier,
-              ROW_NUMBER() OVER (ORDER BY COALESCE(p.xp, 0) DESC, COALESCE(p.readiness_score, 0) DESC, u.id ASC) AS rank
+              COALESCE(tp.readiness_score, 0) AS readiness_score,
+              COALESCE(tp.tier, 'Novice') AS tier,
+              ROW_NUMBER() OVER (ORDER BY COALESCE(p.xp, 0) DESC, COALESCE(tp.readiness_score, 0) DESC, u.id ASC) AS rank
        FROM users u
        LEFT JOIN user_progress p ON p.user_id = u.id
+       LEFT JOIN user_track_progress tp
+         ON tp.user_id = u.id AND tp.track_id = u.industry_track_id
        WHERE u.industry_track_id = $1
        ORDER BY rank ASC
        LIMIT 20`,
@@ -263,7 +283,9 @@ async function buildAppKnowledge(executor, userId, trackId) {
     [trackId],
   );
   const lessons = await executor.query(
-    `SELECT title FROM lab_lessons WHERE track_id IS NULL OR track_id = $1 ORDER BY sort_order`,
+    `SELECT title FROM lab_lessons
+      WHERE retired = FALSE AND (track_id IS NULL OR track_id = $1)
+      ORDER BY sort_order`,
     [trackId],
   );
   const capstones = await executor.query(

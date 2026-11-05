@@ -74,6 +74,17 @@ void main() {
           'Select an industry track before requesting a task.');
     });
 
+    test('lowercase backend codes get vetted copy and stay available', () {
+      final failure =
+          classifyError(_dio(DioExceptionType.badResponse, status: 413, data: {
+        'error': 'raw server text that should not be shown',
+        'code': 'document_too_large',
+      }));
+      expect(failure.code, 'document_too_large');
+      expect(failure.message, isNot(contains('raw server text')));
+      expect(failure.message, contains('too large'));
+    });
+
     test('unknown errors never leak raw exception text', () {
       final failure = classifyError(StateError('Instance of _Foo at 0x1234'));
       expect(failure.kind, ApiFailureKind.unknown);

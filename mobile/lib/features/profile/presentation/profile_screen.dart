@@ -199,13 +199,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     color: AppColors.accentGreen,
                   ),
           ),
-          TextButton(
-            onPressed: () => _showLogoutDialog(context, ref),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.error,
-            ),
-            child: const Text('Sign Out'),
-          ),
           const SizedBox(width: AppSpacing.sm),
         ],
       ),
@@ -487,6 +480,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   const SizedBox(height: AppSpacing.sm),
                   _buildAppearance(ref),
                   const SizedBox(height: AppSpacing.xl),
+                  _buildIndustry(trackName),
+                  const SizedBox(height: AppSpacing.xl),
                   _buildDestinations(),
                   const SizedBox(height: AppSpacing.xl),
                   _buildHelpAbout(),
@@ -622,6 +617,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
+  /// The selected industry is a first-class, discoverable setting: switching
+  /// changes tasks, lessons, readiness and the tour.
+  Widget _buildIndustry(String? trackName) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Your industry',
+          style: AppTypography.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: AppColors.primaryNavy,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        HubTile(
+          entry: HubEntry(
+            title: trackName ?? 'No industry selected',
+            subtitle: 'Change the industry your tasks and lessons follow',
+            icon: Icons.swap_horiz_rounded,
+            onTap: () => context.push('/change-industry'),
+          ),
+        ),
+      ],
+    );
+  }
+
   /// Rewards, wellbeing and the leaderboard used to sit in a drawer. With the
   /// drawer gone, Profile is where the account's own surfaces live.
   Widget _buildDestinations() {
@@ -751,19 +772,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Widget _buildAchievements(
       WidgetRef ref, AsyncValue<List<Achievement>> achievementsAsync) {
-    final earnedCodes = (achievementsAsync.valueOrNull ?? const <Achievement>[])
-        .map((a) => a.code)
-        .toSet();
-    final badges = _badgeCatalog
-        .map((spec) => _Badge(
-              title: spec.name,
-              description: spec.description,
-              isUnlocked: earnedCodes.contains(spec.code),
-              icon: spec.icon,
-              color: spec.color,
-            ))
-        .toList();
-    final unlockedCount = badges.where((b) => b.isUnlocked).length;
+    final achievements = achievementsAsync.valueOrNull ?? const <Achievement>[];
+    final badges = achievements.map((achievement) {
+      final visual = _achievementVisuals[achievement.code];
+      return _Badge(
+        title: achievement.name,
+        description: achievement.description,
+        isUnlocked: achievement.earned,
+        icon: visual?.icon ?? Icons.workspace_premium_rounded,
+        color: visual?.color ?? AppColors.info,
+      );
+    }).toList();
+    final unlockedCount = achievements.where((a) => a.earned).length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -790,7 +810,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   border: Border.all(color: AppColors.border),
                 ),
                 child: Text(
-                  '$unlockedCount / ${_badgeCatalog.length} Unlocked',
+                  '$unlockedCount / ${achievements.length} Unlocked',
                   style: AppTypography.textTheme.labelSmall?.copyWith(
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w700,
@@ -802,7 +822,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         const SizedBox(height: AppSpacing.md),
         achievementsAsync.when(
           // Grid of modern Bento Badges
-          data: (_) => _buildBadgeGrid(badges),
+          data: (_) => badges.isEmpty
+              ? Text(
+                  'Your achievements will appear here as you complete tasks.',
+                  style: AppTypography.textTheme.bodySmall
+                      ?.copyWith(color: AppColors.textSecondary),
+                )
+              : _buildBadgeGrid(badges),
           loading: () => GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -1024,37 +1050,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
     );
   }
-
-  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.modal)),
-        title: Text(
-          'Sign Out',
-          style: AppTypography.textTheme.titleLarge
-              ?.copyWith(fontWeight: FontWeight.w800),
-        ),
-        content: const Text('Are you sure you want to log out of VerifAI?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              ref.read(authNotifierProvider.notifier).logout();
-            },
-            child: Text('Log Out',
-                style: TextStyle(
-                    color: AppColors.error, fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _Badge {
@@ -1073,95 +1068,34 @@ class _Badge {
   });
 }
 
-/// Known achievement catalog, mirroring the backend `achievements` seed.
-/// `GET /api/achievements/me` returns only earned rows, so the catalog lives
-/// here to render the locked state as well.
-class _BadgeSpec {
-  final String code;
-  final String name;
-  final String description;
-  final IconData icon;
-  final Color color;
-
-  const _BadgeSpec(
-      this.code, this.name, this.description, this.icon, this.color);
-}
-
-final List<_BadgeSpec> _badgeCatalog = [
-  _BadgeSpec(
-      'first-task',
-      'First Assessment',
-      'Complete your first workplace readiness task.',
-      Icons.flag_rounded,
-      AppColors.accentGreen),
-  _BadgeSpec(
-      'five-tasks',
-      'Five in the Bag',
-      'Complete five workplace readiness tasks.',
-      Icons.checklist_rounded,
-      AppColors.accentCyan),
-  _BadgeSpec(
-      'ten-tasks',
-      'Consistent Practitioner',
-      'Complete ten workplace readiness tasks.',
-      Icons.military_tech_rounded,
-      AppColors.xpPurple),
-  _BadgeSpec('xp-500', '500 XP', 'Earn at least 500 XP.', Icons.bolt_rounded,
-      AppColors.gold),
-  _BadgeSpec(
-      'dimension-80',
-      'Strong Skill',
-      'Reach a score of at least 80 in one readiness skill.',
-      Icons.workspace_premium_rounded,
-      AppColors.info),
-  _BadgeSpec('xp-2000', '2000 XP', 'Earn at least 2,000 XP.',
-      Icons.local_fire_department_rounded, AppColors.gold),
-  _BadgeSpec(
-      'streak-7',
-      'Week Streak',
-      'Keep a seven-day practice streak.',
-      Icons.event_available_rounded,
-      AppColors.accentGreen),
-  _BadgeSpec(
-      'streak-30',
-      'Month Streak',
-      'Keep a thirty-day practice streak.',
-      Icons.calendar_month_rounded,
-      AppColors.gold),
-  _BadgeSpec(
-      'all-features',
-      'Triple Threat',
-      'Pass at least one task in each feature: verification, AI judgement and risk & governance.',
-      Icons.balance_rounded,
-      AppColors.accentCyan),
-  _BadgeSpec(
-      'verification-10',
-      'Verification Specialist',
-      'Pass ten verification tasks.',
-      Icons.shield_rounded,
-      AppColors.accentGreen),
-  _BadgeSpec(
-      'judgement-10',
-      'Sound Judgement',
-      'Pass ten AI judgement tasks.',
-      Icons.psychology_rounded,
-      AppColors.info),
-  _BadgeSpec(
-      'risk-10',
-      'Guardian',
-      'Pass ten risk & governance tasks.',
-      Icons.gavel_rounded,
-      AppColors.xpPurple),
-  _BadgeSpec(
-      'capstone-1',
-      'Capstone Earner',
-      'Pass a capstone assessment.',
-      Icons.workspace_premium_rounded,
-      AppColors.gold),
-  _BadgeSpec(
-      'interview-5',
-      'Interview Ready',
-      'Practise five interview questions.',
-      Icons.question_answer_rounded,
-      AppColors.accentCyan),
-];
+/// Presentation only: names, descriptions and earned state come from
+/// `GET /api/achievements`. A code the app has not shipped yet still renders
+/// with the neutral medal fallback below.
+final Map<String, ({IconData icon, Color color})> _achievementVisuals = {
+  'first-task': (icon: Icons.flag_rounded, color: AppColors.accentGreen),
+  'five-tasks': (icon: Icons.checklist_rounded, color: AppColors.accentCyan),
+  'ten-tasks': (icon: Icons.military_tech_rounded, color: AppColors.xpPurple),
+  'xp-250': (icon: Icons.bolt_rounded, color: AppColors.gold),
+  'xp-500': (icon: Icons.bolt_rounded, color: AppColors.gold),
+  'xp-2000': (icon: Icons.local_fire_department_rounded, color: AppColors.gold),
+  'dimension-80': (
+    icon: Icons.workspace_premium_rounded,
+    color: AppColors.info
+  ),
+  'streak-7': (
+    icon: Icons.event_available_rounded,
+    color: AppColors.accentGreen
+  ),
+  'streak-30': (icon: Icons.calendar_month_rounded, color: AppColors.gold),
+  'level-5': (icon: Icons.trending_up_rounded, color: AppColors.info),
+  'track-master': (icon: Icons.alt_route_rounded, color: AppColors.xpPurple),
+  'all-features': (icon: Icons.balance_rounded, color: AppColors.accentCyan),
+  'verification-10': (icon: Icons.shield_rounded, color: AppColors.accentGreen),
+  'judgement-10': (icon: Icons.psychology_rounded, color: AppColors.info),
+  'risk-10': (icon: Icons.gavel_rounded, color: AppColors.xpPurple),
+  'capstone-1': (icon: Icons.workspace_premium_rounded, color: AppColors.gold),
+  'interview-5': (
+    icon: Icons.question_answer_rounded,
+    color: AppColors.accentCyan
+  ),
+};

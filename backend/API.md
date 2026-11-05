@@ -10,6 +10,22 @@ Protected endpoints require:
 Authorization: Bearer <Firebase ID token>
 ```
 
+## Errors
+
+Every 4xx/5xx uses one envelope:
+
+```json
+{
+  "error": "We could not read any text in that document.",
+  "code": "document_no_text",
+  "hint": "This looks like a scanned PDF. Upload a text-based PDF, a .docx, or paste the text instead.",
+  "retryable": false,
+  "request_id": "…"
+}
+```
+
+`error` stays human-readable for older builds. `code` is stable and machine-readable: `no_input`, `document_too_large`, `document_unsupported`, `document_no_text`, `document_parse_failed`, `ai_unavailable`, `ai_timeout`, `report_unreadable`, `rate_limited`, `same_track`, `roadmap_moved`, `not_found`, `invalid_json`. Provider and stack text never appear in a response body; the `request_id` correlates with the server log.
+
 ## Endpoints
 
 ### GET /api/health
@@ -25,7 +41,20 @@ Protected. Creates or updates the authenticated user from Firebase claims.
 Protected. Returns the current user's profile and selected industry track.
 
 ### PUT /api/users/profile
-Protected. Updates `display_name` and/or `industry_track_id`.
+Protected. Updates `display_name` and/or `industry_track_id`. An industry change delegates to the same transactional service as `PUT /api/users/industry`, for compatibility.
+
+### PUT /api/users/industry
+Protected. Body `{ "track_id": 2, "reoffer": false }`. Switches industry in one transaction: locks the user row, rejects the current track with `409 same_track`, validates the target, writes one `user_track_changes` audit row and recomputes readiness for the new track.
+
+Response: `{ user, track, progress: { readiness_score, tier, skill_scores }, tour: { tour_key, status, should_offer, updated_at }, kept: ["xp","level","streak","tokens"], kept_values, request_id }`.
+
+### GET/PUT /api/onboarding/tour
+Protected. Per-account tutorial state, keyed by `(user, track, tour_key="industry")` so it survives a reinstall or a second device.
+
+- `GET /api/onboarding/tour?track_id=&reoffer=1` → `{ tour_key, status, should_offer, updated_at, track_id }`. `status` is `completed`, `skipped` or `null`; `should_offer` is true for a track with no row, or a skipped tour when `reoffer` is requested.
+- `PUT /api/onboarding/tour` body `{ track_id?, status: "completed"|"skipped" }` → same shape. Idempotent: repeating the same status does not move `updated_at`.
+
+`GET /api/auth/me` also returns a `tutorial` summary for the active track (or `null` before an industry is chosen).
 
 ### GET /api/tasks/next
 Protected. Returns the next task for the authenticated user's selected industry track. The reference answer is never returned.
@@ -94,12 +123,10 @@ Response: `{ track_id, leaderboard: [{ rank, user_id, display_name, level, xp, s
 Protected. Returns achievements earned by the current user.
 
 ### GET /api/achievements
-Protected. Full achievements catalog — every achievement with an `earned` flag and, when earned, its `earned_at` timestamp, so locked and unlocked states render from one call.
+Protected. Full achievements catalog — every achievement with an `earned` flag and, when earned, its `earned_at` timestamp, so locked and unlocked states render from one call. Ordered by `id`. The former roadmap checklist now lives here as badges: `first-task` (First Steps), `track-master`, `xp-250`, `xp-1000`, `streak-7` (On Fire) and `level-5` (Seasoned). XP thresholds read `user_progress.xp` (the number the dashboard shows), so capstone/activity XP counts.
 
 ### GET /api/achievements/milestones
-Protected. Code-defined track milestones with live progress. Optional `?track=<id>` overrides the user's selected track (400 if neither is set).
-
-Response: `{ track_id, milestones: [{ code, name, description, target, current, achieved }] }`. Milestones cover task completion (first task, all tasks in the track), XP (250, 1000), streak (7 days) and level (5). `achieved` flips as soon as `current >= target`.
+Deprecated. Returns `410` with `code: "roadmap_moved"`; the staged journey is `GET /api/roadmap`.
 
 ### POST /api/assistant/chat
 Protected. Sends up to eight conversation messages to the AI assistant. `task_id` is **optional**: with it the assistant is scoped to a task belonging to the authenticated user's selected track; without it this is a general, track-aware assistant. Requests are limited to 8 per user per minute; each message is limited to 1,200 characters.
@@ -137,9 +164,30 @@ Request (all optional except `kind`, but at least one input is required):
 }
 ```
 
-The backend resolves each input: `document` is parsed (`pdf-parse` for PDF, `mammoth` for DOCX, UTF-8 otherwise; **10 MB max**), `url` is fetched and HTML-stripped, `citation` is looked up with Tavily. A legacy top-level `content` string is accepted as a text source. Vera then verifies the combined material, citing live web sources.
+The backend resolves each input: `document` is allowlisted (`pdf`, `docx`, `txt`, `md`), verified by magic bytes and parsed page-aware (`[page N]` markers; mammoth HTML → markdown for DOCX), `url` is fetched and HTML-stripped, `citation` is looked up with Tavily. **5 MB max**; `.doc`, `.pptx`, `.xlsx` and images are rejected with an actionable `code`/`hint`. A legacy top-level `content` string is accepted as a text source.
 
-Response: `{ "analysis": { id, kind, document_name, overall_status, items_requiring_review, sources_confirmed, summary, report, created_at }, "sources": [{ title, url }], "inputs": [{ type, label, chars }], "web_searched": bool }`. `overall_status` is one  of `appears_sound`, `human_review_required`, `insufficient_evidence`. Rate-limited.
+It then extracts up to eight checkable claims from across the material, searches each claim (capped, de-duplicated), and asks the model only for a per-claim verdict. The overall status is derived server-side (BF-3): any contradiction → `human_review_required`; no sources → `insufficient_evidence`; all checked claims supported → `appears_sound`. A document with no checkable claims is always `insufficient_evidence`.
+
+Response:
+
+```json
+{
+  "analysis": {
+    "id": 42, "version": 2, "kind": "document", "document_name": "essay.pdf",
+    "overall_status": "human_review_required",
+    "summary": "1 of 2 claims were supported by a source; 1 contradicted.",
+    "checks": { "web_search": true, "sources_found": 2, "claims_checked": 2, "citations_checked": 0 },
+    "claims": [{ "claim": "…", "page": 3, "verdict": "contradicted", "concern": "…", "evidence": [{ "title": "…", "url": "…" }] }],
+    "sources_confirmed": 1
+  },
+  "sources": [{ "title": "…", "url": "…" }],
+  "inputs": [{ "type": "document", "label": "essay.pdf", "chars": 58240, "pages": 26, "pages_read": 26, "truncated": false, "quality": "good" }],
+  "web_searched": true,
+  "request_id": "…"
+}
+```
+
+`verdict` is `supported`, `contradicted` or `unverified`; a verdict that names no supplied source is downgraded to `unverified`. `truncated` is true when the 40-page/60,000-character cap cut the document; `quality` is `good` or `low` (low extraction adds a warning). Version-1 rows (no `claims`) still return and are marked `version: 1` for legacy rendering. Rate-limited.
 
 ### GET /api/verification/analyses
 Protected. The user's recent analyses (metadata + report), newest first. Optional `?limit=<1..50>` (default 20).
@@ -199,7 +247,7 @@ Protected. AI-assisted marking. Vera's marker model scores each rubric question 
 Protected (owner only). Returns Vera's post-capstone performance report, generated once and cached on the attempt: `{ "analysis": { headline, strengths[], focus[], report }, "cached": bool }`. `400` if the paper is not yet submitted.
 
 ### GET /api/history
-Protected. One newest-first timeline across scored task attempts, AI Lab practice activities and capstone attempts. Optional `?limit=<1..100>` (default 30). Response: `{ entries: [{ type: task|activity|capstone, id, title, feature, score, passed, xp_earned, created_at }] }`.
+Protected. One newest-first timeline across scored task attempts, AI Lab practice activities and capstone attempts. Optional `?limit=<1..100>` (default 30), `?type=`, `?q=` and `?track=current|all` (default `current`). The current view is scoped to the active industry (global AI-literacy activities with no track stay visible); `track=all` restores the cross-industry timeline. Response: `{ entries: [{ type: task|activity|capstone, id, title, feature, score, passed, xp_earned, created_at, track_id }], track }`.
 
 ### POST /api/lab/coach
 Protected. Body `{ "lesson_code": "ai-literacy-book", "messages": [...] }` → a Socratic tutor reply. `?stream=1` streams SSE as above. Rate-limited.

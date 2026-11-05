@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
+import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/navigation/nav_drawer_controller.dart';
 
 /// The five dock areas (route, label, icon) in dock order. Mirrors
@@ -29,6 +31,10 @@ const allSections = <({String section, String label, IconData icon, String route
   (section: 'Learn', label: 'Recall practice', icon: Icons.quiz_rounded, route: '/ai-lab/practice'),
   (section: 'Learn', label: 'Capstone assessments', icon: Icons.workspace_premium_rounded, route: '/ai-lab/assessments'),
   (section: 'Learn', label: 'Skill roadmap', icon: Icons.alt_route_rounded, route: '/track'),
+  (section: 'Learn', label: 'Finance guide', icon: Icons.account_balance_rounded, route: '/industry-guide/Finance'),
+  (section: 'Learn', label: 'Legal guide', icon: Icons.gavel_rounded, route: '/industry-guide/Legal'),
+  (section: 'Learn', label: 'IT / Software guide', icon: Icons.code_rounded, route: '/industry-guide/IT%20%2F%20Software'),
+  (section: 'Learn', label: 'Business Consulting guide', icon: Icons.business_center_rounded, route: '/industry-guide/Business%20Consulting'),
   // Practice
   (section: 'Practice', label: 'Practice hub', icon: Icons.play_circle_outline_rounded, route: '/practice'),
   (section: 'Practice', label: 'Verification Studio', icon: Icons.fact_check_rounded, route: '/verification-studio'),
@@ -145,6 +151,46 @@ Future<void> showAllSectionsSheet(BuildContext context) {
                 },
               ),
             ],
+            const Divider(height: AppSpacing.lg),
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.logout_rounded,
+                  color: AppColors.error, size: 20),
+              title: Text(
+                'Log out',
+                style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: AppColors.error),
+              ),
+              onTap: () async {
+                final container =
+                    ProviderScope.containerOf(sheetContext, listen: false);
+                final confirmed = await showDialog<bool>(
+                  context: sheetContext,
+                  builder: (dialogContext) => AlertDialog(
+                    title: const Text('Log out?'),
+                    content: const Text(
+                        'Log out of VerifAI? You can sign back in any time.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext, false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext, true),
+                        child: Text('Log out',
+                            style: TextStyle(color: AppColors.error)),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed != true) return;
+                if (sheetContext.mounted) Navigator.pop(sheetContext);
+                await container.read(authNotifierProvider.notifier).logout();
+              },
+            ),
           ],
         ),
       ),

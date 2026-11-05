@@ -21,7 +21,12 @@ class ApiFailure {
   final String message;
   final int? statusCode;
 
-  const ApiFailure(this.kind, this.message, {this.statusCode});
+  /// Machine-readable backend code (`error.code`), when the server sent one.
+  /// Screens use it for specific recovery copy; [message] is already safe to
+  /// show.
+  final String? code;
+
+  const ApiFailure(this.kind, this.message, {this.statusCode, this.code});
 
   bool get isOffline => kind == ApiFailureKind.offline;
   bool get isTimeout => kind == ApiFailureKind.timeout;
@@ -124,7 +129,7 @@ ApiFailure _classifyStatus(DioException error) {
   final code = data is Map ? data['code'] : null;
   if (code is String && _codeMessages.containsKey(code)) {
     return ApiFailure(ApiFailureKind.client, _codeMessages[code]!,
-        statusCode: status);
+        statusCode: status, code: code);
   }
   return ApiFailure(
     ApiFailureKind.client,
@@ -132,6 +137,7 @@ ApiFailure _classifyStatus(DioException error) {
         ? serverMessage.trim()
         : _clientFallbackMessage,
     statusCode: status,
+    code: code is String ? code : null,
   );
 }
 
@@ -151,4 +157,26 @@ const _codeMessages = <String, String>{
   'VALIDATION_ERROR': 'That request was not valid. Please check and retry.',
   'NOT_FOUND': "That item does not exist (or is not available on your track).",
   'RATE_LIMITED': 'Too many requests. Slow down and try again shortly.',
+
+  // Sprint 2 backend codes (lowercase).
+  'document_too_large':
+      'That document is too large. Upload a smaller file or paste the text.',
+  'document_no_text':
+      'We could not read any text. This looks like a scanned PDF — try a text-based file or paste the text.',
+  'document_unsupported':
+      'That file type is not supported. Upload a PDF, DOCX, TXT or MD file, or paste the text.',
+  'document_parse_failed':
+      'We could not read that document. Try another file or paste the text.',
+  'ai_timeout':
+      'Verification is temporarily unavailable. Your input is still here — try again in a moment.',
+  'ai_unavailable':
+      'Verification is temporarily unavailable. Your input is still here — try again in a moment.',
+  'report_unreadable':
+      'That report could not be read. Run the verification again.',
+  'rate_limited': 'Too many requests. Slow down and try again shortly.',
+  'same_track': 'You are already on that industry.',
+  'invalid_track': 'That industry is not available. Pick another one.',
+  'unknown_track': 'That industry is not available. Pick another one.',
+  'no_input': 'Add some text, a document, a link or a citation first.',
+  'user_not_found': 'We could not find your account. Sign in again and retry.',
 };

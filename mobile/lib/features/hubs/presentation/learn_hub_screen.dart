@@ -89,7 +89,8 @@ class LearnHubScreen extends StatelessWidget {
               const HubTile(
                 entry: HubEntry(
                   title: 'AI Lab lessons',
-                  subtitle: 'Textbook lessons with chapters topics and sources',
+                  subtitle:
+                      'Textbook lessons with chapters, topics and sources',
                   icon: Icons.science_rounded,
                   route: '/ai-lab/lessons',
                 ),

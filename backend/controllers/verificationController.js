@@ -1,11 +1,12 @@
 const pool = require('../db/pool');
 const { requiredString, optionalString, clampInt } = require('../middleware/validate');
 const { findUserByFirebaseUid } = require('../db/users');
-const { analyzeContent } = require('../services/nvidiaAssistant');
-const { webSearch } = require('../services/tavily');
 const { extractDocument, fetchUrl } = require('../services/extract');
-const { OVERALL_STATUSES } = require('../services/llm/prompts');
+const { webSearch } = require('../services/tavily');
+const { extractClaims, searchClaims, judgeClaims } = require('../services/verification/claims');
+const { deriveReport, shapeAnalysisRow } = require('../services/verification/report');
 const { handleAiError } = require('../middleware/aiError');
+const { apiError } = require('../utils/apiError');
 
 const KINDS = new Set(['document', 'claim', 'ai_response', 'source']);
 const SOURCE_TYPES = new Set(['text', 'url', 'citation', 'document']);
@@ -13,63 +14,53 @@ const MAX_CONTENT_LENGTH = 60000;
 const MAX_CONTEXT_LENGTH = 5000;
 const MAX_TOTAL_CHARS = 120000;
 
-// The model is asked for strict JSON but is not trusted: parse defensively and
-// coerce every field into the report schema.
-function parseReport(raw) {
-  let text = String(raw || '').trim();
-  const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (fence) text = fence[1].trim();
-  const start = text.indexOf('{');
-  const end = text.lastIndexOf('}');
-  if (start >= 0 && end > start) text = text.slice(start, end + 1);
+function bad(status, code, message, options) {
+  return apiError(status, code, message, options);
+}
 
-  let parsed;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    const error = new Error('The AI service returned an unreadable report.');
-    error.status = 502;
-    throw error;
+// Words that carry no matching weight when deciding whether a citation lookup
+// is relevant to a claim.
+const STOP_WORDS = new Set([
+  'the', 'and', 'for', 'that', 'this', 'with', 'from', 'have', 'has', 'was', 'were',
+  'are', 'not', 'but', 'its', 'their', 'they', 'you', 'your', 'our', 'about', 'into',
+  'over', 'under', 'than', 'then', 'when', 'where', 'which', 'who', 'what', 'how',
+  'section', 'according', 'report', 'study',
+]);
+
+function significantWords(value) {
+  return new Set(
+    String(value || '')
+      .toLowerCase()
+      .match(/[a-z0-9]{4,}/g)
+      ?.filter((word) => !STOP_WORDS.has(word)) || [],
+  );
+}
+
+// User-supplied citations are a distinct evidence set. A citation lookup is
+// attached to a claim when their wording overlaps; either way it is counted in
+// `checks.citations_checked`, so the app can show that lookups ran.
+function attachCitations(claims, citationSearches) {
+  if (!citationSearches.length) return;
+  for (const claim of claims) {
+    const claimWords = significantWords(claim.text);
+    for (const citation of citationSearches) {
+      const overlap = [...significantWords(citation.query)].filter((word) => claimWords.has(word));
+      if (overlap.length < 2) continue;
+      for (const source of citation.sources) {
+        if (!claim.evidence.some((item) => item.url === source.url)) claim.evidence.push(source);
+      }
+    }
   }
-
-  const overallStatus = OVERALL_STATUSES.includes(parsed.overall_status)
-    ? parsed.overall_status
-    : 'human_review_required';
-  const items = Array.isArray(parsed.items_requiring_review)
-    ? parsed.items_requiring_review
-        .filter((item) => item && typeof item.claim === 'string' && typeof item.concern === 'string')
-        .map((item) => ({
-          claim: item.claim.trim().slice(0, 500),
-          concern: item.concern.trim().slice(0, 1000),
-        }))
-    : [];
-  const sourcesConfirmed =
-    Number.isInteger(parsed.sources_confirmed) && parsed.sources_confirmed >= 0
-      ? parsed.sources_confirmed
-      : 0;
-  const summary =
-    typeof parsed.summary === 'string' && parsed.summary.trim()
-      ? parsed.summary.trim().slice(0, 2000)
-      : '';
-
-  return { overall_status: overallStatus, items_requiring_review: items, sources_confirmed: sourcesConfirmed, summary };
 }
 
-function bad(message) {
-  const error = new Error(message);
-  error.status = 400;
-  return error;
-}
-
-// Resolves the submitted material into one analysable document. Each input type
-// is handled here: uploaded documents are parsed, links are fetched, citations
-// are looked up. Nothing is persisted.
+// Resolves the submitted material into one analysable document plus structured
+// input metadata. Each input type is handled here: uploaded documents are
+// parsed, links are fetched, citations are looked up. Nothing is persisted.
 async function buildEvidence(req) {
   const pieces = [];
   const inputs = [];
-  const citationResults = [];
+  const citationSearches = [];
   let documentName = optionalString(req.body.document_name, 'document_name', 255) ?? null;
-  let primaryQuery = null;
 
   const contextText = optionalString(req.body.context, 'context', MAX_CONTEXT_LENGTH);
   if (contextText) {
@@ -84,45 +75,68 @@ async function buildEvidence(req) {
 
   for (const source of sources) {
     const type = String((source && source.type) || '').toLowerCase();
-    if (!SOURCE_TYPES.has(type)) throw bad(`Unknown source type: ${type || '(missing)'}.`);
+    if (!SOURCE_TYPES.has(type)) {
+      throw bad(400, 'no_input', `Unknown source type: ${type || '(missing)'}.`, {
+        publicMessage: `Unknown source type: ${type || '(missing)'}.`,
+        hint: 'Use one of text, url, citation or document.',
+        retryable: false,
+      });
+    }
 
     if (type === 'text') {
       const text = requiredString(source.text, 'source.text', MAX_CONTENT_LENGTH);
       const label = optionalString(source.label, 'source.label', 120) || 'Pasted text';
       pieces.push({ label, text });
       inputs.push({ type: 'text', label, chars: text.length });
-      if (!primaryQuery) primaryQuery = text;
     } else if (type === 'url') {
       const url = requiredString(source.url, 'source.url', 2000);
       const fetched = await fetchUrl(url);
       pieces.push({ label: `Linked page: ${fetched.label}`, text: fetched.text || '(no readable text)' });
       inputs.push({ type: 'url', label: fetched.url, chars: fetched.text.length });
-      if (!primaryQuery) primaryQuery = fetched.text;
     } else if (type === 'citation') {
       const citation = requiredString(source.text, 'source.text', 1000);
       const results = await webSearch(citation, { maxResults: 4 });
+      citationSearches.push({ query: citation, sources: results });
       const text = results.length
         ? results.map((r, i) => `${i + 1}. ${r.title} (${r.url}) - ${r.content}`).join('\n')
         : 'No matching sources found.';
       pieces.push({ label: `Citation lookup: ${citation}`, text });
       inputs.push({ type: 'citation', label: citation, chars: text.length });
-      citationResults.push(...results);
-      if (!primaryQuery) primaryQuery = citation;
     } else if (type === 'document') {
       const doc = await extractDocument({ base64: source.base64, mime: source.mime, name: source.name });
-      pieces.push({ label: `Document: ${doc.label}`, text: doc.text || '(no readable text)' });
-      inputs.push({ type: 'document', label: doc.label, chars: doc.text.length });
+      pieces.push({ label: `Document: ${doc.label}`, text: doc.text });
+      inputs.push({
+        type: 'document',
+        label: doc.label,
+        chars: doc.text.length,
+        pages: doc.pages,
+        pages_read: doc.pagesRead,
+        truncated: doc.truncated,
+        quality: doc.quality,
+        ...(doc.warning ? { warning: doc.warning } : {}),
+      });
       if (!documentName) documentName = doc.label;
-      if (!primaryQuery) primaryQuery = doc.text;
     }
   }
 
-  if (!pieces.length) throw bad('Provide content, context or at least one source to analyse.');
+  if (!pieces.length) {
+    throw bad(400, 'no_input', 'No content, context or source was supplied.', {
+      publicMessage: 'Provide content, context or at least one source to analyse.',
+      hint: 'Paste text, upload a document, or add a link.',
+      retryable: false,
+    });
+  }
 
   let combined = pieces.map((p) => `## ${p.label}\n${p.text}`).join('\n\n');
   if (combined.length > MAX_TOTAL_CHARS) combined = combined.slice(0, MAX_TOTAL_CHARS);
 
-  return { combined, inputs, citationResults, documentName, primaryQuery: primaryQuery || combined };
+  return {
+    combined,
+    inputs,
+    citationSearches,
+    documentName,
+    citationsChecked: citationSearches.length,
+  };
 }
 
 // POST /api/verification/analyze
@@ -132,31 +146,53 @@ async function analyzeVerification(req, res, next) {
   try {
     const kind = requiredString(req.body.kind, 'kind', 20).toLowerCase();
     if (!KINDS.has(kind)) {
-      return res.status(400).json({
-        error: 'kind must be one of document, claim, ai_response, source.',
-        request_id: req.requestId,
+      throw bad(400, 'no_input', `Invalid kind: ${kind}.`, {
+        publicMessage: 'kind must be one of document, claim, ai_response, source.',
+        hint: 'Send a supported kind and retry.',
+        retryable: false,
       });
     }
 
     const user = await findUserByFirebaseUid(pool, req.firebaseUser.uid);
     if (!user) {
-      return res.status(404).json({ error: 'User not found. Call /api/auth/sync first.', request_id: req.requestId });
+      throw bad(404, 'user_not_found', 'User not found. Call /api/auth/sync first.', {
+        publicMessage: 'User not found. Call /api/auth/sync first.',
+        retryable: false,
+      });
     }
 
     const evidence = await buildEvidence(req);
 
-    // Live web search of the primary material, plus any citation lookups.
-    const useWeb = req.body.web_search !== false;
-    const searched = useWeb ? await webSearch(evidence.primaryQuery, { maxResults: 5 }) : [];
-    const byUrl = new Map();
-    for (const r of [...evidence.citationResults, ...searched]) {
-      if (!byUrl.has(r.url)) byUrl.set(r.url, { title: r.title, url: r.url });
-    }
-    const webResults = [...byUrl.values()];
+    // BF-1: find claims first, then search per claim - never the document body.
+    const claims = await extractClaims({ material: evidence.combined, requestId: req.requestId });
 
-    const raw = await analyzeContent({ kind, content: evidence.combined, webResults });
-    const report = parseReport(raw);
-    report.sources = webResults;
+    let searched = { claims: claims.map((claim) => ({ ...claim, evidence: [] })), sources: [], searchesRun: 0 };
+    const useWeb = req.body.web_search !== false;
+    if (useWeb && claims.length) {
+      searched = await searchClaims(claims);
+    }
+    attachCitations(searched.claims, evidence.citationSearches);
+
+    // Citation lookups are evidence too; keep one de-duplicated source list.
+    const byUrl = new Map();
+    for (const source of searched.sources) byUrl.set(source.url, { title: source.title, url: source.url });
+    for (const citation of evidence.citationSearches) {
+      for (const source of citation.sources) {
+        if (!byUrl.has(source.url)) byUrl.set(source.url, { title: source.title, url: source.url });
+      }
+    }
+    const sources = [...byUrl.values()];
+
+    const verdicts = await judgeClaims({ material: evidence.combined, claims: searched.claims, requestId: req.requestId });
+    const webSearched = useWeb && claims.length > 0;
+    const report = deriveReport({
+      kind,
+      documentName: evidence.documentName,
+      claims: verdicts,
+      checks: { claims_checked: verdicts.length, sources_found: sources.length },
+      citationsChecked: evidence.citationsChecked,
+      webSearched,
+    });
 
     const inserted = await pool.query(
       `INSERT INTO verification_analyses
@@ -168,7 +204,7 @@ async function analyzeVerification(req, res, next) {
         kind,
         evidence.documentName,
         report.overall_status,
-        report.items_requiring_review.length,
+        report.claims.filter((claim) => claim.verdict !== 'supported').length,
         report.sources_confirmed,
         report.summary,
         JSON.stringify(report),
@@ -176,10 +212,18 @@ async function analyzeVerification(req, res, next) {
     );
 
     return res.status(201).json({
-      analysis: inserted.rows[0],
-      sources: webResults,
+      analysis: {
+        ...inserted.rows[0],
+        version: report.version,
+        checks: report.checks,
+        claims: report.claims,
+        sources_confirmed: report.sources_confirmed,
+        summary: report.summary,
+        overall_status: report.overall_status,
+      },
+      sources,
       inputs: evidence.inputs,
-      web_searched: webResults.length > 0,
+      web_searched: webSearched,
       request_id: req.requestId,
     });
   } catch (err) {
@@ -193,7 +237,10 @@ async function listAnalyses(req, res, next) {
     const limit = clampInt(req.query.limit, 20, 1, 50);
     const user = await findUserByFirebaseUid(pool, req.firebaseUser.uid);
     if (!user) {
-      return res.status(404).json({ error: 'User not found. Call /api/auth/sync first.', request_id: req.requestId });
+      throw bad(404, 'user_not_found', 'User not found. Call /api/auth/sync first.', {
+        publicMessage: 'User not found. Call /api/auth/sync first.',
+        retryable: false,
+      });
     }
 
     const result = await pool.query(
@@ -206,7 +253,10 @@ async function listAnalyses(req, res, next) {
       [user.id, limit],
     );
 
-    return res.status(200).json({ analyses: result.rows, request_id: req.requestId });
+    return res.status(200).json({
+      analyses: result.rows.map(shapeAnalysisRow),
+      request_id: req.requestId,
+    });
   } catch (err) {
     return next(err);
   }

@@ -49,15 +49,17 @@ async function getLeaderboard(req, res, next) {
                 COALESCE(p.level, 1)::int AS level,
                 COALESCE(p.xp, 0)::int AS xp,
                 COALESCE(p.streak, 0)::int AS streak,
-                COALESCE(p.readiness_score, 0)::int AS readiness_score,
-                COALESCE(p.tier, 'Novice') AS tier,
+                COALESCE(tp.readiness_score, 0)::int AS readiness_score,
+                COALESCE(tp.tier, 'Novice') AS tier,
                 ROW_NUMBER() OVER (
                   ORDER BY COALESCE(p.xp, 0) DESC,
-                           COALESCE(p.readiness_score, 0) DESC,
+                           COALESCE(tp.readiness_score, 0) DESC,
                            u.id ASC
                 ) AS rank
          FROM users u
          LEFT JOIN user_progress p ON p.user_id = u.id
+         LEFT JOIN user_track_progress tp
+           ON tp.user_id = u.id AND tp.track_id = u.industry_track_id
          ${trackFilter}
        ) r
        ORDER BY r.rank ASC
@@ -75,10 +77,12 @@ async function getLeaderboard(req, res, next) {
               COALESCE(p.level, 1)::int AS level,
               COALESCE(p.xp, 0)::int AS xp,
               COALESCE(p.streak, 0)::int AS streak,
-              COALESCE(p.readiness_score, 0)::int AS readiness_score,
-              COALESCE(p.tier, 'Novice') AS tier
+              COALESCE(tp.readiness_score, 0)::int AS readiness_score,
+              COALESCE(tp.tier, 'Novice') AS tier
        FROM users u
        LEFT JOIN user_progress p ON p.user_id = u.id
+       LEFT JOIN user_track_progress tp
+         ON tp.user_id = u.id AND tp.track_id = u.industry_track_id
        WHERE u.firebase_uid = $1`,
       [req.firebaseUser.uid]
     );
@@ -100,10 +104,12 @@ async function getLeaderboard(req, res, next) {
       `SELECT (COUNT(*)::int + 1) AS rank
        FROM users u
        LEFT JOIN user_progress p ON p.user_id = u.id
+       LEFT JOIN user_track_progress tp
+         ON tp.user_id = u.id AND tp.track_id = u.industry_track_id
        WHERE (
          COALESCE(p.xp, 0) > $1
-         OR (COALESCE(p.xp, 0) = $1 AND COALESCE(p.readiness_score, 0) > $2)
-         OR (COALESCE(p.xp, 0) = $1 AND COALESCE(p.readiness_score, 0) = $2 AND u.id < $3)
+         OR (COALESCE(p.xp, 0) = $1 AND COALESCE(tp.readiness_score, 0) > $2)
+         OR (COALESCE(p.xp, 0) = $1 AND COALESCE(tp.readiness_score, 0) = $2 AND u.id < $3)
        )${rankFilter}`,
       rankParams
     );

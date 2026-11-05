@@ -136,11 +136,28 @@ async function baseline(client, migrations) {
   }
 }
 
+/**
+ * True when the database already contains learner accounts. Used to stop a
+ * "fresh" setup or an empty ledger from replaying destructive early migrations
+ * (002 truncates attempts/progress) over real data.
+ */
+async function hasLearnerData(client) {
+  const table = await client.query("SELECT to_regclass('public.users') AS t");
+  if (!table.rows[0] || !table.rows[0].t) return false;
+  const result = await client.query('SELECT COUNT(*)::int AS n FROM users');
+  return (result.rows[0] && result.rows[0].n) > 0;
+}
+
 async function main() {
   // node scripts/db-setup.js          fresh database   -> schema.sql + seed data, baselined
   // node scripts/db-setup.js migrate  existing schema   -> pending migrations only
   // node scripts/db-setup.js seed     (re)apply seed data only
-  const mode = ['migrate', 'seed'].includes(process.argv[2]) ? process.argv[2] : 'fresh';
+  // node scripts/db-setup.js baseline record every migration as applied (repair a lost ledger)
+  //
+  // --force overrides the "this database already has learner data" guard. There
+  // is deliberately no flag that drops the schema.
+  const mode = ['migrate', 'seed', 'baseline'].includes(process.argv[2]) ? process.argv[2] : 'fresh';
+  const force = process.argv.includes('--force');
 
   if (!process.env.DATABASE_URL) {
     console.error('DATABASE_URL is not set. Copy .env.example to .env and fill it in.');
@@ -150,9 +167,35 @@ async function main() {
   let client;
   try {
     client = await pool.connect();
+    const populated = await hasLearnerData(client);
+
+    // A fresh setup on a populated database used to re-run the seed files,
+    // which deleted task options/activities and cascaded learner attempts away.
+    if (mode === 'fresh' && populated && !force) {
+      throw new Error(
+        'This database already has learner data. Refusing to run a fresh setup. ' +
+        'Use `npm run db:migrate` for schema changes, `npm run db:setup seed` to re-apply ' +
+        'content (now non-destructive), or add --force if you really mean a fresh setup.',
+      );
+    }
 
     if (mode === 'migrate') {
       const migrations = listMigrations();
+      await ensureLedger(client);
+      const ledger = await client.query('SELECT COUNT(*)::int AS n FROM schema_migrations');
+      const applied = (ledger.rows[0] && ledger.rows[0].n) || 0;
+
+      // An empty ledger on a populated database means 001-0xx would replay.
+      // 002 truncates progression tables, so refuse unless the operator
+      // explicitly repairs or forces it.
+      if (applied === 0 && populated && !force) {
+        throw new Error(
+          'This database has learner data but no migration ledger. Refusing to replay ' +
+          'migrations from 001 (002 truncates attempts/progress). If the schema is known ' +
+          'to be current, run `npm run db:baseline`; otherwise restore schema_migrations.',
+        );
+      }
+
       if (!migrations.length) {
         console.log('No migrations found in db/migrations.');
       } else {
@@ -160,6 +203,10 @@ async function main() {
         const ran = await runMigrations(client, migrations, { log: console.log });
         console.log(ran ? `\n${ran} applied.` : '\nAlready up to date, nothing to run.');
       }
+    } else if (mode === 'baseline') {
+      const migrations = listMigrations();
+      await baseline(client, migrations);
+      console.log(`Recorded ${migrations.length} migration(s) as applied (schema assumed current).`);
     } else if (mode === 'seed') {
       console.log('Applying seed data:');
       await runSeeds(client, listSeeds(), { log: console.log });

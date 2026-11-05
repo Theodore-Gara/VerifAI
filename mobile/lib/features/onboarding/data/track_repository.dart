@@ -4,7 +4,7 @@ import 'package:verifai/shared/models.dart';
 
 abstract class TrackRepository {
   Future<List<IndustryTrack>> getTracks();
-  Future<void> selectTrack(int trackId);
+  Future<IndustrySwitchResult> selectTrack(int trackId);
 }
 
 class MockTrackRepository implements TrackRepository {
@@ -23,10 +23,11 @@ class MockTrackRepository implements TrackRepository {
   }
 
   @override
-  Future<void> selectTrack(int trackId) async {
+  Future<IndustrySwitchResult> selectTrack(int trackId) async {
     final tracks = await _apiClient.getTracks();
     final track = tracks.firstWhere((t) => t.id == trackId);
-    await _apiClient.updateProfile(trackId);
+    final result = await _apiClient.switchIndustry(trackId);
     await _secureStorage.updateTrack(trackId.toString(), track.name);
+    return result;
   }
 }

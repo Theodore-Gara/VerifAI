@@ -10,8 +10,17 @@ import 'package:verifai/shared/models.dart';
 
 /// Shows a Verification Studio report.
 class VerificationResultScreen extends StatelessWidget {
-  const VerificationResultScreen({super.key, required this.result});
+  const VerificationResultScreen({
+    super.key,
+    required this.result,
+    this.canRetry = false,
+  });
+
   final VerificationResult result;
+
+  /// Set when the report was produced by the studio: lets the learner return
+  /// to the form (with its input intact) or re-run the same check.
+  final bool canRetry;
 
   /// One pill in the what-was-checked strip.
   Widget _checkChip(
@@ -40,15 +49,38 @@ class VerificationResultScreen extends StatelessWidget {
     );
   }
 
-  String get _statusLabel => switch (result.overallStatus) {
-        'appears_sound' => 'Appears sound',
-        'insufficient_evidence' => 'Insufficient evidence',
-        _ => 'Human review required',
+  /// Green is reserved for a report that actually checked at least one claim
+  /// against at least one source. A report with no evidence is neutral.
+  String get _statusLabel => result.isSound
+      ? 'Appears sound'
+      : result.overallStatus == 'insufficient_evidence' ||
+              result.overallStatus == 'appears_sound'
+          ? 'Not enough evidence'
+          : 'Human review required';
+
+  Color get _statusColor => result.isSound
+      ? AppColors.accentGreen
+      : result.overallStatus == 'insufficient_evidence' ||
+              result.overallStatus == 'appears_sound'
+          ? AppColors.info
+          : AppColors.goldDark;
+
+  IconData get _statusIcon => result.isSound
+      ? Icons.verified_rounded
+      : result.overallStatus == 'insufficient_evidence' ||
+              result.overallStatus == 'appears_sound'
+          ? Icons.info_outline_rounded
+          : Icons.report_problem_rounded;
+
+  String _verdictLabel(String verdict) => switch (verdict) {
+        'supported' => 'Supported',
+        'contradicted' => 'Contradicted',
+        _ => 'Unverified',
       };
 
-  Color get _statusColor => switch (result.overallStatus) {
-        'appears_sound' => AppColors.accentGreen,
-        'insufficient_evidence' => AppColors.info,
+  Color _verdictColor(String verdict) => switch (verdict) {
+        'supported' => AppColors.accentGreen,
+        'contradicted' => AppColors.error,
         _ => AppColors.goldDark,
       };
 
@@ -92,11 +124,7 @@ class VerificationResultScreen extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(
-                        result.needsReview
-                            ? Icons.report_problem_rounded
-                            : Icons.verified_rounded,
-                        color: _statusColor),
+                    Icon(_statusIcon, color: _statusColor),
                     const SizedBox(width: 8),
                     Text(_statusLabel,
                         style: AppTypography.textTheme.titleMedium?.copyWith(
@@ -118,6 +146,7 @@ class VerificationResultScreen extends StatelessWidget {
           // searched and how many sources were confirmed — so the learner can
           // see the scope of the report at a glance.
           if (result.inputs.isNotEmpty ||
+              result.checks != null ||
               result.webSearched ||
               result.sourcesConfirmed > 0)
             Container(
@@ -150,16 +179,40 @@ class VerificationResultScreen extends StatelessWidget {
                               ? Icons.description_rounded
                               : Icons.notes_rounded,
                     ),
-                  if (result.webSearched)
+                  if (result.checks != null) ...[
                     _checkChip(
-                        label: 'Web search',
-                        detail: 'run',
-                        icon: Icons.travel_explore_rounded),
-                  if (result.sourcesConfirmed > 0)
+                      label: 'Web search',
+                      detail: result.checks!.webSearch ? 'on' : 'off',
+                      icon: Icons.travel_explore_rounded,
+                    ),
                     _checkChip(
-                        label: '${result.sourcesConfirmed} sources confirmed',
-                        detail: '',
-                        icon: Icons.verified_rounded),
+                      label: '${result.checks!.sourcesFound} sources found',
+                      detail: '',
+                      icon: Icons.verified_rounded,
+                    ),
+                    _checkChip(
+                      label: '${result.checks!.claimsChecked} claims checked',
+                      detail: '',
+                      icon: Icons.fact_check_rounded,
+                    ),
+                    _checkChip(
+                      label:
+                          '${result.checks!.citationsChecked} citations checked',
+                      detail: '',
+                      icon: Icons.format_quote_rounded,
+                    ),
+                  ] else ...[
+                    if (result.webSearched)
+                      _checkChip(
+                          label: 'Web search',
+                          detail: 'run',
+                          icon: Icons.travel_explore_rounded),
+                    if (result.sourcesConfirmed > 0)
+                      _checkChip(
+                          label: '${result.sourcesConfirmed} sources confirmed',
+                          detail: '',
+                          icon: Icons.verified_rounded),
+                  ],
                 ],
               ),
             ),
@@ -175,6 +228,17 @@ class VerificationResultScreen extends StatelessWidget {
                     AppTypography.textTheme.bodyMedium?.copyWith(height: 1.5)),
             const SizedBox(height: AppSpacing.lg),
           ],
+          ..._disclosures(),
+          if (result.claims.isNotEmpty) ...[
+            Text('CLAIMS CHECKED (${result.claims.length})',
+                style: AppTypography.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textSecondary,
+                    letterSpacing: .5)),
+            const SizedBox(height: AppSpacing.sm),
+            for (final claim in result.claims) _claimCard(claim),
+            const SizedBox(height: AppSpacing.lg),
+          ],
           Text('ITEMS REQUIRING REVIEW (${result.items.length})',
               style: AppTypography.textTheme.labelSmall?.copyWith(
                   fontWeight: FontWeight.w800,
@@ -182,7 +246,10 @@ class VerificationResultScreen extends StatelessWidget {
                   letterSpacing: .5)),
           const SizedBox(height: AppSpacing.sm),
           if (result.items.isEmpty)
-            Text('Nothing flagged.',
+            Text(
+                result.isSound
+                    ? 'No issues were flagged in the content that was checked.'
+                    : 'Nothing was flagged, but this is not a clean bill of health — review the scope and sources above.',
                 style: AppTypography.textTheme.bodyMedium
                     ?.copyWith(color: AppColors.textSecondary))
           else
@@ -235,6 +302,134 @@ class VerificationResultScreen extends StatelessWidget {
                           decoration: TextDecoration.underline)),
                 ),
               ),
+          ],
+          if (canRetry) ...[
+            const SizedBox(height: AppSpacing.lg),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Edit input'),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text('Try again'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Scope warnings must appear before claims so a cut-off or hard-to-read
+  /// document cannot look like a complete check.
+  List<Widget> _disclosures() {
+    final warnings = <Widget>[];
+    for (final input in result.inputs) {
+      if (input.truncated) {
+        final pages = input.pages;
+        final read = input.pagesRead ?? pages;
+        warnings.add(_warning(pages != null && read != null
+            ? 'We read pages 1–$read of $pages; later pages were not checked.'
+            : 'Only part of this document was read; later pages were not checked.'));
+      }
+      if (input.quality?.toLowerCase() == 'low') {
+        warnings.add(_warning(
+            'The text in this document was hard to read. Paste the text or upload a clearer file for a fuller check.'));
+      }
+      if (input.warning?.trim().isNotEmpty == true) {
+        warnings.add(_warning(input.warning!.trim()));
+      }
+    }
+    return warnings;
+  }
+
+  Widget _warning(String message) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.gold.withValues(alpha: .12),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.goldDark.withValues(alpha: .35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline_rounded, size: 18, color: AppColors.goldDark),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              message,
+              style: AppTypography.textTheme.bodySmall?.copyWith(height: 1.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _claimCard(VerificationClaim claim) {
+    final color = _verdictColor(claim.verdict);
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  claim.claim,
+                  style: AppTypography.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryNavy,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: .12),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+                child: Text(
+                  _verdictLabel(claim.verdict),
+                  style: AppTypography.textTheme.labelSmall?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (claim.concern.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(claim.concern,
+                style:
+                    AppTypography.textTheme.bodySmall?.copyWith(height: 1.4)),
+          ],
+          if (claim.page != null) ...[
+            const SizedBox(height: 4),
+            Text('Page ${claim.page}',
+                style: AppTypography.textTheme.labelSmall
+                    ?.copyWith(color: AppColors.textSecondary)),
           ],
         ],
       ),

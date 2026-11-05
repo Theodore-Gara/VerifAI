@@ -10,9 +10,9 @@ const {
   calculateXp,
   calculatePracticeXp,
 } = require('../services/scoringService');
-const { grantTokens, achievementGrants } = require('../services/rewardTokens');
 const { refreshReadiness } = require('../services/readinessService');
 const { awardXp } = require('../services/xpService');
+const { awardAchievements } = require('../services/achievementsService');
 const { activityDate } = require('../utils/dates');
 
 // feature key -> skill_scores.dimension (display name)
@@ -388,9 +388,7 @@ async function submitAttempt(req, res, next) {
       // XP, level, level tokens and the streak all live in awardXp. A failed
       // attempt passes 0 and still marks the day active.
       progress = await awardXp(client, user.id, xpEarned);
-    }
-    if (!practice || passed) {
-      newlyEarned = await awardAchievements(client, user.id);
+      newlyEarned = progress.achievements || [];
     }
 
     await client.query('COMMIT');
@@ -588,83 +586,29 @@ async function updateSkillScore(client, userId, feature, trackId) {
            WHERE ta.user_id = $1 AND ta.practice = FALSE
              AND t.feature = $2 AND t.track_id = $3) AS attempts
      ), previous AS (
-       SELECT score FROM skill_scores WHERE user_id = $1 AND dimension = $4
+       SELECT score FROM skill_scores WHERE user_id = $1 AND track_id = $3 AND dimension = $4
      )
-     INSERT INTO skill_scores (user_id, dimension, score, attempts_count, updated_at)
-     SELECT $1, $4,
+     INSERT INTO skill_scores (user_id, track_id, dimension, score, attempts_count, updated_at)
+     SELECT $1, $3, $4,
             CASE WHEN total > 0
                  THEN ROUND((100.0 * (full_passed + 0.5 * practice_passed)) / total)::int
                  ELSE 0 END,
             attempts, CURRENT_TIMESTAMP
      FROM stats
-     ON CONFLICT (user_id, dimension)
+     ON CONFLICT (user_id, track_id, dimension)
      DO UPDATE SET
        score = EXCLUDED.score,
        attempts_count = EXCLUDED.attempts_count,
        updated_at = CURRENT_TIMESTAMP
-     RETURNING dimension, score, attempts_count,
+     RETURNING dimension, track_id, score, attempts_count,
                (SELECT score FROM previous) AS previous_score`,
     [userId, feature, trackId, dimension]
   );
   return result.rows[0];
 }
 
-// `passed_tasks` counts real (non-practice) tasks passed — the practice filter
-// is in the WHERE clause, so repeatedly practising a task you failed can never
-// unlock a task-count achievement. Stats, best dimension and the insert all
-// happen in one statement so the common "nothing new" case costs one query.
-async function awardAchievements(client, userId) {
-  const earned = await client.query(
-    `WITH stats AS (
-       SELECT COUNT(DISTINCT task_id) FILTER (WHERE passed)::int AS passed_tasks,
-              COALESCE(SUM(xp_earned), 0)::int AS xp,
-              COUNT(DISTINCT feature) FILTER (WHERE passed
-                AND feature IN ('verification', 'judgement', 'risk_governance'))::int AS features_passed,
-              COUNT(DISTINCT task_id) FILTER (WHERE passed AND feature = 'verification')::int AS verification_passed,
-              COUNT(DISTINCT task_id) FILTER (WHERE passed AND feature = 'judgement')::int AS judgement_passed,
-              COUNT(DISTINCT task_id) FILTER (WHERE passed AND feature = 'risk_governance')::int AS risk_passed
-       FROM task_attempts WHERE user_id = $1 AND practice = FALSE
-     ), eligible AS (
-       SELECT a.id, a.code, a.name, a.description
-       FROM achievements a
-       WHERE ((a.code = 'first-task' AND (SELECT passed_tasks FROM stats) >= 1)
-          OR (a.code = 'five-tasks' AND (SELECT passed_tasks FROM stats) >= 5)
-          OR (a.code = 'ten-tasks' AND (SELECT passed_tasks FROM stats) >= 10)
-          OR (a.code = 'xp-500' AND (SELECT xp FROM stats) >= 500)
-          OR (a.code = 'dimension-80'
-              AND (SELECT COALESCE(MAX(score), 0) FROM skill_scores WHERE user_id = $1) >= 80)
-          OR (a.code = 'xp-2000' AND (SELECT xp FROM stats) >= 2000)
-          OR (a.code = 'streak-7' AND (SELECT streak FROM users WHERE id = $1) >= 7)
-          OR (a.code = 'streak-30' AND (SELECT streak FROM users WHERE id = $1) >= 30)
-          OR (a.code = 'all-features' AND (SELECT features_passed FROM stats) >= 3)
-          OR (a.code = 'verification-10' AND (SELECT verification_passed FROM stats) >= 10)
-          OR (a.code = 'judgement-10' AND (SELECT judgement_passed FROM stats) >= 10)
-          OR (a.code = 'risk-10' AND (SELECT risk_passed FROM stats) >= 10)
-          OR (a.code = 'capstone-1'
-              AND EXISTS (SELECT 1 FROM lab_assessment_attempts WHERE user_id = $1 AND passed))
-          OR (a.code = 'interview-5'
-              AND (SELECT COUNT(*) FROM interview_practice WHERE user_id = $1) >= 5))
-       AND NOT EXISTS (
-         SELECT 1 FROM user_achievements ua WHERE ua.user_id = $1 AND ua.achievement_id = a.id
-       )
-     ), inserted AS (
-       INSERT INTO user_achievements (user_id, achievement_id)
-       SELECT $1, id FROM eligible
-       ON CONFLICT DO NOTHING
-       RETURNING achievement_id
-     )
-     SELECT e.id, e.code, e.name, e.description
-     FROM eligible e JOIN inserted i ON i.achievement_id = e.id`,
-    [userId]
-  );
-
-  const newlyEarned = earned.rows;
-  // Each achievement also carries a small token bonus.
-  if (newlyEarned.length) {
-    await grantTokens(client, userId, achievementGrants(newlyEarned));
-  }
-  return newlyEarned;
-}
+// Awarding lives in services/achievementsService.js because capstone submit,
+// activity grading and the XP/streak rollover all need it (BF-9).
 
 module.exports = {
   getNextTask,

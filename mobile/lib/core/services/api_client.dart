@@ -4,8 +4,22 @@ abstract class ApiClient {
   Future<void> ping();
   Future<List<IndustryTrack>> getTracks();
   Future<AuthSyncResponse> syncUser(User user);
-  Future<void> updateProfile(int trackId);
+
+  /// Explicit industry switch (PUT /api/users/industry).
+  Future<IndustrySwitchResult> switchIndustry(int trackId,
+      {bool reoffer = false});
   Future<void> deleteAccount();
+
+  /// Per-track tutorial state (GET/PUT /api/onboarding/tour).
+  Future<TutorialState> getTourState({int? trackId, bool reoffer = false});
+  Future<TutorialState> setTourStatus({
+    required String status,
+    int? trackId,
+    bool reoffer = false,
+  });
+
+  /// Verification limits and accepted formats (GET /api/meta).
+  Future<VerificationMeta> getVerificationMeta();
 
   /// Who the signed-in user is on the staff side (GET /api/auth/me).
   Future<AdminIdentity> getMe();
@@ -17,9 +31,11 @@ abstract class ApiClient {
   Future<DashboardData> getDashboard();
   Future<DailyTask?> getNextTask({String? feature, String? difficulty});
   Future<List<Achievement>> getAchievements();
+
+  /// Full achievements catalog with earned/locked state (GET /api/achievements).
+  Future<List<Achievement>> getAchievementCatalog();
   Future<LeaderboardData> getLeaderboard({int? trackId, int limit = 20});
   Future<ActivityData> getActivity({int days = 7});
-  Future<List<Milestone>> getMilestones({int? trackId});
   Future<List<InterviewQuestion>> getInterviewQuestions();
   Future<void> markInterviewPracticed(int questionId);
   Future<TaskSubmissionResponse> submitTask(TaskSubmissionRequest request);

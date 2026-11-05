@@ -132,9 +132,50 @@ class MockApiClient implements ApiClient {
   }
 
   @override
-  Future<void> updateProfile(int trackId) async {
-    // The mock repository already simulates the track fetch delay.
+  Future<IndustrySwitchResult> switchIndustry(int trackId,
+      {bool reoffer = false}) async {
+    final track = _tracks.firstWhere((t) => t.id == trackId);
+    return IndustrySwitchResult(
+      trackId: track.id,
+      trackName: track.name,
+      tour: TutorialState(trackId: track.id, shouldOffer: true),
+      kept: const ['xp', 'level', 'streak', 'tokens'],
+      keptValues: const {'xp': 2450, 'level': 5, 'streak': 7, 'tokens': 12},
+    );
   }
+
+  final Map<int, String> _tourStatuses = {};
+
+  @override
+  Future<TutorialState> getTourState(
+      {int? trackId, bool reoffer = false}) async {
+    final id = trackId ?? 1;
+    final status = _tourStatuses[id];
+    return TutorialState(
+      trackId: id,
+      status: status,
+      shouldOffer: status == null || (status == 'skipped' && reoffer),
+    );
+  }
+
+  @override
+  Future<TutorialState> setTourStatus({
+    required String status,
+    int? trackId,
+    bool reoffer = false,
+  }) async {
+    final id = trackId ?? 1;
+    _tourStatuses[id] = status;
+    return TutorialState(
+      trackId: id,
+      status: status,
+      shouldOffer: status == 'skipped' && reoffer,
+    );
+  }
+
+  @override
+  Future<VerificationMeta> getVerificationMeta() async =>
+      const VerificationMeta();
 
   @override
   Future<AdminIdentity> getMe() async {
@@ -182,6 +223,27 @@ class MockApiClient implements ApiClient {
   Future<List<Achievement>> getAchievements() async {
     await _delay();
     return const [];
+  }
+
+  @override
+  Future<List<Achievement>> getAchievementCatalog() async {
+    await _delay();
+    return const [
+      Achievement(
+        id: 1,
+        code: 'first-task',
+        name: 'First Assessment',
+        description: 'Complete your first workplace readiness task.',
+        earned: true,
+      ),
+      Achievement(
+        id: 2,
+        code: 'streak-7',
+        name: 'Week Streak',
+        description: 'Keep a seven-day practice streak.',
+        earned: false,
+      ),
+    ];
   }
 
   @override
@@ -268,55 +330,6 @@ class MockApiClient implements ApiClient {
       lastActivityDate: activity.last.date,
       activity: activity,
     );
-  }
-
-  @override
-  Future<List<Milestone>> getMilestones({int? trackId}) async {
-    await _delay();
-    return const [
-      Milestone(
-          code: 'first_task',
-          name: 'First Steps',
-          description: 'Complete your first task',
-          target: 1,
-          current: 1,
-          achieved: true),
-      Milestone(
-          code: 'track_master',
-          name: 'Track Master',
-          description: 'Complete every task in the track (15)',
-          target: 15,
-          current: 6,
-          achieved: false),
-      Milestone(
-          code: 'xp_250',
-          name: 'Committed',
-          description: 'Earn 250 XP',
-          target: 250,
-          current: 2450,
-          achieved: true),
-      Milestone(
-          code: 'xp_1000',
-          name: 'Dedicated',
-          description: 'Earn 1000 XP',
-          target: 1000,
-          current: 2450,
-          achieved: true),
-      Milestone(
-          code: 'streak_7',
-          name: 'On Fire',
-          description: 'Reach a 7-day streak',
-          target: 7,
-          current: 7,
-          achieved: true),
-      Milestone(
-          code: 'level_5',
-          name: 'Seasoned',
-          description: 'Reach level 5',
-          target: 5,
-          current: 5,
-          achieved: true),
-    ];
   }
 
   @override

@@ -511,8 +511,10 @@ gitleaks secret scan on every push and pull request. `codemagic.yaml` builds the
 cd backend
 npm install
 cp .env.example .env        # DATABASE_URL, Firebase Admin, NVIDIA_API_KEY
-npm run db:setup            # schema + migrations + seed (first time)
-npm run db:migrate          # migrations only
+npm run db:setup            # FIRST TIME on an empty database only
+npm run db:migrate          # apply pending schema migrations (safe; never seeds)
+npm run db:setup seed       # re-apply content seeds (non-destructive to learner data)
+npm run db:baseline         # repair a lost migration ledger, only if the schema is current
 npm run dev                 # http://localhost:3000
 
 # App

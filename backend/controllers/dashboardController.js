@@ -42,12 +42,14 @@ async function getDashboard(req, res, next) {
               t.name AS industry_track_name,
               COALESCE(p.xp, 0) AS xp, COALESCE(p.level, 1) AS level,
               COALESCE(p.streak, 0) AS streak, COALESCE(p.tokens, 0) AS tokens,
-              COALESCE(p.readiness_score, 0) AS readiness_score,
-              COALESCE(p.tier, 'Novice') AS tier,
+              COALESCE(tp.readiness_score, p.readiness_score, 0) AS readiness_score,
+              COALESCE(tp.tier, p.tier, 'Novice') AS tier,
               p.last_activity_date
        FROM users u
        LEFT JOIN industry_tracks t ON t.id = u.industry_track_id
        LEFT JOIN user_progress p ON p.user_id = u.id
+       LEFT JOIN user_track_progress tp
+         ON tp.user_id = u.id AND tp.track_id = u.industry_track_id
        WHERE u.firebase_uid = $1`,
       [req.firebaseUser.uid],
     );
@@ -61,19 +63,24 @@ async function getDashboard(req, res, next) {
 
     const user = summary.rows[0];
 
+    // BF-6: skill bars and counts are scoped to the active track. A learner who
+    // switched Finance -> Legal sees Legal's (empty) progress, not Finance's.
     const [dimensions, counts, nextTask] = await Promise.all([
       pool.query(
-        `SELECT dimension, score FROM skill_scores WHERE user_id = $1 ORDER BY dimension`,
-        [user.id],
+        `SELECT dimension, score FROM skill_scores
+          WHERE user_id = $1 AND track_id = $2 ORDER BY dimension`,
+        [user.id, user.industry_track_id],
       ),
       pool.query(
         `SELECT
-           COUNT(DISTINCT task_id) FILTER (WHERE passed)::int AS tasks_completed,
+           COUNT(DISTINCT ta.task_id) FILTER (WHERE ta.passed)::int AS tasks_completed,
            COUNT(*)::int AS attempts_total,
-           COUNT(*) FILTER (WHERE passed AND submitted_at >= NOW() - INTERVAL '7 days')::int AS passed_last_7_days
-         FROM task_attempts
-         WHERE user_id = $1 AND practice = FALSE`,
-        [user.id],
+           COUNT(*) FILTER (WHERE ta.passed AND ta.submitted_at >= NOW() - INTERVAL '7 days')::int AS passed_last_7_days
+         FROM task_attempts ta
+         JOIN tasks t ON t.id = ta.task_id
+         WHERE ta.user_id = $1 AND ta.practice = FALSE
+           AND t.track_id = $2`,
+        [user.id, user.industry_track_id],
       ),
       nextTaskFor(req),
     ]);

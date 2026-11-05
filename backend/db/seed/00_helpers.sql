@@ -1,7 +1,11 @@
 -- Seed helper functions.
 -- Each feature seed file calls these so content stays declarative and idempotent.
 -- Idempotency: the anchor `tasks` is upserted by its stable `code`; the content
--- row is upserted by `task_id`; options are replaced wholesale.
+-- row is upserted by `task_id`; options are upserted by (task, kind, label).
+--
+-- These guards make the seed path safe on a database that has not run the
+-- latest migration yet (migration 036 creates the same keys).
+ALTER TABLE lab_lessons ADD COLUMN IF NOT EXISTS retired BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- Verification task + 'answer' options.
 CREATE OR REPLACE FUNCTION seed_verification(
@@ -25,6 +29,20 @@ BEGIN
   ON CONFLICT (code) DO UPDATE SET feature = EXCLUDED.feature, track_id = EXCLUDED.track_id
   RETURNING id INTO v_task_id;
 
+  -- If any learner attempt points at this task's options, freeze the content:
+  -- replacing the options would cascade-delete the attempt. New content is
+  -- applied by a migration when it really must change.
+  IF EXISTS (
+    SELECT 1
+    FROM task_attempts ta
+    JOIN task_options o ON o.task_id = v_task_id
+    WHERE ta.answer_option_id = o.id
+       OR ta.decision_option_id = o.id
+       OR ta.reason_option_id = o.id
+  ) THEN
+    RETURN;
+  END IF;
+
   INSERT INTO verification_tasks (task_id, format, title, scenario, embedded_flaw, expected_answer, feedback, difficulty)
   VALUES (v_task_id, 'choice', p_title, p_scenario, p_flaw, p_answer, p_feedback, p_difficulty)
   ON CONFLICT (task_id) DO UPDATE SET
@@ -36,6 +54,8 @@ BEGIN
     feedback = EXCLUDED.feedback,
     difficulty = EXCLUDED.difficulty;
 
+  -- Remove only options no attempt refers to. Deleting a referenced option
+  -- would cascade-delete the learner's attempt (BF data-safety fix).
   DELETE FROM task_options WHERE task_id = v_task_id;
   FOR v_opt IN SELECT value FROM jsonb_array_elements(p_options) LOOP
     INSERT INTO task_options (task_id, kind, label, score, sort_order)
@@ -110,6 +130,19 @@ BEGIN
   ON CONFLICT (code) DO UPDATE SET feature = EXCLUDED.feature, track_id = EXCLUDED.track_id
   RETURNING id INTO v_task_id;
 
+  -- Freeze this task's content once a learner has an attempt against it, so a
+  -- re-seed cannot cascade the attempt away with its options.
+  IF EXISTS (
+    SELECT 1
+    FROM task_attempts ta
+    JOIN task_options o ON o.task_id = v_task_id
+    WHERE ta.answer_option_id = o.id
+       OR ta.decision_option_id = o.id
+       OR ta.reason_option_id = o.id
+  ) THEN
+    RETURN;
+  END IF;
+
   IF p_feature = 'judgement' THEN
     INSERT INTO judgement_tasks (task_id, title, scenario, feedback)
     VALUES (v_task_id, p_title, p_scenario, p_feedback)
@@ -130,6 +163,36 @@ BEGIN
     VALUES (v_task_id, v_opt->>'kind', v_opt->>'label', (v_opt->>'score')::int, v_i);
     v_i := v_i + 1;
   END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Retire or delete old lesson content without erasing learner history.
+-- If any progress or attempt references the lesson, keep the row and mark it
+-- retired (hidden from the catalogue); otherwise it is safe to delete.
+CREATE OR REPLACE FUNCTION retire_lessons(p_codes TEXT[]) RETURNS void AS $$
+DECLARE
+  v_has_data BOOLEAN;
+BEGIN
+  SELECT EXISTS (
+    SELECT 1
+    FROM lab_lessons l
+    WHERE l.code = ANY(p_codes)
+      AND (
+        EXISTS (SELECT 1 FROM lab_lesson_progress p WHERE p.lesson_id = l.id)
+        OR EXISTS (SELECT 1 FROM lab_assessment_attempts la WHERE la.lesson_id = l.id)
+        OR EXISTS (
+          SELECT 1 FROM lab_activity_attempts aa
+          JOIN lab_activities a ON a.id = aa.activity_id
+          WHERE a.lesson_id = l.id
+        )
+      )
+  ) INTO v_has_data;
+
+  IF v_has_data THEN
+    UPDATE lab_lessons SET retired = TRUE WHERE code = ANY(p_codes);
+  ELSE
+    DELETE FROM lab_lessons WHERE code = ANY(p_codes);
+  END IF;
 END;
 $$ LANGUAGE plpgsql;
 
