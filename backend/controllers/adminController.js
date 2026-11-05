@@ -403,7 +403,11 @@ async function getUser(req, res, next) {
 
     const [skills, attempts, achievements, moderation] = await Promise.all([
       pool.query(
-        `SELECT dimension, score, attempts_count, updated_at FROM skill_scores WHERE user_id = $1 ORDER BY dimension`,
+        `SELECT ss.dimension, ss.score, ss.attempts_count, ss.updated_at
+           FROM skill_scores ss
+           JOIN users u ON u.id = ss.user_id
+          WHERE ss.user_id = $1 AND ss.track_id = u.industry_track_id
+          ORDER BY ss.dimension`,
         [userId]
       ),
       pool.query(
@@ -1284,7 +1288,11 @@ async function exportUserData(req, res, next) {
     const [user, progress, skills, attempts, tokens, achievements, posts] = await Promise.all([
       pool.query('SELECT * FROM users WHERE id = $1', [userId]),
       pool.query('SELECT * FROM user_progress WHERE user_id = $1', [userId]),
-      pool.query('SELECT dimension, score, attempts_count, updated_at FROM skill_scores WHERE user_id = $1', [userId]),
+      pool.query(`SELECT ss.dimension, ss.score, ss.attempts_count, ss.updated_at
+                    FROM skill_scores ss
+                    JOIN users u ON u.id = ss.user_id
+                   WHERE ss.user_id = $1 AND ss.track_id = u.industry_track_id
+                   ORDER BY ss.dimension`, [userId]),
       pool.query('SELECT * FROM task_attempts WHERE user_id = $1 ORDER BY submitted_at DESC', [userId]),
       pool.query('SELECT * FROM reward_token_events WHERE user_id = $1 ORDER BY created_at DESC', [userId]),
       pool.query(`SELECT a.code, a.name, ua.earned_at FROM user_achievements ua JOIN achievements a ON a.id = ua.achievement_id WHERE ua.user_id = $1`, [userId]),

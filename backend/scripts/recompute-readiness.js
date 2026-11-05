@@ -21,8 +21,8 @@ async function main() {
 
     for (const [feature, dimension] of Object.entries(FEATURE_DIMENSION)) {
       const res = await client.query(
-        `INSERT INTO skill_scores (user_id, dimension, score, attempts_count, updated_at)
-         SELECT u.id, $2,
+        `INSERT INTO skill_scores (user_id, track_id, dimension, score, attempts_count, updated_at)
+         SELECT u.id, u.industry_track_id, $2,
                 CASE WHEN tot.n > 0
                      THEN ROUND((100.0 * (f.n + 0.5 * p.n)) / tot.n)::int
                      ELSE 0 END,
@@ -47,7 +47,7 @@ async function main() {
                           AND t.track_id = u.industry_track_id) att ON TRUE
          WHERE u.industry_track_id IS NOT NULL
            AND (COALESCE(f.n, 0) > 0 OR COALESCE(p.n, 0) > 0 OR COALESCE(att.n, 0) > 0)
-         ON CONFLICT (user_id, dimension) DO UPDATE SET
+         ON CONFLICT (user_id, track_id, dimension) DO UPDATE SET
            score = EXCLUDED.score,
            attempts_count = EXCLUDED.attempts_count,
            updated_at = CURRENT_TIMESTAMP`,
@@ -58,6 +58,7 @@ async function main() {
 
     const users = await client.query('SELECT id, industry_track_id FROM users');
     for (const user of users.rows) {
+      if (!user.industry_track_id) continue;
       await refreshReadiness(client, user.id, user.industry_track_id);
     }
     console.log(`  readiness + tier recomputed for ${users.rows.length} user(s)`);

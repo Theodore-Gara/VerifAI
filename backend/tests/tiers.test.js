@@ -27,7 +27,7 @@ test('nextTier returns the next band and null at the top', () => {
   assert.equal(nextTier('Advanced'), null);
 });
 
-function fakeClient({ scores, offered = [], interview = { total: 0, practised: 0 }, learning = { offered: 0, average: 0 } }) {
+function fakeClient({ scores, offered = [], interview = { total: 0, practised: 0 }, learning = { offered: 0, average: 0 }, currentBest = null }) {
   const calls = [];
   return {
     calls,
@@ -42,7 +42,11 @@ function fakeClient({ scores, offered = [], interview = { total: 0, practised: 0
             capstone_offered: learning.offered,
             capstone_average: learning.average,
             interview_practised: interview.practised,
+            tasks_completed: 2,
             current_readiness: null,
+            current_best: currentBest,
+            last_activity_date: null,
+            active_track_id: 1,
           }],
         };
       }
@@ -52,7 +56,7 @@ function fakeClient({ scores, offered = [], interview = { total: 0, practised: 0
   };
 }
 
-const writeOf = (client) => client.calls.find((c) => c.sql.includes('INSERT INTO user_progress'));
+const writeOf = (client) => client.calls.find((c) => c.sql.includes('INSERT INTO user_track_progress'));
 
 test('refreshReadiness writes the live weighted score and its derived tier', async () => {
   const client = fakeClient({
@@ -61,15 +65,14 @@ test('refreshReadiness writes the live weighted score and its derived tier', asy
 
   await refreshReadiness(client, 1, 1);
   const write = writeOf(client);
-  // (0.3*80 + 0.3*40) / 0.6 = 60 -> Developing.
-  assert.equal(write.values[1], 60);
-  assert.equal(write.values[2], 'Developing');
+  // (0.3*80 + 0.3*40) / 0.6 = 60 -> Developing. Values: user, track, score, best, tier.
+  assert.equal(write.values[2], 60);
+  assert.equal(write.values[4], 'Developing');
   assert.equal(write.values[0], 1, 'user id');
-  // Upsert: a learner with no user_progress row gets one instead of losing the
-  // readiness to a no-op UPDATE.
-  assert.match(write.sql, /ON CONFLICT \(user_id\) DO UPDATE/);
-  // Live value: no monotonic guard, so a lower score can lower readiness+tier.
-  assert.doesNotMatch(write.sql, /GREATEST/);
+  assert.equal(write.values[1], 1, 'track id');
+  assert.match(write.sql, /ON CONFLICT \(user_id, track_id\) DO UPDATE/);
+  // Live value can fall; the best-ever value used by the roadmap cannot.
+  assert.match(write.sql, /GREATEST\(user_track_progress\.readiness_best, EXCLUDED\.readiness_best\)/);
 });
 
 test('a module the track offers but the learner has not touched counts as zero', async () => {
@@ -80,8 +83,8 @@ test('a module the track offers but the learner has not touched counts as zero',
   });
   await refreshReadiness(client, 1, 1);
   // (0.3*100 + 0.2*0) / 0.5 = 60 -> Developing, not 100/Advanced.
-  assert.equal(writeOf(client).values[1], 60);
-  assert.equal(writeOf(client).values[2], 'Developing');
+  assert.equal(writeOf(client).values[2], 60);
+  assert.equal(writeOf(client).values[4], 'Developing');
 });
 
 test('modules a track does not offer are excluded from the denominator', async () => {
@@ -91,6 +94,17 @@ test('modules a track does not offer are excluded from the denominator', async (
   });
   await refreshReadiness(client, 1, 1);
   // The only offered module is aced: 0.3*100 / 0.3 = 100.
-  assert.equal(writeOf(client).values[1], 100);
-  assert.equal(writeOf(client).values[2], 'Advanced');
+  assert.equal(writeOf(client).values[2], 100);
+  assert.equal(writeOf(client).values[4], 'Advanced');
+});
+
+test('a lower live score never lowers the best-ever readiness', async () => {
+  const client = fakeClient({
+    scores: [{ dimension: 'Verification', score: 40 }],
+    offered: [{ feature: 'verification', n: 4 }],
+    currentBest: 72,
+  });
+  const readiness = await refreshReadiness(client, 1, 1);
+  assert.equal(readiness, 40);
+  assert.equal(writeOf(client).values[3], 72, 'readiness_best keeps the high-water mark');
 });

@@ -150,6 +150,10 @@ const fakeClient = {
           capstone_average: 0,
           interview_practised: 0,
           current_readiness: 50,
+          current_best: 50,
+          tasks_completed: 1,
+          last_activity_date: null,
+          active_track_id: 1,
         }],
       };
     }
@@ -226,8 +230,8 @@ test('GET /api/leaderboard returns board and requesting user rank', async () => 
   assert.match(boardSql, /ORDER BY COALESCE\(p\.xp, 0\) DESC/);
   assert.match(boardSql, /ORDER BY r\.rank ASC\s+LIMIT/);
   const rankCall = queryCalls.find((call) => call.sql.includes('COUNT(*)::int + 1'));
-  assert.match(rankCall.sql, /COALESCE\(p\.readiness_score, 0\) > \$2/);
-  assert.match(rankCall.sql, /COALESCE\(p\.readiness_score, 0\) = \$2 AND u\.id < \$3/);
+  assert.match(rankCall.sql, /COALESCE\(tp\.readiness_score, 0\) > \$2/);
+  assert.match(rankCall.sql, /COALESCE\(tp\.readiness_score, 0\) = \$2 AND u\.id < \$3/);
   assert.deepEqual(rankCall.values, [70, 100, 7]);
 });
 
@@ -290,32 +294,14 @@ test('GET /api/achievements returns the full catalog with earned flags', async (
   assert.equal(response.body.achievements[1].earned_at, null);
 });
 
-test('GET /api/achievements/milestones computes live progress', async () => {
+test('GET /api/achievements/milestones is a 410 roadmap_moved shim', async () => {
   const response = await request(app)
     .get('/api/achievements/milestones')
     .set('Authorization', 'Bearer test-token');
-  assert.equal(response.status, 200);
-  assert.equal(response.body.track_id, 1);
-  const byCode = Object.fromEntries(response.body.milestones.map((m) => [m.code, m]));
-  assert.equal(byCode.first_task.current, 3);
-  assert.equal(byCode.first_task.achieved, true);
-  assert.equal(byCode.track_master.target, 5);
-  assert.equal(byCode.track_master.achieved, false);
-  assert.equal(byCode.xp_250.current, 70);
-  assert.equal(byCode.xp_250.achieved, false);
-  assert.equal(byCode.streak_7.current, 1);
-  assert.equal(byCode.level_5.current, 2);
-});
-
-test('GET /api/achievements/milestones?track= overrides the track', async () => {
-  queries.length = 0;
-  const response = await request(app)
-    .get('/api/achievements/milestones?track=2')
-    .set('Authorization', 'Bearer test-token');
-  assert.equal(response.status, 200);
-  assert.equal(response.body.track_id, 2);
-  const totalsSql = queries.find((q) => q.includes('FROM tasks t'));
-  assert.match(totalsSql, /t\.track_id = \$1/);
+  assert.equal(response.status, 410);
+  assert.equal(response.body.code, 'roadmap_moved');
+  assert.match(response.body.error, /\/api\/roadmap/);
+  assert.equal('milestones' in response.body, false, 'no list is returned');
 });
 
 test('protected endpoint rejects missing Firebase token', async () => {
@@ -595,13 +581,13 @@ test('marking a question practised is idempotent and refreshes readiness', async
   assert.equal(second.body.practised_count, first.body.practised_count);
 
   // Interview coverage feeds the weighted readiness score, so it is recomputed
-  // after each practice. Readiness is written as an upsert now (a plain UPDATE
-  // silently did nothing for a learner with no user_progress row yet).
+  // after each practice. BF-6 writes the track-scoped row (and mirrors it into
+  // user_progress for older read paths).
   const updates = queries.filter(
-    (sql) => sql.includes('INSERT INTO user_progress') && sql.includes('readiness_score'),
+    (sql) => sql.includes('INSERT INTO user_track_progress') && sql.includes('readiness_score'),
   );
   assert.equal(updates.length, 2, 'readiness recomputed after every practice');
-  assert.match(updates[0], /ON CONFLICT \(user_id\) DO UPDATE/);
+  assert.match(updates[0], /ON CONFLICT \(user_id, track_id\) DO UPDATE/);
   // The inputs are fetched in a single statement rather than four round trips.
   const inputs = queries.filter((sql) => sql.includes('readiness_inputs'));
   assert.equal(inputs.length, 2);

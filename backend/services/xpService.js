@@ -8,6 +8,7 @@
 const { calculateLevel } = require('./scoringService');
 const { grantTokens, levelGrants } = require('./rewardTokens');
 const { streakFromGap, STREAK_TIMEZONE } = require('./streak');
+const { awardAchievements } = require('./achievementsService');
 
 // amount === 0 is meaningful: a graded-but-unscored attempt (a failed task)
 // marks the day as active without paying out anything. Admin adjustments pass
@@ -48,7 +49,13 @@ async function awardXp(client, userId, amount, { advanceStreak = true } = {}) {
      RETURNING xp, level, streak, last_activity_date, readiness_score, tier, tokens`,
     [newXp, newLevel, newStreak, userId, STREAK_TIMEZONE, advanceStreak],
   );
-  return { ...updated.rows[0], xp_earned: xp };
+
+  // BF-9: a level/streak/XP badge must not wait for the next task submission.
+  // Awarding here means every path that moves XP or the streak (task, activity,
+  // capstone, admin grant) evaluates achievements at that moment.
+  const achievements = await awardAchievements(client, userId);
+
+  return { ...updated.rows[0], xp_earned: xp, achievements };
 }
 
 module.exports = { awardXp };

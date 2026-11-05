@@ -1,4 +1,3 @@
-
 const { sendApiError } = require('./utils/apiError');
 const express = require('express');
 const cors = require('cors');
@@ -8,6 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 
 const healthRoutes = require('./routes/health');
 const authRoutes = require('./routes/auth');
+const onboardingRoutes = require('./routes/onboarding');
 const userRoutes = require('./routes/users');
 const trackRoutes = require('./routes/tracks');
 const taskRoutes = require('./routes/tasks');
@@ -179,6 +179,7 @@ app.get('/', (req, res) => {
 app.use(maintenanceGate);
 
 app.use('/api/auth', authRoutes);
+app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/tracks', trackRoutes);
 app.use('/api/tasks', taskRoutes);
@@ -229,8 +230,12 @@ app.get('/api/docs', (req, res) => {
     endpoints: [
       'GET /api/health',
       'POST /api/auth/sync',
+      'GET /api/auth/me',
       'GET /api/users/me',
       'PUT /api/users/profile',
+      'PUT /api/users/industry',
+      'GET /api/onboarding/tour',
+      'PUT /api/onboarding/tour',
       'GET /api/tracks',
       'GET /api/tasks/next',
       'POST /api/tasks/:id/attempt',
@@ -240,7 +245,7 @@ app.get('/api/docs', (req, res) => {
       'GET /api/leaderboard',
       'GET /api/achievements/me',
       'GET /api/achievements',
-      'GET /api/achievements/milestones',
+      'GET /api/roadmap',
       'GET /api/interview/questions',
       'POST /api/interview/questions/:id/practice',
       'POST /api/assistant/chat',

@@ -51,7 +51,16 @@ global.fetch = async (url, options) => {
   // NVIDIA
   const body = JSON.parse(options.body);
   const system = body.messages[0].content;
-  const content = system.includes('performance report') ? JSON.stringify(CAP_REPORT) : JSON.stringify(REPORT);
+  let content;
+  if (system.includes('find factual claims')) {
+    content = JSON.stringify({ claims: [{ text: 'POPIA section 22 applies to personal data.', page: null, kind: 'name' }] });
+  } else if (system.includes('verification analyst')) {
+    content = JSON.stringify({ verdicts: [{ id: 1, verdict: 'supported', concern: '', evidence: ['https://cit.example'] }] });
+  } else if (system.includes('performance report')) {
+    content = JSON.stringify(CAP_REPORT);
+  } else {
+    content = JSON.stringify(REPORT);
+  }
   return { ok: true, json: async () => ({ choices: [{ message: { content } }], usage: {} }) };
 };
 
@@ -63,7 +72,7 @@ test('POST /api/verification/analyze resolves document, link, citation, text and
     kind: 'document',
     context: 'Extra background the user typed',
     sources: [
-      { type: 'document', name: 'notes.txt', mime: 'text/plain', base64: Buffer.from('Key facts here').toString('base64') },
+      { type: 'document', name: 'notes.txt', mime: 'text/plain', base64: Buffer.from('Key facts here: the contract is confidential and the figures must be checked.').toString('base64') },
       { type: 'url', url: 'https://example.com/page' },
       { type: 'citation', text: 'POPIA section 22' },
       { type: 'text', text: 'A pasted claim' },

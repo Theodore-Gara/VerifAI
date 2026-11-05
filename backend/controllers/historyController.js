@@ -2,10 +2,16 @@ const pool = require('../db/pool');
 const { clampInt, positiveIntegerParam } = require('../middleware/validate');
 
 const TYPES = new Set(['task', 'activity', 'capstone']);
+const TRACK_SCOPES = new Set(['current', 'all']);
 
-// GET /api/history?limit=&offset=&type=&q=
+// GET /api/history?limit=&offset=&type=&q=&track=current|all
 // One newest-first timeline across scored task attempts, AI Lab practice
 // activities and capstone attempts.
+//
+// BF-6: the timeline is scoped to the active industry by default, the same way
+// dashboard/progress are. `?track=all` restores the old cross-industry view.
+// Activity rows with no track (the global AI-literacy lessons) stay visible in
+// the current view - they are not another industry's evidence.
 //
 // Pagination is offset-based (rather than a keyset on created_at) because the
 // union has no single id sequence and the timeline is short; `has_more` is
@@ -21,20 +27,27 @@ async function getHistory(req, res, next) {
     if (type && !TYPES.has(type)) {
       return res.status(400).json({ error: 'type must be one of task, activity, capstone.', request_id: req.requestId });
     }
+    const track = req.query.track == null ? 'current' : String(req.query.track).toLowerCase();
+    if (!TRACK_SCOPES.has(track)) {
+      return res.status(400).json({ error: 'track must be current or all.', request_id: req.requestId });
+    }
     const q = typeof req.query.q === 'string' && req.query.q.trim()
       ? req.query.q.trim().slice(0, 120)
       : null;
 
     const result = await pool.query(
-      `SELECT type, id, title, feature, score, passed, xp_earned, created_at
+      `SELECT type, id, title, feature, score, passed, xp_earned, created_at, track_id
        FROM user_activity
        WHERE user_id = $1
          AND NOT (type = 'task' AND practice)
          AND ($2::text IS NULL OR type = $2)
          AND ($3::text IS NULL OR title ILIKE '%' || $3 || '%')
+         AND ($6::text = 'all'
+              OR track_id IS NULL
+              OR track_id = (SELECT industry_track_id FROM users WHERE id = $1))
        ORDER BY created_at DESC, id DESC
        LIMIT $4 OFFSET $5`,
-      [user.id, type, q, limit + 1, offset],
+      [user.id, type, q, limit + 1, offset, track],
     );
 
     const rows = result.rows.slice(0, limit);
@@ -45,6 +58,7 @@ async function getHistory(req, res, next) {
       offset,
       type,
       q,
+      track,
       request_id: req.requestId,
     });
   } catch (err) {

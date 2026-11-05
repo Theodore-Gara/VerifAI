@@ -3,6 +3,9 @@ const { positiveIntegerParam } = require('../middleware/validate');
 const { findUserByFirebaseUid } = require('../db/users');
 const { purgeAccount } = require('../services/accountPurge');
 const { invalidateStatusCache } = require('../middleware/auth');
+const { switchIndustry } = require('../services/industrySwitch');
+const { apiError } = require('../utils/apiError');
+const { leaderboardCache } = require('../utils/ttlCache');
 
 const AVATAR_MIME = new Set(['image/png', 'image/jpeg', 'image/webp']);
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
@@ -32,6 +35,7 @@ async function getMe(req, res, next) {
 }
 
 async function updateProfile(req, res, next) {
+  let client = null;
   try {
     const { display_name: displayName, industry_track_id: industryTrackId } = req.body;
 
@@ -43,13 +47,28 @@ async function updateProfile(req, res, next) {
       return res.status(400).json({ error: 'display_name must be a non-empty string of 255 characters or fewer.', request_id: req.requestId });
     }
 
-    let trackId = null;
+    // BF-5: a track change on the legacy route delegates to the same
+    // transactional service as PUT /api/users/industry.
     if (industryTrackId !== undefined && industryTrackId !== null) {
-      trackId = positiveIntegerParam(industryTrackId, 'industry_track_id');
-      const track = await pool.query('SELECT id FROM industry_tracks WHERE id = $1', [trackId]);
-      if (!track.rows.length) {
-        return res.status(400).json({ error: 'Selected industry track does not exist.', request_id: req.requestId });
+      const trackId = positiveIntegerParam(industryTrackId, 'industry_track_id');
+      const user = await findUserByFirebaseUid(pool, req.firebaseUser.uid);
+      if (!user) {
+        throw apiError(404, 'user_not_found', 'User not found.', {
+          publicMessage: 'User not found. Call /api/auth/sync first.',
+          retryable: false,
+        });
       }
+
+      client = await pool.connect();
+      await client.query('BEGIN');
+      const switched = await switchIndustry(client, user.id, trackId, {
+        displayName: displayName === null ? null : displayName?.trim(),
+        reoffer: req.body.reoffer === true,
+      });
+      await client.query('COMMIT');
+      // The board ranks on readiness, which just changed for this learner.
+      leaderboardCache.clear();
+      return res.status(200).json({ ...switched, request_id: req.requestId });
     }
 
     const result = await pool.query(
@@ -58,16 +77,53 @@ async function updateProfile(req, res, next) {
            industry_track_id = CASE WHEN $3::boolean THEN $4 ELSE industry_track_id END
        WHERE firebase_uid = $5
        RETURNING id, firebase_uid, email, display_name, industry_track_id, created_at`,
-      [displayName !== undefined, displayName === null ? null : displayName?.trim(), industryTrackId !== undefined, trackId, req.firebaseUser.uid]
+      [displayName !== undefined, displayName === null ? null : displayName?.trim(), industryTrackId === null, null, req.firebaseUser.uid]
     );
 
     if (!result.rows.length) {
       return res.status(404).json({ error: 'User not found. Call /api/auth/sync first.', request_id: req.requestId });
     }
 
-    return res.status(200).json({ user: result.rows[0] });
+    return res.status(200).json({ user: result.rows[0], request_id: req.requestId });
   } catch (err) {
+    if (client) await client.query('ROLLBACK').catch(() => {});
     return next(err);
+  } finally {
+    if (client) client.release();
+  }
+}
+
+// PUT /api/users/industry { track_id }
+// The explicit industry-switch endpoint (BF-5). The legacy profile route still
+// accepts industry_track_id and delegates here.
+async function switchIndustryHandler(req, res, next) {
+  let client = null;
+  try {
+    const raw = req.body.track_id ?? req.body.industry_track_id;
+    const trackId = positiveIntegerParam(raw, 'track_id');
+
+    const user = await findUserByFirebaseUid(pool, req.firebaseUser.uid);
+    if (!user) {
+      throw apiError(404, 'user_not_found', 'User not found.', {
+        publicMessage: 'User not found. Call /api/auth/sync first.',
+        retryable: false,
+      });
+    }
+
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const switched = await switchIndustry(client, user.id, trackId, {
+      reoffer: req.body.reoffer === true,
+    });
+    await client.query('COMMIT');
+    leaderboardCache.clear();
+
+    return res.status(200).json({ ...switched, request_id: req.requestId });
+  } catch (err) {
+    if (client) await client.query('ROLLBACK').catch(() => {});
+    return next(err);
+  } finally {
+    if (client) client.release();
   }
 }
 
@@ -158,4 +214,4 @@ async function deleteAccount(req, res, next) {
   }
 }
 
-module.exports = { getMe, updateProfile, uploadAvatar, getAvatar, deleteAccount };
+module.exports = { getMe, updateProfile, switchIndustryHandler, uploadAvatar, getAvatar, deleteAccount };

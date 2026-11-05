@@ -5,7 +5,7 @@ const { gradeActivity } = require('../services/activityGrading');
 const { markQuestion, rubricAward } = require('../services/capstoneMarking');
 const { awardXp } = require('../services/xpService');
 const { grantTokens } = require('../services/rewardTokens');
-const { awardAchievements } = require('./tasksController');
+const { awardAchievements } = require('../services/achievementsService');
 const { refreshReadiness } = require('../services/readinessService');
 const { validateMessages } = require('./assistantController');
 const { handleAiError } = require('../middleware/aiError');
@@ -387,7 +387,9 @@ async function submitActivity(req, res, next) {
     );
     const isPractice = practice || prior.rows.length > 0;
     const xpEarned = passed && !isPractice ? activity.xp_reward : 0;
-    if (xpEarned > 0) await awardXp(client, user.id, xpEarned);
+    // Call even for 0 XP: the first activity of the day rolls the streak, and
+    // streak/level badges must be awarded at grading time (BF-9).
+    await awardXp(client, user.id, xpEarned);
 
     await client.query(
       `INSERT INTO lab_activity_attempts (user_id, activity_id, passed, xp_awarded, submitted_date)

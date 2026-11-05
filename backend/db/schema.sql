@@ -202,11 +202,14 @@ CREATE INDEX IF NOT EXISTS idx_answer_logs_feature ON answer_logs (feature, subm
 CREATE TABLE IF NOT EXISTS skill_scores (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  -- BF-6: competency is scoped to the industry track. XP/level/streak stay
+  -- global in user_progress; only the skill coverage is per track.
+  track_id INTEGER NOT NULL REFERENCES industry_tracks(id) ON DELETE CASCADE,
   dimension VARCHAR(50) NOT NULL CHECK (dimension IN ('Verification', 'AI Judgement', 'Prompt Design', 'Risk & Governance')),
   score INTEGER NOT NULL DEFAULT 0 CHECK (score BETWEEN 0 AND 100),
   attempts_count INTEGER NOT NULL DEFAULT 0 CHECK (attempts_count >= 0),
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE (user_id, dimension)
+  UNIQUE (user_id, track_id, dimension)
 );
 
 CREATE TABLE IF NOT EXISTS user_progress (
@@ -219,8 +222,43 @@ CREATE TABLE IF NOT EXISTS user_progress (
   last_activity_date DATE,
   tier VARCHAR(20) NOT NULL DEFAULT 'Novice' CHECK (tier IN ('Novice', 'Developing', 'Proficient', 'Advanced')),
   tier_tasks_completed INTEGER NOT NULL DEFAULT 0 CHECK (tier_tasks_completed >= 0),
+  -- Deprecated mirror of the active track's user_track_progress value. Every
+  -- read path uses user_track_progress; these stay for older code paths.
   readiness_score INTEGER NOT NULL DEFAULT 0 CHECK (readiness_score BETWEEN 0 AND 100),
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- BF-6: per-track readiness. readiness_best is the high-water mark the roadmap
+-- uses so a weak retake can never take a completed stage back.
+CREATE TABLE IF NOT EXISTS user_track_progress (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  track_id INTEGER NOT NULL REFERENCES industry_tracks(id) ON DELETE CASCADE,
+  readiness_score INTEGER NOT NULL DEFAULT 0 CHECK (readiness_score BETWEEN 0 AND 100),
+  readiness_best INTEGER NOT NULL DEFAULT 0 CHECK (readiness_best BETWEEN 0 AND 100),
+  tier VARCHAR(20) NOT NULL DEFAULT 'Novice' CHECK (tier IN ('Novice', 'Developing', 'Proficient', 'Advanced')),
+  tasks_completed INTEGER NOT NULL DEFAULT 0 CHECK (tasks_completed >= 0),
+  last_activity_date DATE,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, track_id)
+);
+
+-- BF-7: per-account tutorial state (survives reinstall and a second device).
+CREATE TABLE IF NOT EXISTS user_tutorials (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  track_id INTEGER NOT NULL REFERENCES industry_tracks(id) ON DELETE CASCADE,
+  tour_key VARCHAR(80) NOT NULL DEFAULT 'industry',
+  status VARCHAR(20) NOT NULL CHECK (status IN ('completed', 'skipped')),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, track_id, tour_key)
+);
+
+-- BF-5: audit trail for industry switches.
+CREATE TABLE IF NOT EXISTS user_track_changes (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  from_track_id INTEGER REFERENCES industry_tracks(id) ON DELETE SET NULL,
+  to_track_id INTEGER NOT NULL REFERENCES industry_tracks(id) ON DELETE CASCADE,
+  changed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS achievements (
@@ -694,6 +732,9 @@ CREATE INDEX IF NOT EXISTS idx_task_attempts_user ON task_attempts(user_id, subm
 CREATE INDEX IF NOT EXISTS idx_task_attempts_user_task ON task_attempts(user_id, task_id);
 CREATE INDEX IF NOT EXISTS idx_skill_scores_user ON skill_scores(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_achievements_user ON user_achievements(user_id, earned_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_tutorials_user ON user_tutorials(user_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_track_changes_user ON user_track_changes(user_id, changed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_skill_scores_user_track ON skill_scores(user_id, track_id);
 CREATE INDEX IF NOT EXISTS idx_verification_analyses_user ON verification_analyses(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_lab_lessons_track ON lab_lessons(track_id, sort_order);
 CREATE INDEX IF NOT EXISTS idx_lab_sections_lesson ON lab_lesson_sections(lesson_id, sort_order);
@@ -804,7 +845,8 @@ SELECT ta.user_id,
        ta.passed                  AS passed,
        ta.practice                AS practice,
        ta.xp_earned               AS xp_earned,
-       ta.submitted_at            AS created_at
+       ta.submitted_at            AS created_at,
+       t.track_id                 AS track_id
 FROM task_attempts ta
 JOIN tasks t ON t.id = ta.task_id
 UNION ALL
@@ -817,9 +859,11 @@ SELECT aa.user_id,
        aa.passed,
        FALSE,
        aa.xp_awarded,
-       aa.submitted_at
+       aa.submitted_at,
+       l.track_id
 FROM lab_activity_attempts aa
 JOIN lab_activities a ON a.id = aa.activity_id
+LEFT JOIN lab_lessons l ON l.id = a.lesson_id
 UNION ALL
 SELECT ca.user_id,
        'capstone'::text,
@@ -830,25 +874,11 @@ SELECT ca.user_id,
        ca.passed,
        FALSE,
        CASE WHEN ca.passed THEN c.xp_reward ELSE 0 END,
-       ca.submitted_at
+       ca.submitted_at,
+       c.track_id
 FROM lab_capstone_attempts ca
 JOIN lab_capstone_assessments c ON c.id = ca.assessment_id
 WHERE ca.submitted_at IS NOT NULL;
-
-  id SERIAL PRIMARY KEY,
-  slug VARCHAR(120) NOT NULL UNIQUE,
-  title VARCHAR(200) NOT NULL,
-  summary TEXT NOT NULL,
-  body_md TEXT NOT NULL,
-  category VARCHAR(40) NOT NULL,
-  audience VARCHAR(20) NOT NULL DEFAULT 'all',
-  sort_order INTEGER NOT NULL DEFAULT 0,
-  published BOOLEAN NOT NULL DEFAULT TRUE,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_help_articles_listing
-  ON help_articles (category, sort_order, id) WHERE published;
 
 CREATE TABLE IF NOT EXISTS faqs (
   id SERIAL PRIMARY KEY,

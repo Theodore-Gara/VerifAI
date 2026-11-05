@@ -133,6 +133,22 @@ async function analyzeContent({ kind, content, webResults, fetchImpl }) {
   return result.content;
 }
 
+// Generic strict-JSON completion for the verification pipeline. Returns the raw
+// result ({ content, usage, finish }) so the caller can log the failure stage
+// and token usage without ever logging document text or model output.
+async function completeJsonCompletion({ profile, system, user, fetchImpl }) {
+  return chatWithFallback(
+    {
+      ...resolveProfile(profile),
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+    },
+    fetchImpl,
+  );
+}
+
 // --- Vera: personalised assistant with memory --------------------------------
 // The caller assembles the full message list (system prompt + running summary +
 // recent turns); these just run it through the Vera profile.
@@ -263,6 +279,7 @@ module.exports = {
   getCoachReply,
   streamCoachReply,
   analyzeContent,
+  completeJsonCompletion,
   getVeraReply,
   streamVeraReply,
   extractMemories,

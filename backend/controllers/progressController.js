@@ -9,17 +9,24 @@ async function getProgress(req, res, next) {
               COALESCE(p.streak, 0)::int AS streak,
               COALESCE(p.tokens, 0)::int AS tokens,
               p.last_activity_date,
-              COALESCE(p.readiness_score, 0)::int AS readiness_score,
-              COALESCE(p.tier, 'Novice') AS tier,
+              COALESCE(tp.readiness_score, p.readiness_score, 0)::int AS readiness_score,
+              COALESCE(tp.tier, p.tier, 'Novice') AS tier,
               COALESCE((SELECT json_agg(json_build_object(
                   'dimension', ss.dimension,
                   'score', ss.score,
                   'attempts_count', ss.attempts_count
-                ) ORDER BY ss.dimension) FROM skill_scores ss WHERE ss.user_id = u.id), '[]'::json) AS skill_scores,
-              COALESCE((SELECT COUNT(DISTINCT ta.task_id)::int FROM task_attempts ta
-                        WHERE ta.user_id = u.id AND ta.practice = FALSE), 0) AS completed_tasks
+                ) ORDER BY ss.dimension)
+                FROM skill_scores ss
+               WHERE ss.user_id = u.id AND ss.track_id = u.industry_track_id), '[]'::json) AS skill_scores,
+              COALESCE((SELECT COUNT(DISTINCT ta.task_id)::int
+                          FROM task_attempts ta
+                          JOIN tasks t ON t.id = ta.task_id
+                         WHERE ta.user_id = u.id AND ta.practice = FALSE
+                           AND t.track_id = u.industry_track_id), 0) AS completed_tasks
        FROM users u
        LEFT JOIN user_progress p ON p.user_id = u.id
+       LEFT JOIN user_track_progress tp
+         ON tp.user_id = u.id AND tp.track_id = u.industry_track_id
        WHERE u.firebase_uid = $1`,
       [req.firebaseUser.uid]
     );
