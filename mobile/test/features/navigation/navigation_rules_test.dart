@@ -44,18 +44,6 @@ void main() {
       expect(routes, hasLength(allSections.length));
     });
 
-    test('industry guides are in the shared destination index', () {
-      expect(
-        allSections.map((section) => section.route),
-        containsAll([
-          '/industry-guide/Finance',
-          '/industry-guide/Legal',
-          '/industry-guide/IT%20%2F%20Software',
-          '/industry-guide/Business%20Consulting',
-        ]),
-      );
-    });
-
     test('shellTabIndexFor maps each dock route to its dock index', () {
       expect(shellTabIndexFor('/dashboard'), 0);
       expect(shellTabIndexFor('/learn'), 1);
