@@ -1,3 +1,5 @@
+
+const { sendApiError } = require('./utils/apiError');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -34,6 +36,7 @@ const { PostgresRateLimitStore } = require('./utils/pgRateStore');
 const app = express();
 
 app.disable('x-powered-by');
+
 // The client sits behind Cloudflare AND Render's load balancer, so the real
 // client IP is two trusted hops away. With 1, req.ip resolved to a Cloudflare
 // edge address that varies per request, which defeated per-IP rate limiting
@@ -74,6 +77,7 @@ app.use(cors({
     if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
+
     return callback(new Error('CORS origin not allowed'));
   },
 }));
@@ -85,6 +89,7 @@ app.use(cors({
 // letting a 14MB body reach the parser.
 app.use(['/api/users/avatar'], express.json({ limit: '3mb' }));
 app.use(['/api/verification/analyze'], express.json({ limit: '8mb' }));
+
 // The importer accepts up to 200 tasks (and a single task with a scenario, five
 // options and feedback already exceeds the 32kb default), so admin task writes
 // get their own ceiling. Without this the import failed with an opaque 413.
@@ -102,23 +107,29 @@ app.use(express.urlencoded({ extended: false, limit: '16kb' }));
 // route, and a forged uid would only earn the sender its own fresh bucket.
 function rateLimitKey(req) {
   const [scheme, token] = (req.headers.authorization || '').split(' ');
+
   if (scheme === 'Bearer' && token) {
     const payload = token.split('.')[1];
+
     if (payload) {
       try {
         const claims = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
         const uid = claims.user_id || claims.sub;
+
         if (uid) return `user:${uid}`;
       } catch {
         // Malformed token - fall through to the IP bucket.
       }
     }
   }
+
   const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+
   // Mask IPv6 to its /64 so one client cannot rotate through its own subnet.
   const masked = ip.includes(':')
     ? `${ip.split(':').slice(0, 4).join(':')}::/64`
     : ip;
+
   return `ip:${masked}`;
 }
 
@@ -132,7 +143,16 @@ app.use('/api/health', healthRoutes);
 // stricter limit because every call costs an LLM request.
 const windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000;
 const max = Number(process.env.RATE_LIMIT_MAX) || 600;
+
 app.use('/api', rateLimit({
+  handler: (req, res) => sendApiError(
+    req,
+    res,
+    429,
+    'rate_limited',
+    'Too many requests. Please try again later.',
+    { retryable: true }
+  ),
   windowMs,
   limit: max,
   standardHeaders: true,
@@ -183,6 +203,7 @@ app.use('/api/roadmap', roadmapRoutes);
 
 // Admin dashboard: a static single-page app served by the API itself.
 const path = require('path');
+
 app.get('/admin/firebase-config.js', (req, res) => {
   const apiKey = process.env.FIREBASE_WEB_API_KEY?.trim();
   res.set('Cache-Control', 'no-store');
@@ -198,6 +219,7 @@ app.get('/admin/firebase-config.js', (req, res) => {
     projectId: 'verif-ai-5a435',
   })};`);
 });
+
 app.use('/admin', express.static(path.join(__dirname, 'public', 'admin')));
 
 app.get('/api/docs', (req, res) => {
@@ -299,10 +321,14 @@ app.get('/api/docs', (req, res) => {
 });
 
 app.use((req, res) => {
-  res.status(404).json({
-    error: 'Route not found',
-    request_id: req.requestId,
-  });
+  return sendApiError(
+    req,
+    res,
+    404,
+    'not_found',
+    'Route not found',
+    { retryable: false }
+  );
 });
 
 app.use(errorHandler);

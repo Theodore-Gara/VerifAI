@@ -64,7 +64,7 @@ test('guides seed: four industries, nine sections each, in the same structure', 
     const slug = firstValue(stmt);
     assert.match(stmt, /ON CONFLICT \(track_id\) DO UPDATE/);
     const [overview] = md(stmt);
-    assert.equal(overview.split(/\n\n/).length, 2, `${slug}: overview is two paragraphs`);
+    assert.equal(overview.split(/\r?\n\r?\n/).length, 2, `${slug}: overview is two paragraphs`);
     const [outcomes, tour, howTo] = json(stmt);
     assert.ok(outcomes.who_for && outcomes.by_the_end.length >= 3, `${slug}: who it is for and outcomes`);
 
