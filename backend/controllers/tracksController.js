@@ -8,7 +8,7 @@ async function getTracks(req, res, next) {
     // rarely-changing catalogue off the database and lets clients revalidate.
     const tracks = await contentCache.wrap('tracks', async () => {
       const result = await pool.query(
-        `SELECT id, name, description
+        `SELECT id, name, description, icon_key, perk
          FROM industry_tracks
          ORDER BY id ASC`
       );

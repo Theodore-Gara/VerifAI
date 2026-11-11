@@ -34,6 +34,16 @@ Public database/application health check.
 ### GET /api/tracks
 Public list of industry tracks.
 
+Response:
+
+```json
+{ "tracks": [ { "id": 1, "name": "Finance", "description": "…", "icon_key": "finance", "perk": "Numerical Auditing" } ] }
+```
+
+`icon_key` and `perk` are optional and may be `null` for a track that has not
+been given presentation values yet. The client falls back to a neutral icon and
+a generic perk line in that case.
+
 ### POST /api/auth/sync
 Protected. Creates or updates the authenticated user from Firebase claims.
 

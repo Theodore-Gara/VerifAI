@@ -17,19 +17,27 @@ class MockApiClient implements ApiClient {
     IndustryTrack(
         id: 1,
         name: 'Finance',
-        description: 'Financial services and banking scenarios'),
+        description: 'Financial services and banking scenarios',
+        iconKey: 'finance',
+        perk: 'Numerical Auditing'),
     IndustryTrack(
         id: 2,
         name: 'Legal',
-        description: 'Legal research and compliance scenarios'),
+        description: 'Legal research and compliance scenarios',
+        iconKey: 'legal',
+        perk: 'Clause Citation'),
     IndustryTrack(
         id: 3,
         name: 'IT / Software',
-        description: 'Software development and IT operations scenarios'),
+        description: 'Software development and IT operations scenarios',
+        iconKey: 'it',
+        perk: 'Code Verification'),
     IndustryTrack(
         id: 4,
         name: 'Business Consulting',
-        description: 'Management consulting and strategy scenarios'),
+        description: 'Management consulting and strategy scenarios',
+        iconKey: 'consulting',
+        perk: 'Strategy Governance'),
   ];
 
   static const List<DailyTask> _dailyTasks = [

@@ -3,8 +3,8 @@ const { test } = require('node:test');
 const { switchIndustry, tutorialState } = require('../services/industrySwitch');
 
 const TRACKS = {
-  1: { id: 1, name: 'Finance', description: 'Money' },
-  2: { id: 2, name: 'Legal', description: 'Law' },
+  1: { id: 1, name: 'Finance', description: 'Money', icon_key: 'finance', perk: 'Numerical Auditing' },
+  2: { id: 2, name: 'Legal', description: 'Law', icon_key: 'legal', perk: 'Clause Citation' },
 };
 
 function fakeClient({ currentTrack = 1, tutorial = null } = {}) {
@@ -92,7 +92,13 @@ test('a successful switch writes exactly one audit row and recomputes readiness'
   assert.equal(client.state.readinessWrites.length, 1, 'readiness recomputed for the new track');
 
   assert.deepEqual(result.user, { id: 7, industry_track_id: 2, industry_track_name: 'Legal' });
-  assert.deepEqual(result.track, { id: 2, name: 'Legal', description: 'Law' });
+  assert.deepEqual(result.track, {
+    id: 2,
+    name: 'Legal',
+    description: 'Law',
+    icon_key: 'legal',
+    perk: 'Clause Citation',
+  });
   assert.equal(result.progress.readiness_score, 100);
   assert.equal(result.progress.tier, 'Advanced');
   assert.deepEqual(result.kept, ['xp', 'level', 'streak', 'tokens']);

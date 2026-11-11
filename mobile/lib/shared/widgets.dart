@@ -6,3 +6,4 @@ export 'package:verifai/shared/widgets/daily_task_card.dart';
 export 'package:verifai/shared/widgets/empty_state.dart';
 export 'package:verifai/shared/widgets/xp_bar.dart';
 export 'package:verifai/shared/widgets/page_indicator.dart';
+export 'package:verifai/shared/widgets/onboarding_progress.dart';

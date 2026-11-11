@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
@@ -27,6 +26,9 @@ class GettingStartedCard extends ConsumerStatefulWidget {
 
 class _GettingStartedCardState extends ConsumerState<GettingStartedCard> {
   bool? _dismissed;
+
+  /// Locally cached tour status, used when the server fetch fails.
+  String? _localStatus;
 
   int? get _trackId =>
       int.tryParse(ref.read(currentUserProvider).valueOrNull?.trackId ?? '');
@@ -54,7 +56,12 @@ class _GettingStartedCardState extends ConsumerState<GettingStartedCard> {
       // completion so the card does not reappear after an upgrade.
       final completed = preferences.getString(_statusKey) == 'completed' ||
           (preferences.getBool(_statusKey) ?? false);
-      setState(() => _dismissed = dismissed || completed);
+      setState(() {
+        _dismissed = dismissed || completed;
+        // Remember the locally known status so a failed server fetch still
+        // hides the card for a learner who finished the tour.
+        _localStatus = preferences.getString(_statusKey);
+      });
     } catch (_) {
       // Storage unavailable: show the card; dismissal just will not persist.
       if (mounted) setState(() => _dismissed = false);
@@ -69,19 +76,22 @@ class _GettingStartedCardState extends ConsumerState<GettingStartedCard> {
     } catch (_) {
       // Non-fatal: the card reappears next session instead.
     }
-    try {
-      await ref.read(apiClientProvider).setTourStatus(status: 'skipped');
-    } catch (_) {
-      // Keep the local dismissal; the next online open can sync.
-    }
-    ref.invalidate(tourStateProvider);
+    // The server already knows the tour was skipped — dismissing the card is
+    // a local "not now", not a change to the learner's tour history.
     widget.onDismissed?.call();
   }
 
   @override
   Widget build(BuildContext context) {
     final tour = ref.watch(tourStateProvider).valueOrNull;
-    final visible = _dismissed == false && (tour == null || !tour.completed);
+    // The card exists for learners who skipped the tour, so they can still
+    // take it. A learner who completed the whole onboarding does not need it.
+    //
+    // The server is authoritative when it answered. A null tour means the
+    // fetch failed, not "no tour row", so only then fall back to the locally
+    // cached status.
+    final status = tour != null ? tour.status : _localStatus;
+    final visible = _dismissed == false && status != 'completed';
     if (!visible) return const SizedBox.shrink();
 
     return Dismissible(
@@ -145,8 +155,6 @@ class _GettingStartedCardState extends ConsumerState<GettingStartedCard> {
                 ),
               ],
             ),
-            _step('Confirm your industry',
-                'It tailors every task to your domain.'),
             _step('Run your first task',
                 'Start from the Your next task card below.'),
             _step('Track progress',

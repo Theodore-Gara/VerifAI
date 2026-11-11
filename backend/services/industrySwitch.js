@@ -56,7 +56,8 @@ async function switchIndustry(client, userId, targetTrackId, { displayName, reof
   }
 
   const trackResult = await client.query(
-    `SELECT id, name, description FROM industry_tracks WHERE id = $1`,
+    `SELECT id, name, description, icon_key, perk
+       FROM industry_tracks WHERE id = $1`,
     [targetTrackId],
   );
   if (!trackResult.rows.length) {
@@ -118,7 +119,13 @@ async function switchIndustry(client, userId, targetTrackId, { displayName, reof
       industry_track_id: track.id,
       industry_track_name: track.name,
     },
-    track: { id: track.id, name: track.name, description: track.description },
+    track: {
+      id: track.id,
+      name: track.name,
+      description: track.description,
+      icon_key: track.icon_key,
+      perk: track.perk,
+    },
     progress: {
       readiness_score: Number(progressRow.readiness_score) || 0,
       tier: progressRow.tier || 'Novice',

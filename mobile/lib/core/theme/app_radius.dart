@@ -17,4 +17,7 @@ class AppRadius {
   static const double badge = sm;
   static const double fab = xl;
   static const double modal = xxxl;
+  // Gradient hero panels (onboarding, industry guide). Larger than a card so
+  // the panel reads as a banner rather than another content card.
+  static const double hero = 26;
 }

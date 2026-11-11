@@ -11,6 +11,8 @@ _$IndustryTrackImpl _$$IndustryTrackImplFromJson(Map<String, dynamic> json) =>
       id: (json['id'] as num).toInt(),
       name: json['name'] as String,
       description: json['description'] as String?,
+      iconKey: json['icon_key'] as String?,
+      perk: json['perk'] as String?,
     );
 
 Map<String, dynamic> _$$IndustryTrackImplToJson(_$IndustryTrackImpl instance) =>
@@ -18,4 +20,6 @@ Map<String, dynamic> _$$IndustryTrackImplToJson(_$IndustryTrackImpl instance) =>
       'id': instance.id,
       'name': instance.name,
       'description': instance.description,
+      'icon_key': instance.iconKey,
+      'perk': instance.perk,
     };

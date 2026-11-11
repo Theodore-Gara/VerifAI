@@ -24,6 +24,16 @@ mixin _$IndustryTrack {
   String get name => throw _privateConstructorUsedError;
   String? get description => throw _privateConstructorUsedError;
 
+  /// Icon key the client maps to a glyph (e.g. `finance`, `legal`).
+  /// Server-provided so new tracks need no client release; null falls back
+  /// to a neutral icon.
+  @JsonKey(name: 'icon_key')
+  String? get iconKey => throw _privateConstructorUsedError;
+
+  /// One-line selling point shown under the track name.
+  @JsonKey(name: 'perk')
+  String? get perk => throw _privateConstructorUsedError;
+
   /// Serializes this IndustryTrack to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
@@ -40,7 +50,12 @@ abstract class $IndustryTrackCopyWith<$Res> {
           IndustryTrack value, $Res Function(IndustryTrack) then) =
       _$IndustryTrackCopyWithImpl<$Res, IndustryTrack>;
   @useResult
-  $Res call({int id, String name, String? description});
+  $Res call(
+      {int id,
+      String name,
+      String? description,
+      @JsonKey(name: 'icon_key') String? iconKey,
+      @JsonKey(name: 'perk') String? perk});
 }
 
 /// @nodoc
@@ -61,6 +76,8 @@ class _$IndustryTrackCopyWithImpl<$Res, $Val extends IndustryTrack>
     Object? id = null,
     Object? name = null,
     Object? description = freezed,
+    Object? iconKey = freezed,
+    Object? perk = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -75,6 +92,14 @@ class _$IndustryTrackCopyWithImpl<$Res, $Val extends IndustryTrack>
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
               as String?,
+      iconKey: freezed == iconKey
+          ? _value.iconKey
+          : iconKey // ignore: cast_nullable_to_non_nullable
+              as String?,
+      perk: freezed == perk
+          ? _value.perk
+          : perk // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -87,7 +112,12 @@ abstract class _$$IndustryTrackImplCopyWith<$Res>
       __$$IndustryTrackImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({int id, String name, String? description});
+  $Res call(
+      {int id,
+      String name,
+      String? description,
+      @JsonKey(name: 'icon_key') String? iconKey,
+      @JsonKey(name: 'perk') String? perk});
 }
 
 /// @nodoc
@@ -106,6 +136,8 @@ class __$$IndustryTrackImplCopyWithImpl<$Res>
     Object? id = null,
     Object? name = null,
     Object? description = freezed,
+    Object? iconKey = freezed,
+    Object? perk = freezed,
   }) {
     return _then(_$IndustryTrackImpl(
       id: null == id
@@ -120,6 +152,14 @@ class __$$IndustryTrackImplCopyWithImpl<$Res>
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
               as String?,
+      iconKey: freezed == iconKey
+          ? _value.iconKey
+          : iconKey // ignore: cast_nullable_to_non_nullable
+              as String?,
+      perk: freezed == perk
+          ? _value.perk
+          : perk // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -128,7 +168,11 @@ class __$$IndustryTrackImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$IndustryTrackImpl implements _IndustryTrack {
   const _$IndustryTrackImpl(
-      {required this.id, required this.name, this.description});
+      {required this.id,
+      required this.name,
+      this.description,
+      @JsonKey(name: 'icon_key') this.iconKey,
+      @JsonKey(name: 'perk') this.perk});
 
   factory _$IndustryTrackImpl.fromJson(Map<String, dynamic> json) =>
       _$$IndustryTrackImplFromJson(json);
@@ -140,9 +184,21 @@ class _$IndustryTrackImpl implements _IndustryTrack {
   @override
   final String? description;
 
+  /// Icon key the client maps to a glyph (e.g. `finance`, `legal`).
+  /// Server-provided so new tracks need no client release; null falls back
+  /// to a neutral icon.
+  @override
+  @JsonKey(name: 'icon_key')
+  final String? iconKey;
+
+  /// One-line selling point shown under the track name.
+  @override
+  @JsonKey(name: 'perk')
+  final String? perk;
+
   @override
   String toString() {
-    return 'IndustryTrack(id: $id, name: $name, description: $description)';
+    return 'IndustryTrack(id: $id, name: $name, description: $description, iconKey: $iconKey, perk: $perk)';
   }
 
   @override
@@ -153,12 +209,15 @@ class _$IndustryTrackImpl implements _IndustryTrack {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.description, description) ||
-                other.description == description));
+                other.description == description) &&
+            (identical(other.iconKey, iconKey) || other.iconKey == iconKey) &&
+            (identical(other.perk, perk) || other.perk == perk));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, description);
+  int get hashCode =>
+      Object.hash(runtimeType, id, name, description, iconKey, perk);
 
   /// Create a copy of IndustryTrack
   /// with the given fields replaced by the non-null parameter values.
@@ -180,7 +239,9 @@ abstract class _IndustryTrack implements IndustryTrack {
   const factory _IndustryTrack(
       {required final int id,
       required final String name,
-      final String? description}) = _$IndustryTrackImpl;
+      final String? description,
+      @JsonKey(name: 'icon_key') final String? iconKey,
+      @JsonKey(name: 'perk') final String? perk}) = _$IndustryTrackImpl;
 
   factory _IndustryTrack.fromJson(Map<String, dynamic> json) =
       _$IndustryTrackImpl.fromJson;
@@ -191,6 +252,18 @@ abstract class _IndustryTrack implements IndustryTrack {
   String get name;
   @override
   String? get description;
+
+  /// Icon key the client maps to a glyph (e.g. `finance`, `legal`).
+  /// Server-provided so new tracks need no client release; null falls back
+  /// to a neutral icon.
+  @override
+  @JsonKey(name: 'icon_key')
+  String? get iconKey;
+
+  /// One-line selling point shown under the track name.
+  @override
+  @JsonKey(name: 'perk')
+  String? get perk;
 
   /// Create a copy of IndustryTrack
   /// with the given fields replaced by the non-null parameter values.

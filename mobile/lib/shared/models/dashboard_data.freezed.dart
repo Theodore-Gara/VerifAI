@@ -24,7 +24,9 @@ mixin _$DashboardData {
   Map<String, int> get dimensionScores => throw _privateConstructorUsedError;
   int get streakDays => throw _privateConstructorUsedError;
   int get currentXp => throw _privateConstructorUsedError;
-  int get level => throw _privateConstructorUsedError;
+  int get level =>
+      throw _privateConstructorUsedError; // Progress inside the current level, straight from the server's level
+// curve, so the app never re-derives it (and cannot drift from the backend).
   int get xpIntoLevel => throw _privateConstructorUsedError;
   int get xpForNextLevel => throw _privateConstructorUsedError;
   int get completedTasks => throw _privateConstructorUsedError;
@@ -300,6 +302,8 @@ class _$DashboardDataImpl implements _DashboardData {
   @override
   @JsonKey()
   final int level;
+// Progress inside the current level, straight from the server's level
+// curve, so the app never re-derives it (and cannot drift from the backend).
   @override
   @JsonKey()
   final int xpIntoLevel;
@@ -414,7 +418,8 @@ abstract class _DashboardData implements DashboardData {
   @override
   int get currentXp;
   @override
-  int get level;
+  int get level; // Progress inside the current level, straight from the server's level
+// curve, so the app never re-derives it (and cannot drift from the backend).
   @override
   int get xpIntoLevel;
   @override

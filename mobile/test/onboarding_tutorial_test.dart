@@ -12,7 +12,7 @@ import 'support/mock_api_client.dart';
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  Widget testApp() {
+  Widget testApp({List<GoRoute> extraRoutes = const []}) {
     final router = GoRouter(
       initialLocation: '/welcome-tour',
       routes: [
@@ -25,6 +25,7 @@ void main() {
           builder: (_, __) =>
               const Scaffold(body: Text('Dashboard destination')),
         ),
+        ...extraRoutes,
       ],
     );
     return ProviderScope(
@@ -36,14 +37,36 @@ void main() {
     );
   }
 
+  testWidgets('tutorial shows step 2 of the two-step onboarding',
+      (tester) async {
+    await tester.pumpWidget(testApp());
+    await tester.pumpAndSettle();
+
+    expect(find.text('STEP 2 OF 2'), findsOneWidget);
+    expect(find.text('Page 1 of 4'), findsOneWidget);
+  });
+
   testWidgets('tutorial has a visible skip action and navigates to dashboard',
       (tester) async {
     await tester.pumpWidget(testApp());
     await tester.pumpAndSettle();
 
     expect(find.text('AI assists.\nHumans verify.'), findsOneWidget);
-    expect(find.text('Skip for now'), findsOneWidget);
-    await tester.tap(find.text('Skip for now'));
+    expect(find.text('Skip tour'), findsOneWidget);
+
+    // Skipping asks for confirmation first.
+    await tester.tap(find.text('Skip tour'));
+    await tester.pumpAndSettle();
+    expect(find.text('Skip the tour?'), findsOneWidget);
+
+    // Backing out of the dialog keeps the learner in the tour.
+    await tester.tap(find.text('Keep going'));
+    await tester.pumpAndSettle();
+    expect(find.text('Skip the tour?'), findsNothing);
+
+    await tester.tap(find.text('Skip tour'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Skip tour'));
     await tester.pumpAndSettle();
 
     expect(find.text('Dashboard destination'), findsOneWidget);
@@ -52,12 +75,12 @@ void main() {
         preferences.getString('verifai_tutorial_current_status_v1'), 'skipped');
   });
 
-  testWidgets('tutorial can be completed through all five steps',
+  testWidgets('tutorial can be completed through all four steps',
       (tester) async {
     await tester.pumpWidget(testApp());
     await tester.pumpAndSettle();
 
-    for (var i = 0; i < 4; i++) {
+    for (var i = 0; i < 3; i++) {
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
     }
@@ -83,5 +106,40 @@ void main() {
 
     expect(find.text('Next'), findsOneWidget);
     expect(find.text('Back'), findsOneWidget);
+    // The tour's product preview is a live request; let it land before the
+    // tree is torn down so no timer outlives the test.
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('back from the tour returns to the industry picker',
+      (tester) async {
+    final router = GoRouter(
+      initialLocation: '/welcome-tour',
+      routes: [
+        GoRoute(
+          path: '/welcome-tour',
+          builder: (_, __) => const WelcomeTutorialScreen(),
+        ),
+        GoRoute(
+          path: '/industry-select',
+          builder: (_, __) => const Scaffold(body: Text('Industry picker')),
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(MockApiClient()),
+          currentUserProvider.overrideWith((ref) async => null),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Industry picker'), findsOneWidget);
   });
 }

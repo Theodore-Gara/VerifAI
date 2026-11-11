@@ -8,7 +8,12 @@
 CREATE TABLE IF NOT EXISTS industry_tracks (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL UNIQUE,
-  description TEXT
+  description TEXT,
+  -- Presentation for the industry picker: an icon key the client maps to a
+  -- glyph, and a short one-line selling point. Both optional so a track added
+  -- without them still renders.
+  icon_key VARCHAR(50),
+  perk VARCHAR(120)
 );
 
 CREATE TABLE IF NOT EXISTS users (

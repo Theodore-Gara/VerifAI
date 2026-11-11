@@ -46,7 +46,7 @@ pool.query = async (sql, values = []) => {
       }],
     };
   }
-  if (sql.includes('FROM industry_tracks')) return { rows: [{ id: 1, name: 'Finance', description: 'Finance' }] };
+  if (sql.includes('FROM industry_tracks')) return { rows: [{ id: 1, name: 'Finance', description: 'Finance', icon_key: 'finance', perk: 'Numerical Auditing' }] };
   // Activity-history mocks (must precede the leaderboard/generic users rules).
   if (sql.includes('last_activity_date') && sql.includes('firebase_uid')) {
     return { rows: [{ user_id: 7, streak: 3, last_activity_date: '2026-10-09' }] };
@@ -210,6 +210,10 @@ test('GET /api/tracks returns tracks', async () => {
   const response = await request(app).get('/api/tracks');
   assert.equal(response.status, 200);
   assert.equal(response.body.tracks.length, 1);
+  // Presentation values travel with the catalogue so the picker does not
+  // have to hardcode a name -> icon/perk map.
+  assert.equal(response.body.tracks[0].icon_key, 'finance');
+  assert.equal(response.body.tracks[0].perk, 'Numerical Auditing');
 });
 
 test('GET /api/leaderboard returns board and requesting user rank', async () => {

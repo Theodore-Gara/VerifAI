@@ -2,12 +2,13 @@
 -- Tracks and achievements. Task content lives in db/seed/*.sql and is applied
 -- after this file by scripts/db-setup.js.
 
-INSERT INTO industry_tracks (name, description) VALUES
-  ('Finance', 'Financial services and banking scenarios'),
-  ('Legal', 'Legal research and compliance scenarios'),
-  ('IT / Software', 'Software development and IT operations scenarios'),
-  ('Business Consulting', 'Management consulting and strategy scenarios')
-ON CONFLICT (name) DO UPDATE SET description = EXCLUDED.description;
+INSERT INTO industry_tracks (name, description, icon_key, perk) VALUES
+  ('Finance', 'Financial services and banking scenarios', 'finance', 'Numerical Auditing'),
+  ('Legal', 'Legal research and compliance scenarios', 'legal', 'Clause Citation'),
+  ('IT / Software', 'Software development and IT operations scenarios', 'it', 'Code Verification'),
+  ('Business Consulting', 'Management consulting and strategy scenarios', 'consulting', 'Strategy Governance')
+ON CONFLICT (name) DO UPDATE SET description = EXCLUDED.description,
+  icon_key = EXCLUDED.icon_key, perk = EXCLUDED.perk;
 
 INSERT INTO achievements (code, name, description) VALUES
   ('first-task', 'First Assessment', 'Complete your first workplace readiness task.'),

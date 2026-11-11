@@ -53,22 +53,38 @@ void main() {
     // Splash timer navigates to industry select.
     await tester.pump(const Duration(seconds: 3));
     await tester.pump(const Duration(seconds: 1));
-    expect(find.text('Choose Specialization'), findsOneWidget);
+    expect(find.text('What do you work in?'), findsOneWidget);
+
+    // The industry picker is step 1 of the two-step onboarding.
+    expect(find.text('STEP 1 OF 2'), findsOneWidget);
 
     // Pick the Finance track.
     await tester.tap(find.text('Finance'));
     await tester.pump();
-    expect(find.widgetWithText(ElevatedButton, 'Continue'), findsOneWidget);
+
+    // The confirm button names the chosen industry.
+    expect(
+      find.widgetWithText(ElevatedButton, 'Continue with Finance'),
+      findsOneWidget,
+    );
 
     // Continue → first-run tutorial.
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Continue with Finance'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 2)); // track save + backend sync
     await tester.pumpAndSettle();
 
-    expect(find.text('Skip for now'), findsOneWidget);
-    await tester.tap(find.text('Skip for now'));
+    // The tour is step 2 of the same two-step onboarding.
+    expect(find.text('STEP 2 OF 2'), findsOneWidget);
+    expect(find.text('Skip tour'), findsOneWidget);
+
+    // Skipping asks first, so the tour is not dropped by a stray tap.
+    await tester.tap(find.text('Skip tour'));
     await tester.pumpAndSettle();
+    expect(find.text('Skip the tour?'), findsOneWidget);
+    await tester.tap(find.text('Skip tour').last);
+    await tester.pumpAndSettle();
+
     // Flush the dashboard's mock fetch (MockApiClient delays 300-800ms
     // randomly); pumpAndSettle alone can finish before the timer fires,
     // leaving a pending timer that fails the test.
@@ -76,7 +92,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Home').first, findsOneWidget);
-    expect(find.text('Choose Specialization'), findsNothing);
+    expect(find.text('What do you work in?'), findsNothing);
   });
 
   testWidgets('track cards fit without overflow on a phone-size screen',
@@ -104,7 +120,7 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
 
     // No RenderFlex overflow exceptions allowed — the test fails otherwise.
-    expect(find.text('Choose Specialization'), findsOneWidget);
+    expect(find.text('What do you work in?'), findsOneWidget);
     for (final name in [
       'Finance',
       'Legal',
