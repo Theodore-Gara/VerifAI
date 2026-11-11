@@ -45,6 +45,11 @@ const allSections = <({String section, String label, IconData icon, String route
   (section: 'Profile', label: 'Wellness centre', icon: Icons.spa_rounded, route: '/wellness'),
   (section: 'Profile', label: 'Ask Vera', icon: Icons.auto_awesome_rounded, route: '/assistant'),
   (section: 'Profile', label: 'Change industry', icon: Icons.swap_horiz_rounded, route: '/change-industry'),
+  // Help & information — shown in the hamburger menu and All Sections sheet.
+  (section: 'Help & information', label: 'About Us', icon: Icons.business_rounded, route: '/about'),
+  (section: 'Help & information', label: 'Help & Customer Support', icon: Icons.support_agent_rounded, route: '/support'),
+  (section: 'Help & information', label: 'Frequently Asked Questions', icon: Icons.quiz_rounded, route: '/support/faq'),
+  (section: 'Help & information', label: 'Contact Customer Support', icon: Icons.headset_mic_rounded, route: '/support/contact'),
 ];
 
 /// Shell routes that must switch the dock in place rather than `go`/`push`

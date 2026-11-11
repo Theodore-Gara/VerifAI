@@ -57,8 +57,8 @@ void main() {
       final sections = allSections.map((s) => s.section).toSet();
       expect(sections,
           containsAll(['Home', 'Learn', 'Practice', 'Progress', 'Profile']));
-      expect(sections, hasLength(5),
-          reason: 'a sixth section means the index and the dock have drifted');
+      expect(sections, contains('Help & information'));
+      expect(sections, hasLength(6));
     });
   });
 
