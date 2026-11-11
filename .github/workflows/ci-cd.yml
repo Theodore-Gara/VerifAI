@@ -5,9 +5,9 @@ name: CI/CD Pipeline
 # 2. PR opened/updated against main
 # 3. Manual trigger
 #
-# Tests and APK build only. Production deploys are handled by Railway's GitHub
-# integration, which deploys on a push to main independently of this workflow,
-# so no deploy job appears on feature branches or PRs.
+# Tests and APK build only. Production deploys are handled by Render's auto-deploy
+# from main, independently of this workflow, so no deploy job appears on feature
+# branches or PRs.
 on:
   push:
   pull_request:

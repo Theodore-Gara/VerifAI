@@ -9,7 +9,7 @@ Node.js/Express REST API for the VerifAI workplace-readiness mobile application.
 - PostgreSQL
 - Firebase Admin Authentication
 - Node.js test runner + Supertest
-- Railway deployment
+- Render deployment (migrate-then-start)
 
 ## Core Deliverable 4 flow
 
@@ -59,7 +59,7 @@ Back up an existing database before migration.
 
 - `API.md` — endpoint reference
 - `docs/openapi.yaml` — OpenAPI specification
-- `USER_MANUAL.md` — beginner setup, GitHub and Railway instructions
+- `USER_MANUAL.md` - beginner setup, GitHub and Render instructions
 - `DEPLOYMENT_CHECKLIST.md` — deployment verification
 - `TEST_MATRIX.md` — test coverage plan
 - `PROJECT_HANDOFF.md` — inherited work, Deliverable 4 additions and verification status
