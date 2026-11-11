@@ -46,6 +46,40 @@ void main() {
     expect(find.text('Page 1 of 4'), findsOneWidget);
   });
 
+  testWidgets('page 3 previews the readiness profile', (tester) async {
+    await tester.pumpWidget(testApp());
+    await tester.pumpAndSettle();
+
+    // Advance to the skills page.
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+
+    // The sample is labelled, so the learner knows it is an illustration
+    // rather than their own score.
+    expect(find.text('EXAMPLE PROFILE'), findsOneWidget);
+    expect(find.text('Verification'), findsOneWidget);
+    expect(find.text('AI Judgement'), findsOneWidget);
+    expect(find.text('Risk & Governance'), findsOneWidget);
+  });
+
+  testWidgets('page 4 previews the progress profile', (tester) async {
+    await tester.pumpWidget(testApp());
+    await tester.pumpAndSettle();
+
+    for (var i = 0; i < 3; i++) {
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+    }
+
+    expect(find.text('EXAMPLE PROGRESS'), findsWidgets);
+    // The AI Practitioner level bar is the real component.
+    expect(find.text('AI Practitioner'), findsOneWidget);
+    expect(find.text('Day streak'), findsOneWidget);
+    expect(find.text('Practice activity'), findsOneWidget);
+  });
+
   testWidgets('tutorial has a visible skip action and navigates to dashboard',
       (tester) async {
     await tester.pumpWidget(testApp());

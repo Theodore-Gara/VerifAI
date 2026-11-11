@@ -13,6 +13,7 @@ import 'package:verifai/features/onboarding/providers.dart';
 import 'package:verifai/shared/widgets/onboarding_progress.dart';
 
 import 'task_preview.dart';
+import 'progress_preview.dart';
 
 /// Step 2 of the two-step first-run onboarding: the welcome tour.
 ///
@@ -79,17 +80,16 @@ class _WelcomeTutorialScreenState extends ConsumerState<WelcomeTutorialScreen>
       eyebrow: 'WHAT YOU BUILD',
       title: 'Three skills,\nassessed as you go',
       description:
-          'Every task is scored against the skills employers ask about. Your profile fills in as you practise — no separate test, no waiting.',
+          'Every task is scored against the skills employers ask about. Your readiness score is built from them, so your profile fills in as you practise — no separate test, no waiting.',
       icon: Icons.insights_rounded,
       accent: AppColors.xpPurple,
       bullets: const [],
-      showDimensions: true,
     ),
     const _TutorialStep(
       eyebrow: 'KEEP GOING',
       title: 'Show up.\nThe progress stacks.',
       description:
-          'Small, regular practice beats one long session. Streaks, XP and your skill roadmap update after every attempt you complete.',
+          'Small, regular practice beats one long session. Your level, XP and streak update after every attempt you complete, and the roadmap shows what is next.',
       icon: Icons.local_fire_department_rounded,
       accent: Color(0xFFB77936),
       bullets: [
@@ -290,9 +290,9 @@ class _WelcomeTutorialScreenState extends ConsumerState<WelcomeTutorialScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // One visual per page: the logo opens the tour,
-                            // page 2 shows the real task, and the rest carry
-                            // the medallion.
+                            // One visual per page, and every one of them is
+                            // the product: the logo opens the tour, then the
+                            // real task, the readiness profile and progress.
                             if (index == 0)
                               Center(
                                 child: Image.asset(
@@ -307,8 +307,10 @@ class _WelcomeTutorialScreenState extends ConsumerState<WelcomeTutorialScreen>
                               )
                             else if (index == 1)
                               const _LiveTaskPreview()
+                            else if (index == 2)
+                              const ReadinessPreview()
                             else
-                              _Medallion(icon: item.icon, accent: item.accent),
+                              const ProgressPreview(),
                             const SizedBox(height: 22),
                             Text(
                               item.eyebrow,
@@ -338,8 +340,6 @@ class _WelcomeTutorialScreenState extends ConsumerState<WelcomeTutorialScreen>
                                   height: 1.6),
                             ),
                             const SizedBox(height: 20),
-                            if (item.showDimensions)
-                              const _DimensionChips(),
                             if (item.bullets.isNotEmpty) ...[
                               const SizedBox(height: 20),
                               for (final bullet in item.bullets)
@@ -528,83 +528,6 @@ class _Medallion extends StatelessWidget {
   }
 }
 
-/// The three skills the app assesses. Real names, so the learner recognises
-/// them later on their profile.
-class _DimensionChips extends StatelessWidget {
-  const _DimensionChips();
-
-  @override
-  Widget build(BuildContext context) {
-    const dimensions = [
-      (Icons.fact_check_rounded, 'Verification',
-          'Check an AI output for errors'),
-      (Icons.psychology_rounded, 'AI Judgement',
-          'Decide what to do with an answer'),
-      (Icons.shield_outlined, 'Risk & Governance',
-          'Spot the risk before it lands'),
-    ];
-    return Column(
-      children: [
-        for (final (icon, title, detail) in dimensions) ...[
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.card),
-              border: Border.all(color: AppColors.border),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.shadow,
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.accentLight.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  child: Icon(icon, size: 20, color: AppColors.primaryNavy),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: AppTypography.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        detail,
-                        style: AppTypography.textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                          fontSize: 12,
-                          height: 1.35,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-        ],
-      ],
-    );
-  }
-}
 
 /// Shows the learner's real next task so the tour shows the product rather
 /// than describing it. Falls back to a static example when no task is
@@ -637,7 +560,6 @@ class _TutorialStep {
     required this.icon,
     required this.accent,
     this.bullets = const [],
-    this.showDimensions = false,
   });
 
   final String eyebrow;
@@ -646,7 +568,4 @@ class _TutorialStep {
   final IconData icon;
   final Color accent;
   final List<String> bullets;
-
-  /// Show the three assessed skills instead of the bullet list.
-  final bool showDimensions;
 }
