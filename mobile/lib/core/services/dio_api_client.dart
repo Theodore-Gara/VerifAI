@@ -44,7 +44,7 @@ class DioApiClient implements ApiClient {
     // The first request after Render's free tier has been idle can take ~50s
     // while the instance wakes. Give the auth handshake a longer deadline than
     // the normal screens so a cold start does not look like a failed sign-in.
-    const wake = Duration(seconds: 60);
+    const wake = Duration(seconds: 65);
     await _dio.post<Map<String, dynamic>>(
       'auth/sync',
       options: Options(receiveTimeout: wake),

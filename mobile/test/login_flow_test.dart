@@ -1,6 +1,8 @@
 // Verifies the login error banner shows once and its close button removes it
 // (the old dark Material snackbar was replaced by the themed FeedbackBanner).
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -43,11 +45,19 @@ class _FailingAuthRepository implements AuthRepository {
   Stream<AuthState> authStateChanges() => const Stream.empty();
 }
 
-Widget _harness() {
+/// Login that never completes, so the screen stays in its pending state like a
+/// sign-in waiting on a sleeping backend.
+class _SlowAuthRepository extends _FailingAuthRepository {
+  @override
+  Future<AuthResult> login(String email, String password) =>
+      Completer<AuthResult>().future;
+}
+
+Widget _harness({AuthRepository? repository}) {
   return ProviderScope(
     overrides: [
       authRepositoryProvider
-          .overrideWith((ref) async => _FailingAuthRepository()),
+          .overrideWith((ref) async => repository ?? _FailingAuthRepository()),
     ],
     child: const MaterialApp(home: LoginScreen()),
   );
@@ -106,5 +116,22 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
 
     expect(find.textContaining(_errorMatcher), findsOneWidget);
+  });
+
+  testWidgets('pending login explains the wait while the server wakes',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
+
+    await tester.pumpWidget(_harness(repository: _SlowAuthRepository()));
+    await tester.pump();
+
+    await tester.enterText(
+        find.byType(TextFormField).at(0), 'nobody@verif.com');
+    await tester.enterText(find.byType(TextFormField).at(1), 'wrongpass');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Sign In'));
+    await tester.pump();
+
+    expect(find.textContaining('Connecting to the server'), findsOneWidget);
   });
 }

@@ -6,6 +6,7 @@ import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'auth_brand_header.dart';
 import 'auth_error_messages.dart';
+import 'auth_progress_note.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 import 'package:verifai/shared/widgets.dart';
@@ -275,6 +276,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                   textAlign: TextAlign.center,
                 ),
+                if (_pending != null) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  const AuthProgressNote(),
+                ],
               ],
             ),
           ),
