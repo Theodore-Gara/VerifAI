@@ -473,7 +473,9 @@ async function setUserStatus(req, res, next) {
     if (!['suspend', 'ban', 'activate'].includes(action)) {
       return res.status(400).json({ error: "action must be 'suspend', 'ban' or 'activate'.", request_id: req.requestId });
     }
-    const status = action === 'activate' ? 'active' : action;
+    // The action verbs are not the column values: the users_status_check
+    // constraint only accepts 'active', 'suspended' and 'banned'.
+    const status = { suspend: 'suspended', ban: 'banned', activate: 'active' }[action];
     const reason = body.reason == null ? null : String(body.reason).trim().slice(0, 2000) || null;
 
     // Admins must never be able to lock themselves out of the panel.
