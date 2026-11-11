@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/core/services/api_error.dart';
+import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/features/admin/presentation/admin_shell_screen.dart';
 import 'package:verifai/features/admin/presentation/admin_widgets.dart';
@@ -60,8 +61,7 @@ class _AdminContentScreenState extends ConsumerState<AdminContentScreen>
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('Edit help article'),
           content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+            child: AdminDialogBody(
               children: [
                 TextField(
                     controller: title,
@@ -118,8 +118,7 @@ class _AdminContentScreenState extends ConsumerState<AdminContentScreen>
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('Edit FAQ'),
           content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+            child: AdminDialogBody(
               children: [
                 TextField(
                     controller: question,
@@ -196,14 +195,16 @@ class _AdminContentScreenState extends ConsumerState<AdminContentScreen>
                     ?.copyWith(fontWeight: FontWeight.w900)),
             const SizedBox(height: AppSpacing.md),
             for (final section in sections)
-              Card(
-                child: ListTile(
-                  title: Text(adminString(section['heading'], 'Section')),
-                  subtitle: Text(adminString(section['body']),
-                      maxLines: 3, overflow: TextOverflow.ellipsis),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.edit_rounded),
-                    onPressed: () => _editLabSection(section),
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: AdminCard(
+                  child: AdminDataRow(
+                    label: adminString(section['body']),
+                    value: adminString(section['heading'], 'Section'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.edit_rounded),
+                      onPressed: () => _editLabSection(section),
+                    ),
                   ),
                 ),
               ),
@@ -222,8 +223,7 @@ class _AdminContentScreenState extends ConsumerState<AdminContentScreen>
       builder: (dialogContext) => AlertDialog(
         title: const Text('Edit lab section'),
         content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: AdminDialogBody(
             children: [
               TextField(
                   controller: heading,
@@ -309,17 +309,28 @@ class _AdminContentScreenState extends ConsumerState<AdminContentScreen>
           return AdminErrorView(onRetry: () => setState(_load));
         }
         final items = adminList(snapshot.data?[key]);
-        if (items.isEmpty) return const Center(child: Text('No content.'));
+        if (items.isEmpty) {
+          return const AdminEmptyState(
+            message: 'No content here.',
+            icon: Icons.menu_book_rounded,
+          );
+        }
         return ListView.separated(
-          padding: const EdgeInsets.all(AppSpacing.screenPadding),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screenPadding,
+            AppSpacing.md,
+            AppSpacing.screenPadding,
+            AppSpacing.xxl,
+          ),
           itemCount: items.length,
           separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-          itemBuilder: (context, i) => Card(
-            child: ListTile(
-              title: Text(label(items[i]),
-                  maxLines: 2, overflow: TextOverflow.ellipsis),
-              trailing: const Icon(Icons.edit_rounded),
-              onTap: () => onTap(items[i]),
+          itemBuilder: (context, i) => AdminCard(
+            onTap: () => onTap(items[i]),
+            child: AdminDataRow(
+              label: 'Published content',
+              value: label(items[i]),
+              trailing: Icon(Icons.edit_rounded,
+                  color: AppColors.textSecondary, size: 20),
             ),
           ),
         );

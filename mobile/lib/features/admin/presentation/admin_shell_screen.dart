@@ -7,11 +7,14 @@ import 'package:go_router/go_router.dart';
 import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
+import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/admin/presentation/admin_admins_screen.dart';
 import 'package:verifai/features/admin/presentation/admin_more_screen.dart';
+import 'package:verifai/features/admin/presentation/admin_nav.dart';
 import 'package:verifai/features/admin/presentation/admin_overview_screen.dart';
 import 'package:verifai/features/admin/presentation/admin_support_screen.dart';
 import 'package:verifai/features/admin/presentation/admin_users_screen.dart';
+import 'package:verifai/features/admin/presentation/admin_widgets.dart';
 import 'package:verifai/features/admin/providers.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/profile/providers.dart';
@@ -35,6 +38,14 @@ class _AdminShellScreenState extends ConsumerState<AdminShellScreen> {
     // per-tab Retry buttons succeed instead of timing out again on a cold
     // backend. Fire and forget — each screen owns its own error state.
     unawaited(ref.read(apiClientProvider).ping().catchError((_) {}));
+    // Record the portal sign-in in the audit trail. Best effort: the portal
+    // must open even if the call fails.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(apiClientProvider)
+          .adminRequest('POST', 'session')
+          .catchError((_) => null);
+    });
   }
 
   @override
@@ -43,13 +54,13 @@ class _AdminShellScreenState extends ConsumerState<AdminShellScreen> {
     final canManageAdmins = role == 'admin' || role == 'super';
     final unread = ref.watch(adminUnreadTicketsProvider).valueOrNull ?? 0;
 
-    final tabs = <_AdminTab>[
-      const _AdminTab('Overview', Icons.dashboard_rounded),
-      _AdminTab('Support', Icons.support_agent_rounded, badge: unread),
-      const _AdminTab('Users', Icons.people_alt_rounded),
+    final tabs = <AdminNavItem>[
+      const AdminNavItem('Overview', Icons.dashboard_rounded),
+      AdminNavItem('Support', Icons.support_agent_rounded, badge: unread),
+      const AdminNavItem('Users', Icons.people_alt_rounded),
       if (canManageAdmins)
-        const _AdminTab('Admins', Icons.admin_panel_settings_rounded),
-      const _AdminTab('More', Icons.grid_view_rounded),
+        const AdminNavItem('Admins', Icons.admin_panel_settings_rounded),
+      const AdminNavItem('More', Icons.grid_view_rounded),
     ];
     final safeIndex = _index.clamp(0, tabs.length - 1);
 
@@ -69,22 +80,20 @@ class _AdminShellScreenState extends ConsumerState<AdminShellScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
+        titleSpacing: AppSpacing.screenPadding,
         title: Text(
           'VerifAI Admin',
-          style: TextStyle(
+          style: AppTypography.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w900,
             color: AppColors.textPrimary,
+            letterSpacing: -0.2,
           ),
         ),
         actions: [
           if (role != null)
             Padding(
               padding: const EdgeInsets.only(right: AppSpacing.sm),
-              child: Chip(
-                label: Text(role.toUpperCase()),
-                visualDensity: VisualDensity.compact,
-                side: BorderSide(color: AppColors.border),
-              ),
+              child: AdminStatusPill(label: role),
             ),
           IconButton(
             tooltip: 'Log out',
@@ -94,23 +103,15 @@ class _AdminShellScreenState extends ConsumerState<AdminShellScreen> {
         ],
       ),
       body: SafeArea(
+        top: false,
         child: wide
             ? Row(
                 children: [
-                  NavigationRail(
+                  AdminNavRail(
+                    items: tabs,
                     selectedIndex: safeIndex,
-                    onDestinationSelected: (i) => setState(() => _index = i),
-                    labelType: NavigationRailLabelType.all,
-                    destinations: [
-                      for (final tab in tabs)
-                        NavigationRailDestination(
-                          icon: _tabIcon(tab, false),
-                          selectedIcon: _tabIcon(tab, true),
-                          label: Text(tab.label),
-                        ),
-                    ],
+                    onSelected: (i) => setState(() => _index = i),
                   ),
-                  const VerticalDivider(width: 1),
                   Expanded(child: body),
                 ],
               )
@@ -118,36 +119,13 @@ class _AdminShellScreenState extends ConsumerState<AdminShellScreen> {
       ),
       bottomNavigationBar: wide
           ? null
-          : NavigationBar(
+          : AdminNavBar(
+              items: tabs,
               selectedIndex: safeIndex,
-              onDestinationSelected: (i) => setState(() => _index = i),
-              destinations: [
-                for (final tab in tabs)
-                  NavigationDestination(
-                    icon: _tabIcon(tab, false),
-                    selectedIcon: _tabIcon(tab, true),
-                    label: tab.label,
-                  ),
-              ],
+              onSelected: (i) => setState(() => _index = i),
             ),
     );
   }
-
-  Widget _tabIcon(_AdminTab tab, bool selected) {
-    final icon = Icon(tab.icon, color: selected ? AppColors.accentGreen : null);
-    if (tab.badge <= 0) return icon;
-    return Badge(
-      label: Text('${tab.badge}'),
-      child: icon,
-    );
-  }
-}
-
-class _AdminTab {
-  const _AdminTab(this.label, this.icon, {this.badge = 0});
-  final String label;
-  final IconData icon;
-  final int badge;
 }
 
 /// Shared page frame for admin tool screens pushed from the More grid.

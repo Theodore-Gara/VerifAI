@@ -422,10 +422,17 @@ async function markMessageRead(req, res, next) {
     }
     const updated = await pool.query(
       `UPDATE support_messages SET admin_last_read_at = now() WHERE id = $1
-       RETURNING id, admin_last_read_at`,
+       RETURNING id, admin_last_read_at, user_email`,
       [id],
     );
     if (!updated.rows.length) return fail(req, res, 404, 'not_found', 'Message not found.');
+    // Opening a ticket is recorded so the trail shows who worked through the
+    // inbox, not only who replied.
+    await logModeration(req.firebaseUser, {
+      action: 'support_ticket_read',
+      targetEmail: updated.rows[0].user_email || null,
+      reason: `Ticket #${id} marked read`,
+    });
     return res.status(200).json({ message: updated.rows[0], request_id: req.requestId });
   } catch (err) {
     return next(err);

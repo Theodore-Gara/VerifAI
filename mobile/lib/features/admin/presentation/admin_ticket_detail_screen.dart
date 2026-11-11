@@ -4,8 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/core/services/api_error.dart';
 import 'package:verifai/core/theme/app_colors.dart';
+import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
+import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/admin/presentation/admin_shell_screen.dart';
+import 'package:verifai/features/admin/presentation/admin_widgets.dart';
 import 'package:verifai/features/admin/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
@@ -163,28 +166,51 @@ class _AdminTicketDetailScreenState
           final detail = snapshot.data!;
           final t = detail.ticket;
           return ListView(
-            padding: const EdgeInsets.all(AppSpacing.screenPadding),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenPadding,
+              AppSpacing.md,
+              AppSpacing.screenPadding,
+              AppSpacing.xxl,
+            ),
             children: [
               Wrap(
                 spacing: AppSpacing.sm,
                 runSpacing: AppSpacing.sm,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Chip(label: Text(t.publicRef)),
-                  Chip(label: Text(t.status.replaceAll('_', ' '))),
-                  Chip(label: Text(t.category)),
+                  AdminStatusPill(
+                    label: t.status.replaceAll('_', ' '),
+                    color: switch (t.status) {
+                      'new' => AppColors.error,
+                      'in_progress' => AppColors.info,
+                      'resolved' => AppColors.accentGreen,
+                      _ => AppColors.textSecondary,
+                    },
+                  ),
+                  _MetaChip(label: t.publicRef),
+                  _MetaChip(label: t.category),
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
-              Text(t.subject,
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.w900)),
-              const SizedBox(height: AppSpacing.xs),
-              Text('${t.name ?? ''} · ${t.email ?? ''}',
-                  style: TextStyle(color: AppColors.textSecondary)),
-              const SizedBox(height: AppSpacing.md),
+              // The subject is the subject: largest thing on the screen.
+              Text(
+                t.subject,
+                style: AppTypography.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.4,
+                  color: AppColors.textPrimary,
+                  height: 1.25,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${t.name ?? ''} · ${t.email ?? ''}',
+                style: AppTypography.textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
               _Bubble(
                 text: t.message ?? '',
                 author: t.name ?? 'User',
@@ -227,11 +253,15 @@ class _AdminTicketDetailScreenState
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
-              Text('Status',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800)),
+              Text(
+                'STATUS',
+                style: AppTypography.textTheme.labelSmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 11,
+                  letterSpacing: 1.1,
+                ),
+              ),
               const SizedBox(height: AppSpacing.sm),
               Wrap(
                 spacing: AppSpacing.sm,
@@ -253,6 +283,33 @@ class _AdminTicketDetailScreenState
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// A quiet chip for a piece of metadata next to the ticket subject.
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Text(
+        label,
+        style: AppTypography.textTheme.labelSmall?.copyWith(
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w600,
+          fontSize: 11.5,
+        ),
       ),
     );
   }

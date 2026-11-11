@@ -4,8 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/core/services/api_error.dart';
 import 'package:verifai/core/theme/app_colors.dart';
+import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
+import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/admin/presentation/admin_shell_screen.dart';
+import 'package:verifai/features/admin/presentation/admin_widgets.dart';
 import 'package:verifai/features/admin/providers.dart';
 import 'package:verifai/features/profile/providers.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
@@ -56,14 +59,12 @@ class _AdminUserDetailScreenState extends ConsumerState<AdminUserDetailScreen> {
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('Edit learner'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
+          content: AdminDialogBody(
             children: [
               TextField(
                 controller: name,
                 decoration: const InputDecoration(labelText: 'Display name'),
               ),
-              const SizedBox(height: AppSpacing.sm),
               DropdownButtonFormField<int>(
                 initialValue: trackId,
                 decoration: const InputDecoration(labelText: 'Industry'),
@@ -112,10 +113,18 @@ class _AdminUserDetailScreenState extends ConsumerState<AdminUserDetailScreen> {
       builder: (dialogContext) => AlertDialog(
         title:
             Text('${action[0].toUpperCase()}${action.substring(1)} account?'),
-        content: TextField(
-          controller: reason,
-          maxLines: 3,
-          decoration: const InputDecoration(labelText: 'Reason (optional)'),
+        content: AdminDialogBody(
+          children: [
+            const AdminDialogHint(
+              'The learner is told why on their next sign-in. This is recorded '
+              'in the audit log.',
+            ),
+            TextField(
+              controller: reason,
+              maxLines: 3,
+              decoration: const InputDecoration(labelText: 'Reason (optional)'),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -149,8 +158,7 @@ class _AdminUserDetailScreenState extends ConsumerState<AdminUserDetailScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Grant XP / tokens'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+        content: AdminDialogBody(
           children: [
             TextField(
               controller: xp,
@@ -205,8 +213,10 @@ class _AdminUserDetailScreenState extends ConsumerState<AdminUserDetailScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete this account permanently?'),
-        content: const Text(
-            'This removes the learner, attempts, achievements and Firebase identity. It cannot be undone.'),
+        content: const AdminDialogHint(
+          'This removes the learner, attempts, achievements and Firebase '
+          'identity. It cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -246,12 +256,12 @@ class _AdminUserDetailScreenState extends ConsumerState<AdminUserDetailScreen> {
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const AdminLoading();
           }
           if (snapshot.hasError) {
-            return Center(
-              child: FilledButton(
-                  onPressed: () => setState(_load), child: const Text('Retry')),
+            return AdminErrorView(
+              message: 'Could not load this learner.',
+              onRetry: () => setState(_load),
             );
           }
           final data = snapshot.data ?? const {};
@@ -261,129 +271,226 @@ class _AdminUserDetailScreenState extends ConsumerState<AdminUserDetailScreen> {
           final moderation = adminList(data['moderation']);
           final name =
               adminString(user['display_name'], adminString(user['email']));
+          final status = adminString(user['status'], 'active');
+
           return ListView(
-            padding: const EdgeInsets.all(AppSpacing.screenPadding),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenPadding,
+              AppSpacing.md,
+              AppSpacing.screenPadding,
+              AppSpacing.xxl,
+            ),
             children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 26,
-                    child: Text(name.characters.first.toUpperCase()),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(name,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(fontWeight: FontWeight.w900)),
-                        Text(adminString(user['email']),
-                            style: TextStyle(color: AppColors.textSecondary)),
-                      ],
-                    ),
-                  ),
-                ],
+              // --- Identity: the subject of the page, so it is the largest
+              // thing on screen. Everything else is metadata under it.
+              Text(
+                name,
+                style: AppTypography.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                adminString(user['email']),
+                style: AppTypography.textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
               Wrap(
                 spacing: AppSpacing.sm,
                 runSpacing: AppSpacing.sm,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  _Pill('Status: ${adminString(user['status'])}'),
-                  _Pill('Track: ${adminString(user['track_name'], 'None')}'),
-                  _Pill('XP: ${adminInt(user['xp'])}'),
-                  _Pill('Tokens: ${adminInt(user['tokens'])}'),
-                  _Pill('Level: ${adminInt(user['level'])}'),
-                  _Pill('Readiness: ${adminInt(user['readiness_score'])}'),
+                  AdminStatusPill(
+                    label: status,
+                    color: switch (status) {
+                      'active' => AppColors.accentGreen,
+                      'suspended' => AppColors.warning,
+                      'banned' => AppColors.error,
+                      _ => AppColors.textSecondary,
+                    },
+                  ),
+                  _MetaChip(
+                    icon: Icons.work_outline_rounded,
+                    label: adminString(user['track_name'], 'No industry'),
+                  ),
                 ],
               ),
               if (adminString(user['status_reason']).isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.sm),
-                Text('Reason: ${adminString(user['status_reason'])}',
-                    style: TextStyle(color: AppColors.textSecondary)),
+                const SizedBox(height: AppSpacing.md),
+                AdminCard(
+                  color: AppColors.errorLight,
+                  borderColor: AppColors.error.withValues(alpha: 0.3),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.info_outline_rounded,
+                          size: 18, color: AppColors.error),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          adminString(user['status_reason']),
+                          style:
+                              AppTypography.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textPrimary,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
-              const SizedBox(height: AppSpacing.lg),
-              Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () => _edit(user),
-                    icon: const Icon(Icons.edit_rounded),
-                    label: const Text('Edit profile'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => _grant(),
-                    icon: const Icon(Icons.add_circle_outline_rounded),
-                    label: const Text('Grant XP / tokens'),
-                  ),
-                  if (adminString(user['status']) == 'active') ...[
-                    OutlinedButton.icon(
-                      onPressed: () => _status('suspend'),
-                      icon: const Icon(Icons.pause_circle_outline_rounded),
-                      label: const Text('Suspend'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () => _status('ban'),
-                      icon: const Icon(Icons.block_rounded),
-                      label: const Text('Ban'),
-                    ),
-                  ] else
-                    OutlinedButton.icon(
-                      onPressed: () => _status('activate'),
-                      icon: const Icon(Icons.play_circle_outline_rounded),
-                      label: const Text('Reactivate'),
-                    ),
-                  OutlinedButton.icon(
-                    onPressed: () => _act(() async {
-                      await ref.read(apiClientProvider).adminRequest(
-                        'POST',
-                        'users/${widget.id}/firebase',
-                        data: {
-                          'disabled': adminString(user['status']) == 'active'
-                        },
-                      );
-                    }),
-                    icon: const Icon(Icons.lock_outline_rounded),
-                    label: const Text('Toggle Firebase sign-in'),
-                  ),
-                ],
+              const SizedBox(height: AppSpacing.xl),
+
+              // --- Key numbers
+              Text(
+                'PROGRESS',
+                style: AppTypography.textTheme.labelSmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 11,
+                  letterSpacing: 1.1,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final columns = constraints.maxWidth >= 640 ? 4 : 2;
+                  final width = (constraints.maxWidth -
+                          (columns - 1) * AppSpacing.sm) /
+                      columns;
+                  final tiles = [
+                    ('XP', '${adminInt(user['xp'])}'),
+                    ('Level', '${adminInt(user['level'])}'),
+                    ('Tokens', '${adminInt(user['tokens'])}'),
+                    ('Readiness', '${adminInt(user['readiness_score'])}'),
+                  ];
+                  return Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    children: [
+                      for (final tile in tiles)
+                        SizedBox(
+                          width: width,
+                          child: AdminStatTile(
+                            label: tile.$1,
+                            value: tile.$2,
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: AppSpacing.xl),
-              _Section(
+
+              // --- Actions
+              Text(
+                'ACTIONS',
+                style: AppTypography.textTheme.labelSmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 11,
+                  letterSpacing: 1.1,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              AdminCard(
+                child: Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () => _edit(user),
+                      icon: const Icon(Icons.edit_rounded, size: 18),
+                      label: const Text('Edit profile'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => _grant(),
+                      icon: const Icon(Icons.add_circle_outline_rounded,
+                          size: 18),
+                      label: const Text('Grant XP / tokens'),
+                    ),
+                    if (status == 'active') ...[
+                      OutlinedButton.icon(
+                        onPressed: () => _status('suspend'),
+                        icon: const Icon(Icons.pause_circle_outline_rounded,
+                            size: 18),
+                        label: const Text('Suspend'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () => _status('ban'),
+                        icon: const Icon(Icons.block_rounded, size: 18),
+                        label: const Text('Ban'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.error,
+                        ),
+                      ),
+                    ] else
+                      OutlinedButton.icon(
+                        onPressed: () => _status('activate'),
+                        icon: const Icon(Icons.play_circle_outline_rounded,
+                            size: 18),
+                        label: const Text('Reactivate'),
+                      ),
+                    OutlinedButton.icon(
+                      onPressed: () => _act(() async {
+                        await ref.read(apiClientProvider).adminRequest(
+                          'POST',
+                          'users/${widget.id}/firebase',
+                          data: {'disabled': status == 'active'},
+                        );
+                      }),
+                      icon: const Icon(Icons.lock_outline_rounded, size: 18),
+                      label: const Text('Toggle Firebase sign-in'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+
+              // --- History sections
+              AdminSection(
                 title: 'Recent attempts',
                 children: [
                   for (final a in attempts.take(8))
-                    ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                          adminString(a['task_title'], 'Task ${a['task_id']}')),
-                      subtitle: Text(
-                          '${adminString(a['feature'])} · ${adminInt(a['score'])} · ${a['passed'] == true ? 'passed' : 'not passed'}'),
+                    AdminDataRow(
+                      label: adminString(a['feature'], 'Attempt'),
+                      value: adminString(
+                          a['task_title'], 'Task ${a['task_id']}'),
+                      detail:
+                          '${adminInt(a['score'])} · ${a['passed'] == true ? 'passed' : 'not passed'}',
                     ),
-                  if (attempts.isEmpty) const Text('No attempts.'),
+                  if (attempts.isEmpty)
+                    const AdminDialogHint('No attempts yet.'),
                 ],
               ),
-              _Section(
+              AdminSection(
                 title: 'Achievements',
                 children: [
                   for (final a in achievements)
-                    Text(
-                        '${adminString(a['name'])} · ${adminString(a['earned_at'])}'),
-                  if (achievements.isEmpty) const Text('None yet.'),
+                    AdminDataRow(
+                      label: 'Earned ${adminString(a['earned_at'])}',
+                      value: adminString(a['name']),
+                    ),
+                  if (achievements.isEmpty)
+                    const AdminDialogHint('None earned yet.'),
                 ],
               ),
-              _Section(
+              AdminSection(
                 title: 'Moderation history',
                 children: [
                   for (final m in moderation)
-                    Text(
-                        '${adminString(m['action'])} · ${adminString(m['admin_email'])} · ${adminString(m['created_at'])}'),
-                  if (moderation.isEmpty) const Text('No admin actions.'),
+                    AdminDataRow(
+                      label: adminString(m['created_at']),
+                      value: adminString(m['action']),
+                      detail: adminString(m['admin_email']),
+                    ),
+                  if (moderation.isEmpty)
+                    const AdminDialogHint('No admin actions on this learner.'),
                 ],
               ),
             ],
@@ -394,33 +501,35 @@ class _AdminUserDetailScreenState extends ConsumerState<AdminUserDetailScreen> {
   }
 }
 
-class _Pill extends StatelessWidget {
-  const _Pill(this.text);
-  final String text;
+/// A quiet chip for a piece of metadata next to the learner's name.
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({required this.icon, required this.label});
 
-  @override
-  Widget build(BuildContext context) => Chip(label: Text(text));
-}
-
-class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.children});
-  final String title;
-  final List<Widget> children;
+  final IconData icon;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(title,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w800)),
-          const SizedBox(height: AppSpacing.xs),
-          ...children,
+          Icon(icon, size: 13, color: AppColors.textSecondary),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: AppTypography.textTheme.labelSmall?.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+              fontSize: 11.5,
+            ),
+          ),
         ],
       ),
     );

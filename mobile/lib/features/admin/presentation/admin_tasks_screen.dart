@@ -100,22 +100,34 @@ class _AdminTasksScreenState extends ConsumerState<AdminTasksScreen> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(AppSpacing.screenPadding),
-            child: DropdownButtonFormField<String>(
-              initialValue: _feature,
-              decoration: const InputDecoration(labelText: 'Feature'),
-              items: const [
-                DropdownMenuItem(value: 'all', child: Text('All features')),
-                DropdownMenuItem(
-                    value: 'verification', child: Text('Verification')),
-                DropdownMenuItem(value: 'judgement', child: Text('Judgement')),
-                DropdownMenuItem(
-                    value: 'risk_governance', child: Text('Risk & governance')),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenPadding,
+              AppSpacing.md,
+              AppSpacing.screenPadding,
+              0,
+            ),
+            child: AdminFilterBar(
+              children: [
+                DropdownButtonFormField<String>(
+                  initialValue: _feature,
+                  decoration: const InputDecoration(labelText: 'Feature'),
+                  items: const [
+                    DropdownMenuItem(
+                        value: 'all', child: Text('All features')),
+                    DropdownMenuItem(
+                        value: 'verification', child: Text('Verification')),
+                    DropdownMenuItem(
+                        value: 'judgement', child: Text('Judgement')),
+                    DropdownMenuItem(
+                        value: 'risk_governance',
+                        child: Text('Risk & governance')),
+                  ],
+                  onChanged: (value) => setState(() {
+                    _feature = value ?? 'all';
+                    _load();
+                  }),
+                ),
               ],
-              onChanged: (value) => setState(() {
-                _feature = value ?? 'all';
-                _load();
-              }),
             ),
           ),
           Expanded(
@@ -130,11 +142,14 @@ class _AdminTasksScreenState extends ConsumerState<AdminTasksScreen> {
                 }
                 final tasks = adminList(snapshot.data?['tasks']);
                 if (tasks.isEmpty) {
-                  return const Center(child: Text('No tasks.'));
+                  return const AdminEmptyState(
+                    message: 'No tasks match this filter.',
+                    icon: Icons.task_alt_rounded,
+                  );
                 }
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
-                      0, AppSpacing.screenPadding, AppSpacing.lg),
+                      AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.xxl),
                   itemCount: tasks.length,
                   separatorBuilder: (_, __) =>
                       const SizedBox(height: AppSpacing.sm),
@@ -142,17 +157,16 @@ class _AdminTasksScreenState extends ConsumerState<AdminTasksScreen> {
                     final t = tasks[i];
                     final title = adminString(
                         t['title'] ?? t['j_title'] ?? t['r_title'], t['code']);
-                    return Card(
-                      child: ListTile(
-                        title: Text(title,
-                            maxLines: 1, overflow: TextOverflow.ellipsis),
-                        subtitle: Text(
-                            '${adminString(t['feature'])} · ${adminString(t['track_name'])}'
+                    return AdminCard(
+                      onTap: () => context
+                          .push('/admin/tools/tasks/${adminInt(t['id'])}'),
+                      child: AdminDataRow(
+                        label: '${adminString(t['feature'])} · ${adminString(t['track_name'])}'
                             ' · ${adminString(t['approval'])}'
-                            ' · ${adminInt(t['attempt_count'])} attempts'),
-                        trailing: const Icon(Icons.chevron_right_rounded),
-                        onTap: () => context
-                            .push('/admin/tools/tasks/${adminInt(t['id'])}'),
+                            ' · ${adminInt(t['attempt_count'])} attempts',
+                        value: title,
+                        trailing: Icon(Icons.chevron_right_rounded,
+                            color: AppColors.textSecondary, size: 20),
                       ),
                     );
                   },

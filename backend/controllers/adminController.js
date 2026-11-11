@@ -298,6 +298,16 @@ async function deleteTask(req, res, next) {
   }
 }
 
+// Config keys whose value is strictly 'on' or 'off'. The admin portal renders
+// these as switches, and the server refuses anything else so a toggle can
+// never write a value the feature gates would misread.
+const ON_OFF_CONFIG_KEYS = new Set([
+  'maintenance_mode',
+  'flag_workshop',
+  'flag_assistant',
+  'flag_vera',
+]);
+
 // ---------------------------------------------------------------------------
 // Moderation audit trail — every admin action lands here.
 // ---------------------------------------------------------------------------
@@ -311,6 +321,31 @@ async function logModeration(firebaseUser, { action, targetUserId, targetEmail, 
   } catch (err) {
     // The audit trail must never break the action it records.
     console.error('Failed to record moderation event:', err.message);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/admin/session — record an admin portal sign-in.
+//
+// The portal calls this once when it opens, so the audit trail shows who
+// reached the admin portal and when. Without it the trail only records
+// actions taken inside the portal, not access to it.
+// ---------------------------------------------------------------------------
+async function recordAdminSession(req, res, next) {
+  try {
+    const { resolveRole } = require('../middleware/adminRoles');
+    const role = await resolveRole(req.firebaseUser);
+    await logModeration(req.firebaseUser, {
+      action: 'admin_signin',
+      reason: `Signed into the admin portal as ${role || 'admin'}`,
+    });
+    return res.status(200).json({
+      role: role || 'admin',
+      signed_in_at: new Date().toISOString(),
+      request_id: req.requestId,
+    });
+  } catch (err) {
+    return next(err);
   }
 }
 
@@ -1513,7 +1548,11 @@ async function updateConfigValues(req, res, next) {
     for (const [key, value] of Object.entries(body)) {
       if (!(key in CONFIG_DEFAULTS)) fail(`Unknown config key: ${key}`);
       const valueStr = String(value);
-      if (key === 'maintenance_mode' && !['on', 'off'].includes(valueStr)) fail('maintenance_mode must be on or off.');
+      // Every on/off key is validated as on/off, so a switch in the admin
+      // portal can never write a half-true value the gate would misread.
+      if (ON_OFF_CONFIG_KEYS.has(key) && !['on', 'off'].includes(valueStr)) {
+        fail(`${key} must be on or off.`);
+      }
       if (valueStr.length > 500) fail(`${key} is too long (max 500).`);
       updates.push([key, valueStr]);
     }
@@ -1707,6 +1746,12 @@ async function exportUsersCsv(req, res, next) {
     sendCsv(res, 'verifai-users.csv',
       ['id', 'email', 'display_name', 'status', 'track', 'created_at', 'admin_role', 'xp', 'level', 'streak', 'readiness', 'tier', 'attempts', 'passed'],
       result.rows.map((u) => [u.id, u.email, u.display_name, u.status, u.track, u.created_at, u.admin_role, u.xp, u.level, u.streak, u.readiness_score, u.tier, u.attempts, u.passed]));
+    // A data export is exactly the kind of action an audit trail exists for:
+    // it walks learner data out of the platform.
+    await logModeration(req.firebaseUser, {
+      action: 'export_users_csv',
+      reason: `Exported ${result.rows.length} learner records`,
+    });
   } catch (err) {
     return next(err);
   }
@@ -1726,6 +1771,10 @@ async function exportAttemptsCsv(req, res, next) {
     sendCsv(res, 'verifai-attempts.csv',
       ['id', 'user_email', 'task_id', 'task_title', 'feature', 'track', 'score', 'passed', 'practice', 'xp_earned', 'submitted_at'],
       result.rows.map((a) => [a.id, a.email, a.task_id, a.task_title, a.feature, a.track, a.score, a.passed, a.practice, a.xp_earned, a.submitted_at]));
+    await logModeration(req.firebaseUser, {
+      action: 'export_attempts_csv',
+      reason: `Exported ${result.rows.length} attempt records`,
+    });
   } catch (err) {
     return next(err);
   }
@@ -1750,6 +1799,10 @@ async function exportTracksCsv(req, res, next) {
     sendCsv(res, 'verifai-tracks.csv',
       ['track', 'users', 'active_30d', 'avg_readiness', 'tasks', 'attempts', 'passed'],
       result.rows.map((t) => [t.track, t.users, t.active_30d, t.avg_readiness, t.tasks, t.attempts, t.passed]));
+    await logModeration(req.firebaseUser, {
+      action: 'export_tracks_csv',
+      reason: `Exported ${result.rows.length} track summaries`,
+    });
   } catch (err) {
     return next(err);
   }
@@ -2125,5 +2178,6 @@ module.exports = {
   grantAdjust, exportUserData, hardDeleteUser, setFirebaseDisabled,
   getSystem, getConfigValues, updateConfigValues, listAdmins, addAdmin, removeAdmin,
   exportUsersCsv, exportAttemptsCsv, exportTracksCsv,
+  recordAdminSession,
   logModeration,
 };

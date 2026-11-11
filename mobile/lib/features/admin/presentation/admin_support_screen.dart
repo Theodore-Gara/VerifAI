@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
+import 'package:verifai/core/theme/app_typography.dart';
+import 'package:verifai/features/admin/presentation/admin_widgets.dart';
 import 'package:verifai/features/admin/providers.dart';
 import 'package:verifai/shared/models.dart';
 
@@ -12,7 +14,8 @@ class AdminSupportScreen extends ConsumerStatefulWidget {
   const AdminSupportScreen({super.key});
 
   @override
-  ConsumerState<AdminSupportScreen> createState() => _AdminSupportScreenState();
+  ConsumerState<AdminSupportScreen> createState() =>
+      _AdminSupportScreenState();
 }
 
 class _AdminSupportScreenState extends ConsumerState<AdminSupportScreen> {
@@ -52,7 +55,7 @@ class _AdminSupportScreenState extends ConsumerState<AdminSupportScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
               AppSpacing.md, AppSpacing.screenPadding, 0),
-          child: Column(
+          child: AdminFilterBar(
             children: [
               TextField(
                 controller: _search,
@@ -62,7 +65,6 @@ class _AdminSupportScreenState extends ConsumerState<AdminSupportScreen> {
                   prefixIcon: Icon(Icons.search_rounded),
                 ),
               ),
-              const SizedBox(height: AppSpacing.sm),
               Row(
                 children: [
                   Expanded(
@@ -121,10 +123,13 @@ class _AdminSupportScreenState extends ConsumerState<AdminSupportScreen> {
             future: _future,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return const AdminLoading();
               }
               if (snapshot.hasError) {
-                return _Error(onRetry: () => setState(_load));
+                return AdminErrorView(
+                  message: 'Could not load the support inbox.',
+                  onRetry: () => setState(_load),
+                );
               }
               final all = snapshot.data ?? const <SupportTicket>[];
               final q = _search.text.trim().toLowerCase();
@@ -139,7 +144,10 @@ class _AdminSupportScreenState extends ConsumerState<AdminSupportScreen> {
                           (t.email ?? '').toLowerCase().contains(q))
                       .toList();
               if (tickets.isEmpty) {
-                return const Center(child: Text('No tickets match.'));
+                return const AdminEmptyState(
+                  message: 'No tickets match.',
+                  icon: Icons.support_agent_rounded,
+                );
               }
               return RefreshIndicator(
                 onRefresh: () async {
@@ -148,31 +156,20 @@ class _AdminSupportScreenState extends ConsumerState<AdminSupportScreen> {
                   await _future;
                 },
                 child: ListView.separated(
-                  padding: const EdgeInsets.all(AppSpacing.screenPadding),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.screenPadding,
+                    AppSpacing.md,
+                    AppSpacing.screenPadding,
+                    AppSpacing.xxl,
+                  ),
                   itemCount: tickets.length,
                   separatorBuilder: (_, __) =>
                       const SizedBox(height: AppSpacing.sm),
                   itemBuilder: (context, i) {
                     final t = tickets[i];
-                    return Card(
-                      child: ListTile(
-                        leading: Icon(
-                          t.unread
-                              ? Icons.mark_email_unread_rounded
-                              : Icons.support_agent_rounded,
-                          color: t.unread
-                              ? AppColors.error
-                              : AppColors.accentGreen,
-                        ),
-                        title: Text('${t.publicRef} · ${t.subject}',
-                            maxLines: 1, overflow: TextOverflow.ellipsis),
-                        subtitle: Text(
-                          '${t.category} · ${t.status.replaceAll('_', ' ')}'
-                          '${t.replyCount > 0 ? ' · ${t.replyCount} replies' : ''}',
-                        ),
-                        trailing: const Icon(Icons.chevron_right_rounded),
-                        onTap: () => context.push('/admin/support/${t.id}'),
-                      ),
+                    return _TicketRow(
+                      ticket: t,
+                      onTap: () => context.push('/admin/support/${t.id}'),
                     );
                   },
                 ),
@@ -185,19 +182,90 @@ class _AdminSupportScreenState extends ConsumerState<AdminSupportScreen> {
   }
 }
 
-class _Error extends StatelessWidget {
-  const _Error({required this.onRetry});
-  final VoidCallback onRetry;
+/// One ticket: the subject is the headline, everything else is metadata.
+class _TicketRow extends StatelessWidget {
+  const _TicketRow({required this.ticket, required this.onTap});
+
+  final SupportTicket ticket;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    final unread = ticket.unread;
+    final status = ticket.status.replaceAll('_', ' ');
+
+    return AdminCard(
+      onTap: onTap,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Could not load the support inbox.'),
-          const SizedBox(height: AppSpacing.sm),
-          FilledButton(onPressed: onRetry, child: const Text('Retry')),
+          // An unread ticket is marked with a dot rather than a coloured
+          // icon, so the eye goes to the subject first.
+          Container(
+            width: 10,
+            height: 10,
+            margin: const EdgeInsets.only(top: 5, right: 2),
+            decoration: BoxDecoration(
+              color: unread ? AppColors.error : Colors.transparent,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  ticket.subject,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.1,
+                    color: AppColors.textPrimary,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '${ticket.publicRef} · ${ticket.category}',
+                  style: AppTypography.textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    AdminStatusPill(
+                      label: status,
+                      color: switch (ticket.status) {
+                        'new' => AppColors.error,
+                        'in_progress' => AppColors.info,
+                        'resolved' => AppColors.accentGreen,
+                        _ => AppColors.textSecondary,
+                      },
+                    ),
+                    if (ticket.replyCount > 0) ...[
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        '${ticket.replyCount} '
+                        '${ticket.replyCount == 1 ? 'reply' : 'replies'}',
+                        style: AppTypography.textTheme.labelSmall?.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Icon(Icons.chevron_right_rounded,
+              color: AppColors.textSecondary, size: 20),
         ],
       ),
     );

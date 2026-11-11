@@ -15,6 +15,13 @@ final adminUnreadTicketsProvider = FutureProvider<int>((ref) async {
 /// instead of mirroring every field in a Dart model.
 int adminInt(dynamic value) => _int(value);
 
+/// A number that may arrive as a float (averages are rounded to one decimal
+/// on the server). Falls back to 0.
+double adminDouble(dynamic value) {
+  if (value is num) return value.toDouble();
+  return double.tryParse('$value') ?? 0;
+}
+
 String adminString(dynamic value, [String fallback = '']) =>
     value == null ? fallback : '$value';
 

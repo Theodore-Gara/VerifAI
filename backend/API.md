@@ -66,6 +66,27 @@ Protected. Per-account tutorial state, keyed by `(user, track, tour_key="industr
 
 `GET /api/auth/me` also returns a `tutorial` summary for the active track (or `null` before an industry is chosen).
 
+### POST /api/admin/session
+Protected (admin). Records an admin portal sign-in in the moderation audit
+trail and returns `{ role, signed_in_at, request_id }`.
+
+The portal calls this once on open, so the audit trail shows who reached the
+admin portal and when — not only the actions they took inside it.
+
+#### Admin audit actions
+
+Every admin action lands in `moderation_events`. Alongside the existing
+content, learner and configuration actions, the trail records:
+
+- `admin_signin` — an admin opened the portal.
+- `support_ticket_read` — an admin opened or cleared a support ticket.
+- `export_users_csv`, `export_attempts_csv`, `export_tracks_csv` — an admin
+  downloaded learner data. The reason carries the row count.
+
+`PUT /api/admin/config` accepts only `on` or `off` for `maintenance_mode`,
+`flag_workshop`, `flag_assistant` and `flag_vera`; any other value is
+rejected. The admin portal renders these as switches.
+
 ### GET /api/tasks/next
 Protected. Returns the next task for the authenticated user's selected industry track. The reference answer is never returned.
 

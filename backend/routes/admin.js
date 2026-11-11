@@ -11,6 +11,7 @@ const {
   grantAdjust, exportUserData, hardDeleteUser, setFirebaseDisabled,
   getSystem, getConfigValues, updateConfigValues, listAdmins, addAdmin, removeAdmin,
   exportUsersCsv, exportAttemptsCsv, exportTracksCsv,
+  recordAdminSession,
 } = require('../controllers/adminController');
 
 const {
@@ -33,6 +34,9 @@ router.use(requireRole('moderator'));
 router.get('/overview', getOverview);
 router.get('/track-progress', trackProgress);
 router.get('/system', getSystem);
+
+// Records an admin portal sign-in in the audit trail.
+router.post('/session', recordAdminSession);
 
 // Tasks: read for all admins; write for admin and above.
 router.get('/tasks', listTasks);
