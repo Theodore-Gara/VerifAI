@@ -49,6 +49,9 @@ String humanizeAuthError(Object error) {
   }
 
   // Connectivity / session
+  if (message.contains('timeout') || message.contains('timed out')) {
+    return 'VerifAI took too long to respond. Please try again in a moment.';
+  }
   if (message.contains('network-request-failed') ||
       message.contains('network') ||
       message.contains('socket') ||

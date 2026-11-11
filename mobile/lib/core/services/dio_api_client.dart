@@ -41,10 +41,18 @@ class DioApiClient implements ApiClient {
 
   @override
   Future<AuthSyncResponse> syncUser(User user) async {
-    // The interceptor attaches the ID token to both calls; the same token is
-    // returned so the auth layer can show it is signed in.
-    await _dio.post<Map<String, dynamic>>('auth/sync');
-    final profileResponse = await _dio.get<Map<String, dynamic>>('users/me');
+    // The first request after Render's free tier has been idle can take ~50s
+    // while the instance wakes. Give the auth handshake a longer deadline than
+    // the normal screens so a cold start does not look like a failed sign-in.
+    const wake = Duration(seconds: 60);
+    await _dio.post<Map<String, dynamic>>(
+      'auth/sync',
+      options: Options(receiveTimeout: wake),
+    );
+    final profileResponse = await _dio.get<Map<String, dynamic>>(
+      'users/me',
+      options: Options(receiveTimeout: wake),
+    );
     final syncedUser = _parseUser(profileResponse.data?['user']);
     final token = await _currentToken();
     return AuthSyncResponse(user: syncedUser, token: token ?? '');
