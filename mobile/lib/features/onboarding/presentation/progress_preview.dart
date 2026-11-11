@@ -120,17 +120,15 @@ class ProgressPreview extends StatelessWidget {
   static const _level = 3;
   static const _xpIntoLevel = 240;
   static const _xpForNextLevel = 400;
-  static const _streakDays = 5;
-  static const _completedTasks = 12;
 
   /// A believable week of practice: Mon through Sun, with today still open.
   static const _weeklyXp = <int>[70, 40, 90, 55, 80, 20, 0];
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return const Column(
       children: [
-        const _PreviewFrame(
+        _PreviewFrame(
           label: 'Example progress',
           padding: EdgeInsets.all(AppSpacing.md),
           child: XPBar(
@@ -139,30 +137,8 @@ class ProgressPreview extends StatelessWidget {
             level: _level,
           ),
         ),
-        const SizedBox(height: AppSpacing.md),
-        Row(
-          children: [
-            Expanded(
-              child: _MiniStat(
-                icon: Icons.local_fire_department_rounded,
-                color: AppColors.warning,
-                value: '$_streakDays',
-                label: 'Day streak',
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: _MiniStat(
-                icon: Icons.task_alt_rounded,
-                color: AppColors.accentGreen,
-                value: '$_completedTasks',
-                label: 'Tasks done',
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
-        const _PreviewFrame(
+        SizedBox(height: AppSpacing.md),
+        _PreviewFrame(
           label: 'Example progress',
           padding: EdgeInsets.all(AppSpacing.md),
           child: _WeeklyStrip(xp: _weeklyXp),
@@ -261,78 +237,6 @@ class _PreviewBar extends StatelessWidget {
   }
 }
 
-/// A streak or task counter.
-class _MiniStat extends StatelessWidget {
-  const _MiniStat({
-    required this.icon,
-    required this.color,
-    required this.value,
-    required this.label,
-  });
-
-  final IconData icon;
-  final Color color;
-  final String value;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-            child: Icon(icon, size: 19, color: color),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  value,
-                  style: AppTypography.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.3,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.textTheme.labelSmall?.copyWith(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 /// Seven days of XP, the same shape as the weekly chart on the Progress
 /// screen.

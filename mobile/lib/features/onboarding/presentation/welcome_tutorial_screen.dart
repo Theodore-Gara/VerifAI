@@ -63,14 +63,14 @@ class _WelcomeTutorialScreenState extends ConsumerState<WelcomeTutorialScreen>
         'Every attempt builds a skill profile',
       ],
     ),
-    const _TutorialStep(
+    _TutorialStep(
       eyebrow: 'HOW A TASK WORKS',
       title: 'Read. Check. Decide.',
       description:
           'Every task gives you an AI output and an issue to investigate. Your job is to find what the AI got wrong, then give your verdict and reasoning.',
       icon: Icons.fact_check_rounded,
-      accent: Color(0xFF3C8968),
-      bullets: [
+      accent: AppColors.electricMint,
+      bullets: const [
         'Read the AI scenario output',
         'Find the issue worth investigating',
         'Submit your answer and see why',
@@ -85,14 +85,14 @@ class _WelcomeTutorialScreenState extends ConsumerState<WelcomeTutorialScreen>
       accent: AppColors.xpPurple,
       bullets: const [],
     ),
-    const _TutorialStep(
+    _TutorialStep(
       eyebrow: 'KEEP GOING',
       title: 'Show up.\nThe progress stacks.',
       description:
           'Small, regular practice beats one long session. Your level, XP and streak update after every attempt you complete, and the roadmap shows what is next.',
       icon: Icons.local_fire_department_rounded,
-      accent: Color(0xFFB77936),
-      bullets: [
+      accent: AppColors.warning,
+      bullets: const [
         'One task a day keeps your streak alive',
         'XP and levels track your consistency',
         'Your roadmap shows what is next',
@@ -238,29 +238,20 @@ class _WelcomeTutorialScreenState extends ConsumerState<WelcomeTutorialScreen>
             _buildHeader(),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              child: Column(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const OnboardingStepBar(
+                  const OnboardingStepLabel(
                     currentStep: _step,
                     totalSteps: _totalSteps,
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const OnboardingStepLabel(
-                        currentStep: _step,
-                        totalSteps: _totalSteps,
-                      ),
-                      Text(
-                        'Page ${_page + 1} of ${_steps.length}',
-                        style: AppTypography.textTheme.labelSmall?.copyWith(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 11.5,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    'Page ${_page + 1} of ${_steps.length}',
+                    style: AppTypography.textTheme.labelSmall?.copyWith(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11.5,
+                    ),
                   ),
                 ],
               ),
@@ -294,17 +285,7 @@ class _WelcomeTutorialScreenState extends ConsumerState<WelcomeTutorialScreen>
                             // the product: the logo opens the tour, then the
                             // real task, the readiness profile and progress.
                             if (index == 0)
-                              Center(
-                                child: Image.asset(
-                                  'assets/images/logoalldarktrans.png',
-                                  height: 120,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      _Medallion(
-                                    icon: item.icon,
-                                    accent: item.accent,
-                                  ),
-                                ),
-                              )
+                              const _BrandPlate()
                             else if (index == 1)
                               const _LiveTaskPreview()
                             else if (index == 2)
@@ -483,51 +464,50 @@ class _WelcomeTutorialScreenState extends ConsumerState<WelcomeTutorialScreen>
   }
 }
 
-/// The circular icon plate behind each page's headline.
-class _Medallion extends StatelessWidget {
-  const _Medallion({required this.icon, required this.accent});
-
-  final IconData icon;
-  final Color accent;
+/// The VerifAI wordmark, on a plate that reads in either theme.
+///
+/// The wordmark artwork is near-black on transparent, so it disappears on the
+/// dark theme's background. Light mode puts it on a white plate; dark mode
+/// swaps in the light artwork and drops the plate.
+class _BrandPlate extends StatelessWidget {
+  const _BrandPlate();
 
   @override
   Widget build(BuildContext context) {
-    const outer = 180.0;
-    const inner = 124.0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Container(
-        width: outer,
-        height: outer,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(colors: [
-            accent.withValues(alpha: .22),
-            accent.withValues(alpha: .035)
-          ]),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xxl,
+          vertical: AppSpacing.xl,
         ),
-        child: Center(
-          child: Container(
-            width: inner,
-            height: inner,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(inner * .3),
-              boxShadow: [
-                BoxShadow(
-                    color: accent.withValues(alpha: .17),
-                    blurRadius: 32,
-                    offset: const Offset(0, 12))
-              ],
-              border: Border.all(color: accent.withValues(alpha: .22)),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surface : Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.hero),
+          border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
-            child: Icon(icon, size: 62, color: AppColors.primaryNavy),
+          ],
+        ),
+        child: Image.asset(
+          isDark
+              ? 'assets/images/logodarktrans.png'
+              : 'assets/images/logoalldarktrans.png',
+          height: isDark ? 72 : 60,
+          errorBuilder: (context, error, stackTrace) => Icon(
+            Icons.verified_user_rounded,
+            size: 56,
+            color: AppColors.primaryNavy,
           ),
         ),
       ),
     );
   }
 }
-
 
 /// Shows the learner's real next task so the tour shows the product rather
 /// than describing it. Falls back to a static example when no task is

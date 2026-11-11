@@ -508,8 +508,11 @@ class _TrackRow extends StatelessWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
+                    // primaryFill stays deep in both themes, so the selected
+                    // tile keeps its contrast in dark mode. primaryNavy
+                    // inverts to near-white there and would wash out.
                     color: isSelected
-                        ? AppColors.primaryNavy
+                        ? AppColors.primaryFill
                         : AppColors.accentLight.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(AppRadius.lg),
                   ),

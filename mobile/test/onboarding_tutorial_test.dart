@@ -76,7 +76,6 @@ void main() {
     expect(find.text('EXAMPLE PROGRESS'), findsWidgets);
     // The AI Practitioner level bar is the real component.
     expect(find.text('AI Practitioner'), findsOneWidget);
-    expect(find.text('Day streak'), findsOneWidget);
     expect(find.text('Practice activity'), findsOneWidget);
   });
 

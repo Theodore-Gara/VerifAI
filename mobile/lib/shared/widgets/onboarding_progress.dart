@@ -33,7 +33,9 @@ class OnboardingStepBar extends StatelessWidget {
             height: 4,
             margin: EdgeInsets.only(right: stepNumber == totalSteps ? 0 : 7),
             decoration: BoxDecoration(
-              color: active ? AppColors.accentGreen : const Color(0xFFE2E8F0),
+              // The palette's border colour, so the unfilled segment follows
+              // the active theme instead of staying light grey in dark mode.
+              color: active ? AppColors.accentGreen : AppColors.border,
               borderRadius: BorderRadius.circular(8),
             ),
           ),

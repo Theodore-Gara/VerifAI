@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'auth_brand_header.dart';
@@ -59,7 +60,7 @@ class _PasswordStrengthIndicator extends StatelessWidget {
                 height: 5,
                 margin: EdgeInsets.only(right: index == 3 ? 0 : 5),
                 decoration: BoxDecoration(
-                  color: score > index ? color : const Color(0xFFE2E8F0),
+                  color: score > index ? color : AppColors.border,
                   borderRadius: BorderRadius.circular(5),
                 ),
               ),
