@@ -32,6 +32,10 @@ String humanizeAuthError(Object error) {
   }
 
   // Google sign-in
+  if (message.contains('admin_learner_blocked') ||
+      message.contains('admin accounts cannot use learner features')) {
+    return 'This is an admin account. Sign in through the admin portal.';
+  }
   if (message.contains('account-exists-with-different-credential')) {
     return 'An account with this email already exists. Sign in with your email and password first.';
   }

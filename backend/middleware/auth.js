@@ -107,9 +107,16 @@ async function verifyFirebaseToken(req, res, next) {
 // Learner routes are off-limits to admin accounts. The app already redirects
 // admins to the admin portal; this is the server-side half of the boundary.
 function verifyLearnerToken(req, res, next) {
+  const url = req.originalUrl.split('?')[0];
+  // Reading your own profile is part of the auth handshake, not a learner
+  // action. Admin accounts need it during sign-in before the app can route them
+  // to the admin portal.
+  if (req.method === 'GET' && url === '/api/users/me') {
+    return verifyFirebaseToken(req, res, next);
+  }
   // Capstone marking lives under /api/lab but is an admin/reviewer endpoint.
   // Let it reach requireAdminAuth instead of rejecting the admin here.
-  if (/^\/api\/lab\/assessments\/[^/]+\/attempts\/\d+\/mark$/.test(req.originalUrl.split('?')[0])) {
+  if (/^\/api\/lab\/assessments\/[^/]+\/attempts\/\d+\/mark$/.test(url)) {
     return verifyFirebaseToken(req, res, next);
   }
   verifyFirebaseToken(req, res, (err) => {
