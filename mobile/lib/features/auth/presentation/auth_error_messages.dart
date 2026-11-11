@@ -23,7 +23,8 @@ String humanizeAuthError(Object error) {
   if (message.contains('invalid-email')) {
     return 'Please enter a valid email address.';
   }
-  if (message.contains('operation-not-allowed')) {
+  if (message.contains('operation-not-allowed') &&
+      !message.contains('google')) {
     return 'Email sign-in is not enabled for this project yet.';
   }
   if (message.contains('too-many-requests')) {
@@ -31,9 +32,17 @@ String humanizeAuthError(Object error) {
   }
 
   // Google sign-in
-  if (message.contains('developer_error') ||
+  if (message.contains('account-exists-with-different-credential')) {
+    return 'An account with this email already exists. Sign in with your email and password first.';
+  }
+  if (message.contains('google sign-in is not configured') ||
+      message.contains('no matching oauth client') ||
+      message.contains('developer_error') ||
       message.contains('developer error')) {
-    return 'Google sign-in is not available for this build.';
+    return 'Google sign-in is not available for this build. The APK signing certificate may not match Firebase — install the latest build or contact support.';
+  }
+  if (message.contains('google') && message.contains('operation-not-allowed')) {
+    return 'Google sign-in is not enabled for this Firebase project.';
   }
   if (message.contains('cancelled')) {
     return 'Google sign-in was cancelled.';
