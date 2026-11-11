@@ -88,7 +88,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     ref.invalidate(verificationHistoryProvider);
     ref.invalidate(tracksProvider);
     ref.invalidate(currentUserProvider);
-    ref.invalidate(adminIdentityProvider);
+    ref.invalidate(adminRoleProvider);
     // Family providers — invalidating the family clears all keyed instances.
     ref.invalidate(leaderboardProvider);
     ref.invalidate(labLessonProvider);
@@ -96,6 +96,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     ref.invalidate(assessmentAnalysisProvider);
     ref.invalidate(veraSessionProvider);
     ref.read(selectedTrackProvider.notifier).state = null;
+  });
+
+  // A role that resolves late (cold start, promotion, demotion) must move the
+  // user between the learner app and the portal without a manual navigation.
+  ref.listen<AsyncValue<String?>>(adminRoleProvider, (previous, next) {
+    if (next.isLoading) return;
+    if (previous?.valueOrNull != next.valueOrNull) refreshNotifier.notify();
   });
 
   final router = GoRouter(
@@ -147,17 +154,25 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isAuthenticated) {
         final onAdminRoute =
             location == '/admin' || location.startsWith('/admin/');
-        AdminIdentity? identity;
+        String? role;
+        var roleKnown = true;
         try {
-          identity = await ref.read(adminIdentityProvider.future);
+          // Bounded: a refresh in flight (cold start on resume) must not stall
+          // every navigation for the full backend timeout.
+          role = await ref
+              .read(adminRoleProvider.future)
+              .timeout(const Duration(seconds: 2));
         } catch (_) {
-          identity = null;
+          // Never resolved and the backend was unreachable (cold start). Do
+          // not guess "learner": hold the user where they are until the splash
+          // or the reconnect path resolves it.
+          roleKnown = false;
         }
-        final isAdmin = identity?.role != null;
-        if (isAdmin) {
+        if (role != null) {
           if (!onAdminRoute) return '/admin';
           return null;
         }
+        if (!roleKnown) return null;
         if (onAdminRoute) {
           return needsOnboarding ? '/industry-select' : '/dashboard';
         }

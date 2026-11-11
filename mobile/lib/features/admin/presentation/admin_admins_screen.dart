@@ -156,7 +156,7 @@ class _AdminAdminsScreenState extends ConsumerState<AdminAdminsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final myRole = ref.watch(adminIdentityProvider).valueOrNull?.role;
+    final myRole = ref.watch(adminRoleProvider).valueOrNull;
     return FutureBuilder<Map<String, dynamic>>(
       future: _future,
       builder: (context, snapshot) {

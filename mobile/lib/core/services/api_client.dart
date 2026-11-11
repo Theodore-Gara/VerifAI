@@ -177,7 +177,11 @@ class AuthSyncResponse {
   final User user;
   final String token;
 
-  AuthSyncResponse({required this.user, required this.token});
+  /// Staff role from the same /users/me response ('admin' | 'super' | …).
+  /// Null for learner accounts.
+  final String? role;
+
+  AuthSyncResponse({required this.user, required this.token, this.role});
 }
 
 class TaskSubmissionRequest {

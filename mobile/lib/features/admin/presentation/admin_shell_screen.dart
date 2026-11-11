@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/features/admin/presentation/admin_admins_screen.dart';
@@ -26,9 +29,17 @@ class _AdminShellScreenState extends ConsumerState<AdminShellScreen> {
   int _index = 0;
 
   @override
+  void initState() {
+    super.initState();
+    // The portal renders immediately: starting the wake-up ping here means the
+    // per-tab Retry buttons succeed instead of timing out again on a cold
+    // backend. Fire and forget — each screen owns its own error state.
+    unawaited(ref.read(apiClientProvider).ping().catchError((_) {}));
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final identity = ref.watch(adminIdentityProvider).valueOrNull;
-    final role = identity?.role;
+    final role = ref.watch(adminRoleProvider).valueOrNull;
     final canManageAdmins = role == 'admin' || role == 'super';
     final unread = ref.watch(adminUnreadTicketsProvider).valueOrNull ?? 0;
 

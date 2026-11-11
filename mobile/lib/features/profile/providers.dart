@@ -9,17 +9,26 @@ final achievementsProvider = FutureProvider<List<Achievement>>((ref) async {
   return await apiClient.getAchievementCatalog();
 });
 
-/// Staff identity for the signed-in user (GET /api/auth/me). Null role means
-/// a regular learner; 'super' | 'admin' | 'moderator' confines the account to
-/// the native admin portal.
+/// Staff role for the signed-in user (GET /api/auth/me). Null means the account
+/// is a learner; 'super' | 'admin' | 'moderator' confines it to the admin portal.
 ///
-/// Kept alive because the router uses it to decide between the learner app and
-/// the admin portal on every navigation. Invalidate it on auth changes.
-final adminIdentityProvider = FutureProvider<AdminIdentity?>((ref) async {
+/// The last resolved role is persisted with the session, because the router
+/// needs it on every navigation and on app restart. Routing on a live request
+/// meant a sleeping backend (10s timeout) downgraded an admin to the learner UI.
+///
+/// The cached value is returned immediately and refreshed in the background;
+/// a network failure keeps the cached role, and only a session that never
+/// resolved a role rethrows so the splash can wait instead of guessing.
+final adminRoleProvider = FutureProvider<String?>((ref) async {
   final apiClient = ref.watch(apiClientProvider);
+  final secureStorage = ref.watch(secureStorageProvider);
+  final cached = await secureStorage.getAdminRole();
   try {
-    return await apiClient.getMe();
+    final identity = await apiClient.getMe();
+    await secureStorage.saveAdminRole(identity.role);
+    return identity.role;
   } catch (_) {
-    return null; // offline or not staff — profile renders without the badge
+    if (cached == null) rethrow;
+    return cached.isEmpty ? null : cached;
   }
 });

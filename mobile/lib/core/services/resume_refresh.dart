@@ -79,7 +79,9 @@ class _ResumeRefreshState extends ConsumerState<ResumeRefresh>
     ref.invalidate(interviewQuestionsProvider);
     ref.invalidate(industryCasesProvider);
     ref.invalidate(leaderboardProvider);
-    ref.invalidate(adminIdentityProvider);
+    // The staff role is deliberately not refreshed here: a cold backend would
+    // hold the role in AsyncLoading and visibly drop admin-only tabs. `/auth/me`
+    // is re-read on launch, sign-in and the error-screen reconnect.
     ref.invalidate(supportUnreadTicketsProvider);
     ref.invalidate(adminUnreadTicketsProvider);
     ref.invalidate(roadmapProvider);

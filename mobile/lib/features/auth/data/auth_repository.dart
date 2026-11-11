@@ -142,6 +142,7 @@ class FirebaseAuthRepository implements AuthRepository {
     final token = syncResult.token;
 
     await _secureStorage.saveAuthToken(token);
+    await _secureStorage.saveAdminRole(syncResult.role);
     await _secureStorage.saveUserData(
       userId: synced.id,
       email: synced.email,
@@ -205,6 +206,7 @@ class FirebaseAuthRepository implements AuthRepository {
       final synced = syncResult.user;
       final token = syncResult.token;
 
+      await _secureStorage.saveAdminRole(syncResult.role);
       await _secureStorage.saveUserData(
         userId: synced.id,
         email: synced.email,

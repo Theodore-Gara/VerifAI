@@ -231,7 +231,7 @@ class _AdminUserDetailScreenState extends ConsumerState<AdminUserDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final role = ref.watch(adminIdentityProvider).valueOrNull?.role;
+    final role = ref.watch(adminRoleProvider).valueOrNull;
     return AdminToolScaffold(
       title: 'Learner',
       actions: [

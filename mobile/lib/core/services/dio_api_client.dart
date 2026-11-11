@@ -53,9 +53,16 @@ class DioApiClient implements ApiClient {
       'users/me',
       options: Options(receiveTimeout: wake),
     );
-    final syncedUser = _parseUser(profileResponse.data?['user']);
+    final profile = profileResponse.data?['user'];
+    final syncedUser = _parseUser(profile);
     final token = await _currentToken();
-    return AuthSyncResponse(user: syncedUser, token: token ?? '');
+    // Persisting this at sign-in means a later cold start can route an admin
+    // into the portal without waiting for /auth/me.
+    return AuthSyncResponse(
+      user: syncedUser,
+      token: token ?? '',
+      role: profile is Map ? profile['admin_role'] as String? : null,
+    );
   }
 
   @override
@@ -232,7 +239,12 @@ class DioApiClient implements ApiClient {
 
   @override
   Future<AdminIdentity> getMe() async {
-    final response = await _dio.get<Map<String, dynamic>>('auth/me');
+    // Part of the staff sign-in handshake: a sleeping Render instance takes
+    // ~50s to wake, and timing out here used to downgrade admins to learners.
+    final response = await _dio.get<Map<String, dynamic>>(
+      'auth/me',
+      options: Options(receiveTimeout: const Duration(seconds: 65)),
+    );
     return parseAdminIdentity(response.data ?? const {});
   }
 

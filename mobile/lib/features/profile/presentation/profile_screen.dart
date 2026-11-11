@@ -124,7 +124,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final displayName = userName ?? user?.email ?? '';
     final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
     final trackName = user?.trackName;
-    final adminRole = ref.watch(adminIdentityProvider).valueOrNull?.role;
+    final adminRole = ref.watch(adminRoleProvider).valueOrNull;
 
     return Scaffold(
       backgroundColor: AppColors.background,

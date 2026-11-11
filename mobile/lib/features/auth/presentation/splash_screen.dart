@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -10,6 +9,7 @@ import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/features/auth/providers.dart';
+import 'package:verifai/features/profile/providers.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -25,6 +25,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final Animation<double> _scaleAnimation;
   late final Animation<double> _fadeAnimation;
   late final Animation<Offset> _slideAnimation;
+
+  /// True when the wake-up ping failed: the splash keeps the animation and
+  /// offers a retry instead of routing into a shell it cannot verify.
+  bool _offline = false;
 
   @override
   void initState() {
@@ -50,16 +54,46 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     _startWelcomeAndNavigate();
   }
 
+  /// The splash doubles as the connection screen. Render's free tier sleeps
+  /// when idle, so a returning admin must not be dropped into the learner app
+  /// while the role is still unknowable — wait for the wake-up ping, then for
+  /// the staff role (also cached, so a warm start needs neither).
   Future<void> _startWelcomeAndNavigate() async {
-    // Wake the backend (Render free tier sleeps when idle) while the splash is
-    // showing, so the first real request - especially an AI call - is not the
-    // one that has to wait ~50s for the instance to boot.
-    unawaited(_warmUpBackend());
+    final wakeUp = _warmUpBackend();
     await Future<void>.delayed(const Duration(milliseconds: 2500));
+    final online = await wakeUp;
     if (!mounted) return;
+    if (!online) {
+      setState(() => _offline = true);
+      return;
+    }
+
     final authState = ref.read(authStateProvider).valueOrNull;
     if (authState == null) {
       context.go('/login');
+      return;
+    }
+    final signedIn = authState.when(
+      unauthenticated: () => false,
+      authenticated: (user, token) => true,
+      needsOnboarding: (user, token) => true,
+      loading: () => false,
+    );
+    if (!signedIn) {
+      context.go('/login');
+      return;
+    }
+
+    String? role;
+    try {
+      role = await ref.read(adminRoleProvider.future);
+    } catch (_) {
+      if (mounted) setState(() => _offline = true);
+      return;
+    }
+    if (!mounted) return;
+    if (role != null) {
+      context.go('/admin');
       return;
     }
     authState.when(
@@ -70,12 +104,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     );
   }
 
-  Future<void> _warmUpBackend() async {
+  Future<bool> _warmUpBackend() async {
     try {
       await ref.read(apiClientProvider).ping();
+      return true;
     } catch (_) {
-      // Best effort: a cold or unreachable backend is handled by each screen.
+      return false;
     }
+  }
+
+  void _retry() {
+    setState(() => _offline = false);
+    _startWelcomeAndNavigate();
   }
 
   @override
@@ -162,6 +202,31 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                               fontWeight: FontWeight.w700,
                             ),
                           ),
+                          const SizedBox(height: 30),
+                          if (_offline) ...[
+                            const Text(
+                              'Could not reach the server.',
+                              style: TextStyle(
+                                color: Color(0xFFB8C3BA),
+                                fontSize: 12.5,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _retry,
+                              style: TextButton.styleFrom(
+                                foregroundColor: const Color(0xFFD5B779),
+                              ),
+                              child: const Text('Retry'),
+                            ),
+                          ] else
+                            const Text(
+                              'Connecting…',
+                              style: TextStyle(
+                                color: Color(0x99B8C3BA),
+                                fontSize: 12,
+                                letterSpacing: 0.9,
+                              ),
+                            ),
                         ],
                       ),
                     ),

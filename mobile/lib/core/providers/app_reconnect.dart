@@ -28,7 +28,7 @@ Future<bool> reconnectApp(WidgetRef ref) async {
   ref.invalidate(achievementsProvider);
   ref.invalidate(leaderboardProvider);
   ref.invalidate(tracksProvider);
-  ref.invalidate(adminIdentityProvider);
+  ref.invalidate(adminRoleProvider);
   ref.invalidate(supportUnreadTicketsProvider);
   ref.invalidate(adminUnreadTicketsProvider);
   ref.invalidate(roadmapProvider);

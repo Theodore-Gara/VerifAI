@@ -11,6 +11,7 @@ class SecureStorageService {
   static const _keyTrackId = 'track_id';
   static const _keyTrackName = 'track_name';
   static const _keyHasCompletedOnboarding = 'has_completed_onboarding';
+  static const _keyAdminRole = 'admin_role';
 
   // Auth token
   Future<void> saveAuthToken(String token) async {
@@ -76,6 +77,22 @@ class SecureStorageService {
             'Secure storage decryption failed in getUserData, clearing: $e');
         await _handleCorruptedStorage();
       }
+      return null;
+    }
+  }
+
+  /// Staff role resolved by the backend. A `null` role records a *confirmed
+  /// learner* (key present, empty value); a missing key means the role has
+  /// never been resolved, which must not be treated as "learner".
+  Future<void> saveAdminRole(String? role) async {
+    await _storage.write(key: _keyAdminRole, value: role ?? '');
+  }
+
+  Future<String?> getAdminRole() async {
+    try {
+      return await _storage.read(key: _keyAdminRole);
+    } catch (e) {
+      if (_isDecryptionError(e)) await _handleCorruptedStorage();
       return null;
     }
   }
