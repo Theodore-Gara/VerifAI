@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/core/services/api_error.dart';
@@ -12,6 +13,9 @@ import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
 import 'package:verifai/shared/widgets/inline_markdown_text.dart';
 import 'package:verifai/shared/widgets/verifai_page_scaffold.dart';
+
+const _walkthroughViewUrl =
+    'https://drive.google.com/file/d/1ytfv2GYsXvcV5FOYtnQUJliTTIzqQNe3/view?usp=drivesdk';
 
 // ---------------------------------------------------------------------------
 // Shared pieces
@@ -132,8 +136,8 @@ class _ActionCard extends StatelessWidget {
   Widget build(BuildContext context) => Card(
         child: ListTile(
           leading: Icon(icon, color: AppColors.accentGreen),
-          title: Text(title,
-              style: const TextStyle(fontWeight: FontWeight.w900)),
+          title:
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
           subtitle: Text(subtitle),
           trailing: Text(label,
               style: TextStyle(
@@ -299,7 +303,8 @@ class HelpSupportScreen extends ConsumerWidget {
       title: 'Help & Support',
       actions: [
         Consumer(builder: (context, ref, _) {
-          final unread = ref.watch(supportUnreadTicketsProvider).valueOrNull ?? 0;
+          final unread =
+              ref.watch(supportUnreadTicketsProvider).valueOrNull ?? 0;
           return IconButton(
             tooltip: 'Your requests',
             onPressed: () => context.push('/support/tickets'),
@@ -426,8 +431,8 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
       return;
     }
     if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]{2,}$').hasMatch(email)) {
-      showFeedback(context, FeedbackKind.error,
-          'Please enter a valid email address.');
+      showFeedback(
+          context, FeedbackKind.error, 'Please enter a valid email address.');
       return;
     }
     if (subject.length < 3) {
@@ -520,11 +525,15 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
                   initialValue: _category,
                   decoration: const InputDecoration(labelText: 'Category'),
                   items: const [
-                    DropdownMenuItem(value: 'bug', child: Text('Bug / technical issue')),
+                    DropdownMenuItem(
+                        value: 'bug', child: Text('Bug / technical issue')),
                     DropdownMenuItem(value: 'account', child: Text('Account')),
-                    DropdownMenuItem(value: 'content', child: Text('Learning content')),
-                    DropdownMenuItem(value: 'verification', child: Text('Verification')),
-                    DropdownMenuItem(value: 'feedback', child: Text('Feedback')),
+                    DropdownMenuItem(
+                        value: 'content', child: Text('Learning content')),
+                    DropdownMenuItem(
+                        value: 'verification', child: Text('Verification')),
+                    DropdownMenuItem(
+                        value: 'feedback', child: Text('Feedback')),
                     DropdownMenuItem(value: 'other', child: Text('Other')),
                   ],
                   onChanged: (value) =>
@@ -626,8 +635,7 @@ class _TicketTile extends StatelessWidget {
         subtitle: Text(
             '${ticket.status.replaceAll('_', ' ')} · ${ticket.replyCount} replies'),
         trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: () =>
-            context.push('/support/tickets/${ticket.publicRef}'),
+        onTap: () => context.push('/support/tickets/${ticket.publicRef}'),
       ),
     );
   }
@@ -689,14 +697,10 @@ class _SupportTicketDetailScreenState
 
   void _load() {
     _future = ref.read(apiClientProvider).getMyTicket(widget.ref);
-    ref
-        .read(apiClientProvider)
-        .markMyTicketRead(widget.ref)
-        .then((_) {
-          ref.invalidate(supportTicketsProvider);
-          ref.invalidate(supportUnreadTicketsProvider);
-        })
-        .catchError((_) {});
+    ref.read(apiClientProvider).markMyTicketRead(widget.ref).then((_) {
+      ref.invalidate(supportTicketsProvider);
+      ref.invalidate(supportUnreadTicketsProvider);
+    }).catchError((_) {});
   }
 
   @override
@@ -881,8 +885,7 @@ class _VerifaiFaqScreenState extends ConsumerState<VerifaiFaqScreen> {
                       children: [
                         InlineMarkdownText(faq.answerMd,
                             style: TextStyle(
-                                height: 1.55,
-                                color: AppColors.textSecondary)),
+                                height: 1.55, color: AppColors.textSecondary)),
                       ],
                     ),
                   ),
@@ -971,8 +974,8 @@ class _GuideBody extends StatelessWidget {
                       fontWeight: FontWeight.w900)),
               const SizedBox(height: 5),
               Text(guide.tagline,
-                  style: const TextStyle(
-                      color: Color(0xFFE1EAE4), height: 1.4)),
+                  style:
+                      const TextStyle(color: Color(0xFFE1EAE4), height: 1.4)),
             ],
           ),
         ),
@@ -980,9 +983,7 @@ class _GuideBody extends StatelessWidget {
         const _Heading('What this industry is about'),
         InlineMarkdownText(guide.overviewMd,
             style: TextStyle(
-                fontSize: 15,
-                height: 1.6,
-                color: AppColors.textSecondary)),
+                fontSize: 15, height: 1.6, color: AppColors.textSecondary)),
         if (outcomes['who_for'] is String) ...[
           const SizedBox(height: 16),
           const _Heading('Who it is for'),
@@ -1018,8 +1019,8 @@ class _GuideBody extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('${_map(step)['title'] ?? ''}',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w800)),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w800)),
                         const SizedBox(height: 4),
                         InlineMarkdownText('${_map(step)['body_md'] ?? ''}',
                             style: TextStyle(
@@ -1052,12 +1053,47 @@ class _GuideBody extends StatelessWidget {
             ),
         ],
         const SizedBox(height: 10),
-        _ActionCard(
-          icon: Icons.support_agent_rounded,
-          title: 'Questions about this pathway?',
-          subtitle: 'Ask the team or browse the FAQs.',
-          label: 'Contact support',
-          onTap: () => context.push('/support/contact'),
+        const _Heading('Watch the walkthrough'),
+        const _BodyText(
+            'Follow the walkthrough to see how to move through VerifAI and use its main features step by step.'),
+        const SizedBox(height: 12),
+        InkWell(
+          onTap: () => _openWalkthrough(context),
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: AppColors.primaryFill,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: AppColors.gold,
+                  child: Icon(Icons.play_arrow_rounded,
+                      color: AppColors.primaryDark, size: 28),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Watch VerifAI walkthrough',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800)),
+                      SizedBox(height: 4),
+                      Text(
+                          'Opens the shared Google Drive video in your browser',
+                          style: TextStyle(
+                              color: Color(0xFFD7E1DA), fontSize: 12)),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.open_in_new_rounded, color: Colors.white),
+              ],
+            ),
+          ),
         ),
       ],
     );
@@ -1065,6 +1101,20 @@ class _GuideBody extends StatelessWidget {
 
   Map<String, dynamic> _map(dynamic value) =>
       value is Map ? Map<String, dynamic>.from(value) : const {};
+}
+
+Future<void> _openWalkthrough(BuildContext context) async {
+  final opened = await launchUrl(
+    Uri.parse(_walkthroughViewUrl),
+    mode: LaunchMode.externalApplication,
+  );
+  if (!opened && context.mounted) {
+    showFeedback(
+      context,
+      FeedbackKind.error,
+      'The walkthrough could not be opened. Check your connection and try again.',
+    );
+  }
 }
 
 class _Heading extends StatelessWidget {
@@ -1117,21 +1167,19 @@ class _FeatureTour extends StatelessWidget {
           if (map['body_md'] is String) ...[
             const SizedBox(height: 6),
             InlineMarkdownText(map['body_md'] as String,
-                style: TextStyle(
-                    color: AppColors.textSecondary, height: 1.45)),
+                style: TextStyle(color: AppColors.textSecondary, height: 1.45)),
           ],
           for (final item in items) ...[
             const SizedBox(height: 8),
             Text('${_map(item)['name'] ?? _map(item)['feature'] ?? ''}',
                 style: TextStyle(
-                    color: AppColors.accentGreen,
-                    fontWeight: FontWeight.w800)),
+                    color: AppColors.accentGreen, fontWeight: FontWeight.w800)),
             if (_map(item)['what_to_check'] is String)
               _BodyText(_map(item)['what_to_check'] as String, size: 13),
             if (_map(item)['body_md'] is String)
               InlineMarkdownText(_map(item)['body_md'] as String,
-                  style: TextStyle(
-                      color: AppColors.textSecondary, height: 1.45)),
+                  style:
+                      TextStyle(color: AppColors.textSecondary, height: 1.45)),
           ],
         ],
       ),
