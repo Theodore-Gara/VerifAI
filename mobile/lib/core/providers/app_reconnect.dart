@@ -8,6 +8,7 @@ import 'package:verifai/features/profile/providers.dart';
 import 'package:verifai/features/progress/providers.dart';
 import 'package:verifai/features/scoreboard/providers.dart';
 import 'package:verifai/features/support/providers.dart';
+import 'package:verifai/features/track/providers.dart';
 
 /// App-wide reconnect for every screen's retry button. Pinging the (public)
 /// health endpoint gives the Render free-tier instance time to wake up
@@ -30,5 +31,6 @@ Future<bool> reconnectApp(WidgetRef ref) async {
   ref.invalidate(adminIdentityProvider);
   ref.invalidate(supportUnreadTicketsProvider);
   ref.invalidate(adminUnreadTicketsProvider);
+  ref.invalidate(roadmapProvider);
   return true;
 }

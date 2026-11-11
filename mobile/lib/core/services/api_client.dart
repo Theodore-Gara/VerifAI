@@ -63,6 +63,7 @@ abstract class ApiClient {
 
   /// Full achievements catalog with earned/locked state (GET /api/achievements).
   Future<List<Achievement>> getAchievementCatalog();
+  Future<RoadmapData> getRoadmap();
   Future<LeaderboardData> getLeaderboard({int? trackId, int limit = 20});
   Future<ActivityData> getActivity({int days = 7});
   Future<List<InterviewQuestion>> getInterviewQuestions();

@@ -332,6 +332,12 @@ class DioApiClient implements ApiClient {
   }
 
   @override
+  Future<RoadmapData> getRoadmap() async {
+    final response = await _dio.get<Map<String, dynamic>>('roadmap');
+    return RoadmapData.fromJson(response.data ?? const {});
+  }
+
+  @override
   Future<List<InterviewQuestion>> getInterviewQuestions() async {
     final response = await _dio.get<Map<String, dynamic>>(
       'interview/questions',

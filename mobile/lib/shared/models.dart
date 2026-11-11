@@ -5,6 +5,7 @@ export 'models/dashboard_data.dart';
 export 'models/auth_state.dart';
 export 'models/achievement.dart';
 export 'models/support.dart';
+export 'models/roadmap.dart';
 export 'models/leaderboard.dart';
 export 'models/activity.dart';
 export 'models/industry_switch.dart';

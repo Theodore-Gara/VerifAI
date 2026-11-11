@@ -12,6 +12,7 @@ import 'package:verifai/features/progress/providers.dart';
 import 'package:verifai/features/rewards/providers.dart';
 import 'package:verifai/features/risk_governance/providers.dart';
 import 'package:verifai/features/scoreboard/providers.dart';
+import 'package:verifai/features/track/providers.dart';
 import 'package:verifai/features/verification/providers.dart';
 import 'package:verifai/features/verification_studio/providers.dart';
 
@@ -39,6 +40,7 @@ void invalidateTrackScopedProviders(dynamic ref) {
   ref.invalidate(achievementsProvider);
   ref.invalidate(rewardsProvider);
   ref.invalidate(tourStateProvider);
+  ref.invalidate(roadmapProvider);
 
   // Practice surfaces keyed to the track's task pool.
   ref.invalidate(verificationTasksProvider);

@@ -343,6 +343,56 @@ class MockApiClient implements ApiClient {
   }
 
   @override
+  Future<RoadmapData> getRoadmap() async {
+    await _delay();
+    return const RoadmapData(
+      trackId: 1,
+      trackName: 'Finance',
+      summary: RoadmapSummary(
+        currentStage: 1,
+        milestonesCompleted: 1,
+        milestonesTotal: 3,
+        percent: 33,
+        readinessScore: 42,
+        tier: 'Developing',
+      ),
+      stages: [
+        RoadmapStage(
+          code: 'foundation',
+          title: 'Foundation',
+          outcome: 'Get set up and take the tour.',
+          order: 1,
+          status: 'active',
+          milestones: [
+            RoadmapMilestone(
+              code: 'tour',
+              title: 'Complete the welcome tour',
+              status: 'current',
+              current: 0,
+              target: 1,
+              unit: 'tour',
+            ),
+            RoadmapMilestone(
+              code: 'first-task',
+              title: 'Pass your first task',
+              status: 'up_next',
+              current: 1,
+              target: 1,
+              unit: 'task',
+            ),
+          ],
+        ),
+      ],
+      nextAction: RoadmapNextAction(
+        stage: 'foundation',
+        milestone: 'tour',
+        label: 'Take the tour',
+        route: '/welcome-tour',
+      ),
+    );
+  }
+
+  @override
   Future<LeaderboardData> getLeaderboard({int? trackId, int limit = 20}) async {
     await _delay();
     const me = LeaderboardEntry(
