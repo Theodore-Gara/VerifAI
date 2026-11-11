@@ -305,6 +305,7 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
   }
 
   Widget _buildTracksList(List<IndustryTrack> tracks, int? currentTrackId) {
+    final selected = _selectedTrack;
     return ListView(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.screenPadding,
@@ -361,16 +362,14 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
           const SizedBox(height: AppSpacing.sm),
         ],
         const SizedBox(height: AppSpacing.xs),
-        _GuideHint(
-          track: _selectedTrack,
-          onTap: () {
-            final track = _selectedTrack;
-            if (track == null) return;
-            context.push(
-              '/industry-guide/${Uri.encodeComponent(track.name)}',
-            );
-          },
-        ),
+        if (selected != null) ...[
+          _GuideHint(
+            track: selected,
+            onTap: () => context.push(
+              '/industry-guide/${Uri.encodeComponent(selected.name)}',
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -419,8 +418,8 @@ class _SwitchNotice extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.accentLight.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-            color: AppColors.accentGreen.withValues(alpha: 0.35)),
+        border:
+            Border.all(color: AppColors.accentGreen.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -534,7 +533,8 @@ class _TrackRow extends StatelessWidget {
                               track.name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: AppTypography.textTheme.titleMedium?.copyWith(
+                              style:
+                                  AppTypography.textTheme.titleMedium?.copyWith(
                                 color: AppColors.textPrimary,
                                 fontWeight: FontWeight.w800,
                               ),
@@ -550,8 +550,7 @@ class _TrackRow extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           track.description!,
-                          style:
-                              AppTypography.textTheme.bodySmall?.copyWith(
+                          style: AppTypography.textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondary,
                             fontSize: 12,
                             height: 1.35,
@@ -634,24 +633,26 @@ class _SelectionBadge extends StatelessWidget {
       );
     }
     return Icon(
-      isCurrent ? Icons.check_circle_outline_rounded : Icons.chevron_right_rounded,
+      isCurrent
+          ? Icons.check_circle_outline_rounded
+          : Icons.chevron_right_rounded,
       color: isCurrent ? AppColors.accentGreen : AppColors.textSecondary,
       size: 20,
     );
   }
 }
 
-/// "Not sure?" row that opens the guide for the selected industry. Lives
-/// outside the cards so a card tap only ever selects.
+/// "See how X works" row that opens the industry guide. Only rendered once an
+/// industry is picked — with nothing selected it was a dead end. Lives outside
+/// the cards so a card tap only ever selects.
 class _GuideHint extends StatelessWidget {
   const _GuideHint({required this.track, required this.onTap});
 
-  final IndustryTrack? track;
+  final IndustryTrack track;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final name = track?.name;
     return Material(
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(AppRadius.card),
@@ -671,23 +672,18 @@ class _GuideHint extends StatelessWidget {
           ),
           leading: Icon(
             Icons.menu_book_rounded,
-            color:
-                name == null ? AppColors.textSecondary : AppColors.accentGreen,
+            color: AppColors.accentGreen,
             size: 22,
           ),
           title: Text(
-            name == null
-                ? 'Not sure? See how each industry works'
-                : 'See how $name works',
+            'See how ${track.name} works',
             style: AppTypography.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
             ),
           ),
           subtitle: Text(
-            name == null
-                ? 'Pick an industry first'
-                : 'A short guide to what you will practise',
+            'A short guide to what you will practise',
             style: AppTypography.textTheme.bodySmall?.copyWith(
               color: AppColors.textSecondary,
               fontSize: 12,

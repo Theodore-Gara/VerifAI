@@ -89,24 +89,19 @@ void main() {
     );
   });
 
-  testWidgets('the guide row opens the guide for the selected industry',
+  testWidgets('the guide row only appears once an industry is selected',
       (tester) async {
     await tester.pumpWidget(testApp());
     await tester.pumpAndSettle();
 
-    // The guide row sits below the fold and the list builds lazily, so it is
-    // not in the tree until the list is scrolled to it.
-    await tester.scrollUntilVisible(
-      find.text('Not sure? See how each industry works'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    // No selection yet: the row asks for one.
-    expect(find.text('Not sure? See how each industry works'), findsOneWidget);
+    // Nothing picked: the old dead-end "not sure" row is gone entirely.
+    expect(find.textContaining('Not sure?'), findsNothing);
 
     await tester.tap(find.text('Finance'));
     await tester.pump();
 
+    // The guide row sits below the fold and the list builds lazily, so it is
+    // not in the tree until the list is scrolled to it.
     await tester.scrollUntilVisible(
       find.text('See how Finance works'),
       300,

@@ -186,9 +186,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/dashboard';
       }
 
-      // Check onboarding status for authenticated users
+      // Check onboarding status for authenticated users. Reading an industry
+      // guide is allowed before choosing: the selector links to it and must
+      // still hold the learner's pick when they come back.
       if (needsOnboarding) {
-        if (location != '/industry-select') {
+        final readingGuide = location.startsWith('/industry-guide/');
+        if (location != '/industry-select' && !readingGuide) {
           return '/industry-select';
         }
       }

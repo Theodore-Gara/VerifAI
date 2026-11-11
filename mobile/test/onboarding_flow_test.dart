@@ -69,7 +69,8 @@ void main() {
     );
 
     // Continue → first-run tutorial.
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Continue with Finance'));
+    await tester
+        .tap(find.widgetWithText(ElevatedButton, 'Continue with Finance'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 2)); // track save + backend sync
     await tester.pumpAndSettle();
@@ -93,6 +94,58 @@ void main() {
 
     expect(find.text('Home').first, findsOneWidget);
     expect(find.text('What do you work in?'), findsNothing);
+  });
+
+  testWidgets('the industry guide opens from the selector and keeps the pick',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({
+      'auth_token': 'mock_token',
+      'user_id': 'seed-theo',
+      'user_email': 'theo@verif.com',
+      'has_completed_onboarding': 'false',
+    });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [apiClientProvider.overrideWithValue(MockApiClient())],
+        child: const VerifAIApp(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3)); // splash
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('What do you work in?'), findsOneWidget);
+
+    // Nothing picked yet: no dead-end "not sure" row.
+    expect(find.textContaining('Not sure?'), findsNothing);
+
+    await tester.tap(find.text('Finance'));
+    await tester.pump();
+
+    final guideLink = find.text('See how Finance works');
+    await tester.scrollUntilVisible(
+      guideLink,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(guideLink);
+    await tester.pumpAndSettle();
+
+    // The guide opens instead of bouncing back to a fresh selector.
+    expect(find.text('Finance guide'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+
+    // Back on the selector with the choice still made (the list stays scrolled,
+    // so assert on the app bar and the confirm button rather than the hero).
+    expect(find.text('Set up your path'), findsOneWidget);
+    expect(
+      find.widgetWithText(ElevatedButton, 'Continue with Finance'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('track cards fit without overflow on a phone-size screen',
