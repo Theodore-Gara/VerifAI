@@ -178,14 +178,110 @@ class MockApiClient implements ApiClient {
       const VerificationMeta();
 
   @override
+  Future<List<SupportHelpArticle>> getSupportHelp() async => const [
+        SupportHelpArticle(
+          id: 1,
+          slug: 'getting-started',
+          title: 'Getting started',
+          summary: 'Choose your industry and take the tour.',
+          bodyMd: 'Welcome to VerifAI.',
+          category: 'start',
+        ),
+      ];
+
+  @override
+  Future<List<SupportFaq>> getSupportFaqs() async => const [
+        SupportFaq(
+          id: 1,
+          slug: 'what-is-verifai',
+          question: 'What is VerifAI?',
+          answerMd: 'An AI learning and verification platform.',
+          topic: 'basics',
+        ),
+      ];
+
+  @override
+  Future<List<SupportGuide>> getSupportGuides() async => const [
+        SupportGuide(
+          id: 1,
+          trackId: 1,
+          trackName: 'Finance',
+          slug: 'finance',
+          tagline: 'Check AI-generated numbers.',
+          overviewMd: 'Finance pathway overview.',
+        ),
+      ];
+
+  @override
+  Future<SupportGuide> getSupportGuide(String slug) async =>
+      (await getSupportGuides()).first;
+
+  @override
+  Future<SupportAbout> getSupportAbout() async => const SupportAbout(
+        title: 'About VerifAI',
+        data: {'mission_md': 'Responsible AI learning.'},
+      );
+
+  @override
+  Future<SupportContactResult> submitSupportContact({
+    required String name,
+    required String email,
+    required String category,
+    required String subject,
+    required String message,
+  }) async {
+    await _delay();
+    return const SupportContactResult(
+      ticketId: 'VF-MOCK1234',
+      expectedReply: '1–2 working days',
+    );
+  }
+
+  @override
+  Future<List<SupportTicket>> getMyTickets() async => const [];
+
+  @override
+  Future<SupportTicketDetail> getMyTicket(String ref) async =>
+      SupportTicketDetail(
+        ticket: SupportTicket(
+          id: 1,
+          publicRef: ref,
+          subject: 'Mock ticket',
+          category: 'other',
+          status: 'new',
+        ),
+        replies: const [],
+      );
+
+  @override
+  Future<void> markMyTicketRead(String ref) async {}
+
+  @override
+  Future<int> getMyUnreadTicketCount() async => 0;
+
+  @override
+  Future<dynamic> adminRequest(
+    String method,
+    String path, {
+    Map<String, dynamic>? query,
+    Object? data,
+  }) async {
+    await _delay();
+    return const <String, dynamic>{};
+  }
+
+  @override
+  Future<String> adminTextRequest(String path) async {
+    await _delay();
+    return 'id,email\n';
+  }
+
+  @override
   Future<AdminIdentity> getMe() async {
     return const AdminIdentity(
         user: User(id: 'mock', email: 'demo@verifai.app', createdAt: ''),
         isAdmin: false);
   }
-
-  @override
-  Future<String?> getAuthToken() async => 'mock-token';
 
   @override
   Future<void> deleteAccount() async {}
@@ -415,7 +511,8 @@ class MockApiClient implements ApiClient {
   }
 
   @override
-  Future<List<VerificationResult>> getVerificationAnalyses({int limit = 20}) async {
+  Future<List<VerificationResult>> getVerificationAnalyses(
+      {int limit = 20}) async {
     await _delay();
     return const [];
   }
@@ -455,7 +552,11 @@ class MockApiClient implements ApiClient {
     await _delay();
     return VeraSessionDetail(
       session: VeraSession(
-          id: id, context: 'assistant', startedAt: '', lastActiveAt: '', messageCount: 0),
+          id: id,
+          context: 'assistant',
+          startedAt: '',
+          lastActiveAt: '',
+          messageCount: 0),
       messages: const [],
     );
   }
@@ -467,7 +568,8 @@ class MockApiClient implements ApiClient {
   }
 
   @override
-  Future<void> addVeraMemory({required String kind, required String content}) async {}
+  Future<void> addVeraMemory(
+      {required String kind, required String content}) async {}
 
   @override
   Future<void> deleteVeraMemory(int id) async {}
@@ -488,7 +590,8 @@ class MockApiClient implements ApiClient {
   @override
   Future<LabLessonDetail> getLabLesson(String code) async {
     await _delay();
-    return LabLessonDetail(lesson: LabLesson(id: 0, code: code, title: code, summary: ''));
+    return LabLessonDetail(
+        lesson: LabLesson(id: 0, code: code, title: code, summary: ''));
   }
 
   @override
@@ -526,7 +629,8 @@ class MockApiClient implements ApiClient {
   @override
   Future<LabAssessmentPaper> getAssessmentPaper(String code) async {
     await _delay();
-    return LabAssessmentPaper(assessment: LabAssessment(id: 0, code: code, title: code));
+    return LabAssessmentPaper(
+        assessment: LabAssessment(id: 0, code: code, title: code));
   }
 
   @override
@@ -554,7 +658,8 @@ class MockApiClient implements ApiClient {
   }
 
   @override
-  Future<LabAssessmentAnalysis> getAssessmentAnalysis(String code, int attemptId) async {
+  Future<LabAssessmentAnalysis> getAssessmentAnalysis(
+      String code, int attemptId) async {
     await _delay();
     return const LabAssessmentAnalysis(report: 'Keep going.');
   }
@@ -634,7 +739,8 @@ class MockApiClient implements ApiClient {
   }
 
   @override
-  Future<void> saveMoodCheckin(String mood, {String? date, String? note}) async {
+  Future<void> saveMoodCheckin(String mood,
+      {String? date, String? note}) async {
     await _delay();
     final day = date ?? _todayIso;
     MoodCheckin? existing;
@@ -645,14 +751,17 @@ class MockApiClient implements ApiClient {
     _moodCheckins.add(MoodCheckin(
       date: day,
       mood: mood,
-      note: note == null ? existing?.note : (note.trim().isEmpty ? null : note.trim()),
+      note: note == null
+          ? existing?.note
+          : (note.trim().isEmpty ? null : note.trim()),
     ));
   }
 
   @override
   Future<List<JournalEntry>> getJournalEntries({int limit = 30}) async {
     await _delay();
-    final sorted = [..._journalEntries]..sort((a, b) => b.date.compareTo(a.date));
+    final sorted = [..._journalEntries]
+      ..sort((a, b) => b.date.compareTo(a.date));
     return sorted.take(limit).toList();
   }
 

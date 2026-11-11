@@ -213,7 +213,7 @@ class _LearningAssistantScreenState
             margin: const EdgeInsets.only(bottom: AppSpacing.sm),
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: fromAssistant ? AppColors.surface : AppColors.primaryNavy,
+              color: fromAssistant ? AppColors.surface : AppColors.primaryFill,
               borderRadius: BorderRadius.circular(AppRadius.card),
               border:
                   fromAssistant ? Border.all(color: AppColors.border) : null,

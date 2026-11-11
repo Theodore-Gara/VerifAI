@@ -6,6 +6,15 @@ import 'package:go_router/go_router.dart';
 import 'package:verifai/features/auth/presentation.dart';
 import 'package:verifai/features/auth/presentation/recovery_screen.dart';
 import 'package:verifai/features/auth/providers.dart';
+import 'package:verifai/features/admin/presentation/admin_shell_screen.dart';
+import 'package:verifai/features/admin/presentation/admin_ticket_detail_screen.dart';
+import 'package:verifai/features/admin/presentation/admin_user_detail_screen.dart';
+import 'package:verifai/features/admin/presentation/admin_tasks_screen.dart';
+import 'package:verifai/features/admin/presentation/admin_approvals_screen.dart';
+import 'package:verifai/features/admin/presentation/admin_content_screen.dart';
+import 'package:verifai/features/admin/presentation/admin_workshop_screen.dart';
+import 'package:verifai/features/admin/presentation/admin_reports_screens.dart';
+import 'package:verifai/features/admin/presentation/admin_export_screen.dart';
 import 'package:verifai/features/assistant/presentation/learning_assistant_screen.dart';
 import 'package:verifai/core/providers/app_providers.dart';
 import 'package:verifai/features/vera/presentation/vera_assistant_screen.dart';
@@ -43,7 +52,6 @@ import 'package:verifai/features/navigation/main_nav_shell.dart';
 import 'package:verifai/features/track/presentation/track_roadmap_screen.dart';
 import 'package:verifai/features/wellness/presentation/wellness_center_screen.dart';
 import 'package:verifai/features/onboarding/presentation.dart';
-import 'package:verifai/features/onboarding/presentation/industry_guide_screen.dart';
 import 'package:verifai/features/scoreboard/presentation/scoreboard_screen.dart';
 import 'package:verifai/features/support/presentation/support_screens.dart';
 import 'package:verifai/features/verification/presentation/verification_screen.dart';
@@ -78,6 +86,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     ref.invalidate(verificationHistoryProvider);
     ref.invalidate(tracksProvider);
     ref.invalidate(currentUserProvider);
+    ref.invalidate(adminIdentityProvider);
     // Family providers — invalidating the family clears all keyed instances.
     ref.invalidate(leaderboardProvider);
     ref.invalidate(labLessonProvider);
@@ -92,7 +101,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     // Route logging on every navigation belongs in debug builds only.
     debugLogDiagnostics: kDebugMode,
     refreshListenable: refreshNotifier,
-    redirect: (context, state) {
+    redirect: (context, state) async {
       // valueOrNull: null while loading or errored, so redirects never crash.
       final authState = ref.read(authStateProvider).valueOrNull;
       final location = state.matchedLocation;
@@ -131,6 +140,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login';
       }
 
+      // Admin accounts are confined to the native admin portal. Resolve the
+      // role once (the provider caches) and bypass onboarding entirely.
+      if (isAuthenticated) {
+        final onAdminRoute =
+            location == '/admin' || location.startsWith('/admin/');
+        AdminIdentity? identity;
+        try {
+          identity = await ref.read(adminIdentityProvider.future);
+        } catch (_) {
+          identity = null;
+        }
+        final isAdmin = identity?.role != null;
+        if (isAdmin) {
+          if (!onAdminRoute) return '/admin';
+          return null;
+        }
+        if (onAdminRoute) {
+          return needsOnboarding ? '/industry-select' : '/dashboard';
+        }
+      }
+
       if (isAuthenticated && isPublicRoute) {
         // Redirect to appropriate screen based on onboarding status
         if (needsOnboarding) {
@@ -159,6 +189,77 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/splash',
         name: 'splash',
         builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: '/admin',
+        name: 'admin',
+        builder: (context, state) => const AdminShellScreen(),
+      ),
+      GoRoute(
+        path: '/admin/support/:id',
+        name: 'admin-ticket',
+        builder: (context, state) => AdminTicketDetailScreen(
+          id: int.tryParse(state.pathParameters['id'] ?? '') ?? 0,
+        ),
+      ),
+      GoRoute(
+        path: '/admin/users/:id',
+        name: 'admin-user',
+        builder: (context, state) => AdminUserDetailScreen(
+          id: int.tryParse(state.pathParameters['id'] ?? '') ?? 0,
+        ),
+      ),
+      GoRoute(
+        path: '/admin/tools/tasks',
+        name: 'admin-tasks',
+        builder: (context, state) => const AdminTasksScreen(),
+      ),
+      GoRoute(
+        path: '/admin/tools/tasks/:id',
+        name: 'admin-task',
+        builder: (context, state) => AdminTaskEditorScreen(
+          id: int.tryParse(state.pathParameters['id'] ?? '') ?? 0,
+        ),
+      ),
+      GoRoute(
+        path: '/admin/tools/approvals',
+        name: 'admin-approvals',
+        builder: (context, state) => const AdminApprovalsScreen(),
+      ),
+      GoRoute(
+        path: '/admin/tools/content',
+        name: 'admin-content',
+        builder: (context, state) => const AdminContentScreen(),
+      ),
+      GoRoute(
+        path: '/admin/tools/workshop',
+        name: 'admin-workshop',
+        builder: (context, state) => const AdminWorkshopScreen(),
+      ),
+      GoRoute(
+        path: '/admin/tools/progress',
+        name: 'admin-progress',
+        builder: (context, state) => const AdminProgressScreen(),
+      ),
+      GoRoute(
+        path: '/admin/tools/analytics',
+        name: 'admin-analytics',
+        builder: (context, state) => const AdminAnalyticsScreen(),
+      ),
+      GoRoute(
+        path: '/admin/tools/system',
+        name: 'admin-system',
+        builder: (context, state) => const AdminSystemScreen(),
+      ),
+      GoRoute(
+        path: '/admin/tools/audit',
+        name: 'admin-audit',
+        builder: (context, state) => const AdminAuditScreen(),
+      ),
+      GoRoute(
+        path: '/admin/tools/exports',
+        name: 'admin-exports',
+        builder: (context, state) => const AdminExportScreen(),
       ),
       GoRoute(
         path: '/login',
@@ -194,6 +295,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/support',
         name: 'support',
         builder: (context, state) => const HelpSupportScreen(),
+      ),
+      GoRoute(
+        path: '/support/tickets',
+        name: 'support-tickets',
+        builder: (context, state) => const SupportTicketsScreen(),
+      ),
+      GoRoute(
+        path: '/support/tickets/:ref',
+        name: 'support-ticket',
+        builder: (context, state) => SupportTicketDetailScreen(
+          ref: state.pathParameters['ref'] ?? '',
+        ),
       ),
       GoRoute(
         path: '/support/faq',

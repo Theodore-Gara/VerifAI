@@ -361,7 +361,7 @@ class _VeraAssistantScreenState extends ConsumerState<VeraAssistantScreen> {
           margin: const EdgeInsets.only(bottom: AppSpacing.sm),
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: assistant ? AppColors.surface : AppColors.primaryNavy,
+            color: assistant ? AppColors.surface : AppColors.primaryFill,
             borderRadius: BorderRadius.circular(AppRadius.card),
             border: assistant ? Border.all(color: AppColors.border) : null,
           ),

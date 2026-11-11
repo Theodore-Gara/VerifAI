@@ -86,7 +86,8 @@ async function buildLeaderboardContext(executor, userId, industryTrackId) {
      LEFT JOIN user_progress p ON p.user_id = u.id
      LEFT JOIN user_track_progress tp
        ON tp.user_id = u.id AND tp.track_id = u.industry_track_id
-     WHERE (COALESCE(p.xp, 0), COALESCE(tp.readiness_score, 0), u.id) > ($1, $2, $3)`,
+     WHERE u.is_admin = FALSE
+       AND (COALESCE(p.xp, 0), COALESCE(tp.readiness_score, 0), u.id) > ($1, $2, $3)`,
     [me.xp, me.readiness_score, userId],
   );
 
@@ -100,6 +101,7 @@ async function buildLeaderboardContext(executor, userId, industryTrackId) {
        LEFT JOIN user_track_progress tp
          ON tp.user_id = u.id AND tp.track_id = u.industry_track_id
        WHERE u.industry_track_id = $1
+         AND u.is_admin = FALSE
          AND (COALESCE(p.xp, 0), COALESCE(tp.readiness_score, 0), u.id) > ($2, $3, $4)`,
       [industryTrackId, me.xp, me.readiness_score, userId],
     );
@@ -107,7 +109,7 @@ async function buildLeaderboardContext(executor, userId, industryTrackId) {
 
     const trackTotalResult = await executor.query(
       `SELECT COUNT(*)::int AS track_total
-       FROM users WHERE industry_track_id = $1`,
+       FROM users WHERE industry_track_id = $1 AND is_admin = FALSE`,
       [industryTrackId],
     );
     trackTotal = trackTotalResult.rows[0]?.track_total || 0;
@@ -125,6 +127,7 @@ async function buildLeaderboardContext(executor, userId, industryTrackId) {
        LEFT JOIN user_track_progress tp
          ON tp.user_id = u.id AND tp.track_id = u.industry_track_id
        WHERE u.industry_track_id = $1
+         AND u.is_admin = FALSE
        ORDER BY rank ASC
        LIMIT 20`,
       [industryTrackId],

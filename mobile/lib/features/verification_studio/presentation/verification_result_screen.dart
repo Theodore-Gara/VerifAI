@@ -5,7 +5,6 @@ import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
-import 'package:verifai/features/navigation/sections.dart';
 import 'package:verifai/shared/models.dart';
 
 /// Shows a Verification Studio report.
@@ -94,19 +93,6 @@ class VerificationResultScreen extends StatelessWidget {
         title: Text('Verification report',
             style: AppTypography.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
-        actions: [
-          IconButton(
-            tooltip: 'Home',
-            icon: const Icon(Icons.home_outlined),
-            onPressed: () => goHome(context),
-          ),
-          IconButton(
-            tooltip: 'All sections',
-            icon: const Icon(Icons.menu_rounded),
-            onPressed: () => showAllSectionsSheet(context),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,

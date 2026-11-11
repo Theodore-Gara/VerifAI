@@ -25,17 +25,26 @@ const OPTION_KINDS = {
 // ---------------------------------------------------------------------------
 async function getOverview(req, res, next) {
   try {
-    const [taskCounts, users, attempts, tracks] = await Promise.all([
+    const [taskCounts, users, attempts, tracks, tickets] = await Promise.all([
       pool.query(
         `SELECT feature, COUNT(*)::int AS count FROM tasks GROUP BY feature`
       ),
-      pool.query(`SELECT COUNT(*)::int AS count FROM users`),
-      pool.query(`SELECT COUNT(*)::int AS count, COALESCE(AVG(score), 0)::int AS avg_score FROM task_attempts`),
+      pool.query(`SELECT COUNT(*)::int AS count FROM users WHERE is_admin = FALSE`),
+      pool.query(
+        `SELECT COUNT(*)::int AS count, COALESCE(AVG(ta.score), 0)::int AS avg_score
+           FROM task_attempts ta JOIN users u ON u.id = ta.user_id
+          WHERE u.is_admin = FALSE`
+      ),
       pool.query(
         `SELECT t.id, t.name, COUNT(ta.id)::int AS task_count
          FROM industry_tracks t
          LEFT JOIN tasks ta ON ta.track_id = t.id
          GROUP BY t.id, t.name ORDER BY t.id`
+      ),
+      pool.query(
+        `SELECT COUNT(*) FILTER (WHERE status <> 'resolved')::int AS open,
+                COUNT(*) FILTER (WHERE status = 'new')::int AS unread
+           FROM support_messages`
       ),
     ]);
 
@@ -48,6 +57,8 @@ async function getOverview(req, res, next) {
       users_total: users.rows[0].count,
       attempts_total: attempts.rows[0].count,
       avg_attempt_score: attempts.rows[0].avg_score,
+      open_tickets: tickets.rows[0] ? tickets.rows[0].open : 0,
+      new_tickets: tickets.rows[0] ? tickets.rows[0].unread : 0,
       tracks: tracks.rows,
       request_id: req.requestId,
     });
@@ -311,6 +322,8 @@ async function listUsers(req, res, next) {
   try {
     const params = [];
     const where = [];
+    const includeAdmins = req.query.include_admins === '1' || req.query.include_admins === 'true';
+    if (!includeAdmins) where.push('u.is_admin = FALSE');
 
     if (req.query.q != null) {
       const q = String(req.query.q).trim();
@@ -498,6 +511,67 @@ async function setUserStatus(req, res, next) {
 }
 
 // ---------------------------------------------------------------------------
+// PATCH /api/admin/users/:id — edit safe profile fields.
+// Body: { display_name?, industry_track_id? }
+// Email changes are deliberately not supported here: they require a Firebase
+// identity change and re-verification, not a learner-profile edit.
+// ---------------------------------------------------------------------------
+async function updateUser(req, res, next) {
+  try {
+    const userId = Number.parseInt(req.params.id, 10);
+    if (!Number.isInteger(userId)) {
+      return res.status(400).json({ error: 'User id must be an integer.', request_id: req.requestId });
+    }
+    const body = req.body || {};
+    const sets = [];
+    const values = [];
+
+    if (body.display_name !== undefined) {
+      if (body.display_name !== null && (typeof body.display_name !== 'string'
+          || body.display_name.trim().length === 0 || body.display_name.length > 255)) {
+        return res.status(400).json({ error: 'display_name must be a non-empty string of 255 characters or fewer.', request_id: req.requestId });
+      }
+      values.push(body.display_name === null ? null : body.display_name.trim());
+      sets.push(`display_name = $${values.length}`);
+    }
+    if (body.industry_track_id !== undefined) {
+      if (body.industry_track_id !== null && !Number.isInteger(Number(body.industry_track_id))) {
+        return res.status(400).json({ error: 'industry_track_id must be an integer or null.', request_id: req.requestId });
+      }
+      if (body.industry_track_id !== null) {
+        const track = await pool.query('SELECT id FROM industry_tracks WHERE id = $1', [Number(body.industry_track_id)]);
+        if (!track.rows.length) {
+          return res.status(400).json({ error: 'Unknown industry track.', request_id: req.requestId });
+        }
+      }
+      values.push(body.industry_track_id === null ? null : Number(body.industry_track_id));
+      sets.push(`industry_track_id = $${values.length}`);
+    }
+    if (!sets.length) {
+      return res.status(400).json({ error: 'Provide display_name and/or industry_track_id.', request_id: req.requestId });
+    }
+    values.push(userId);
+    const updated = await pool.query(
+      `UPDATE users SET ${sets.join(', ')} WHERE id = $${values.length}
+       RETURNING id, email, display_name, industry_track_id, status, is_admin`,
+      values,
+    );
+    if (!updated.rows.length) {
+      return res.status(404).json({ error: 'User not found.', request_id: req.requestId });
+    }
+    await logModeration(req.firebaseUser, {
+      action: 'user_update',
+      targetUserId: userId,
+      targetEmail: updated.rows[0].email,
+      reason: `Profile updated: ${Object.keys(body).filter((k) => k === 'display_name' || k === 'industry_track_id').join(', ')}`,
+    });
+    return res.status(200).json({ user: updated.rows[0], request_id: req.requestId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // GET /api/admin/moderation — the audit trail, newest first.
 // ---------------------------------------------------------------------------
 async function listModeration(req, res, next) {
@@ -530,19 +604,19 @@ async function trackProgress(req, res, next) {
     const [tracks, activity, dims] = await Promise.all([
       pool.query(
         `SELECT t.id, t.name,
-           (SELECT COUNT(*)::int FROM users u WHERE u.industry_track_id = t.id) AS users,
+           (SELECT COUNT(*)::int FROM users u WHERE u.industry_track_id = t.id AND u.is_admin = FALSE) AS users,
            (SELECT COUNT(*)::int FROM users u
              JOIN user_progress p ON p.user_id = u.id
-             WHERE u.industry_track_id = t.id AND p.last_activity_date >= CURRENT_DATE - 7) AS active_7d,
+             WHERE u.industry_track_id = t.id AND u.is_admin = FALSE AND p.last_activity_date >= CURRENT_DATE - 7) AS active_7d,
            (SELECT COUNT(*)::int FROM users u
              JOIN user_progress p ON p.user_id = u.id
-             WHERE u.industry_track_id = t.id AND p.last_activity_date >= CURRENT_DATE - 30) AS active_30d,
+             WHERE u.industry_track_id = t.id AND u.is_admin = FALSE AND p.last_activity_date >= CURRENT_DATE - 30) AS active_30d,
            (SELECT COALESCE(ROUND(AVG(p.readiness_score)), 0)::int FROM users u
              JOIN user_progress p ON p.user_id = u.id
-             WHERE u.industry_track_id = t.id) AS avg_readiness,
+             WHERE u.industry_track_id = t.id AND u.is_admin = FALSE) AS avg_readiness,
            (SELECT COALESCE(ROUND(AVG(p.level)::numeric, 1), 0) FROM users u
              JOIN user_progress p ON p.user_id = u.id
-             WHERE u.industry_track_id = t.id) AS avg_level,
+             WHERE u.industry_track_id = t.id AND u.is_admin = FALSE) AS avg_level,
            (SELECT COUNT(*)::int FROM tasks tk WHERE tk.track_id = t.id) AS task_count,
            (SELECT COUNT(*)::int FROM task_attempts ta
              JOIN tasks tk ON tk.id = ta.task_id
@@ -567,6 +641,7 @@ async function trackProgress(req, res, next) {
          FROM skill_scores s
          JOIN users u ON u.id = s.user_id
          JOIN industry_tracks tr ON tr.id = u.industry_track_id
+         WHERE u.is_admin = FALSE
          GROUP BY tr.name, s.dimension
          ORDER BY tr.name, s.dimension`,
       ),
@@ -1476,21 +1551,96 @@ async function listAdmins(req, res, next) {
   }
 }
 
-// POST /api/admin/admins — add or update an admin's role. Body: { email, role }.
+// POST /api/admin/admins — create a separate admin account, or update a role.
+// Body: { email, role, display_name? }
+//
+// Learner accounts are never promoted from here. An email that already belongs
+// to a learner account is rejected, so admin identity stays separate from the
+// learner user base. The Firebase account is created (or reused when it has no
+// learner profile yet) and a password-setup link is returned for the creating
+// admin to share.
 async function addAdmin(req, res, next) {
   try {
+    const crypto = require('crypto');
     const email = String(req.body?.email || '').trim().toLowerCase();
     const role = String(req.body?.role || '').toLowerCase().trim();
+    const displayName = typeof req.body?.display_name === 'string'
+      ? req.body.display_name.trim().slice(0, 255) || null
+      : null;
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) fail('A valid email is required.');
     if (!['super', 'admin', 'moderator'].includes(role)) fail("role must be 'super', 'admin' or 'moderator'.");
+
+    const existingUser = await pool.query(
+      'SELECT id, firebase_uid, email, display_name, is_admin FROM users WHERE lower(email) = $1',
+      [email],
+    );
+    if (existingUser.rows.length && existingUser.rows[0].is_admin !== true) {
+      fail('That email belongs to a learner account. Create the admin with a separate email.');
+    }
+
+    const { getFirebaseAdmin } = require('../db/firebase');
+    const auth = getFirebaseAdmin();
+    let firebaseUser = null;
+    try {
+      firebaseUser = await auth.createUser({
+        email,
+        displayName: displayName || undefined,
+        password: crypto.randomBytes(24).toString('hex'),
+      });
+    } catch (err) {
+      if (err.code === 'auth/email-already-exists') {
+        firebaseUser = await auth.getUserByEmail(email);
+      } else {
+        throw err;
+      }
+    }
+
+    let user = existingUser.rows[0] || null;
+    if (!user) {
+      const inserted = await pool.query(
+        `INSERT INTO users (firebase_uid, email, display_name, is_admin)
+         VALUES ($1, $2, $3, TRUE)
+         RETURNING id, email, display_name, is_admin`,
+        [firebaseUser.uid, email, displayName || firebaseUser.displayName || null],
+      );
+      user = inserted.rows[0];
+    } else {
+      const updated = await pool.query(
+        `UPDATE users SET is_admin = TRUE,
+                          display_name = COALESCE($2, display_name)
+          WHERE id = $1
+          RETURNING id, email, display_name, is_admin`,
+        [user.id, displayName],
+      );
+      user = updated.rows[0];
+    }
+
     const result = await pool.query(
       `INSERT INTO admin_accounts (email, role, added_by) VALUES ($1, $2, $3)
        ON CONFLICT (email) DO UPDATE SET role = EXCLUDED.role, added_by = EXCLUDED.added_by
        RETURNING email, role, added_by`,
       [email, role, String(req.firebaseUser.email || req.firebaseUser.uid)]
     );
-    await logModeration(req.firebaseUser, { action: 'admin_add', targetEmail: email, reason: `${email} granted ${role} role` });
-    return res.status(200).json({ admin: result.rows[0], request_id: req.requestId });
+
+    let setupLink = null;
+    try {
+      setupLink = await auth.generatePasswordResetLink(email);
+    } catch {
+      // Google sign-in still works; the link is a convenience.
+    }
+
+    await logModeration(req.firebaseUser, {
+      action: 'admin_add',
+      targetUserId: user.id,
+      targetEmail: email,
+      reason: `${email} granted ${role} role as a separate admin account`,
+    });
+    return res.status(200).json({
+      admin: result.rows[0],
+      user,
+      setup_link: setupLink,
+      request_id: req.requestId,
+    });
   } catch (err) {
     if (!err.status) return next(err);
     return res.status(err.status).json({ error: err.message, request_id: req.requestId });
@@ -1502,10 +1652,18 @@ async function addAdmin(req, res, next) {
 async function removeAdmin(req, res, next) {
   try {
     const email = String(req.params.email || '').trim().toLowerCase();
-    const result = await pool.query('DELETE FROM admin_accounts WHERE email = $1 RETURNING email, role', [email]);
-    if (!result.rows.length) {
+    const target = await pool.query('SELECT email, role FROM admin_accounts WHERE email = $1', [email]);
+    if (!target.rows.length) {
       return res.status(404).json({ error: 'Admin not found in the registry (env-listed admins are managed via ADMIN_EMAILS).', request_id: req.requestId });
     }
+    if (target.rows[0].role === 'super') {
+      const supers = await pool.query("SELECT COUNT(*)::int AS count FROM admin_accounts WHERE role = 'super'");
+      if (supers.rows[0].count <= 1) {
+        return res.status(400).json({ error: 'You cannot remove the last super admin.', request_id: req.requestId });
+      }
+    }
+    const result = await pool.query('DELETE FROM admin_accounts WHERE email = $1 RETURNING email, role', [email]);
+    await pool.query('UPDATE users SET is_admin = FALSE WHERE lower(email) = $1', [email]);
     await logModeration(req.firebaseUser, { action: 'admin_remove', targetEmail: email, reason: `${email} removed from ${result.rows[0].role} role` });
     return res.status(200).json({ removed: result.rows[0], request_id: req.requestId });
   } catch (err) {
@@ -1541,6 +1699,7 @@ async function exportUsersCsv(req, res, next) {
        LEFT JOIN industry_tracks tr ON tr.id = u.industry_track_id
        LEFT JOIN user_progress p ON p.user_id = u.id
        LEFT JOIN admin_accounts a ON lower(a.email) = lower(u.email)
+       WHERE u.is_admin = FALSE
        ORDER BY u.id`
     );
     sendCsv(res, 'verifai-users.csv',
@@ -1800,15 +1959,15 @@ async function getAnalytics(req, res, next) {
       // series is zero-filled with generate_series so weeks without signups
       // still produce a bar-slot (and a correct label) on the chart.
       pool.query(
-        `SELECT (SELECT COUNT(*)::int FROM users) AS total,
-                (SELECT COUNT(*)::int FROM users WHERE created_at >= CURRENT_DATE - 7) AS new_7d,
-                (SELECT COUNT(*)::int FROM users WHERE created_at >= CURRENT_DATE - 30) AS new_30d,
+        `SELECT (SELECT COUNT(*)::int FROM users WHERE is_admin = FALSE) AS total,
+                (SELECT COUNT(*)::int FROM users WHERE is_admin = FALSE AND created_at >= CURRENT_DATE - 7) AS new_7d,
+                (SELECT COUNT(*)::int FROM users WHERE is_admin = FALSE AND created_at >= CURRENT_DATE - 30) AS new_30d,
                 (SELECT COUNT(*)::int FROM users u JOIN user_progress p ON p.user_id = u.id
-                  WHERE p.last_activity_date >= CURRENT_DATE - 1) AS active_1d,
+                  WHERE u.is_admin = FALSE AND p.last_activity_date >= CURRENT_DATE - 1) AS active_1d,
                 (SELECT COUNT(*)::int FROM users u JOIN user_progress p ON p.user_id = u.id
-                  WHERE p.last_activity_date >= CURRENT_DATE - 7) AS active_7d,
+                  WHERE u.is_admin = FALSE AND p.last_activity_date >= CURRENT_DATE - 7) AS active_7d,
                 (SELECT COUNT(*)::int FROM users u JOIN user_progress p ON p.user_id = u.id
-                  WHERE p.last_activity_date >= CURRENT_DATE - 30) AS active_30d,
+                  WHERE u.is_admin = FALSE AND p.last_activity_date >= CURRENT_DATE - 30) AS active_30d,
                 COALESCE((SELECT json_agg(g ORDER BY g.week_start) FROM (
                   SELECT to_char(w.week_start, 'MM-DD') AS week,
                          to_char(w.week_start, 'YYYY-MM-DD') AS week_start,
@@ -1818,7 +1977,7 @@ async function getAnalytics(req, res, next) {
                          date_trunc('week', (NOW() AT TIME ZONE '${TZ}')::date),
                          INTERVAL '1 week'
                        ) AS w(week_start)
-                  LEFT JOIN users u ON date_trunc('week', u.created_at) = w.week_start
+                  LEFT JOIN users u ON date_trunc('week', u.created_at) = w.week_start AND u.is_admin = FALSE
                   GROUP BY w.week_start
                 ) g), '[]'::json) AS weekly_signups`
       ),
@@ -1957,9 +2116,8 @@ async function getTaskAnswers(req, res, next) {
 
 module.exports = {
   getOverview, listTasks, createTask, deleteTask,
-  listUsers, getUser, setUserStatus, listModeration, trackProgress,
-  getTaskDetail, updateTask, importTasks, getTaskAnswers,
-  listApprovals, reviewTask, answerSummary, listAnswers, getAnalytics,
+  listUsers, getUser, setUserStatus, updateUser, listModeration, trackProgress,
+  getTaskDetail, updateTask, importTasks, getTaskAnswers,  listApprovals, reviewTask, answerSummary, listAnswers, getAnalytics,
   listLab, getLabLesson, updateLabSection,
   listWorkshopPosts, listWorkshopReports, moderateWorkshopPost,
   grantAdjust, exportUserData, hardDeleteUser, setFirebaseDisabled,

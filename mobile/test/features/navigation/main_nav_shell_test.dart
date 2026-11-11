@@ -103,6 +103,18 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('the drawer shows only the current industry guide',
+      (tester) async {
+    await _pumpShell(tester);
+
+    await tester.tap(find.byTooltip('All sections'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Finance guide'), findsOneWidget);
+    expect(find.text('Legal guide'), findsNothing);
+    expect(find.text('Business Consulting guide'), findsNothing);
+  });
+
   testWidgets('the drawer is still available as a secondary index',
       (tester) async {
     await _pumpShell(tester);

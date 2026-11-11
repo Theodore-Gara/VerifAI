@@ -17,6 +17,7 @@ class AppPalette {
   final Color graphite;
   final Color electricMint;
   final Color error;
+  final Color errorLight;
   final Color warning;
   final Color info;
   final Color border;
@@ -58,6 +59,7 @@ class AppPalette {
     required this.graphite,
     required this.electricMint,
     required this.error,
+    required this.errorLight,
     required this.warning,
     required this.info,
     required this.border,
@@ -100,6 +102,7 @@ class AppPalette {
     graphite: Color(0xFF18231E),
     electricMint: Color(0xFF3C8968),
     error: Color(0xFFEF4444),
+    errorLight: Color(0xFFFDECEC),
     warning: Color(0xFFB77936),
     info: Color(0xFF3B82F6),
     border: Color(0xFFE5E8DF),
@@ -144,6 +147,7 @@ class AppPalette {
     graphite: Color(0xFFEAF2EC),
     electricMint: Color(0xFF74D0A5),
     error: Color(0xFFFF7B72),
+    errorLight: Color(0xFF3A1F1F),
     warning: Color(0xFFE0B063),
     info: Color(0xFF7FB0FF),
     border: Color(0xFF26382F),
@@ -196,6 +200,7 @@ class AppColors {
   static Color get graphite => palette.graphite;
   static Color get electricMint => palette.electricMint;
   static Color get error => palette.error;
+  static Color get errorLight => palette.errorLight;
   static Color get warning => palette.warning;
   static Color get info => palette.info;
   static Color get border => palette.border;

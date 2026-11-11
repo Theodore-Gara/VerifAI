@@ -3,7 +3,7 @@ const { requireAdminAuth } = require('../middleware/admin');
 const { requireRole } = require('../middleware/adminRoles');
 const {
   getOverview, listTasks, createTask, deleteTask,
-  listUsers, getUser, setUserStatus, listModeration, trackProgress,
+  listUsers, getUser, setUserStatus, updateUser, listModeration, trackProgress,
   getTaskDetail, updateTask, importTasks, getTaskAnswers, listApprovals, reviewTask,
   answerSummary, listAnswers, getAnalytics,
   listLab, getLabLesson, updateLabSection,
@@ -14,7 +14,8 @@ const {
 } = require('../controllers/adminController');
 
 const {
-  listHelp, updateHelp, listFaqs, updateFaq, listMessages, updateMessage, getInsights,
+  listHelp, updateHelp, listFaqs, updateFaq, listMessages, updateMessage,
+  getMessage, replyToMessage, markMessageRead, getUnreadCount, getInsights,
 } = require('../controllers/adminSupportController');
 
 const router = express.Router();
@@ -66,6 +67,7 @@ router.post('/workshop/:id(\\d+)', requireRole('moderator'), moderateWorkshopPos
 // Users
 router.get('/users', listUsers);
 router.get('/users/:id(\\d+)', getUser);
+router.patch('/users/:id(\\d+)', requireRole('admin'), updateUser);
 router.post('/users/:id/status', requireRole('moderator'), setUserStatus);
 router.post('/users/:id/grant', requireRole('admin'), grantAdjust);
 router.get('/users/:id/export', requireRole('admin'), exportUserData);
@@ -78,7 +80,11 @@ router.put('/support/help/:id(\\d+)', requireRole('admin'), updateHelp);
 router.get('/support/faqs', listFaqs);
 router.put('/support/faqs/:id(\\d+)', requireRole('admin'), updateFaq);
 router.get('/support/messages', listMessages);
+router.get('/support/messages/:id(\\d+)', getMessage);
 router.put('/support/messages/:id(\\d+)', requireRole('admin'), updateMessage);
+router.post('/support/messages/:id(\\d+)/replies', requireRole('admin'), replyToMessage);
+router.post('/support/messages/:id(\\d+)/read', requireRole('moderator'), markMessageRead);
+router.get('/support/unread-count', getUnreadCount);
 router.get('/support/insights', getInsights);
 
 // Audit log

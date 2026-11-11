@@ -26,14 +26,14 @@ function readCachedStatus(uid) {
     statusCache.delete(uid);
     return null;
   }
-  return entry.status;
+  return entry;
 }
 
-function rememberStatus(uid, status) {
+function rememberStatus(uid, status, isAdmin) {
   // Bound the cache so a long-lived process with many visitors cannot grow it
   // without limit; entries are cheap and re-readable.
   if (statusCache.size > 10000) statusCache.clear();
-  statusCache.set(uid, { status, expiresAt: Date.now() + STATUS_TTL_MS });
+  statusCache.set(uid, { status, isAdmin, expiresAt: Date.now() + STATUS_TTL_MS });
 }
 
 /**
@@ -47,6 +47,9 @@ function invalidateStatusCache(uid) {
 }
 
 async function verifyFirebaseToken(req, res, next) {
+  // A learner-route guard may have already verified the token.
+  if (req.firebaseUser) return next();
+
   const authHeader = req.headers.authorization || '';
   const [scheme, token] = authHeader.split(' ');
 
@@ -67,22 +70,27 @@ async function verifyFirebaseToken(req, res, next) {
   // Moderation gate. Admins are exempt so the dashboard keeps working against
   // any account.
   try {
-    let status = readCachedStatus(req.firebaseUser.uid);
-    if (status === null) {
+    let entry = readCachedStatus(req.firebaseUser.uid);
+    if (entry === null) {
       const result = await pool.query(
-        `SELECT status FROM users WHERE firebase_uid = $1`,
+        `SELECT status, is_admin FROM users WHERE firebase_uid = $1`,
         [req.firebaseUser.uid]
       );
-      status = result.rows[0]?.status || 'active';
+      const status = result.rows[0]?.status || 'active';
+      const isAdmin = result.rows[0]?.is_admin === true;
       // Only cache a real row: an account that has not called /api/auth/sync
       // yet must not be remembered as "active" forever.
-      if (result.rows.length) rememberStatus(req.firebaseUser.uid, status);
+      if (result.rows.length) rememberStatus(req.firebaseUser.uid, status, isAdmin);
+      entry = { status, isAdmin };
     }
 
-    if (BLOCKED_STATUSES.has(status) && !req.firebaseUser.admin && !require('./admin').isAdmin(req.firebaseUser)) {
-      const http = STATUS_HTTP[status];
+    req.userIsAdmin = entry.isAdmin === true
+      || require('./admin').isAdmin(req.firebaseUser);
+
+    if (BLOCKED_STATUSES.has(entry.status) && !req.userIsAdmin) {
+      const http = STATUS_HTTP[entry.status];
       return res.status(http.status).json({
-        error: `Your account is ${status}.`,
+        error: `Your account is ${entry.status}.`,
         code: http.code,
         request_id: req.requestId,
       });
@@ -96,4 +104,25 @@ async function verifyFirebaseToken(req, res, next) {
   return next();
 }
 
-module.exports = { verifyFirebaseToken, invalidateStatusCache };
+// Learner routes are off-limits to admin accounts. The app already redirects
+// admins to the admin portal; this is the server-side half of the boundary.
+function verifyLearnerToken(req, res, next) {
+  // Capstone marking lives under /api/lab but is an admin/reviewer endpoint.
+  // Let it reach requireAdminAuth instead of rejecting the admin here.
+  if (/^\/api\/lab\/assessments\/[^/]+\/attempts\/\d+\/mark$/.test(req.originalUrl.split('?')[0])) {
+    return verifyFirebaseToken(req, res, next);
+  }
+  verifyFirebaseToken(req, res, (err) => {
+    if (err) return next(err);
+    if (req.userIsAdmin) {
+      return res.status(403).json({
+        error: 'Admin accounts cannot use learner features.',
+        code: 'admin_learner_blocked',
+        request_id: req.requestId,
+      });
+    }
+    return next();
+  });
+}
+
+module.exports = { verifyFirebaseToken, verifyLearnerToken, invalidateStatusCache };

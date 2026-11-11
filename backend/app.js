@@ -30,6 +30,7 @@ const supportRoutes = require('./routes/support');
 const metaRoutes = require('./routes/meta');
 const roadmapRoutes = require('./routes/roadmap');
 const { maintenanceGate } = require('./middleware/adminRoles');
+const { verifyLearnerToken } = require('./middleware/auth');
 const errorHandler = require('./middleware/errorHandler');
 const { PostgresRateLimitStore } = require('./utils/pgRateStore');
 
@@ -50,22 +51,6 @@ app.use((req, res, next) => {
 });
 
 app.use(helmet());
-
-// The admin dashboard is a single-page app with an inline script, so it needs
-// a CSP that allows same-origin + inline scripts. Scoped to /admin only; the
-// API keeps helmet's strict default.
-app.use('/admin', helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      connectSrc: ["'self'", 'https://*.googleapis.com', 'https://*.firebaseapp.com'],
-      imgSrc: ["'self'", 'data:'],
-    },
-  },
-  crossOriginResourcePolicy: false,
-}));
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
@@ -178,6 +163,17 @@ app.get('/', (req, res) => {
 // to turn it off) and admin routes stay live.
 app.use(maintenanceGate);
 
+// Admin accounts are strictly confined to /api/admin. The app routes them to
+// the native admin portal; this guard stops a stale screen or direct call from
+// using learner features.
+app.use([
+  '/api/onboarding', '/api/users', '/api/tasks', '/api/progress',
+  '/api/achievements', '/api/leaderboard', '/api/interview', '/api/assistant',
+  '/api/verification', '/api/lab', '/api/workshop', '/api/rewards', '/api/vera',
+  '/api/industry-practice', '/api/history', '/api/dashboard', '/api/wellness',
+  '/api/roadmap',
+], verifyLearnerToken);
+
 app.use('/api/auth', authRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/users', userRoutes);
@@ -202,27 +198,8 @@ app.use('/api/support', supportRoutes);
 app.use('/api/meta', metaRoutes);
 app.use('/api/roadmap', roadmapRoutes);
 
-// Admin dashboard: a static single-page app served by the API itself.
-const path = require('path');
-
-app.get('/admin/firebase-config.js', (req, res) => {
-  const apiKey = process.env.FIREBASE_WEB_API_KEY?.trim();
-  res.set('Cache-Control', 'no-store');
-  res.type('application/javascript');
-
-  if (!apiKey) {
-    return res.send('window.verifaiFirebaseConfig = null;');
-  }
-
-  return res.send(`window.verifaiFirebaseConfig = ${JSON.stringify({
-    apiKey,
-    authDomain: 'verif-ai-5a435.firebaseapp.com',
-    projectId: 'verif-ai-5a435',
-  })};`);
-});
-
-app.use('/admin', express.static(path.join(__dirname, 'public', 'admin')));
-
+// The admin portal is native (mobile/lib/features/admin); the old server-hosted
+// single-page panel has been retired.
 app.get('/api/docs', (req, res) => {
   res.json({
     name: 'VerifAI API',

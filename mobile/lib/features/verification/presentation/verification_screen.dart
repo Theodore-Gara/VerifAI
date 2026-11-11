@@ -7,7 +7,6 @@ import 'package:verifai/core/providers/app_reconnect.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
-import 'package:verifai/features/navigation/sections.dart';
 import 'package:verifai/features/task/presentation/task_run_screen.dart';
 import 'package:verifai/features/verification/providers.dart';
 import 'package:verifai/shared/models.dart';
@@ -47,20 +46,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
             letterSpacing: -0.2,
             color: AppColors.textPrimary,
           ),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Home',
-            icon: const Icon(Icons.home_outlined),
-            onPressed: () => goHome(context),
-          ),
-          IconButton(
-            tooltip: 'All sections',
-            icon: const Icon(Icons.menu_rounded),
-            onPressed: () => showAllSectionsSheet(context),
-          ),
-        ],
-      ),
+        ),      ),
       body: Stack(
         children: [
           Positioned(

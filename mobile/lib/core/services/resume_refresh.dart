@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:verifai/features/auth/providers.dart';
+import 'package:verifai/features/admin/providers.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/history/providers.dart';
 import 'package:verifai/features/interview/providers.dart';
@@ -11,6 +12,7 @@ import 'package:verifai/features/profile/providers.dart';
 import 'package:verifai/features/progress/providers.dart';
 import 'package:verifai/features/rewards/providers.dart';
 import 'package:verifai/features/scoreboard/providers.dart';
+import 'package:verifai/features/support/providers.dart';
 
 /// Refreshes the learner's data when the app comes back to the foreground.
 ///
@@ -76,6 +78,9 @@ class _ResumeRefreshState extends ConsumerState<ResumeRefresh>
     ref.invalidate(interviewQuestionsProvider);
     ref.invalidate(industryCasesProvider);
     ref.invalidate(leaderboardProvider);
+    ref.invalidate(adminIdentityProvider);
+    ref.invalidate(supportUnreadTicketsProvider);
+    ref.invalidate(adminUnreadTicketsProvider);
   }
 
   @override

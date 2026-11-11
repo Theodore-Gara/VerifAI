@@ -96,14 +96,137 @@ class DioApiClient implements ApiClient {
     return VerificationMeta.fromJson(response.data ?? const {});
   }
 
+  // --- Support content + tickets ---
+
+  @override
+  Future<List<SupportHelpArticle>> getSupportHelp() async {
+    final response = await _dio.get<Map<String, dynamic>>('support/help');
+    final list = response.data?['articles'] as List<dynamic>? ?? const [];
+    return list
+        .map((e) =>
+            SupportHelpArticle.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+
+  @override
+  Future<List<SupportFaq>> getSupportFaqs() async {
+    final response = await _dio.get<Map<String, dynamic>>('support/faqs');
+    final list = response.data?['faqs'] as List<dynamic>? ?? const [];
+    return list
+        .map((e) => SupportFaq.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+
+  @override
+  Future<List<SupportGuide>> getSupportGuides() async {
+    final response =
+        await _dio.get<Map<String, dynamic>>('support/industry-guides');
+    final list = response.data?['guides'] as List<dynamic>? ?? const [];
+    return list
+        .map((e) => SupportGuide.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+
+  @override
+  Future<SupportGuide> getSupportGuide(String slug) async {
+    final response =
+        await _dio.get<Map<String, dynamic>>('support/industry-guides/$slug');
+    return SupportGuide.fromJson(
+        Map<String, dynamic>.from(response.data?['guide'] as Map? ?? const {}));
+  }
+
+  @override
+  Future<SupportAbout> getSupportAbout() async {
+    final response = await _dio.get<Map<String, dynamic>>('support/about');
+    return SupportAbout.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<SupportContactResult> submitSupportContact({
+    required String name,
+    required String email,
+    required String category,
+    required String subject,
+    required String message,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      'support/contact',
+      data: {
+        'name': name,
+        'email': email,
+        'category': category,
+        'subject': subject,
+        'message': message,
+      },
+    );
+    return SupportContactResult.fromJson(response.data ?? const {});
+  }
+
+  @override
+  Future<List<SupportTicket>> getMyTickets() async {
+    final response = await _dio.get<Map<String, dynamic>>('support/tickets');
+    final list = response.data?['tickets'] as List<dynamic>? ?? const [];
+    return list
+        .map((e) => SupportTicket.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+
+  @override
+  Future<SupportTicketDetail> getMyTicket(String ref) async {
+    final response =
+        await _dio.get<Map<String, dynamic>>('support/tickets/$ref');
+    return SupportTicketDetail(
+      ticket: SupportTicket.fromJson(Map<String, dynamic>.from(
+          response.data?['ticket'] as Map? ?? const {})),
+      replies: ((response.data?['replies'] as List<dynamic>?) ?? const [])
+          .map(
+              (e) => SupportReply.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList(),
+    );
+  }
+
+  @override
+  Future<void> markMyTicketRead(String ref) async {
+    await _dio.post<void>('support/tickets/$ref/read');
+  }
+
+  @override
+  Future<int> getMyUnreadTicketCount() async {
+    final response =
+        await _dio.get<Map<String, dynamic>>('support/tickets/unread-count');
+    return _int(response.data?['count']);
+  }
+
+  @override
+  Future<dynamic> adminRequest(
+    String method,
+    String path, {
+    Map<String, dynamic>? query,
+    Object? data,
+  }) async {
+    final response = await _dio.request<dynamic>(
+      'admin/$path',
+      data: data,
+      queryParameters: query,
+      options: Options(method: method),
+    );
+    return response.data;
+  }
+
+  @override
+  Future<String> adminTextRequest(String path) async {
+    final response = await _dio.get<String>(
+      'admin/$path',
+      options: Options(responseType: ResponseType.plain),
+    );
+    return response.data ?? '';
+  }
+
   @override
   Future<AdminIdentity> getMe() async {
     final response = await _dio.get<Map<String, dynamic>>('auth/me');
     return parseAdminIdentity(response.data ?? const {});
   }
-
-  @override
-  Future<String?> getAuthToken() => _currentToken();
 
   @override
   Future<void> deleteAccount() async {

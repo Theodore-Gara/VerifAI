@@ -8,16 +8,10 @@ import 'package:verifai/features/navigation/sections.dart';
 
 /// Shared scaffold for every screen pushed on top of [MainNavShell].
 ///
-/// Guarantees the navigation contract:
-///  - Back is always the first action (the system back gesture works too; the
-///    visible button just makes it discoverable).
-///  - Home is one tap away (`goHome`) — any screen is at most two taps from
-///    Home counting the dock's Home tab.
-///  - The full destination index ("All sections") opens as a bottom sheet,
-///    because pushed screens sit above the shell and cannot open its drawer.
-///
-/// Hub/dock screens (dashboard, hubs, progress, profile) keep their own
-/// scaffolds — they already host the dock and drawer.
+/// Pushed screens are minor screens: they carry a visible Back control and the
+/// screen's own actions. The full destination index and hamburger live on the
+/// main shell only, so the top bar stays quiet and navigation follows one
+/// pattern.
 class VerifaiPageScaffold extends StatelessWidget {
   const VerifaiPageScaffold({
     super.key,
@@ -60,16 +54,6 @@ class VerifaiPageScaffold extends StatelessWidget {
           ),
         ),
         actions: [
-          IconButton(
-            tooltip: 'Home',
-            icon: const Icon(Icons.home_outlined),
-            onPressed: () => goHome(context),
-          ),
-          IconButton(
-            tooltip: 'All sections',
-            icon: const Icon(Icons.menu_rounded),
-            onPressed: () => showAllSectionsSheet(context),
-          ),
           ...actions,
           const SizedBox(width: AppSpacing.xs),
         ],

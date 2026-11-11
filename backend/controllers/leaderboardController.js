@@ -21,9 +21,11 @@ function parseLimit(raw) {
 
 function buildTrackFilter(params, rawTrack) {
   const trackId = rawTrack === undefined ? null : Number.parseInt(rawTrack, 10);
-  if (trackId === null || !Number.isInteger(trackId)) return '';
+  if (trackId === null || !Number.isInteger(trackId)) {
+    return { sql: '', trackId: null };
+  }
   params.push(trackId);
-  return ` WHERE u.industry_track_id = $${params.length}`;
+  return { sql: ` AND u.industry_track_id = $${params.length}`, trackId };
 }
 
 async function getLeaderboard(req, res, next) {
@@ -32,13 +34,13 @@ async function getLeaderboard(req, res, next) {
 
     // ---- Board ------------------------------------------------------------
     const boardParams = [];
-    const trackFilter = buildTrackFilter(boardParams, req.query.track);
+    const { sql: trackClause, trackId } = buildTrackFilter(boardParams, req.query.track);
     boardParams.push(limit);
 
     // The board is a full RANK() over every learner, and it changes slowly, so
     // it is cached per (track, limit) for a minute. The caller's own rank below
     // stays live: that is the row a learner actually notices.
-    const cacheKey = `board:${trackFilter ? boardParams[0] : 'all'}:${limit}`;
+    const cacheKey = `board:${trackId ?? 'all'}:${limit}`;
     const board = await leaderboardCache.wrap(cacheKey, async () => {
       const result = await pool.query(
       `SELECT r.rank, r.user_id, r.display_name, r.level, r.xp,
@@ -60,7 +62,7 @@ async function getLeaderboard(req, res, next) {
          LEFT JOIN user_progress p ON p.user_id = u.id
          LEFT JOIN user_track_progress tp
            ON tp.user_id = u.id AND tp.track_id = u.industry_track_id
-         ${trackFilter}
+         WHERE u.is_admin = FALSE${trackClause}
        ) r
        ORDER BY r.rank ASC
        LIMIT $${boardParams.length}`,
@@ -95,8 +97,8 @@ async function getLeaderboard(req, res, next) {
     // Use the same tie-breakers as the board so `me.rank` matches its row rank.
     const rankParams = [meRow.xp, meRow.readiness_score, meRow.user_id];
     let rankFilter = '';
-    if (trackFilter) {
-      rankParams.push(boardParams[0]);
+    if (trackId != null) {
+      rankParams.push(trackId);
       rankFilter = ` AND u.industry_track_id = $${rankParams.length}`;
     }
 
@@ -106,7 +108,7 @@ async function getLeaderboard(req, res, next) {
        LEFT JOIN user_progress p ON p.user_id = u.id
        LEFT JOIN user_track_progress tp
          ON tp.user_id = u.id AND tp.track_id = u.industry_track_id
-       WHERE (
+       WHERE u.is_admin = FALSE AND (
          COALESCE(p.xp, 0) > $1
          OR (COALESCE(p.xp, 0) = $1 AND COALESCE(tp.readiness_score, 0) > $2)
          OR (COALESCE(p.xp, 0) = $1 AND COALESCE(tp.readiness_score, 0) = $2 AND u.id < $3)
@@ -115,7 +117,7 @@ async function getLeaderboard(req, res, next) {
     );
 
     return res.status(200).json({
-      track_id: trackFilter ? boardParams[0] : null,
+      track_id: trackId,
       leaderboard: board,
       me: { ...meRow, rank: rank.rows[0].rank },
       request_id: req.requestId,

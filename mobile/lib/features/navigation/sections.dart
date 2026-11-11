@@ -1,17 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:verifai/core/theme/app_colors.dart';
-import 'package:verifai/core/theme/app_radius.dart';
-import 'package:verifai/core/theme/app_spacing.dart';
-import 'package:verifai/core/theme/app_typography.dart';
-import 'package:verifai/features/auth/providers.dart';
-import 'package:verifai/features/navigation/nav_drawer_controller.dart';
-
 /// The five dock areas (route, label, icon) in dock order. Mirrors
-/// [MainNavShell]'s tabs so the drawer, the all-sections sheet and the Home
-/// shortcut all derive from one list.
+/// [MainNavShell]'s tabs so the drawer and the Home shortcut derive from one
+/// list.
 const shellAreas = <({String label, IconData icon, String route})>[
   (label: 'Home', icon: Icons.home_rounded, route: '/dashboard'),
   (label: 'Learn', icon: Icons.menu_book_rounded, route: '/learn'),
@@ -63,135 +55,12 @@ const shellTabRoutes = <String>{
   '/profile',
 };
 
-/// Returns Home from anywhere. From a pushed screen it is one tap: the Home
-/// action in the secondary app bar. Pops pushed routes back to the shell first
-/// so Back semantics stay honest, then lands on the dashboard.
+/// Returns Home from anywhere. Used as the fallback when a pushed screen has no
+/// route to pop (deep link), so Back always lands somewhere valid.
 void goHome(BuildContext context) {
   final navigator = Navigator.of(context);
   if (navigator.canPop()) navigator.popUntil((route) => route.isFirst);
   context.go('/dashboard');
-}
-
-/// Opens the All sections bottom sheet — the complete destination index that
-/// pushed screens use in place of the shell's drawer.
-Future<void> showAllSectionsSheet(BuildContext context) {
-  return showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    isScrollControlled: true,
-    backgroundColor: AppColors.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.modal)),
-    ),
-    builder: (sheetContext) => SafeArea(
-      child: DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.72,
-        maxChildSize: 0.92,
-        builder: (context, scrollController) => ListView(
-          controller: scrollController,
-          padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.lg),
-          children: [
-            Text(
-              'All sections',
-              style: AppTypography.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'Everything in VerifAI, from anywhere.',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            for (var i = 0; i < allSections.length; i++) ...[
-              if (i == 0 || allSections[i].section != allSections[i - 1].section)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(4, 12, 4, 6),
-                  child: Text(
-                    allSections[i].section.toUpperCase(),
-                    style: AppTypography.textTheme.labelSmall?.copyWith(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.1,
-                      fontSize: 11.5,
-                    ),
-                  ),
-                ),
-              ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(allSections[i].icon,
-                    color: AppColors.accentGreen, size: 20),
-                title: Text(allSections[i].label,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 14)),
-                trailing: const Icon(Icons.chevron_right_rounded, size: 18),
-                onTap: () {
-                  final route = allSections[i].route;
-                  Navigator.pop(sheetContext);
-                  if (shellTabRoutes.contains(route)) {
-                    // Dock areas: pop any pushed screens, then switch the dock
-                    // in place — `go` to a sibling shell route mounts a second
-                    // shell and collides on the shared scaffold key.
-                    final navigator = Navigator.of(sheetContext);
-                    if (navigator.canPop()) {
-                      navigator.popUntil((r) => r.isFirst);
-                    }
-                    final index = shellTabIndexFor(route);
-                    if (index != null) switchShellTab(index);
-                  } else {
-                    context.push(route);
-                  }
-                },
-              ),
-            ],
-            const Divider(height: AppSpacing.lg),
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.logout_rounded,
-                  color: AppColors.error, size: 20),
-              title: Text(
-                'Log out',
-                style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                    color: AppColors.error),
-              ),
-              onTap: () async {
-                final container =
-                    ProviderScope.containerOf(sheetContext, listen: false);
-                final confirmed = await showDialog<bool>(
-                  context: sheetContext,
-                  builder: (dialogContext) => AlertDialog(
-                    title: const Text('Log out?'),
-                    content: const Text(
-                        'Log out of VerifAI? You can sign back in any time.'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(dialogContext, false),
-                        child: const Text('Cancel'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(dialogContext, true),
-                        child: Text('Log out',
-                            style: TextStyle(color: AppColors.error)),
-                      ),
-                    ],
-                  ),
-                );
-                if (confirmed != true) return;
-                if (sheetContext.mounted) Navigator.pop(sheetContext);
-                await container.read(authNotifierProvider.notifier).logout();
-              },
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
 }
 
 /// Dock index hosting [route], or null when the route is not a dock area.

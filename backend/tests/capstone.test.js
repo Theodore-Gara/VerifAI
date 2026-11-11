@@ -47,7 +47,9 @@ const firebase = require('../db/firebase');
 // an allowlisted admin: that gate is the point of the endpoint.
 process.env.ADMIN_EMAILS = 'reviewer@verifai';
 firebase.getFirebaseAuth = () => ({
-  verifyIdToken: async () => ({ uid: 'test-uid', email: 'reviewer@verifai' }),
+  verifyIdToken: async (token) => token === 'admin-token'
+    ? { uid: 'test-admin-uid', email: 'reviewer@verifai' }
+    : { uid: 'test-uid', email: 'learner@verifai' },
 });
 
 const pool = require('../db/pool');
@@ -132,6 +134,7 @@ pool.end = async () => {};
 
 const app = require('../app');
 const auth = (req) => req.set('Authorization', 'Bearer test-token');
+const authAdmin = (req) => req.set('Authorization', 'Bearer admin-token');
 
 test('GET /api/lab/assessments lists capstones with attempts and view_only', async () => {
   usedCount = 0;
@@ -206,7 +209,7 @@ test('a paper with a rubric question is held for marking', async () => {
 
 test('marking a pending rubric paper finalises the score and awards', async () => {
   priorPass = false;
-  const response = await auth(request(app).post('/api/lab/assessments/cap-fin/attempts/5/mark')).send({ marks: { 11: 6 }, marked_by: 'reviewer@verifai' });
+  const response = await authAdmin(request(app).post('/api/lab/assessments/cap-fin/attempts/5/mark')).send({ marks: { 11: 6 }, marked_by: 'reviewer@verifai' });
   assert.equal(response.status, 200);
   assert.equal(response.body.result.marks_awarded, 23);
   assert.equal(response.body.result.score, 92);

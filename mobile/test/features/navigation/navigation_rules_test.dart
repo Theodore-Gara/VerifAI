@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/navigation/main_nav_shell.dart';
@@ -63,78 +62,21 @@ void main() {
   });
 
   group('VerifaiPageScaffold', () {
-    testWidgets('exposes back, home and all-sections actions', (tester) async {
+    testWidgets('pushed screens expose Back only, plus their own actions',
+        (tester) async {
       await tester.pumpWidget(const MaterialApp(
         home: VerifaiPageScaffold(
           title: 'Scoreboard',
           body: SizedBox.shrink(),
+          actions: [IconButton(onPressed: null, icon: Icon(Icons.star))],
         ),
       ));
 
       expect(find.byTooltip('Back'), findsOneWidget);
-      expect(find.byTooltip('Home'), findsOneWidget);
-      expect(find.byTooltip('All sections'), findsOneWidget);
+      expect(find.byTooltip('Home'), findsNothing);
+      expect(find.byTooltip('All sections'), findsNothing);
       expect(find.text('Scoreboard'), findsOneWidget);
-    });
-
-    testWidgets('All sections opens the full destination sheet',
-        (tester) async {
-      await tester.pumpWidget(const MaterialApp(
-        home: VerifaiPageScaffold(
-          title: 'Scoreboard',
-          body: SizedBox.shrink(),
-        ),
-      ));
-
-      await tester.tap(find.byTooltip('All sections'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('All sections'), findsOneWidget);
-      // The sheet's list is lazy: rows only exist once scrolled into view, and
-      // scrolling on disposes rows above. Walk down the list in order.
-      final scrollable = find.byType(Scrollable).last;
-      for (final area in ['LEARN', 'PRACTICE', 'PROGRESS', 'PROFILE']) {
-        await tester.scrollUntilVisible(find.text(area), 120,
-            scrollable: scrollable);
-        await tester.pumpAndSettle();
-        expect(find.text(area), findsOneWidget);
-      }
-      await tester.scrollUntilVisible(find.text('Change industry'), 120,
-          scrollable: scrollable);
-      await tester.pumpAndSettle();
-      expect(find.text('Change industry'), findsOneWidget,
-          reason: 'industry change must be reachable from the sheet');
-    });
-
-    testWidgets('Home from a pushed route leaves the pushed screen',
-        (tester) async {
-      final router = GoRouter(
-        initialLocation: '/scoreboard',
-        routes: [
-          GoRoute(
-            path: '/scoreboard',
-            builder: (context, state) => const VerifaiPageScaffold(
-              title: 'Scoreboard',
-              body: SizedBox.shrink(),
-            ),
-          ),
-          GoRoute(
-            path: '/dashboard',
-            builder: (context, state) =>
-                const Scaffold(body: Center(child: Text('DASHBOARD HOME'))),
-          ),
-        ],
-      );
-
-      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byTooltip('Home'));
-      await tester.pumpAndSettle();
-
-      // The pushed screen is gone; the dashboard route is showing.
-      expect(find.text('Scoreboard'), findsNothing);
-      expect(find.text('DASHBOARD HOME'), findsOneWidget);
+      expect(find.byIcon(Icons.star), findsOneWidget);
     });
   });
 

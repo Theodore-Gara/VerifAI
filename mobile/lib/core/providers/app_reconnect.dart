@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:verifai/core/providers/app_providers.dart';
+import 'package:verifai/features/admin/providers.dart';
 import 'package:verifai/features/dashboard/providers.dart';
 import 'package:verifai/features/onboarding/providers.dart';
 import 'package:verifai/features/profile/providers.dart';
 import 'package:verifai/features/progress/providers.dart';
 import 'package:verifai/features/scoreboard/providers.dart';
+import 'package:verifai/features/support/providers.dart';
 
 /// App-wide reconnect for every screen's retry button. Pinging the (public)
 /// health endpoint gives the Render free-tier instance time to wake up
@@ -25,5 +27,8 @@ Future<bool> reconnectApp(WidgetRef ref) async {
   ref.invalidate(achievementsProvider);
   ref.invalidate(leaderboardProvider);
   ref.invalidate(tracksProvider);
+  ref.invalidate(adminIdentityProvider);
+  ref.invalidate(supportUnreadTicketsProvider);
+  ref.invalidate(adminUnreadTicketsProvider);
   return true;
 }

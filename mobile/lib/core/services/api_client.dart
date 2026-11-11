@@ -21,13 +21,42 @@ abstract class ApiClient {
   /// Verification limits and accepted formats (GET /api/meta).
   Future<VerificationMeta> getVerificationMeta();
 
+  // --- Support content + tickets ---
+  Future<List<SupportHelpArticle>> getSupportHelp();
+  Future<List<SupportFaq>> getSupportFaqs();
+  Future<List<SupportGuide>> getSupportGuides();
+  Future<SupportGuide> getSupportGuide(String slug);
+  Future<SupportAbout> getSupportAbout();
+  Future<SupportContactResult> submitSupportContact({
+    required String name,
+    required String email,
+    required String category,
+    required String subject,
+    required String message,
+  });
+  Future<List<SupportTicket>> getMyTickets();
+  Future<SupportTicketDetail> getMyTicket(String ref);
+  Future<void> markMyTicketRead(String ref);
+  Future<int> getMyUnreadTicketCount();
+
+  /// Raw admin API passthrough for the native admin portal.
+  ///
+  /// [path] is relative to `/api/admin` (for example `overview` or
+  /// `support/messages?status=new`). Kept generic so the admin screens can grow
+  /// without adding a method for every list/report endpoint.
+  Future<dynamic> adminRequest(
+    String method,
+    String path, {
+    Map<String, dynamic>? query,
+    Object? data,
+  });
+
+  /// Raw text/CSV download from the admin API (exports).
+  Future<String> adminTextRequest(String path);
+
   /// Who the signed-in user is on the staff side (GET /api/auth/me).
   Future<AdminIdentity> getMe();
 
-  /// The signed-in user's current Firebase ID token, or null when signed out.
-  /// Used to hand the admin panel the app's own session so no second sign-in
-  /// is needed there.
-  Future<String?> getAuthToken();
   Future<DashboardData> getDashboard();
   Future<DailyTask?> getNextTask({String? feature, String? difficulty});
   Future<List<Achievement>> getAchievements();

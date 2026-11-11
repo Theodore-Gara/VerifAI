@@ -7,7 +7,6 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/lab/providers.dart';
-import 'package:verifai/features/navigation/sections.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/empty_state.dart';
 import 'package:verifai/shared/widgets/shimmer_loader.dart';
@@ -32,20 +31,7 @@ class LabChaptersScreen extends ConsumerWidget {
         ),
         title: Text('Book',
             style: AppTypography.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
-        actions: [
-          IconButton(
-            tooltip: 'Home',
-            icon: const Icon(Icons.home_outlined),
-            onPressed: () => goHome(context),
-          ),
-          IconButton(
-            tooltip: 'All sections',
-            icon: const Icon(Icons.menu_rounded),
-            onPressed: () => showAllSectionsSheet(context),
-          ),
-        ],
-      ),
+                fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),      ),
       body: detailAsync.when(
         loading: () => ListView(
           padding: const EdgeInsets.all(AppSpacing.screenPadding),

@@ -7,7 +7,6 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/dashboard/providers.dart';
-import 'package:verifai/features/navigation/sections.dart';
 import 'package:verifai/shared/widgets/dock_clearance.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/dimension_index_card.dart';
@@ -67,21 +66,7 @@ class FeedbackScreen extends ConsumerWidget {
             letterSpacing: -0.2,
             color: AppColors.textPrimary,
           ),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Home',
-            icon: const Icon(Icons.home_outlined),
-            onPressed: () => goHome(context),
-          ),
-          IconButton(
-            tooltip: 'All sections',
-            icon: const Icon(Icons.menu_rounded),
-            onPressed: () => showAllSectionsSheet(context),
-          ),
-          const SizedBox(width: AppSpacing.xs),
-        ],
-      ),
+        ),      ),
       body: Stack(
         children: [
           // Ambient Mesh Glows
@@ -508,21 +493,7 @@ class FeedbackEmptyScreen extends StatelessWidget {
             letterSpacing: -0.2,
             color: AppColors.textPrimary,
           ),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Home',
-            icon: const Icon(Icons.home_outlined),
-            onPressed: () => goHome(context),
-          ),
-          IconButton(
-            tooltip: 'All sections',
-            icon: const Icon(Icons.menu_rounded),
-            onPressed: () => showAllSectionsSheet(context),
-          ),
-          const SizedBox(width: AppSpacing.xs),
-        ],
-      ),
+        ),      ),
       body: EmptyState(
         icon: Icons.rate_review_rounded,
         title: 'No feedback yet',

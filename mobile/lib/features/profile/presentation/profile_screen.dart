@@ -13,7 +13,6 @@ import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/core/theme/theme_mode_provider.dart';
 import 'package:verifai/features/auth/providers.dart';
 import 'package:verifai/features/dashboard/providers.dart';
-import 'package:verifai/features/profile/presentation/admin_panel_screen.dart';
 import 'package:verifai/features/profile/providers.dart';
 import 'package:verifai/features/navigation/nav_drawer_controller.dart';
 import 'package:verifai/features/scoreboard/providers.dart';
@@ -45,45 +44,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       default:
         return 'ADMIN';
     }
-  }
-
-  Future<void> _openAdminPanel(WidgetRef ref, String? role) async {
-    // Hand the dashboard the app's own Firebase session (URL fragment — it
-    // never reaches a server), so a staff member does not sign in a second
-    // time. The panel falls back to a clear message if the token is missing.
-    String url = _adminPanelUrl();
-    String? token;
-    try {
-      token = await ref.read(apiClientProvider).getAuthToken();
-      if (token != null && token.isNotEmpty) {
-        url += '#token=${Uri.encodeComponent(token)}';
-      }
-    } catch (_) {
-      // Token fetch failed — the panel shows its "open from the app" gate.
-    }
-    if (!mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => AdminPanelScreen(
-          panelUrl: url,
-          tokenProvider: () => ref.read(apiClientProvider).getAuthToken(),
-        ),
-      ),
-    );
-  }
-
-  /// Admin dashboard URL derived from the app's API base URL
-  /// (.../api/ becomes .../admin/). Same backend that serves the app.
-  String _adminPanelUrl() {
-    const base = String.fromEnvironment(
-      'API_BASE_URL',
-      defaultValue: 'https://verifai-2wnm.onrender.com/api/',
-    );
-    final trimmed =
-        base.endsWith('/') ? base.substring(0, base.length - 1) : base;
-    return trimmed.endsWith('/api')
-        ? '${trimmed.substring(0, trimmed.length - 4)}/admin/'
-        : '$trimmed/admin/';
   }
 
   Future<void> _deleteAccount() async {
@@ -418,38 +378,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
-
-                  // Staff entry point: opens the admin dashboard in an in-app
-                  // browser view. Hidden for regular learners.
-                  if (adminRole != null) ...[
-                    Material(
-                      color: Colors.white.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(AppRadius.card),
-                      child: ListTile(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.card),
-                          side: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.35)),
-                        ),
-                        leading: const Icon(Icons.admin_panel_settings,
-                            color: Colors.white),
-                        title: const Text(
-                          'Open Admin Panel',
-                          style: TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.w700),
-                        ),
-                        subtitle: Text(
-                          'Task approvals, users, analytics',
-                          style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.75)),
-                        ),
-                        trailing: const Icon(Icons.chevron_right,
-                            color: Colors.white),
-                        onTap: () => _openAdminPanel(ref, adminRole),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
 
                   // Bento Stat Metrics Row
                   dashboardAsync.when(

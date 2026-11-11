@@ -15,6 +15,7 @@ import 'package:verifai/features/navigation/nav_drawer_controller.dart';
 import 'package:verifai/features/navigation/sections.dart';
 import 'package:verifai/features/profile/presentation/profile_screen.dart';
 import 'package:verifai/features/progress/presentation/progress_screen.dart';
+import 'package:verifai/features/support/providers.dart';
 
 /// Routes hosted by [MainNavShell]. These must stay `go` (never `push`) —
 /// stacking a second shell would duplicate [verifaiMainScaffoldKey].
@@ -114,6 +115,8 @@ class _MainNavShellState extends ConsumerState<MainNavShell> {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).padding.bottom;
     final trackName = ref.watch(currentUserProvider).valueOrNull?.trackName;
+    final unreadTickets =
+        ref.watch(supportUnreadTicketsProvider).valueOrNull ?? 0;
 
     return Scaffold(
       key: verifaiMainScaffoldKey,
@@ -125,6 +128,7 @@ class _MainNavShellState extends ConsumerState<MainNavShell> {
         backgroundColor: AppColors.background,
         child: SafeArea(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Container(
                 padding: const EdgeInsets.fromLTRB(22, 26, 22, 24),
@@ -202,17 +206,20 @@ class _MainNavShellState extends ConsumerState<MainNavShell> {
                           allSections[i].section != allSections[i - 1].section)
                         _drawerSection(allSections[i].section),
                       _drawerLink(context, allSections[i].icon,
-                          allSections[i].label, allSections[i].route),
+                          allSections[i].label, allSections[i].route,
+                          badge: allSections[i].route == '/support'
+                              ? unreadTickets
+                              : 0),
                     ],
-                    _drawerSection('HELP & INDUSTRY GUIDES'),
-                    for (final guide in const [
-                      ('Finance guide', 'Finance', Icons.account_balance_rounded),
-                      ('Legal guide', 'Legal', Icons.gavel_rounded),
-                      ('IT / Software guide', 'IT%20%2F%20Software', Icons.code_rounded),
-                      ('Business Consulting guide', 'Business%20Consulting', Icons.business_center_rounded),
-                    ])
-                      _drawerLink(context, guide.$3, guide.$1,
-                          '/industry-guide/${guide.$2}'),
+                    if (trackName != null && trackName.isNotEmpty) ...[
+                      _drawerSection('YOUR INDUSTRY'),
+                      _drawerLink(
+                        context,
+                        Icons.school_rounded,
+                        '$trackName guide',
+                        '/industry-guide/${Uri.encodeComponent(trackName)}',
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -306,14 +313,17 @@ class _MainNavShellState extends ConsumerState<MainNavShell> {
     BuildContext context,
     IconData icon,
     String label,
-    String route,
-  ) {
+    String route, {
+    int badge = 0,
+  }) {
     return ListTile(
       dense: true,
       leading: Icon(icon, color: AppColors.accentGreen, size: 20),
       title: Text(label,
           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-      trailing: const Icon(Icons.chevron_right_rounded, size: 18),
+      trailing: badge > 0
+          ? Badge(label: Text('$badge'))
+          : const Icon(Icons.chevron_right_rounded, size: 18),
       onTap: () {
         Navigator.of(context).pop();
         final tab = shellTabIndex[route];

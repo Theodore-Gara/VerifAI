@@ -20,8 +20,12 @@ CREATE TABLE IF NOT EXISTS users (
   status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'banned')),
   status_reason TEXT,
   status_updated_at TIMESTAMP,
+  is_admin BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_users_not_admin
+  ON users (id) WHERE is_admin = FALSE;
 
 -- Audit trail of admin actions (account moderation + task management).
 CREATE TABLE IF NOT EXISTS moderation_events (
@@ -32,12 +36,12 @@ CREATE TABLE IF NOT EXISTS moderation_events (
   action VARCHAR(30) NOT NULL CHECK (action IN ('suspend', 'ban', 'activate',
     'task_create', 'task_update', 'task_delete', 'task_import', 'task_publish',
     'task_approve', 'task_reject',
-    'user_grant', 'user_export', 'user_delete', 'user_firebase',
+    'user_grant', 'user_export', 'user_delete', 'user_firebase', 'user_update',
     'workshop_delete', 'workshop_hide',
     'lab_update',
     'config_update',
     'admin_add', 'admin_remove',
-    'support_content_update', 'support_message_update')),
+    'support_content_update', 'support_message_update', 'support_reply')),
   reason TEXT,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -957,6 +961,9 @@ CREATE TABLE IF NOT EXISTS support_messages (
   internal_note TEXT,
   request_id VARCHAR(64),
   resolved_at TIMESTAMPTZ,
+  last_reply_at TIMESTAMPTZ,
+  user_last_read_at TIMESTAMPTZ,
+  admin_last_read_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -966,6 +973,19 @@ CREATE INDEX IF NOT EXISTS idx_support_messages_category ON support_messages (ca
 CREATE INDEX IF NOT EXISTS idx_support_messages_user ON support_messages (user_id) WHERE user_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_support_messages_email ON support_messages (lower(email));
 CREATE INDEX IF NOT EXISTS idx_support_messages_resolved ON support_messages (resolved_at) WHERE status = 'resolved';
+
+CREATE TABLE IF NOT EXISTS support_message_replies (
+  id SERIAL PRIMARY KEY,
+  message_id INTEGER NOT NULL REFERENCES support_messages(id) ON DELETE CASCADE,
+  author_type VARCHAR(10) NOT NULL CHECK (author_type IN ('admin', 'user', 'system')),
+  author_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  author_email VARCHAR(255),
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_support_replies_message
+  ON support_message_replies (message_id, created_at, id);
 
 CREATE TABLE IF NOT EXISTS support_events (
   id BIGSERIAL PRIMARY KEY,

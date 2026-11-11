@@ -1,6 +1,7 @@
 const { sendApiError: sendError } = require('../utils/apiError');
 const crypto = require('crypto');
 const pool = require('../db/pool');
+const { findUserByFirebaseUid } = require('../db/users');
 const { sendJsonWithEtag } = require('../utils/httpCache');
 const {
   loadHelp, loadFaqs, loadGuides, loadTours, loadAbout, normaliseSteps, newestVersion,
@@ -370,8 +371,116 @@ async function postEvent(req, res, next) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// My tickets (read-only conversation for the signed-in user)
+// ---------------------------------------------------------------------------
+const MY_TICKET_COLUMNS = `sm.id, sm.public_ref, sm.subject, sm.category, sm.status,
+       sm.created_at, sm.updated_at, sm.last_reply_at, sm.resolved_at`;
+
+async function requireUser(req) {
+  if (req.user) return req.user;
+  const user = await findUserByFirebaseUid(pool, req.firebaseUser.uid);
+  if (!user) {
+    const err = new Error('User not found. Call /api/auth/sync first.');
+    err.status = 404;
+    err.code = 'user_not_found';
+    throw err;
+  }
+  return user;
+}
+
+async function listMyTickets(req, res, next) {
+  try {
+    const user = await requireUser(req);
+    const result = await pool.query(
+      `SELECT ${MY_TICKET_COLUMNS},
+              (SELECT COUNT(*)::int FROM support_message_replies r
+                WHERE r.message_id = sm.id) AS reply_count,
+              (sm.last_reply_at IS NOT NULL
+               AND (sm.user_last_read_at IS NULL OR sm.last_reply_at > sm.user_last_read_at)) AS unread
+         FROM support_messages sm
+        WHERE sm.user_id = $1
+        ORDER BY COALESCE(sm.last_reply_at, sm.created_at) DESC, sm.id DESC
+        LIMIT 100`,
+      [user.id],
+    );
+    return res.status(200).json({ tickets: result.rows, request_id: req.requestId });
+  } catch (err) {
+    if (err.status) return sendError(req, res, err.status, err.code, err.message);
+    return next(err);
+  }
+}
+
+async function getMyTicket(req, res, next) {
+  try {
+    const user = await requireUser(req);
+    const result = await pool.query(
+      `SELECT ${MY_TICKET_COLUMNS}, sm.message
+         FROM support_messages sm
+        WHERE sm.public_ref = $1 AND sm.user_id = $2`,
+      [req.params.ref, user.id],
+    );
+    if (!result.rows.length) {
+      return sendError(req, res, 404, 'ticket_not_found', 'Ticket not found.');
+    }
+    const replies = await pool.query(
+      `SELECT id, author_type, body, created_at
+         FROM support_message_replies
+        WHERE message_id = $1 AND author_type <> 'system'
+        ORDER BY created_at, id`,
+      [result.rows[0].id],
+    );
+    return res.status(200).json({
+      ticket: result.rows[0],
+      replies: replies.rows,
+      request_id: req.requestId,
+    });
+  } catch (err) {
+    if (err.status) return sendError(req, res, err.status, err.code, err.message);
+    return next(err);
+  }
+}
+
+async function markMyTicketRead(req, res, next) {
+  try {
+    const user = await requireUser(req);
+    const result = await pool.query(
+      `UPDATE support_messages
+          SET user_last_read_at = now()
+        WHERE public_ref = $1 AND user_id = $2
+        RETURNING public_ref, user_last_read_at`,
+      [req.params.ref, user.id],
+    );
+    if (!result.rows.length) {
+      return sendError(req, res, 404, 'ticket_not_found', 'Ticket not found.');
+    }
+    return res.status(200).json({ ticket: result.rows[0], request_id: req.requestId });
+  } catch (err) {
+    if (err.status) return sendError(req, res, err.status, err.code, err.message);
+    return next(err);
+  }
+}
+
+async function getMyUnreadCount(req, res, next) {
+  try {
+    const user = await requireUser(req);
+    const result = await pool.query(
+      `SELECT COUNT(*)::int AS count FROM support_messages sm
+        WHERE sm.user_id = $1
+          AND sm.last_reply_at IS NOT NULL
+          AND (sm.user_last_read_at IS NULL OR sm.last_reply_at > sm.user_last_read_at)`,
+      [user.id],
+    );
+    return res.status(200).json({ count: result.rows[0]?.count || 0, request_id: req.requestId });
+  } catch (err) {
+    if (err.status) return sendError(req, res, err.status, err.code, err.message);
+    return next(err);
+  }
+}
+
 module.exports = {
   listHelp, getHelp, listFaqs, listGuides, getGuide, getAbout, getTour, postContact, postEvent,
+  listMyTickets, getMyTicket, markMyTicketRead, getMyUnreadCount,
   // Exported for tests and for the admin console.
   validateContact, sanitiseMetadata, EVENT_SPECS, isHoneypotHit, newPublicRef, sendError,
 };

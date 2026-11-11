@@ -10,7 +10,6 @@ import 'package:verifai/core/services/api_error.dart';
 import 'package:verifai/core/theme/app_colors.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
-import 'package:verifai/features/navigation/sections.dart';
 import 'package:verifai/features/verification_studio/presentation/verification_result_screen.dart';
 import 'package:verifai/features/verification_studio/providers.dart';
 import 'package:verifai/shared/models.dart';
@@ -213,16 +212,6 @@ class _State extends ConsumerState<VerificationStudioScreen> {
             onPressed: () => context.push('/assistant'),
             icon:
                 Icon(Icons.auto_awesome_rounded, color: AppColors.primaryNavy),
-          ),
-          IconButton(
-            tooltip: 'Home',
-            icon: const Icon(Icons.home_outlined),
-            onPressed: () => goHome(context),
-          ),
-          IconButton(
-            tooltip: 'All sections',
-            icon: const Icon(Icons.menu_rounded),
-            onPressed: () => showAllSectionsSheet(context),
           ),
         ],
       ),

@@ -179,7 +179,7 @@ class FeedbackBanner extends StatelessWidget {
         ),
       FeedbackKind.error => (
           accent: AppColors.error,
-          soft: const Color(0xFFFDECEC),
+          soft: AppColors.errorLight,
         ),
       FeedbackKind.info => (
           accent: AppColors.primaryNavy,

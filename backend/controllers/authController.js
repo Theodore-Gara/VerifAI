@@ -34,18 +34,45 @@ async function syncUser(req, res, next) {
       [uid, email || '', name || null],
     );
     if (updated.rows.length) {
-      await ensureProgress(updated.rows[0].id);
+      const role = await resolveRole(req.firebaseUser);
+      await pool.query('UPDATE users SET is_admin = $2 WHERE id = $1', [updated.rows[0].id, !!role]);
+      if (!role) await ensureProgress(updated.rows[0].id);
       return res.status(200).json({ user: updated.rows[0] });
     }
 
-    try {
-      const inserted = await pool.query(
-        `INSERT INTO users (firebase_uid, email, display_name)
-         VALUES ($1, $2, $3)
-         RETURNING ${USER_COLUMNS}`,
-        [uid, email || '', name || null],
+    // A portal-created admin may sign in with a different provider (for
+    // example Google after the portal created an email/password identity).
+    // Link that verified email to the existing admin row instead of creating a
+    // second account.
+    if (email) {
+      const byEmail = await pool.query(
+        `SELECT id FROM users WHERE lower(email) = lower($1) AND is_admin = TRUE LIMIT 1`,
+        [email],
       );
-      await ensureProgress(inserted.rows[0].id);
+      if (byEmail.rows.length) {
+        const linked = await pool.query(
+          `UPDATE users
+              SET firebase_uid = $1, email = $2,
+                  display_name = COALESCE($3, display_name)
+            WHERE id = $4
+            RETURNING ${USER_COLUMNS}`,
+          [uid, email, name || null, byEmail.rows[0].id],
+        );
+        if (linked.rows.length) {
+          return res.status(200).json({ user: linked.rows[0] });
+        }
+      }
+    }
+
+    try {
+      const role = await resolveRole(req.firebaseUser);
+      const inserted = await pool.query(
+        `INSERT INTO users (firebase_uid, email, display_name, is_admin)
+         VALUES ($1, $2, $3, $4)
+         RETURNING ${USER_COLUMNS}`,
+        [uid, email || '', name || null, !!role],
+      );
+      if (!role) await ensureProgress(inserted.rows[0].id);
       return res.status(200).json({ user: inserted.rows[0] });
     } catch (err) {
       // A concurrent first sign-in may have created the row between our UPDATE
@@ -55,7 +82,11 @@ async function syncUser(req, res, next) {
           `SELECT ${USER_COLUMNS} FROM users WHERE firebase_uid = $1`,
           [uid],
         );
-        if (existing.rows.length) return res.status(200).json({ user: existing.rows[0] });
+        if (existing.rows.length) {
+          const role = await resolveRole(req.firebaseUser);
+          await pool.query('UPDATE users SET is_admin = $2 WHERE id = $1', [existing.rows[0].id, !!role]);
+          return res.status(200).json({ user: existing.rows[0] });
+        }
       }
       throw err;
     }
@@ -94,7 +125,9 @@ async function me(req, res, next) {
       user = inserted.rows[0];
     }
 
-    await ensureProgress(user.id);
+    const role = await resolveRole(req.firebaseUser);
+    await pool.query('UPDATE users SET is_admin = $2 WHERE id = $1', [user.id, !!role]);
+    if (!role) await ensureProgress(user.id);
 
     // BF-7: first-run state without SharedPreferences. Null when the learner has
     // not chosen an industry yet.
@@ -106,7 +139,6 @@ async function me(req, res, next) {
       };
     }
 
-    const role = await resolveRole(req.firebaseUser);
     return res.status(200).json({
       user,
       tutorial,

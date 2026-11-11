@@ -7,7 +7,6 @@ import 'package:verifai/core/theme/app_radius.dart';
 import 'package:verifai/core/theme/app_spacing.dart';
 import 'package:verifai/core/theme/app_typography.dart';
 import 'package:verifai/features/dashboard/providers.dart';
-import 'package:verifai/features/navigation/sections.dart';
 import 'package:verifai/features/rewards/providers.dart';
 import 'package:verifai/shared/models.dart';
 import 'package:verifai/shared/widgets/app_feedback_banner.dart';
@@ -83,21 +82,7 @@ class _RewardDetailScreenState extends ConsumerState<RewardDetailScreen> {
         surfaceTintColor: Colors.transparent,
         title: Text('Reward',
             style: AppTypography.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),
-        actions: [
-          IconButton(
-            tooltip: 'Home',
-            icon: const Icon(Icons.home_outlined),
-            onPressed: () => goHome(context),
-          ),
-          IconButton(
-            tooltip: 'All sections',
-            icon: const Icon(Icons.menu_rounded),
-            onPressed: () => showAllSectionsSheet(context),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-        ],
-      ),
+                fontWeight: FontWeight.w900, color: AppColors.primaryNavy)),      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
             AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.xxl),

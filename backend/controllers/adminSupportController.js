@@ -178,7 +178,8 @@ const faqs = contentHandlers({
 // Contact inbox
 // ---------------------------------------------------------------------------
 const MESSAGE_COLUMNS = `id, public_ref, user_id, name, email, subject, message, category, app_version,
-       status, internal_note, resolved_at, created_at, updated_at`;
+       status, internal_note, resolved_at, last_reply_at, user_last_read_at, admin_last_read_at,
+       created_at, updated_at`;
 
 async function listMessages(req, res, next) {
   try {
@@ -204,7 +205,16 @@ async function listMessages(req, res, next) {
 
     const [rows, total] = await Promise.all([
       pool.query(
-        `SELECT ${MESSAGE_COLUMNS} FROM support_messages ${clause}
+        `SELECT ${MESSAGE_COLUMNS},
+                (SELECT COUNT(*)::int FROM support_message_replies r
+                  WHERE r.message_id = support_messages.id) AS reply_count,
+                (status = 'new' OR EXISTS (
+                  SELECT 1 FROM support_message_replies r
+                   WHERE r.message_id = support_messages.id
+                     AND r.author_type = 'user'
+                     AND r.created_at > COALESCE(admin_last_read_at, 'epoch'::timestamptz)
+                )) AS unread
+           FROM support_messages ${clause}
           ORDER BY created_at DESC, id DESC
           LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
         [...values, limit, offset],
@@ -287,6 +297,153 @@ async function updateMessage(req, res, next) {
     });
 
     return res.status(200).json({ message: updated.rows[0], changed: summary, request_id: req.requestId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// GET /api/admin/support/messages/:id — one ticket with its conversation.
+async function getMessage(req, res, next) {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return fail(req, res, 400, 'invalid_id', 'Ticket id must be a positive integer.');
+    }
+    const current = await pool.query(
+      `SELECT ${MESSAGE_COLUMNS},
+              (SELECT COUNT(*)::int FROM support_message_replies r
+                WHERE r.message_id = support_messages.id) AS reply_count
+         FROM support_messages WHERE id = $1`,
+      [id],
+    );
+    if (!current.rows.length) return fail(req, res, 404, 'not_found', 'Message not found.');
+    const replies = await pool.query(
+      `SELECT id, message_id, author_type, author_user_id, author_email, body, created_at
+         FROM support_message_replies WHERE message_id = $1
+        ORDER BY created_at, id`,
+      [id],
+    );
+    return res.status(200).json({
+      message: current.rows[0],
+      replies: replies.rows,
+      request_id: req.requestId,
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// POST /api/admin/support/messages/:id/replies — post the admin reply.
+// Body: { body: string, resolve?: boolean }
+async function replyToMessage(req, res, next) {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return fail(req, res, 400, 'invalid_id', 'Ticket id must be a positive integer.');
+    }
+    const text = typeof req.body?.body === 'string'
+      ? req.body.body.replace(/\u0000/g, '').trim()
+      : '';
+    if (text.length < 1 || text.length > 4000) {
+      return fail(req, res, 400, 'invalid_body', 'Reply must be 1 to 4000 characters.');
+    }
+
+    const currentResult = await pool.query(
+      `SELECT ${MESSAGE_COLUMNS} FROM support_messages WHERE id = $1`,
+      [id],
+    );
+    if (!currentResult.rows.length) return fail(req, res, 404, 'not_found', 'Message not found.');
+    const current = currentResult.rows[0];
+
+    const admin = await pool.query(
+      `SELECT id, email, display_name FROM users WHERE firebase_uid = $1`,
+      [req.firebaseUser.uid],
+    );
+    const adminRow = admin.rows[0] || null;
+
+    const resolve = req.body?.resolve === true;
+    const status = resolve
+      ? 'resolved'
+      : (current.status === 'new' || current.status === 'resolved')
+        ? 'in_progress'
+        : current.status;
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const inserted = await client.query(
+        `INSERT INTO support_message_replies
+           (message_id, author_type, author_user_id, author_email, body)
+         VALUES ($1, 'admin', $2, $3, $4)
+         RETURNING id, message_id, author_type, author_user_id, author_email, body, created_at`,
+        [id, adminRow ? adminRow.id : null, adminRow ? adminRow.email : (req.firebaseUser.email || null), text],
+      );
+      const updated = await client.query(
+        `UPDATE support_messages
+            SET status = $2,
+                resolved_at = CASE WHEN $2 = 'resolved' THEN now() ELSE NULL END,
+                last_reply_at = now(),
+                admin_last_read_at = now(),
+                updated_at = now()
+          WHERE id = $1
+          RETURNING ${MESSAGE_COLUMNS}`,
+        [id, status],
+      );
+      await client.query('COMMIT');
+
+      await logModeration(req.firebaseUser, {
+        action: 'support_reply',
+        targetUserId: current.user_id || null,
+        reason: `Support message ${current.public_ref}: admin reply${resolve ? ' (resolved)' : ''}`,
+      });
+
+      return res.status(201).json({
+        message: updated.rows[0],
+        reply: inserted.rows[0],
+        request_id: req.requestId,
+      });
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// POST /api/admin/support/messages/:id/read — clear the admin unread badge.
+async function markMessageRead(req, res, next) {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return fail(req, res, 400, 'invalid_id', 'Ticket id must be a positive integer.');
+    }
+    const updated = await pool.query(
+      `UPDATE support_messages SET admin_last_read_at = now() WHERE id = $1
+       RETURNING id, admin_last_read_at`,
+      [id],
+    );
+    if (!updated.rows.length) return fail(req, res, 404, 'not_found', 'Message not found.');
+    return res.status(200).json({ message: updated.rows[0], request_id: req.requestId });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// GET /api/admin/support/unread-count — badge count for the native portal.
+async function getUnreadCount(req, res, next) {
+  try {
+    const result = await pool.query(
+      `SELECT COUNT(*)::int AS count FROM support_messages sm
+        WHERE sm.status = 'new' OR EXISTS (
+          SELECT 1 FROM support_message_replies r
+           WHERE r.message_id = sm.id AND r.author_type = 'user'
+             AND r.created_at > COALESCE(sm.admin_last_read_at, 'epoch'::timestamptz)
+        )`,
+    );
+    return res.status(200).json({ count: result.rows[0]?.count || 0, request_id: req.requestId });
   } catch (err) {
     return next(err);
   }
@@ -385,6 +542,10 @@ module.exports = {
   updateFaq: faqs.update,
   listMessages,
   updateMessage,
+  getMessage,
+  replyToMessage,
+  markMessageRead,
+  getUnreadCount,
   getInsights,
   // for tests
   diffSummary,

@@ -348,23 +348,28 @@ the app re-reads content for the new track.
 
 ### 4.13 Admin and moderation
 
-**What it does.** A staff-only back office for the people who run the content and keep the
-platform healthy. The mobile app is the entry point: staff see an *Admin Panel* action on their
-profile that opens the browser-based portal, which runs separately and talks to `/api/admin` in
-this repository.
+**What it does.** A staff-only native back office for the people who run the content and keep the
+platform healthy. The mobile app is the entry point: an admin who signs in goes straight to the
+native admin portal. There is no browser-based panel and no learner UI for admin accounts.
 
-**How it works.** The API is guarded by Firebase auth plus role checks (`owner`, `moderator`). It
-covers:
+**How it works.** The API is guarded by Firebase auth plus role checks (`super`, `admin`,
+`moderator`). Admin accounts are created from the portal, not promoted from learner accounts, and
+are excluded from learner lists, leaderboards, analytics and exports. Admin requests to learner
+endpoints are rejected server-side. The portal covers:
 
-- **Overview and analytics** — active learners, signups, funnel, per-track progress, answer
-  summaries, system configuration.
+- **Overview and analytics** — new/open support tickets, active learners, signups, funnel, per-track
+  progress, answer summaries, system configuration.
+- **Support inbox** — read user queries, reply in a thread, resolve tickets and add internal notes.
+  Users follow replies in Help & Support → Your requests.
 - **Task management** — create, edit, bulk import (validated, with a dry-run mode), approve or
   reject drafts, inspect answers, delete.
-- **Users** — search, inspect, suspend/reactivate, grant XP, export, delete, and mirror a
-  Firebase disable.
+- **Users** — search, inspect, edit display name and industry, suspend/ban/reactivate, grant XP,
+  disable Firebase sign-in, export and hard-delete (super only).
+- **Admin accounts** — create separate admin accounts, assign roles and remove registry admins
+  (super only).
 - **Moderation** — reported workshop posts, moderation actions and an audit trail.
-- **Content** — lab lessons and sections.
-- **Configuration** — maintenance mode, feature flags, and admin grants (owner only).
+- **Content** — help articles, FAQs and lab lessons/sections.
+- **Configuration** — maintenance mode, feature flags, system health and admin grants.
 - **CSV exports** — users, attempts and track progress for reporting.
 
 Every privileged action is written to the moderation log with the acting staff uid and a reason.
@@ -444,7 +449,7 @@ All routes are under `/api` and return a `request_id` for tracing.
 | `/assistant`, `/vera` | Streaming task help and the app-wide coach |
 | `/wellness` | Mood, journal and self-care |
 | `/workshop` | Community threads, replies, reports |
-| `/admin` | Staff operations (roles required) |
+| `/api/admin` | Staff operations (roles required) |
 | `/health` | Liveness plus a database ping |
 
 `GET /api/docs` lists the endpoint groups; the routers themselves are the source of truth.
