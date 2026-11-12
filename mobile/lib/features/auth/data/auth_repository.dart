@@ -136,29 +136,78 @@ class FirebaseAuthRepository implements AuthRepository {
 
   /// Syncs the Firebase identity to the backend (POST /auth/sync + GET
   /// /users/me), persists the session and emits the resulting auth state.
+  ///
+  /// **Optimistic-first**: we emit an [AuthState] immediately using the Firebase
+  /// identity plus any previously cached profile so the router can navigate
+  /// without waiting for the Render backend to wake up. The real sync then
+  /// runs in the background; if it succeeds the state is updated again with
+  /// the authoritative profile; if it fails the user is already on the
+  /// dashboard where the existing "server unavailable" error screen handles it.
   Future<AuthResult> _syncAndStore(User user) async {
-    final syncResult = await _apiClient.syncUser(user);
-    final synced = syncResult.user;
-    final token = syncResult.token;
+    // --- 1. Optimistic emit using cached / Firebase data -------------------
+    final cached = await _secureStorage.getUserData();
+    final cachedToken = await _secureStorage.getAuthToken() ?? '';
 
-    await _secureStorage.saveAuthToken(token);
-    await _secureStorage.saveAdminRole(syncResult.role);
-    await _secureStorage.saveUserData(
-      userId: synced.id,
-      email: synced.email,
-      name: synced.name,
-      trackId: synced.trackId,
-      trackName: synced.trackName,
-      hasCompletedOnboarding: synced.hasCompletedOnboarding,
-    );
+    // Build the best user we can right now.
+    final optimisticUser = cached != null
+        ? User(
+            id: cached.userId,
+            email: cached.email,
+            name: cached.name,
+            trackId: cached.trackId,
+            trackName: cached.trackName,
+            hasCompletedOnboarding: cached.hasCompletedOnboarding,
+            createdAt: DateTime.now().toIso8601String(),
+          )
+        : user; // brand-new sign-up: Firebase data only
 
+    // Emit immediately so the router redirects without waiting for Render.
     _authStateController.add(
-      synced.hasCompletedOnboarding
-          ? AuthState.authenticated(user: synced, token: token)
-          : AuthState.needsOnboarding(user: synced, token: token),
+      optimisticUser.hasCompletedOnboarding
+          ? AuthState.authenticated(user: optimisticUser, token: cachedToken)
+          : AuthState.needsOnboarding(user: optimisticUser, token: cachedToken),
     );
 
-    return AuthResult(user: synced, token: token);
+    // --- 2. Real backend sync in background --------------------------------
+    // We return an AuthResult built from optimistic data straight away so the
+    // notifier can set state and the UI unblocks. The unawaited future below
+    // will update state again once the backend responds.
+    _syncInBackground(user);
+
+    return AuthResult(user: optimisticUser, token: cachedToken);
+  }
+
+  /// Runs the backend sync without blocking the sign-in flow.
+  /// On success: persists and re-emits the authoritative profile.
+  /// On failure: silently keeps the optimistic state; the dashboard's
+  /// "server unavailable" UI handles it when data fetches fail.
+  Future<void> _syncInBackground(User user) async {
+    try {
+      final syncResult = await _apiClient.syncUser(user);
+      final synced = syncResult.user;
+      final token = syncResult.token;
+
+      await _secureStorage.saveAuthToken(token);
+      await _secureStorage.saveAdminRole(syncResult.role);
+      await _secureStorage.saveUserData(
+        userId: synced.id,
+        email: synced.email,
+        name: synced.name,
+        trackId: synced.trackId,
+        trackName: synced.trackName,
+        hasCompletedOnboarding: synced.hasCompletedOnboarding,
+      );
+
+      // Update the stream with the authoritative profile.
+      _authStateController.add(
+        synced.hasCompletedOnboarding
+            ? AuthState.authenticated(user: synced, token: token)
+            : AuthState.needsOnboarding(user: synced, token: token),
+      );
+    } catch (_) {
+      // Backend unreachable (Render cold start). The user is already on the
+      // dashboard; the existing server-unavailable error handles the retry.
+    }
   }
 
   User _userFromFirebase(firebase_auth.User fbUser, {String? name}) {

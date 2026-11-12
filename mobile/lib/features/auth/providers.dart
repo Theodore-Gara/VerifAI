@@ -78,12 +78,17 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     try {
       final repository = await ref.read(authRepositoryProvider.future);
       final result = await repository.login(email, password);
+      // The repository already emitted the optimistic state on the
+      // authStateChanges stream (which the router listens to). We mirror
+      // it here so authNotifierProvider is consistent, then return
+      // immediately — the background sync will update both asynchronously.
       state = AsyncData(
         result.user.hasCompletedOnboarding
             ? AuthState.authenticated(user: result.user, token: result.token)
             : AuthState.needsOnboarding(user: result.user, token: result.token),
       );
     } catch (e) {
+      // Firebase auth failed (wrong password, network error, etc.).
       // Surface the error to listeners, then restore a usable state so the
       // screen isn't stuck showing the error (and error snackbars don't stack).
       state = AsyncError(e, StackTrace.current);
@@ -133,6 +138,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     try {
       final repository = await ref.read(authRepositoryProvider.future);
       final result = await repository.signInWithGoogle();
+      // Mirror the optimistic state the repository already emitted on the
+      // authStateChanges stream so the router redirects immediately.
       state = AsyncData(
         result.user.hasCompletedOnboarding
             ? AuthState.authenticated(user: result.user, token: result.token)

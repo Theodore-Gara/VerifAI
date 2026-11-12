@@ -219,14 +219,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                               child: const Text('Retry'),
                             ),
                           ] else
-                            const Text(
-                              'Connecting…',
-                              style: TextStyle(
-                                color: Color(0x99B8C3BA),
-                                fontSize: 12,
-                                letterSpacing: 0.9,
-                              ),
-                            ),
+                            const SizedBox.shrink(),
                         ],
                       ),
                     ),
