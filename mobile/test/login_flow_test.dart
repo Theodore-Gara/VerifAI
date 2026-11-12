@@ -118,7 +118,7 @@ void main() {
     expect(find.textContaining(_errorMatcher), findsOneWidget);
   });
 
-  testWidgets('pending login explains the wait while the server wakes',
+  testWidgets('pending login disables the sign-in button while in flight',
       (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
     FlutterSecureStorage.setMockInitialValues({});
@@ -132,6 +132,11 @@ void main() {
     await tester.tap(find.widgetWithText(ElevatedButton, 'Sign In'));
     await tester.pump();
 
-    expect(find.textContaining('Connecting to the server'), findsOneWidget);
+    // While the sign-in is in flight the button must be disabled so the
+    // user cannot submit a second request.
+    final button = tester.widget<ElevatedButton>(
+      find.widgetWithText(ElevatedButton, 'Sign In'),
+    );
+    expect(button.onPressed, isNull);
   });
 }
