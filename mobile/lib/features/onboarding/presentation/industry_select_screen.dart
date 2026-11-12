@@ -37,6 +37,28 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
   int? _selectedTrackId;
   bool _isSubmitting = false;
   String? _submitError;
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// The guide row is the last item in the list, which is exactly where the
+  /// sticky continue bar appears once a track is picked. Bring it into view on
+  /// selection so the learner can reach the guide instead of the bar covering
+  /// it. The post-frame callback runs after the bar and the row are laid out.
+  void _revealGuide() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
 
   /// The track the learner has picked, resolved from the catalogue so the
   /// confirm button can name it.
@@ -97,9 +119,7 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
           onRetry: () => reconnectApp(ref),
         ),
       ),
-      bottomNavigationBar: _selectedTrackId != null
-          ? _buildBottomBar()
-          : null,
+      bottomNavigationBar: _selectedTrackId != null ? _buildBottomBar() : null,
     );
   }
 
@@ -289,9 +309,8 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
                 const SizedBox(height: AppSpacing.sm),
               ],
               VerifAIButton(
-                label: track == null
-                    ? 'Continue'
-                    : 'Continue with ${track.name}',
+                label:
+                    track == null ? 'Continue' : 'Continue with ${track.name}',
                 variant: VerifAIButtonVariant.verification,
                 isLoading: _isSubmitting,
                 onPressed: _handleContinue,
@@ -307,6 +326,7 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
   Widget _buildTracksList(List<IndustryTrack> tracks, int? currentTrackId) {
     final selected = _selectedTrack;
     return ListView(
+      controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.screenPadding,
         AppSpacing.sm,
@@ -319,9 +339,8 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
           const SizedBox(height: AppSpacing.md),
         ],
         OnboardingHero(
-          eyebrow: widget.isChangingIndustry
-              ? 'CHANGE YOUR PATH'
-              : 'STEP 1 OF 2',
+          eyebrow:
+              widget.isChangingIndustry ? 'CHANGE YOUR PATH' : 'STEP 1 OF 2',
           title: widget.isChangingIndustry
               ? 'Pick a new industry'
               : 'What do you work in?',
@@ -357,6 +376,7 @@ class _IndustrySelectScreenState extends ConsumerState<IndustrySelectScreen> {
                 _selectedTrackId = track.id;
                 _submitError = null;
               });
+              _revealGuide();
             },
           ),
           const SizedBox(height: AppSpacing.sm),

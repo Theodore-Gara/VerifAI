@@ -71,8 +71,7 @@ void main() {
     expect(find.text('Clause Citation'), findsOneWidget);
   });
 
-  testWidgets('the confirm button names the selected industry',
-      (tester) async {
+  testWidgets('the confirm button names the selected industry', (tester) async {
     await tester.pumpWidget(testApp());
     await tester.pumpAndSettle();
 
@@ -98,28 +97,18 @@ void main() {
     expect(find.textContaining('Not sure?'), findsNothing);
 
     await tester.tap(find.text('Finance'));
-    await tester.pump();
-
-    // The guide row sits below the fold and the list builds lazily, so it is
-    // not in the tree until the list is scrolled to it.
-    await tester.scrollUntilVisible(
-      find.text('See how Finance works'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('See how Finance works'), findsOneWidget);
-
-    // scrollUntilVisible leaves the row at the edge of the viewport; nudge it
-    // up so the tap lands on the row rather than the sticky bottom bar.
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, -120));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('See how Finance works'));
+    // Selecting a track scrolls the list to the guide row, which otherwise
+    // sits under the sticky continue bar. No manual scrolling here on purpose.
+    final guideLink = find.text('See how Finance works');
+    expect(guideLink, findsOneWidget);
+
+    await tester.tap(guideLink);
     await tester.pumpAndSettle();
     expect(find.text('Guide Finance'), findsOneWidget);
   });
-  testWidgets('the list does not overflow at 200% text scale',
-      (tester) async {
+  testWidgets('the list does not overflow at 200% text scale', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);

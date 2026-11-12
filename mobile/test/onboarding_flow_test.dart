@@ -121,15 +121,11 @@ void main() {
     expect(find.textContaining('Not sure?'), findsNothing);
 
     await tester.tap(find.text('Finance'));
-    await tester.pump();
-
-    final guideLink = find.text('See how Finance works');
-    await tester.scrollUntilVisible(
-      guideLink,
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
     await tester.pumpAndSettle();
+
+    // Selecting a track auto-scrolls to the guide row, so it is reachable
+    // without hunting for it under the continue bar.
+    final guideLink = find.text('See how Finance works');
     await tester.tap(guideLink);
     await tester.pumpAndSettle();
 
