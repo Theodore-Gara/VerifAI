@@ -78,7 +78,35 @@ test('a retryable upstream failure falls back to the proven model', async () => 
   });
 
   assert.equal(reply, 'Fallback reply.');
-  assert.deepEqual(models, ['nvidia/nemotron-3.5-super-vl-120b-a12b', 'nvidia/nemotron-3-super-120b-a12b']);
+  assert.deepEqual(models, ['nvidia/nemotron-3.5-super-vl-120b-a12b', 'nvidia/nemotron-3.5-lightning-30b-a3b']);
+});
+
+test('a failing fallback does not hide the primary failure', async () => {
+  process.env.NVIDIA_API_KEY = 'test-key';
+  const models = [];
+
+  await assert.rejects(
+    getAssistantReply({
+      task: { trackName: 'Finance', feature: 'verification', title: 'T', scenario: 'S' },
+      messages: [{ role: 'user', content: 'hint?' }],
+      fetchImpl: async (url, options) => {
+        const body = JSON.parse(options.body);
+        models.push(body.model);
+        if (body.model === 'nvidia/nemotron-3.5-super-vl-120b-a12b') {
+          const timeout = new Error('slow');
+          timeout.name = 'TimeoutError';
+          throw timeout;
+        }
+        return { ok: false, status: 500, text: async () => 'fallback down' };
+      },
+    }),
+    (error) => error.status === 504,
+  );
+
+  assert.deepEqual(models, [
+    'nvidia/nemotron-3.5-super-vl-120b-a12b',
+    'nvidia/nemotron-3.5-lightning-30b-a3b',
+  ]);
 });
 
 test('NVIDIA assistant rejects use without a server API key', async () => {

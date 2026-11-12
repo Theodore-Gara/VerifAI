@@ -250,6 +250,10 @@ async function extractDocument({ base64, mime, name } = {}) {
   const readable = text.replace(/\[page \d+\]/gi, '').replace(/\s+/g, '');
   if (readable.length < MIN_USABLE_CHARS) {
     // The decision for this sprint: no OCR. Say so, and give a remedy.
+    console.warn(
+      `[extract] ${format} produced ${readable.length} readable chars from ${pages == null ? 'an unknown number of' : pages} page(s) ` +
+      `(${rawText.length} raw chars) - no text layer`,
+    );
     throw apiError(422, 'document_no_text', 'Extracted text is empty or too short to analyse.', {
       publicMessage: 'We could not read any text in that document.',
       hint: 'This looks like a scanned PDF. Upload a text-based PDF, a .docx, or paste the text instead.',

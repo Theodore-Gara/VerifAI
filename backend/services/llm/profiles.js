@@ -6,10 +6,13 @@ const MODELS = {
   // Main model: the fast 3.5 super VL model, for analysis AND conversational use.
   analysis: process.env.NVIDIA_MODEL_ANALYSIS || 'nvidia/nemotron-3.5-super-vl-120b-a12b',
   chat: process.env.NVIDIA_MODEL_CHAT || 'nvidia/nemotron-3.5-super-vl-120b-a12b',
-  // Background/utility work (session compaction, memory extraction).
-  light: process.env.NVIDIA_MODEL_LIGHT || 'nvidia/nemotron-3-super-120b-a12b',
-  // Everything falls back to the reliable 3 super model.
-  fallback: process.env.NVIDIA_MODEL_FALLBACK || process.env.NVIDIA_MODEL || 'nvidia/nemotron-3-super-120b-a12b',
+  // Background/utility work (claim extraction, planning, compaction).
+  light: process.env.NVIDIA_MODEL_LIGHT || 'nvidia/nemotron-3.5-lightning-30b-a3b',
+  // Last resort when a primary model errors. It must be a model this account can
+  // actually call: an unusable fallback turns every upstream hiccup into a
+  // misleading 502. NVIDIA_MODEL is deliberately not consulted - it names a chat
+  // model, and it was pointing at one this account cannot reach.
+  fallback: process.env.NVIDIA_MODEL_FALLBACK || 'nvidia/nemotron-3.5-super-vl-120b-a12b',
 };
 
 // NOTE: reasoning models spend `max_tokens` on their trace before emitting any

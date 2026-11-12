@@ -40,13 +40,19 @@ function buildBody({ model, messages, temperature, topP, maxTokens, thinking, re
 }
 
 function mapTransportError(cause) {
+  console.error(`[llm] transport failure: ${(cause && (cause.name || cause.message)) || 'unknown'}`);
   if (cause && (cause.name === 'TimeoutError' || cause.name === 'AbortError')) {
     return llmError(504, 'The AI service timed out or is unavailable.');
   }
   return llmError(502, 'The AI service is temporarily unavailable.');
 }
 
-function mapHttpError(status) {
+function mapHttpError(status, body) {
+  // Upstream detail is diagnostic only: it never reaches the client, but the
+  // generic "temporarily unavailable" told us nothing when a model id turned
+  // out to be unavailable for this account.
+  const detail = String(body || '').slice(0, 300).replace(/\s+/g, ' ');
+  console.error(`[llm] upstream HTTP ${status}${detail ? `: ${detail}` : ''}`);
   return llmError(status === 429 ? 503 : 502, 'The AI service is temporarily unavailable.');
 }
 
@@ -64,7 +70,7 @@ async function chatCompletion(params, fetchImpl = fetch) {
   } catch (cause) {
     throw mapTransportError(cause);
   }
-  if (!response.ok) throw mapHttpError(response.status);
+  if (!response.ok) throw mapHttpError(response.status, await response.text().catch(() => ''));
 
   const result = await response.json();
   if (result && result.error) {
@@ -90,7 +96,15 @@ async function chatWithFallback(params, fetchImpl = fetch) {
     if (!fallbackModel || fallbackModel === primary.model || !RETRYABLE_STATUS.has(error.status)) {
       throw error;
     }
-    return chatCompletion({ ...primary, model: fallbackModel }, fetchImpl);
+    console.warn(`[llm] ${primary.model} failed (${error.status}); retrying on ${fallbackModel}`);
+    try {
+      return await chatCompletion({ ...primary, model: fallbackModel }, fetchImpl);
+    } catch (fallbackError) {
+      // Report the primary failure: the fallback usually fails for the same
+      // reason and its message hides what actually went wrong.
+      console.error(`[llm] ${fallbackModel} also failed (${fallbackError.status}): ${fallbackError.message}`);
+      throw error;
+    }
   }
 }
 
@@ -130,7 +144,7 @@ async function* streamChatCompletion(params, fetchImpl = fetch) {
   } finally {
     clearTimeout(headerTimer);
   }
-  if (!response.ok) throw mapHttpError(response.status);
+  if (!response.ok) throw mapHttpError(response.status, await response.text().catch(() => ''));
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
