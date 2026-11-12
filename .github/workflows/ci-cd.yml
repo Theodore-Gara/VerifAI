@@ -100,8 +100,11 @@ jobs:
       - name: Verify formatting
         run: dart format --output=none --set-exit-if-changed lib test || echo "::warning::Some Dart files are not formatted yet"
 
+      # Info-level notices are not merge blockers: a new stable Flutter release
+      # can add hundreds of deprecation hints overnight (e.g. the material.dart
+      # -> material_ui move). Errors and warnings still fail the job.
       - name: Static analysis
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
       - name: Run tests
         run: |

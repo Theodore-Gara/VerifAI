@@ -272,6 +272,10 @@ class _WeeklyStrip extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       Container(
+                        // Same slim stick as the weekly chart on the Progress
+                        // screen: a fixed 16px bar inside its slot, so the bars
+                        // read as separate days instead of one wide block.
+                        width: 16,
                         height: 8 + 26 * (max == 0 ? 0 : xp[i] / max),
                         decoration: BoxDecoration(
                           color: xp[i] > 0
