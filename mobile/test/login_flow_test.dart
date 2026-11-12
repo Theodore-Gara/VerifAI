@@ -132,11 +132,10 @@ void main() {
     await tester.tap(find.widgetWithText(ElevatedButton, 'Sign In'));
     await tester.pump();
 
-    // While the sign-in is in flight the button must be disabled so the
-    // user cannot submit a second request.
-    final button = tester.widget<ElevatedButton>(
-      find.widgetWithText(ElevatedButton, 'Sign In'),
-    );
+    // While the sign-in is in flight the button displays a loading spinner
+    // and is disabled so the user cannot submit a second request.
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton).first);
     expect(button.onPressed, isNull);
   });
 }
