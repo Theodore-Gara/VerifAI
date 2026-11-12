@@ -167,6 +167,8 @@ const _codeMessages = <String, String>{
       'That file type is not supported. Upload a PDF, DOCX, TXT or MD file, or paste the text.',
   'document_parse_failed':
       'We could not read that document. Try another file or paste the text.',
+  'link_no_text':
+      'We could not read any text at that link. The page may need JavaScript or a login — paste the text instead.',
   'ai_timeout':
       'Verification is temporarily unavailable. Your input is still here — try again in a moment.',
   'ai_unavailable':

@@ -46,7 +46,7 @@ global.fetch = async (url, options) => {
     return { ok: true, json: async () => ({ results: [{ title: 'Citation source', url: 'https://cit.example', content: 'section 22 of POPIA' }] }) };
   }
   if (u.includes('example.com')) {
-    return { ok: true, status: 200, text: async () => '<html><head><style>x{}</style></head><body><h1>Client contract</h1><script>bad()</script><p>Confidential terms apply.</p></body></html>' };
+    return { ok: true, status: 200, text: async () => '<html><head><style>x{}</style></head><body><h1>Client contract</h1><script>bad()</script><p>Confidential terms apply to the engagement letter signed this quarter.</p></body></html>' };
   }
   // NVIDIA
   const body = JSON.parse(options.body);

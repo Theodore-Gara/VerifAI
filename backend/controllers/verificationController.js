@@ -13,6 +13,10 @@ const SOURCE_TYPES = new Set(['text', 'url', 'citation', 'document']);
 const MAX_CONTENT_LENGTH = 60000;
 const MAX_CONTEXT_LENGTH = 5000;
 const MAX_TOTAL_CHARS = 120000;
+// A linked page with less readable text than this cannot be analysed. Without
+// the guard the pipeline "succeeds" on a navigation strip and reports
+// "not enough evidence", which reads like a verdict on the page.
+const MIN_LINK_CHARS = 40;
 
 function bad(status, code, message, options) {
   return apiError(status, code, message, options);
@@ -91,7 +95,15 @@ async function buildEvidence(req) {
     } else if (type === 'url') {
       const url = requiredString(source.url, 'source.url', 2000);
       const fetched = await fetchUrl(url);
-      pieces.push({ label: `Linked page: ${fetched.label}`, text: fetched.text || '(no readable text)' });
+      const readable = String(fetched.text || '').replace(/\s+/g, '');
+      if (readable.length < MIN_LINK_CHARS) {
+        throw bad(422, 'link_no_text', `The linked page yielded ${readable.length} readable characters.`, {
+          publicMessage: 'We could not read any text at that link.',
+          hint: 'The page may build its content with JavaScript or sit behind a login. Paste the text instead.',
+          retryable: false,
+        });
+      }
+      pieces.push({ label: `Linked page: ${fetched.label}`, text: fetched.text });
       inputs.push({ type: 'url', label: fetched.url, chars: fetched.text.length });
     } else if (type === 'citation') {
       const citation = requiredString(source.text, 'source.text', 1000);
@@ -192,6 +204,7 @@ async function analyzeVerification(req, res, next) {
       checks: { claims_checked: verdicts.length, sources_found: sources.length },
       citationsChecked: evidence.citationsChecked,
       webSearched,
+      webSearchRequested: useWeb,
     });
 
     const inserted = await pool.query(

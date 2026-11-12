@@ -12,6 +12,7 @@ const pool = require('../db/pool');
 let tavilyCalls = 0;
 let modelCalls = 0;
 let claimMode = 'claim';
+let linkHtml = '<html><body><p>Nothing much here.</p></body></html>';
 
 pool.query = async (sql, values = []) => {
   const s = sql.replace(/\s+/g, ' ').trim();
@@ -47,6 +48,10 @@ global.fetch = async (url, options) => {
         results: [{ title: 'Authoritative source', url: 'https://example.org/source', content: 'The figure was 12%, not 15%.' }],
       }),
     };
+  }
+
+  if (String(url).includes('linked.example') || String(url).includes('blank.example')) {
+    return { ok: true, text: async () => linkHtml };
   }
 
   modelCalls += 1;
@@ -113,10 +118,35 @@ test('POST /api/verification/analyze can skip the web search', async () => {
   assert.equal(response.status, 201);
   assert.equal(tavilyCalls, 0);
   assert.equal(response.body.web_searched, false);
+  assert.equal(response.body.analysis.checks.web_search, false);
   assert.deepEqual(response.body.sources, []);
   // A claimed source that was never supplied cannot support the verdict.
   assert.equal(response.body.analysis.claims[0].verdict, 'unverified');
   assert.equal(response.body.analysis.overall_status, 'insufficient_evidence');
+});
+
+test('a linked page with no readable text is refused, not analysed as empty', async () => {
+  linkHtml = '<html><body><nav>Menu Home About Contact</nav></body></html>';
+  const response = await auth(request(app).post('/api/verification/analyze'))
+    .send({ kind: 'source', sources: [{ type: 'url', url: 'https://blank.example' }] });
+
+  assert.equal(response.status, 422);
+  assert.equal(response.body.code, 'link_no_text');
+  assert.equal(response.body.retryable, false);
+});
+
+test('a readable linked page is analysed, and reports the web-search setting', async () => {
+  linkHtml = `<html><body><p>${'Revenue grew 15% in 2024. '.repeat(12)}</p></body></html>`;
+  tavilyCalls = 0;
+  modelCalls = 0;
+  claimMode = 'claim';
+
+  const response = await auth(request(app).post('/api/verification/analyze'))
+    .send({ kind: 'source', sources: [{ type: 'url', url: 'https://linked.example' }] });
+
+  assert.equal(response.status, 201);
+  assert.equal(response.body.analysis.checks.web_search, true);
+  assert.equal(response.body.web_searched, true);
 });
 
 test('a document with no checkable claims is insufficient evidence, never sound', async () => {
@@ -133,6 +163,9 @@ test('a document with no checkable claims is insufficient evidence, never sound'
   assert.equal(response.body.analysis.overall_status, 'insufficient_evidence');
   assert.equal(response.body.analysis.claims.length, 0);
   assert.equal(response.body.analysis.checks.claims_checked, 0);
+  // The learner left web search on; nothing ran because there was nothing to
+  // search. The report must not claim they turned it off.
+  assert.equal(response.body.analysis.checks.web_search, true);
   assert.equal(response.body.web_searched, false);
   assert.match(response.body.analysis.summary, /No checkable/i);
 });

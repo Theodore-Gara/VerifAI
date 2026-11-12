@@ -124,10 +124,23 @@ function buildSummary({ claims, checks, status }) {
   return summary;
 }
 
-function deriveReport({ kind, documentName, claims, checks, citationsChecked = 0, webSearched }) {
+function deriveReport({
+  kind,
+  documentName,
+  claims,
+  checks,
+  citationsChecked = 0,
+  webSearched,
+  webSearchRequested,
+}) {
   const sourcesConfirmed = claims.filter((claim) => claim.verdict === 'supported').length;
   const checksBlock = {
-    web_search: webSearched === undefined ? checks.claims_checked > 0 : !!webSearched,
+    // The learner's setting, not whether a query actually ran. A report that
+    // says "web search off" when they left it on reads like the app ignored
+    // them; the sources-found count already shows the outcome.
+    web_search: webSearchRequested === undefined
+      ? (webSearched === undefined ? checks.claims_checked > 0 : !!webSearched)
+      : !!webSearchRequested,
     sources_found: Number(checks.sources_found) || 0,
     claims_checked: Number(checks.claims_checked) || 0,
     citations_checked: Number(citationsChecked) || 0,

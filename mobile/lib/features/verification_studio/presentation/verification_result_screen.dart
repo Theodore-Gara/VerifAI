@@ -142,7 +142,10 @@ class VerificationResultScreen extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: AppSpacing.lg),
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
+                // A pill radius (999) on a box that wraps onto several rows
+                // clips the corners into the content; the card radius keeps the
+                // border around every row.
+                borderRadius: BorderRadius.circular(AppRadius.card),
                 border: Border.all(color: AppColors.border),
               ),
               child: Wrap(
